@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
@@ -21,6 +20,7 @@ const HomeView = ({
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [formValid, setFormValid] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [showForm, setShowForm] = useState(false);
   
   const validateField = (name: string, value: string, isRequired: boolean): string | null => {
     const sanitized = sanitizeInput(value);
@@ -76,21 +76,6 @@ const HomeView = ({
     setFormValid(allRequiredFilled);
   };
   
-  const handleStartChat = () => {
-    if (config.preChatForm.enabled && formValid) {
-      // Sanitize all form data before sending
-      const sanitizedData = validateFormData(formData);
-      
-      // Dispatch form completion event before starting chat
-      dispatchChatEvent('contact:formCompleted', { formData: sanitizedData }, config);
-      
-      // Start chat with sanitized data
-      onStartChat(sanitizedData);
-    } else if (!config.preChatForm.enabled) {
-      onStartChat({});
-    }
-  };
-
   const renderFormFields = () => {
     const fields = config.preChatForm.fields;
     
@@ -122,7 +107,6 @@ const HomeView = ({
     );
   };
   
-  // Apply custom branding if available
   const buttonStyle = config.branding?.primaryColor 
     ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
     : {};
@@ -134,7 +118,7 @@ const HomeView = ({
           {config.welcomeMessage}
         </h2>
         
-        {config.preChatForm.enabled && (
+        {showForm && config.preChatForm.enabled && (
           <div className="mt-2">
             <p className="text-sm text-gray-600 leading-relaxed">
               Please provide your information to start the conversation:
@@ -143,7 +127,7 @@ const HomeView = ({
           </div>
         )}
         
-        {!config.preChatForm.enabled && (
+        {!showForm && (
           <p className="text-sm text-gray-600 mt-2 leading-relaxed">
             Get help, ask questions, or start a conversation.
           </p>
@@ -154,13 +138,28 @@ const HomeView = ({
       
       <div className="mt-auto">
         <Button 
-          onClick={handleStartChat}
-          disabled={config.preChatForm.enabled && !formValid}
+          onClick={() => {
+            if (!showForm && config.preChatForm.enabled) {
+              setShowForm(true);
+              return;
+            }
+            
+            if (config.preChatForm.enabled && formValid) {
+              const sanitizedData = validateFormData(formData);
+              dispatchChatEvent('contact:formCompleted', { formData: sanitizedData }, config);
+              onStartChat(sanitizedData);
+            } else if (!config.preChatForm.enabled) {
+              onStartChat({});
+            }
+          }}
+          disabled={config.preChatForm.enabled && showForm && !formValid}
           className="chat-widget-button flex items-center gap-2 w-full py-2.5"
           style={buttonStyle}
         >
           <MessageSquare size={18} />
-          <span className="font-medium">Ask a question</span>
+          <span className="font-medium">
+            {showForm ? 'Start Chat' : 'Ask a question'}
+          </span>
         </Button>
       </div>
     </div>
