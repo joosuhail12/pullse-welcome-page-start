@@ -126,11 +126,11 @@ const MessageBubble = ({
   // Apply different styling for consecutive messages vs. first in group
   const bubbleClasses = isConsecutive
     ? message.sender === 'user'
-      ? 'chat-message-user rounded-tr-sm ml-10 animate-fade-in-right'
-      : 'chat-message-system rounded-tl-sm mr-10 animate-fade-in-left'
+      ? 'chat-message-user rounded-tr-sm ml-10'
+      : 'chat-message-system rounded-tl-sm mr-10'
     : message.sender === 'user'
-      ? 'chat-message-user animate-fade-in-right'
-      : 'chat-message-system animate-fade-in-left';
+      ? 'chat-message-user'
+      : 'chat-message-system';
 
   return (
     <div className="flex items-start">
