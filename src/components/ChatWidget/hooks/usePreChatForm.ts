@@ -14,7 +14,7 @@ export function usePreChatForm({
   config = defaultConfig, 
   userFormData 
 }: UsePreChatFormOptions) {
-  // Calculate initial state once
+  // Calculate initial state once using a factory function
   const [showPreChatForm, setShowPreChatForm] = useState(() => {
     const shouldShow = (config?.preChatForm?.enabled || false) && 
                       !(conversation.contactIdentified || false) && 
@@ -28,13 +28,13 @@ export function usePreChatForm({
     return shouldShow;
   });
 
-  // Update form visibility when dependencies change, but not when the state itself changes
+  // Update form visibility only when relevant props change, not when showPreChatForm changes
   useEffect(() => {
     const shouldShowForm = (config?.preChatForm?.enabled || false) && 
                         !(conversation.contactIdentified || false) && 
                         !userFormData;
     
-    // Only update if needed
+    // Only update if the calculated value is different from current state
     if (shouldShowForm !== showPreChatForm) {
       console.log('Updating pre-chat form visibility:', { 
         from: showPreChatForm, 
@@ -43,10 +43,13 @@ export function usePreChatForm({
         hasUserFormData: !!userFormData
       });
       
-      setShowPreChatForm(shouldShowForm);
+      // Update state in the next tick to avoid render cycles
+      setTimeout(() => {
+        setShowPreChatForm(shouldShowForm);
+      }, 0);
     }
-  // Importantly, we DON'T include showPreChatForm in deps
   }, [config?.preChatForm?.enabled, conversation.contactIdentified, userFormData]);
+  // Importantly, we removed showPreChatForm from dependencies to break the cycle
 
   // Provide a manual way to hide the form
   const hidePreChatForm = useCallback(() => {

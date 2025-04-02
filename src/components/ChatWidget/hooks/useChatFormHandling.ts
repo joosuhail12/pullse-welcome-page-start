@@ -24,7 +24,7 @@ export function useChatFormHandling({
   const formSubmissionRef = useRef(false);
   const lastSubmittedDataRef = useRef<Record<string, string> | null>(null);
   
-  // Use the pre-chat form hook with stable references
+  // Use the pre-chat form hook
   const { showPreChatForm, hidePreChatForm } = usePreChatForm({ 
     conversation, 
     config, 
@@ -48,33 +48,41 @@ export function useChatFormHandling({
       return;
     }
     
-    // Set both state and ref to prevent multiple submissions
+    // Set refs before any state updates
     formSubmissionRef.current = true;
-    setIsProcessingForm(true);
     lastSubmittedDataRef.current = formData;
     
-    // First hide the form to prevent rendering issues
+    // Set processing state
+    setIsProcessingForm(true);
+    
+    // First hide the form
     hidePreChatForm();
     
-    // Update user data and conversation - single synchronous block to prevent render cascades
-    if (setUserFormData) {
-      setUserFormData(formData);
-    }
-    
-    onUpdateConversation({
-      ...conversation,
-      contactIdentified: true
-    });
-    
-    if (config) {
-      dispatchChatEvent('contact:formCompleted', { formData }, config);
-    }
-    
-    // Reset processing flags after a delay to ensure state updates have propagated
+    // Batch updates to prevent cascading renders
     setTimeout(() => {
-      setIsProcessingForm(false);
-      formSubmissionRef.current = false;
-    }, 500);
+      // Update user data
+      if (setUserFormData) {
+        setUserFormData(formData);
+      }
+      
+      // Update conversation
+      onUpdateConversation({
+        ...conversation,
+        contactIdentified: true
+      });
+      
+      // Dispatch event if config exists
+      if (config) {
+        dispatchChatEvent('contact:formCompleted', { formData }, config);
+      }
+      
+      // Reset processing flags after a delay
+      setTimeout(() => {
+        setIsProcessingForm(false);
+        formSubmissionRef.current = false;
+      }, 500);
+    }, 0);
+    
   }, [conversation, config, hidePreChatForm, isProcessingForm, onUpdateConversation, setUserFormData]);
 
   return {
