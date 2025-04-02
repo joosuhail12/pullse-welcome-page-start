@@ -29,9 +29,21 @@ import { ChatWidgetInterface, WidgetConfig } from './embed/types';
       console.log('Initializing chat widget with config:', mergedConfig);
       return mergedConfig;
     },
-    open: () => console.warn('Chat widget is still loading...'),
-    close: () => console.warn('Chat widget is still loading...'),
-    toggle: () => console.warn('Chat widget is still loading...'),
+    open: () => {
+      console.log('Attempting to open chat widget...');
+      const event = new CustomEvent('pullse:widget:open');
+      window.dispatchEvent(event);
+    },
+    close: () => {
+      console.log('Attempting to close chat widget...');
+      const event = new CustomEvent('pullse:widget:close');
+      window.dispatchEvent(event);
+    },
+    toggle: () => {
+      console.log('Attempting to toggle chat widget...');
+      const event = new CustomEvent('pullse:widget:toggle');
+      window.dispatchEvent(event);
+    },
     
     // Event handling methods
     ...eventHandlers
@@ -56,69 +68,81 @@ import { ChatWidgetInterface, WidgetConfig } from './embed/types';
     loadingIndicator.textContent = 'Loading chat widget...';
     document.body.appendChild(loadingIndicator);
     
-    // Load the actual widget bundle
-    const scriptEl = loadWidgetResources();
-    
-    // Initialize the widget once loaded
-    scriptEl.onload = () => {
-      console.log('Chat widget resources loaded successfully');
-      
-      // Remove loading indicator
-      if (document.body.contains(loadingIndicator)) {
-        document.body.removeChild(loadingIndicator);
-      }
-      
+    // Add a timeout to ensure the DOM is ready
+    setTimeout(() => {
       try {
-        if (window.ChatWidget && window.ChatWidget.init) {
-          // Important: Actually open the chat widget after initialization
-          const result = window.ChatWidget.init(config);
-          console.log('Chat widget initialized successfully', result);
+        // Load the actual widget bundle
+        const scriptEl = loadWidgetResources();
+        
+        // Initialize the widget once loaded
+        scriptEl.onload = () => {
+          console.log('Chat widget resources loaded successfully');
           
-          // Force open the chat widget after initialization with a longer timeout
-          setTimeout(() => {
-            if (window.ChatWidget && window.ChatWidget.open) {
-              window.ChatWidget.open();
-              console.log('Chat widget opened');
+          // Remove loading indicator
+          if (document.body.contains(loadingIndicator)) {
+            document.body.removeChild(loadingIndicator);
+          }
+          
+          try {
+            if (window.ChatWidget && window.ChatWidget.init) {
+              // Important: Actually open the chat widget after initialization
+              const result = window.ChatWidget.init(config);
+              console.log('Chat widget initialized successfully', result);
+              
+              // Force open the chat widget after initialization with a longer timeout
+              setTimeout(() => {
+                if (window.ChatWidget && window.ChatWidget.open) {
+                  window.ChatWidget.open();
+                  console.log('Chat widget opened');
+                } else {
+                  console.error('Failed to open chat widget: open method not available');
+                }
+              }, 1000);
             } else {
-              console.error('Failed to open chat widget: open method not available');
+              console.error('Chat widget initialization failed - window.ChatWidget or init method not found');
             }
-          }, 500);
-        } else {
-          console.error('Chat widget initialization failed - window.ChatWidget or init method not found');
-        }
-      } catch (error) {
-        console.error('Error initializing chat widget:', error);
-      }
-    };
+          } catch (error) {
+            console.error('Error initializing chat widget:', error);
+          }
+        };
 
-    scriptEl.onerror = (error) => {
-      console.error('Failed to load chat widget resources:', error);
-      
-      // Remove loading indicator on error
-      if (document.body.contains(loadingIndicator)) {
-        document.body.removeChild(loadingIndicator);
-      }
-      
-      // Show error to user
-      const errorEl = document.createElement('div');
-      errorEl.style.position = 'fixed';
-      errorEl.style.bottom = '24px';
-      errorEl.style.right = '24px';
-      errorEl.style.padding = '12px';
-      errorEl.style.background = '#f44336';
-      errorEl.style.color = 'white';
-      errorEl.style.borderRadius = '4px';
-      errorEl.style.zIndex = '9999';
-      errorEl.textContent = 'Failed to load chat widget.';
-      document.body.appendChild(errorEl);
-      
-      // Remove error after 5 seconds
-      setTimeout(() => {
-        if (document.body.contains(errorEl)) {
-          document.body.removeChild(errorEl);
+        scriptEl.onerror = (error) => {
+          console.error('Failed to load chat widget resources:', error);
+          
+          // Remove loading indicator on error
+          if (document.body.contains(loadingIndicator)) {
+            document.body.removeChild(loadingIndicator);
+          }
+          
+          // Show error to user
+          const errorEl = document.createElement('div');
+          errorEl.style.position = 'fixed';
+          errorEl.style.bottom = '24px';
+          errorEl.style.right = '24px';
+          errorEl.style.padding = '12px';
+          errorEl.style.background = '#f44336';
+          errorEl.style.color = 'white';
+          errorEl.style.borderRadius = '4px';
+          errorEl.style.zIndex = '9999';
+          errorEl.textContent = 'Failed to load chat widget.';
+          document.body.appendChild(errorEl);
+          
+          // Remove error after 5 seconds
+          setTimeout(() => {
+            if (document.body.contains(errorEl)) {
+              document.body.removeChild(errorEl);
+            }
+          }, 5000);
+        };
+      } catch (e) {
+        console.error('Error during widget resource loading:', e);
+        
+        // Remove loading indicator on error
+        if (document.body.contains(loadingIndicator)) {
+          document.body.removeChild(loadingIndicator);
         }
-      }, 5000);
-    };
+      }
+    }, 100); // Small delay to ensure DOM is ready
   };
 
   if (shouldLoadImmediately) {

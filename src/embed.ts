@@ -87,26 +87,36 @@ function initChatWidget(config: any = {}) {
         )
       );
       
-      // Force widget to be shown with a longer delay to ensure everything is rendered
+      console.log('Chat widget rendered successfully');
+      
+      // Try opening widget immediately - multiple attempts with increasing delays
       setTimeout(() => {
-        console.log('Dispatching open event for chat widget');
+        console.log('First attempt to open widget');
+        if (window.ChatWidget && window.ChatWidget.open) {
+          window.ChatWidget.open();
+        }
+      }, 100);
+      
+      setTimeout(() => {
+        console.log('Second attempt to open widget');
         const event = new CustomEvent('pullse:widget:open');
         window.dispatchEvent(event);
-        console.log('Chat widget opened via event');
       }, 500);
-
-      // Add a failsafe open attempt after 1 second if the widget still isn't visible
+      
+      // Add a third failsafe open attempt
       setTimeout(() => {
+        console.log('Third attempt to open widget');
         if (window.ChatWidget && window.ChatWidget.open) {
           window.ChatWidget.open();
           console.log('Chat widget opened via API failsafe');
         }
-      }, 1000);
+      }, 1500);
+      
     } catch (err) {
       console.error('Failed to render chat widget:', err);
     }
   }).catch(err => {
-    console.error('Failed to load chat widget:', err);
+    console.error('Failed to load chat widget components:', err);
     // Create a fallback for error cases
     const root = createRoot(containerEl);
     root.render(
@@ -177,9 +187,21 @@ if (typeof window !== 'undefined') {
       
       return api;
     },
-    open: () => console.warn('Chat widget not initialized. Call ChatWidget.init() first.'),
-    close: () => console.warn('Chat widget not initialized. Call ChatWidget.init() first.'),
-    toggle: () => console.warn('Chat widget not initialized. Call ChatWidget.init() first.')
+    open: () => {
+      console.log('Global open method called');
+      const event = new CustomEvent('pullse:widget:open');
+      window.dispatchEvent(event);
+    },
+    close: () => {
+      console.log('Global close method called');
+      const event = new CustomEvent('pullse:widget:close');
+      window.dispatchEvent(event);
+    },
+    toggle: () => {
+      console.log('Global toggle method called');
+      const event = new CustomEvent('pullse:widget:toggle');
+      window.dispatchEvent(event);
+    }
   } as ChatWidgetInterface;
 }
 
