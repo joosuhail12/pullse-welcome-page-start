@@ -11,7 +11,6 @@ interface PreChatFormSectionProps {
 
 const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: PreChatFormSectionProps) => {
   const [mounted, setMounted] = useState(false);
-  const [lastSubmittedData, setLastSubmittedData] = useState<Record<string, string> | null>(null);
   
   // Subtle animation on mount with a slight delay for better sequencing
   useEffect(() => {
@@ -22,26 +21,12 @@ const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: P
     return () => clearTimeout(timer);
   }, []);
   
-  // Form submission handler with deduplication
-  const handleFormSubmit = useCallback((formData: Record<string, string>) => {
-    if (isProcessingForm) {
-      console.log("Form already processing, preventing submission");
-      return;
+  // Memoize handler to prevent unnecessary re-renders
+  const memoizedFormHandler = useCallback((formData: Record<string, string>) => {
+    if (!isProcessingForm) {
+      onFormComplete(formData);
     }
-    
-    // Check for duplicate submissions
-    const formDataString = JSON.stringify(formData);
-    const prevDataString = lastSubmittedData ? JSON.stringify(lastSubmittedData) : null;
-    
-    if (prevDataString && prevDataString === formDataString) {
-      console.log("Duplicate form data detected, ignoring");
-      return;
-    }
-    
-    // Store the submitted data and forward the submission
-    setLastSubmittedData(formData);
-    onFormComplete(formData);
-  }, [onFormComplete, isProcessingForm, lastSubmittedData]);
+  }, [onFormComplete, isProcessingForm]);
   
   // Apply custom branding if available
   const themeStyles = {
@@ -64,7 +49,7 @@ const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: P
       {config && (
         <PreChatForm 
           config={config} 
-          onFormComplete={handleFormSubmit} 
+          onFormComplete={memoizedFormHandler} 
           isProcessingForm={isProcessingForm}
         />
       )}
