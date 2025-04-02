@@ -1,5 +1,6 @@
 
 import React from 'react';
+import ChatWidget from '@/components/ChatWidget/ChatWidget';
 
 const Index = () => {
   return (
@@ -20,6 +21,8 @@ const Index = () => {
           </button>
         </div>
       </div>
+      
+      <ChatWidget />
     </div>
   );
 };
