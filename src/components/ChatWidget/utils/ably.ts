@@ -1,4 +1,3 @@
-
 import Ably from 'ably';
 
 // Client instance to ensure singleton pattern
@@ -175,19 +174,12 @@ export const cleanupAbly = (): void => {
   }
   
   try {
-    // Get all active channels
-    const channelKeys = Object.keys(ablyClient.channels.all);
+    // Get active channels using a different approach
+    const channels = ablyClient.channels;
     
-    // Unsubscribe from all channels
-    channelKeys.forEach(channelName => {
-      const channel = ablyClient?.channels.get(channelName);
-      if (channel) {
-        channel.unsubscribe();
-        channel.detach();
-      }
-    });
-    
-    // Close connection
+    // Since we can't directly access all channels, we need to 
+    // keep track of channels we've created elsewhere or
+    // just detach and close the connection
     ablyClient.close();
     ablyClient = null;
   } catch (error) {
