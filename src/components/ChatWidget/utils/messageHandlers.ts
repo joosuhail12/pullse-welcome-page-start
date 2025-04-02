@@ -1,8 +1,10 @@
 
 import { Message } from '../types';
-import { publishToChannel } from './ably';
+import { publishToChannel, getConnectionState } from './ably';
 import { dispatchChatEvent } from './events';
 import { ChatWidgetConfig } from '../config';
+import { addMessageToQueue } from './offlineQueue';
+import { saveOfflineMessage } from './storage';
 
 /**
  * Handles sending a read receipt for a message
@@ -12,11 +14,14 @@ export const sendReadReceipt = (
   messageId: string,
   sessionId: string
 ): void => {
-  publishToChannel(chatChannelName, 'read', {
-    messageId,
-    userId: sessionId,
-    timestamp: new Date()
-  });
+  // Check connection before sending
+  if (getConnectionState() === 'connected') {
+    publishToChannel(chatChannelName, 'read', {
+      messageId,
+      userId: sessionId,
+      timestamp: new Date()
+    }).catch(err => console.error('Error sending read receipt:', err));
+  }
 };
 
 /**
@@ -27,11 +32,14 @@ export const sendDeliveryReceipt = (
   messageId: string,
   sessionId: string
 ): void => {
-  publishToChannel(chatChannelName, 'delivered', {
-    messageId,
-    userId: sessionId,
-    timestamp: new Date()
-  });
+  // Check connection before sending
+  if (getConnectionState() === 'connected') {
+    publishToChannel(chatChannelName, 'delivered', {
+      messageId,
+      userId: sessionId,
+      timestamp: new Date()
+    }).catch(err => console.error('Error sending delivery receipt:', err));
+  }
 };
 
 /**
@@ -103,14 +111,41 @@ export const processSystemMessage = (
   
   // Update message status to delivered
   if (config?.features?.readReceipts) {
-    // Send delivered receipt immediately
-    sendDeliveryReceipt(chatChannelName, message.id, sessionId);
-    
-    // Send read receipt after a short delay
-    setTimeout(() => {
-      sendReadReceipt(chatChannelName, message.id, sessionId);
-    }, 2000);
+    // Check if we're online before sending receipts
+    if (getConnectionState() === 'connected') {
+      // Send delivered receipt immediately
+      sendDeliveryReceipt(chatChannelName, message.id, sessionId);
+      
+      // Send read receipt after a short delay
+      setTimeout(() => {
+        sendReadReceipt(chatChannelName, message.id, sessionId);
+      }, 2000);
+    } else {
+      // Queue read receipts for later
+      const deliveryReceipt = {
+        id: `delivery-${message.id}`,
+        messageId: message.id,
+        userId: sessionId,
+        timestamp: new Date(),
+        type: 'status'
+      };
+      
+      const readReceipt = {
+        id: `read-${message.id}`,
+        messageId: message.id,
+        userId: sessionId,
+        timestamp: new Date(),
+        type: 'status'
+      };
+      
+      addMessageToQueue(deliveryReceipt as any, chatChannelName, 'delivered');
+      addMessageToQueue(readReceipt as any, chatChannelName, 'read');
+    }
   }
+  
+  // Store message for offline persistence
+  const conversationId = chatChannelName.replace('conversation:', '');
+  saveOfflineMessage(conversationId, message);
 };
 
 /**
@@ -121,10 +156,13 @@ export const sendTypingIndicator = (
   sessionId: string,
   status: 'start' | 'stop'
 ): void => {
-  publishToChannel(chatChannelName, 'typing', {
-    status,
-    userId: sessionId
-  });
+  // Only send if connected
+  if (getConnectionState() === 'connected') {
+    publishToChannel(chatChannelName, 'typing', {
+      status,
+      userId: sessionId
+    }).catch(err => console.error('Error sending typing indicator:', err));
+  }
 };
 
 /**
@@ -136,10 +174,19 @@ export const sendMessageReaction = (
   sessionId: string,
   reaction: 'thumbsUp' | 'thumbsDown' | null
 ): void => {
-  publishToChannel(chatChannelName, 'reaction', {
+  const reactionData = {
     messageId,
     reaction,
     userId: sessionId,
     timestamp: new Date()
-  });
+  };
+
+  // Check if connected before sending
+  if (getConnectionState() === 'connected') {
+    publishToChannel(chatChannelName, 'reaction', reactionData)
+      .catch(err => console.error('Error sending message reaction:', err));
+  } else {
+    // Queue reaction for when connection is restored
+    addMessageToQueue(reactionData as any, chatChannelName, 'reaction');
+  }
 };
