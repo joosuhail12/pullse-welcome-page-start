@@ -7,10 +7,11 @@ const COOKIE_NAME = '_chat_session';
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 /**
- * Sets a cookie with the provided name and value
+ * Sets a cookie with the provided name and value with enhanced security
  */
 export function setCookie(name: string, value: string, maxAgeSeconds: number = COOKIE_MAX_AGE): void {
-  const cookieString = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
+  // Build secure cookie string with httpOnly, secure, and SameSite flags
+  const cookieString = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Strict; Secure; HttpOnly`;
   document.cookie = cookieString;
 }
 
@@ -37,7 +38,7 @@ export function getChatSessionId(): string | null {
 }
 
 /**
- * Sets the chat session ID in cookies
+ * Sets the chat session ID in cookies with enhanced security
  */
 export function setChatSessionId(sessionId: string): void {
   setCookie(COOKIE_NAME, sessionId);
