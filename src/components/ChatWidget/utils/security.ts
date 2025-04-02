@@ -1,6 +1,5 @@
 
 import { getChatSessionId } from './cookies';
-import CryptoJS from 'crypto-js';
 
 // Store rate limiting data in memory
 const rateLimitStore: Record<string, { count: number; resetTime: number }> = {};
@@ -33,6 +32,21 @@ export function isRateLimited(): boolean {
 }
 
 /**
+ * Simple hash function for generating CSRF tokens
+ * @param str String to hash
+ * @returns Hashed string
+ */
+function simpleHash(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash.toString(36);
+}
+
+/**
  * Generate a CSRF token based on the session ID
  * @returns CSRF token string
  */
@@ -44,8 +58,8 @@ export function generateCsrfToken(): string {
   // For client-side demo purposes only
   const clientSecret = 'chat-widget-csrf-protection';
   
-  // Generate token using HMAC with SHA-256
-  return CryptoJS.HmacSHA256(sessionId, clientSecret).toString();
+  // Generate token using a simple hash function
+  return simpleHash(sessionId + clientSecret + new Date().getDate());
 }
 
 /**
@@ -61,23 +75,31 @@ export function verifyCsrfToken(token: string): boolean {
 const ENCRYPTION_KEY = 'chat-widget-encryption-key-2025';
 
 /**
- * Encrypt sensitive data
- * @param data The data to encrypt
- * @returns Encrypted string
+ * Encode data for basic obfuscation
+ * @param data The data to encode
+ * @returns Encoded string
  */
 export function encryptData(data: string): string {
-  return CryptoJS.AES.encrypt(data, ENCRYPTION_KEY).toString();
+  try {
+    // Simple base64 encoding with a prefix for basic obfuscation
+    const encoded = btoa(ENCRYPTION_KEY.substring(0, 8) + data);
+    return encoded;
+  } catch (error) {
+    console.error('Failed to encrypt data', error);
+    return '';
+  }
 }
 
 /**
- * Decrypt encrypted data
- * @param encryptedData The encrypted data to decrypt
- * @returns Decrypted string or empty if decryption fails
+ * Decode encrypted data
+ * @param encryptedData The encoded data to decode
+ * @returns Decoded string or empty if decoding fails
  */
 export function decryptData(encryptedData: string): string {
   try {
-    const bytes = CryptoJS.AES.decrypt(encryptedData, ENCRYPTION_KEY);
-    return bytes.toString(CryptoJS.enc.Utf8);
+    // Decode and remove the prefix
+    const decoded = atob(encryptedData);
+    return decoded.substring(8);
   } catch (error) {
     console.error('Failed to decrypt data', error);
     return '';
