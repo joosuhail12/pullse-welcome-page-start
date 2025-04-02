@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
@@ -105,13 +106,6 @@ const HomeView = ({
           <span>Ask a question</span>
         </Button>
       </div>
-      
-      {/* Render branding bar if enabled */}
-      {config.branding?.showBrandingBar && (
-        <div className="mt-3 pt-3 border-t border-gray-100 text-center">
-          <p className="text-xs text-gray-400">Powered by Pullse</p>
-        </div>
-      )}
     </div>
   );
 };

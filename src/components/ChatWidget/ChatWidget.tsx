@@ -72,6 +72,23 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     dispatchChatEvent('contact:initiatedChat', undefined, config);
   };
 
+  // Render footer only if branding bar is enabled
+  const renderFooter = () => {
+    if (!config.branding?.showBrandingBar) return null;
+    
+    return (
+      <div className="mt-auto border-t border-gray-100 p-2 flex items-center justify-center gap-1 text-xs text-gray-400">
+        <span>Powered by</span>
+        <img 
+          src="https://framerusercontent.com/images/9N8Z1vTRbJsHlrIuTjm6Ajga4dI.png" 
+          alt="Pullse Logo" 
+          className="h-4 w-auto"
+        />
+        <span>Pullse</span>
+      </div>
+    );
+  };
+
   return (
     <div 
       className="fixed bottom-4 right-4 w-80 sm:w-96 rounded-lg shadow-lg overflow-hidden flex flex-col bg-white border border-gray-200 max-h-[600px]"
@@ -98,6 +115,9 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
             </div>
             
             <TabBar viewState={viewState} onChangeView={handleChangeView} />
+            
+            {/* Render footer */}
+            {renderFooter()}
           </div>
         )}
       </div>
