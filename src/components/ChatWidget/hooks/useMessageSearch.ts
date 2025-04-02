@@ -68,17 +68,17 @@ export function useMessageSearch(messages: Message[]) {
   }, [searchResults, currentResult]);
 
   // Helper function to highlight text based on search term
-  const highlightText = useCallback((text: string, term: string): React.ReactNode => {
-    if (!term.trim() || !text) return text;
+  // Returns an array of parts with highlighted status instead of JSX
+  const highlightText = useCallback((text: string, term: string): { text: string; highlighted: boolean }[] => {
+    if (!term.trim() || !text) return [{ text, highlighted: false }];
     
     const regex = new RegExp(`(${term})`, 'gi');
     const parts = text.split(regex);
     
-    return parts.map((part, i) => 
-      regex.test(part) 
-        ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark> 
-        : part
-    );
+    return parts.map((part) => ({
+      text: part,
+      highlighted: regex.test(part)
+    }));
   }, []);
 
   return {

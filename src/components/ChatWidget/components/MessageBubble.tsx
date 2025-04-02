@@ -10,9 +10,17 @@ interface MessageBubbleProps {
   message: Message;
   setMessageText?: (text: string) => void;
   onReact?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
+  highlightSearchTerm?: (text: string, term: string) => { text: string; highlighted: boolean }[];
+  searchTerm?: string;
 }
 
-const MessageBubble = ({ message, setMessageText, onReact }: MessageBubbleProps) => {
+const MessageBubble = ({ 
+  message, 
+  setMessageText, 
+  onReact,
+  highlightSearchTerm,
+  searchTerm
+}: MessageBubbleProps) => {
   // Sanitize any text content before displaying
   const sanitizedText = message.text ? sanitizeInput(message.text) : '';
   
@@ -22,13 +30,30 @@ const MessageBubble = ({ message, setMessageText, onReact }: MessageBubbleProps)
       onReact(message.id, reaction);
     }
   };
+
+  // Render text with highlighting when search is active
+  const renderText = (text: string) => {
+    if (highlightSearchTerm && searchTerm) {
+      const parts = highlightSearchTerm(text, searchTerm);
+      return (
+        <>
+          {parts.map((part, i) => 
+            part.highlighted 
+              ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part.text}</mark> 
+              : <React.Fragment key={i}>{part.text}</React.Fragment>
+          )}
+        </>
+      );
+    }
+    return text;
+  };
   
   const renderMessage = () => {
     switch (message.type) {
       case 'file':
         return (
           <div className="flex flex-col">
-            <p>{sanitizedText}</p>
+            {renderText(sanitizedText)}
             <div className="mt-2 p-2 bg-gray-100 rounded-md flex items-center">
               <Paperclip size={16} className="mr-2" />
               <span className="text-sm text-blue-600 underline">
@@ -39,7 +64,7 @@ const MessageBubble = ({ message, setMessageText, onReact }: MessageBubbleProps)
         );
       
       case 'card':
-        if (!message.cardData) return <p>{sanitizedText}</p>;
+        if (!message.cardData) return <p>{renderText(sanitizedText)}</p>;
         
         // Sanitize card data
         const cardTitle = message.cardData.title ? sanitizeInput(message.cardData.title) : '';
@@ -81,7 +106,7 @@ const MessageBubble = ({ message, setMessageText, onReact }: MessageBubbleProps)
       case 'quick_reply':
         return (
           <div className="flex flex-col">
-            <p>{sanitizedText}</p>
+            {renderText(sanitizedText)}
             {message.quickReplies && message.quickReplies.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {message.quickReplies.map((reply, i) => (
@@ -108,13 +133,13 @@ const MessageBubble = ({ message, setMessageText, onReact }: MessageBubbleProps)
       case 'status':
         return (
           <div className="bg-gray-100 py-1.5 px-4 rounded-full text-xs text-gray-500 text-center shadow-sm">
-            {sanitizedText}
+            {renderText(sanitizedText)}
           </div>
         );
       
       case 'text':
       default:
-        return <p className="leading-relaxed">{sanitizedText}</p>;
+        return <p className="leading-relaxed">{renderText(sanitizedText)}</p>;
     }
   };
 

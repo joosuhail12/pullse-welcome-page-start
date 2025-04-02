@@ -14,7 +14,7 @@ interface MessageListProps {
   onMessageReaction?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
   searchTerm?: string;
   searchResults?: string[];
-  highlightMessage?: (text: string, searchTerm: string) => React.ReactNode;
+  highlightMessage?: (text: string, searchTerm: string) => { text: string; highlighted: boolean }[];
 }
 
 const MessageList = ({ 
@@ -69,12 +69,18 @@ const MessageList = ({
                   message={message} 
                   setMessageText={setMessageText} 
                   onReact={onMessageReaction}
+                  highlightSearchTerm={highlightMessage}
+                  searchTerm={searchTerm}
                 />
               )}
               
               {message.sender === 'status' && (
                 <div className="w-full flex justify-center">
-                  <MessageBubble message={message} />
+                  <MessageBubble 
+                    message={message}
+                    highlightSearchTerm={highlightMessage}
+                    searchTerm={searchTerm}
+                  />
                 </div>
               )}
               

@@ -54,6 +54,7 @@ const ChatView = ({
 
   // Add message search
   const {
+    searchTerm,
     searchMessages,
     clearSearch,
     highlightText,
@@ -111,6 +112,7 @@ const ChatView = ({
         onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
         searchResults={messageIds}
         highlightMessage={highlightText}
+        searchTerm={searchTerm}
       />
       
       <MessageInput
