@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
 import ChatView from './views/ChatView';
@@ -7,6 +7,7 @@ import TabBar from './components/TabBar';
 import { useChatState } from './hooks/useChatState';
 import useWidgetConfig from './hooks/useWidgetConfig';
 import { dispatchChatEvent } from './utils/events';
+import { initializeAbly, cleanupAbly } from './utils/ably';
 
 interface ChatWidgetProps {
   workspaceId?: string;
@@ -25,6 +26,19 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   
   const { config, loading } = useWidgetConfig(workspaceId);
   const [isOpen, setIsOpen] = useState(true);
+  
+  // Initialize Ably when config is loaded
+  useEffect(() => {
+    if (!loading && config.realtime?.enabled && config.realtime?.ablyApiKey) {
+      initializeAbly(config.realtime.ablyApiKey)
+        .catch(err => console.error('Failed to initialize Ably:', err));
+      
+      // Clean up Ably when component unmounts
+      return () => {
+        cleanupAbly();
+      };
+    }
+  }, [loading, config.realtime?.enabled, config.realtime?.ablyApiKey]);
   
   // Apply custom branding if available
   const widgetStyle = {

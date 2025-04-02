@@ -2,39 +2,71 @@
 import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Agent } from '../types';
+import { getPresence, subscribeToPresence } from '../utils/ably';
+import useWidgetConfig from '../hooks/useWidgetConfig';
 
-interface Agent {
-  id: string;
-  name: string;
-  avatar?: string;
+interface AgentPresenceProps {
+  workspaceId?: string;
 }
 
-// This is a mock implementation. In a real app, you would use Ably SDK
-const useAgentPresence = () => {
+const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
   const [agents, setAgents] = useState<Agent[]>([]);
+  const { config } = useWidgetConfig(workspaceId);
+  const maxDisplayed = 5;
   
   useEffect(() => {
-    // Mock data - in real implementation, this would be replaced with Ably subscription
-    const mockAgents = [
-      { id: '1', name: 'John Doe', avatar: '/placeholder.svg' },
-      { id: '2', name: 'Jane Smith', avatar: '/placeholder.svg' },
-      { id: '3', name: 'Alex Johnson', avatar: '/placeholder.svg' },
-    ];
+    if (!workspaceId || !config.realtime?.enabled) {
+      // Use mock data when real-time is disabled
+      const mockAgents = [
+        { id: '1', name: 'John Doe', avatar: '/placeholder.svg', status: 'online' as const },
+        { id: '2', name: 'Jane Smith', avatar: '/placeholder.svg', status: 'online' as const },
+        { id: '3', name: 'Alex Johnson', avatar: '/placeholder.svg', status: 'online' as const },
+      ];
+      
+      setAgents(mockAgents);
+      return;
+    }
     
-    setAgents(mockAgents);
+    // Channel for workspace-level presence
+    const channelName = `workspace:${workspaceId}:presence`;
+
+    // Fetch initial presence
+    const fetchInitialPresence = async () => {
+      try {
+        const presenceData = await getPresence(channelName);
+        const agentData: Agent[] = presenceData.map(member => ({
+          id: member.clientId,
+          name: member.data?.name || 'Agent',
+          avatar: member.data?.avatar,
+          status: 'online'
+        }));
+        
+        setAgents(agentData);
+      } catch (error) {
+        console.error('Error fetching initial presence:', error);
+      }
+    };
+    
+    fetchInitialPresence();
+    
+    // Subscribe to presence updates
+    subscribeToPresence(channelName, (presenceData) => {
+      const agentData: Agent[] = presenceData.map(member => ({
+        id: member.clientId,
+        name: member.data?.name || 'Agent',
+        avatar: member.data?.avatar,
+        status: 'online'
+      }));
+      
+      setAgents(agentData);
+    });
     
     // Return cleanup function
     return () => {
-      // Cleanup Ably subscription in real implementation
+      // Cleanup will be handled by the cleanupAbly function
     };
-  }, []);
-  
-  return { agents };
-};
-
-const AgentPresence: React.FC = () => {
-  const { agents } = useAgentPresence();
-  const maxDisplayed = 5;
+  }, [workspaceId, config.realtime?.enabled]);
   
   if (agents.length === 0) {
     return null;

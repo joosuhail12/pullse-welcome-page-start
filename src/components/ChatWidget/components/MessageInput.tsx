@@ -14,6 +14,7 @@ interface MessageInputProps {
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
   hasUserSentMessage: boolean;
+  onTyping?: () => void;
 }
 
 const MessageInput = ({ 
@@ -22,7 +23,8 @@ const MessageInput = ({
   handleSendMessage, 
   handleFileUpload,
   handleEndChat,
-  hasUserSentMessage
+  hasUserSentMessage,
+  onTyping
 }: MessageInputProps) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
@@ -34,9 +36,17 @@ const MessageInput = ({
   };
 
   const handleEmojiSelect = (emoji: any) => {
-    // Fixed: This is the problematic line - we need to properly handle emoji selection
     setMessageText(messageText + emoji.native);
     setShowEmojiPicker(false);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessageText(e.target.value);
+    
+    // Trigger typing indicator
+    if (onTyping) {
+      onTyping();
+    }
   };
 
   return (
@@ -56,7 +66,7 @@ const MessageInput = ({
           <div className="relative flex-grow mx-2">
             <Textarea 
               value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
+              onChange={handleChange}
               onKeyDown={handleKeyPress}
               placeholder="Type a message..."
               className="flex-grow min-h-[40px] max-h-[120px] p-2 border rounded-md focus:outline-none resize-none pr-10"

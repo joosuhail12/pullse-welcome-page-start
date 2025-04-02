@@ -1,30 +1,50 @@
 
+/**
+ * Chat Widget Configuration Types
+ */
+
 export interface PreChatFormField {
   id: string;
   name: string;
+  type: 'text' | 'email' | 'tel' | 'select';
   label: string;
-  type: 'text' | 'email' | 'tel';
-  required: boolean;
   placeholder?: string;
+  required: boolean;
+  options?: { value: string; label: string }[];
 }
 
-export interface BrandingConfig {
-  primaryColor: string;
+export interface PreChatForm {
+  enabled: boolean;
+  title?: string;
+  fields: PreChatFormField[];
+}
+
+export interface ChatBranding {
+  primaryColor?: string;
   fontFamily?: string;
-  avatarIcon?: string;
-  showBrandingBar: boolean;
+  avatarUrl?: string;
+  showBrandingBar?: boolean;
 }
 
-export interface FeatureToggles {
-  inlineRatings: boolean;
-  feedback: boolean;
+export interface ChatFeatures {
+  fileUpload?: boolean;
+  messageRating?: boolean;
+  readReceipts?: boolean;
+  quickReplies?: boolean;
+  cards?: boolean;
+  chatSuggestions?: boolean;
+}
+
+export interface ChatRealtime {
+  enabled: boolean;
+  ablyApiKey?: string;
 }
 
 export type ChatEventType = 
   | 'chat:open'
   | 'chat:close'
   | 'chat:messageSent'
-  | 'chat:messageReceived' 
+  | 'chat:messageReceived'
   | 'contact:initiatedChat'
   | 'contact:formCompleted';
 
@@ -35,63 +55,54 @@ export interface ChatEventPayload {
 }
 
 export interface ChatWidgetConfig {
+  workspaceId: string;
   welcomeMessage: string;
-  preChatForm: {
-    enabled: boolean;
-    fields: PreChatFormField[];
-  };
-  branding?: BrandingConfig;
-  features?: FeatureToggles;
-  workspaceId?: string;
+  preChatForm: PreChatForm;
+  branding?: ChatBranding;
+  features?: ChatFeatures;
+  realtime?: ChatRealtime;
+  sessionId?: string;
   onEvent?: (event: ChatEventPayload) => void;
 }
 
-// Default configuration
 export const defaultConfig: ChatWidgetConfig = {
-  welcomeMessage: "Welcome to Pullse Chat",
+  workspaceId: 'default',
+  welcomeMessage: 'Welcome! How can we help you today?',
   preChatForm: {
     enabled: true,
+    title: 'Start a Conversation',
     fields: [
       {
-        id: 'name',
+        id: 'name-field',
         name: 'name',
+        type: 'text',
         label: 'Name',
-        type: 'text',
-        required: true,
-        placeholder: 'Enter your name'
+        placeholder: 'Enter your name',
+        required: true
       },
       {
-        id: 'email',
+        id: 'email-field',
         name: 'email',
-        label: 'Email',
         type: 'email',
-        required: true,
-        placeholder: 'Enter your email'
-      },
-      {
-        id: 'company',
-        name: 'company',
-        label: 'Company',
-        type: 'text',
-        required: false,
-        placeholder: 'Enter your company name'
-      },
-      {
-        id: 'phone',
-        name: 'phone',
-        label: 'Phone',
-        type: 'tel',
-        required: false,
-        placeholder: 'Enter your phone number'
+        label: 'Email',
+        placeholder: 'Enter your email',
+        required: true
       }
     ]
   },
   branding: {
-    primaryColor: '#8B5CF6', // Default vivid-purple
-    showBrandingBar: true,
+    primaryColor: '#8B5CF6',
+    showBrandingBar: true
   },
   features: {
-    inlineRatings: false,
-    feedback: false
+    fileUpload: true,
+    messageRating: false,
+    readReceipts: false,
+    quickReplies: true,
+    cards: true,
+    chatSuggestions: false
+  },
+  realtime: {
+    enabled: false
   }
 };

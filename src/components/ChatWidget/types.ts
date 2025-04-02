@@ -26,4 +26,12 @@ export interface Conversation {
     avatar?: string;
   };
   messages?: Message[];
+  sessionId?: string;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  avatar?: string;
+  status?: 'online' | 'away' | 'offline';
 }

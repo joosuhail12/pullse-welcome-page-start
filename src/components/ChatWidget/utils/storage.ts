@@ -1,111 +1,117 @@
 
+/**
+ * Local storage utilities for the Chat Widget
+ */
 import { Conversation } from '../types';
 import { getChatSessionId } from './cookies';
 
-export const saveConversationToStorage = (conversation: Conversation) => {
+const STORAGE_KEY = 'chat_widget_conversations';
+const MAX_STORED_CONVERSATIONS = 30;
+
+/**
+ * Load all conversations from localStorage
+ */
+export function loadConversationsFromStorage(): Conversation[] {
   try {
-    // Get existing conversations
-    const storedConversationsStr = localStorage.getItem('chat-conversations') || '[]';
-    const storedConversations = JSON.parse(storedConversationsStr);
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (!data) {
+      return [];
+    }
     
-    // Check if conversation already exists
-    const existingIndex = storedConversations.findIndex(
-      (conv: any) => conv.id === conversation.id
-    );
+    const parsedData = JSON.parse(data);
+    const conversations = Array.isArray(parsedData) ? parsedData : [];
+    
+    // Fix timestamp format (convert string to Date)
+    return conversations.map(conversation => ({
+      ...conversation,
+      timestamp: new Date(conversation.timestamp),
+      messages: conversation.messages?.map(message => ({
+        ...message,
+        timestamp: new Date(message.timestamp)
+      }))
+    }));
+  } catch (error) {
+    console.error('Error loading conversations from storage', error);
+    return [];
+  }
+}
+
+/**
+ * Get a specific conversation by ID
+ */
+export function getConversationFromStorage(conversationId: string): Conversation | null {
+  const conversations = loadConversationsFromStorage();
+  return conversations.find(c => c.id === conversationId) || null;
+}
+
+/**
+ * Get conversations for the current session
+ */
+export function getSessionConversations(): Conversation[] {
+  const sessionId = getChatSessionId();
+  if (!sessionId) return [];
+  
+  const conversations = loadConversationsFromStorage();
+  return conversations.filter(conversation => conversation.sessionId === sessionId);
+}
+
+/**
+ * Save a conversation to localStorage
+ */
+export function saveConversationToStorage(conversation: Conversation): void {
+  try {
+    // Add sessionId if not present
+    const sessionId = getChatSessionId();
+    const conversationWithSession = {
+      ...conversation,
+      sessionId: sessionId
+    };
+    
+    // Get existing conversations
+    let conversations = loadConversationsFromStorage();
+    
+    // Find if this conversation already exists
+    const existingIndex = conversations.findIndex(c => c.id === conversation.id);
     
     if (existingIndex >= 0) {
       // Update existing conversation
-      storedConversations[existingIndex] = conversation;
+      conversations[existingIndex] = conversationWithSession;
     } else {
-      // Add new conversation
-      storedConversations.push(conversation);
+      // Add new conversation to the beginning of the array
+      conversations = [conversationWithSession, ...conversations];
+      
+      // Limit the number of stored conversations
+      if (conversations.length > MAX_STORED_CONVERSATIONS) {
+        conversations = conversations.slice(0, MAX_STORED_CONVERSATIONS);
+      }
     }
     
-    // Save back to storage
-    localStorage.setItem('chat-conversations', JSON.stringify(storedConversations));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
   } catch (error) {
-    console.error('Failed to save conversation to localStorage', error);
+    console.error('Error saving conversation to storage', error);
   }
-};
-
-export const loadConversationsFromStorage = (): Conversation[] => {
-  try {
-    const storedConversations = localStorage.getItem('chat-conversations');
-    if (!storedConversations) return [];
-    
-    // Parse and convert string timestamps back to Date objects
-    return JSON.parse(storedConversations).map((conv: any) => ({
-      ...conv,
-      timestamp: new Date(conv.timestamp)
-    }));
-  } catch (error) {
-    console.error('Failed to load conversations from localStorage', error);
-    return [];
-  }
-};
+}
 
 /**
- * Gets the current session conversation, if any
- * @returns The session conversation or null if not found
+ * Delete a conversation from localStorage
  */
-export const getSessionConversation = (): Conversation | null => {
+export function deleteConversationFromStorage(conversationId: string): void {
   try {
-    const sessionId = getChatSessionId();
-    if (!sessionId) return null;
-    
     const conversations = loadConversationsFromStorage();
-    return conversations.find(conv => conv.sessionId === sessionId) || null;
+    const updatedConversations = conversations.filter(c => c.id !== conversationId);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedConversations));
   } catch (error) {
-    console.error('Failed to get session conversation:', error);
-    return null;
+    console.error('Error deleting conversation from storage', error);
   }
-};
+}
 
 /**
- * Creates or updates a session-based conversation
- * @param sessionId The session ID
- * @param updates Optional updates to apply to the conversation
- * @returns The created or updated conversation
+ * Clear all conversations from localStorage
  */
-export const createOrUpdateSessionConversation = (
-  sessionId: string, 
-  updates?: Partial<Conversation>
-): Conversation => {
+export function clearConversationsFromStorage(): void {
   try {
-    // Check if a conversation for this session already exists
-    const conversations = loadConversationsFromStorage();
-    const existingConversation = conversations.find(conv => conv.sessionId === sessionId);
-    
-    if (existingConversation) {
-      // Update existing conversation
-      const updatedConversation = {
-        ...existingConversation,
-        ...updates,
-        sessionId,
-        timestamp: new Date() // Update timestamp
-      };
-      saveConversationToStorage(updatedConversation);
-      return updatedConversation;
-    }
-    
-    // Create new conversation
-    const newConversation: Conversation = {
-      id: `conv-${Date.now()}`,
-      title: 'New Conversation',
-      lastMessage: '',
-      timestamp: new Date(),
-      sessionId,
-      agentInfo: {
-        name: 'Support Agent',
-        avatar: undefined
-      },
-      ...(updates || {})
-    };
-    
-    saveConversationToStorage(newConversation);
-    return newConversation;
+    localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
-    console.error('Failed to create or update session conversation:', error);
-    throw error;
+    console.error('Error clearing conversations from storage', error);
   }
-};
+}
