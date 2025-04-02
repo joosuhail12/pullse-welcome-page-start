@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Message } from '../types';
 import { subscribeToChannel, publishToChannel } from '../utils/ably';
 import { ChatWidgetConfig } from '../config';
-import { processSystemMessage } from '../utils/messageHandlers';
+import { processSystemMessage, sendDeliveryReceipt } from '../utils/messageHandlers';
 
 export function useRealtimeSubscriptions(
   chatChannelName: string,
@@ -15,6 +15,7 @@ export function useRealtimeSubscriptions(
 ) {
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const [readReceipts, setReadReceipts] = useState<Record<string, boolean>>({});
+  const [deliveredReceipts, setDeliveredReceipts] = useState<Record<string, boolean>>({});
 
   // Realtime communication effect
   useEffect(() => {
@@ -31,7 +32,8 @@ export function useRealtimeSubscriptions(
               text: message.data.text,
               sender: 'system',
               timestamp: new Date(message.data.timestamp || Date.now()),
-              type: message.data.type || 'text'
+              type: message.data.type || 'text',
+              status: 'sent'
             };
             
             setMessages(prev => [...prev, newMessage]);
@@ -63,6 +65,55 @@ export function useRealtimeSubscriptions(
               ...prev,
               [message.data.messageId]: true
             }));
+            
+            // Update message status
+            setMessages(prev => 
+              prev.map(msg => 
+                msg.id === message.data.messageId 
+                  ? { ...msg, status: 'read' } 
+                  : msg
+              )
+            );
+          }
+        }
+      );
+      
+      // Subscribe to delivered receipts
+      const deliveredChannel = subscribeToChannel(
+        chatChannelName,
+        'delivered',
+        (message) => {
+          if (message.data && message.data.messageId && message.data.userId !== sessionId) {
+            setDeliveredReceipts(prev => ({
+              ...prev,
+              [message.data.messageId]: true
+            }));
+            
+            // Update message status if not already read
+            setMessages(prev => 
+              prev.map(msg => 
+                msg.id === message.data.messageId && msg.status !== 'read' 
+                  ? { ...msg, status: 'delivered' } 
+                  : msg
+              )
+            );
+          }
+        }
+      );
+      
+      // Subscribe to reactions
+      const reactionChannel = subscribeToChannel(
+        chatChannelName,
+        'reaction',
+        (message) => {
+          if (message.data && message.data.messageId && message.data.userId !== sessionId) {
+            setMessages(prev => 
+              prev.map(msg => 
+                msg.id === message.data.messageId 
+                  ? { ...msg, reaction: message.data.reaction } 
+                  : msg
+              )
+            );
           }
         }
       );
@@ -90,6 +141,8 @@ export function useRealtimeSubscriptions(
         if (messageChannel) messageChannel.unsubscribe();
         if (typingChannel) typingChannel.unsubscribe();
         if (readChannel) readChannel.unsubscribe();
+        if (deliveredChannel) deliveredChannel.unsubscribe();
+        if (reactionChannel) reactionChannel.unsubscribe();
       };
     }
     
@@ -99,6 +152,7 @@ export function useRealtimeSubscriptions(
 
   return {
     remoteIsTyping,
-    readReceipts
+    readReceipts,
+    deliveredReceipts
   };
 }

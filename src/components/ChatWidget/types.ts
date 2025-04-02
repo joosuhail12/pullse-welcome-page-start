@@ -7,6 +7,8 @@ export interface Message {
   type?: 'text' | 'file' | 'card' | 'quick_reply' | 'status';
   fileUrl?: string;
   fileName?: string;
+  status?: 'sent' | 'delivered' | 'read';
+  reaction?: 'thumbsUp' | 'thumbsDown' | null;
   cardData?: {
     title: string;
     description: string;
@@ -34,4 +36,17 @@ export interface Agent {
   name: string;
   avatar?: string;
   status?: 'online' | 'away' | 'offline';
+}
+
+export interface MessageReaction {
+  messageId: string;
+  reaction: 'thumbsUp' | 'thumbsDown';
+  userId: string;
+  timestamp: Date;
+}
+
+export interface MessageSearchResult {
+  messageId: string;
+  matchText: string;
+  timestamp: Date;
 }

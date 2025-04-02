@@ -33,6 +33,9 @@ export interface ChatFeatures {
   quickReplies?: boolean;
   cards?: boolean;
   chatSuggestions?: boolean;
+  messageReactions?: boolean;
+  typingIndicators?: boolean;
+  searchMessages?: boolean;
 }
 
 export interface ChatRealtime {
@@ -47,7 +50,8 @@ export type ChatEventType =
   | 'chat:messageSent'
   | 'chat:messageReceived'
   | 'contact:initiatedChat'
-  | 'contact:formCompleted';
+  | 'contact:formCompleted'
+  | 'message:reacted';
 
 export interface ChatEventPayload {
   type: ChatEventType;
@@ -98,10 +102,13 @@ export const defaultConfig: ChatWidgetConfig = {
   features: {
     fileUpload: true,
     messageRating: false,
-    readReceipts: false,
+    readReceipts: true,
     quickReplies: true,
     cards: true,
-    chatSuggestions: false
+    chatSuggestions: false,
+    messageReactions: true,
+    typingIndicators: true,
+    searchMessages: true
   },
   realtime: {
     enabled: false,

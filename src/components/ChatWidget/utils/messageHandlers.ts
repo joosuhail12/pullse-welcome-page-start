@@ -20,6 +20,21 @@ export const sendReadReceipt = (
 };
 
 /**
+ * Handles sending a delivery receipt for a message
+ */
+export const sendDeliveryReceipt = (
+  chatChannelName: string,
+  messageId: string,
+  sessionId: string
+): void => {
+  publishToChannel(chatChannelName, 'delivered', {
+    messageId,
+    userId: sessionId,
+    timestamp: new Date()
+  });
+};
+
+/**
  * Creates a system response message
  */
 export const createSystemMessage = (text: string): Message => {
@@ -28,7 +43,8 @@ export const createSystemMessage = (text: string): Message => {
     text,
     sender: 'system',
     timestamp: new Date(),
-    type: 'text'
+    type: 'text',
+    status: 'sent'
   };
 };
 
@@ -45,6 +61,7 @@ export const createUserMessage = (text: string, type: 'text' | 'file' = 'text', 
     sender: 'user',
     timestamp: new Date(),
     type,
+    status: 'sent',
     ...(fileData && {
       fileName: fileData.fileName,
       fileUrl: fileData.fileUrl
@@ -84,10 +101,16 @@ export const processSystemMessage = (
   // Dispatch message received event
   dispatchChatEvent('chat:messageReceived', { message }, config);
   
-  // Send read receipt after a short delay
-  setTimeout(() => {
-    sendReadReceipt(chatChannelName, message.id, sessionId);
-  }, 2000);
+  // Update message status to delivered
+  if (config?.features?.readReceipts) {
+    // Send delivered receipt immediately
+    sendDeliveryReceipt(chatChannelName, message.id, sessionId);
+    
+    // Send read receipt after a short delay
+    setTimeout(() => {
+      sendReadReceipt(chatChannelName, message.id, sessionId);
+    }, 2000);
+  }
 };
 
 /**
@@ -101,5 +124,22 @@ export const sendTypingIndicator = (
   publishToChannel(chatChannelName, 'typing', {
     status,
     userId: sessionId
+  });
+};
+
+/**
+ * Send message reaction
+ */
+export const sendMessageReaction = (
+  chatChannelName: string,
+  messageId: string,
+  sessionId: string,
+  reaction: 'thumbsUp' | 'thumbsDown' | null
+): void => {
+  publishToChannel(chatChannelName, 'reaction', {
+    messageId,
+    reaction,
+    userId: sessionId,
+    timestamp: new Date()
   });
 };

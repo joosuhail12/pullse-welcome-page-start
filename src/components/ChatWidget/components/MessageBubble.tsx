@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Message } from '../types';
-import { Paperclip } from 'lucide-react';
+import { Paperclip, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { sanitizeInput } from '../utils/validation';
@@ -9,11 +9,19 @@ import { sanitizeInput } from '../utils/validation';
 interface MessageBubbleProps {
   message: Message;
   setMessageText?: (text: string) => void;
+  onReact?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
 }
 
-const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
+const MessageBubble = ({ message, setMessageText, onReact }: MessageBubbleProps) => {
   // Sanitize any text content before displaying
   const sanitizedText = message.text ? sanitizeInput(message.text) : '';
+  
+  // Handle message reaction
+  const handleReaction = (reaction: 'thumbsUp' | 'thumbsDown') => {
+    if (onReact) {
+      onReact(message.id, reaction);
+    }
+  };
   
   const renderMessage = () => {
     switch (message.type) {
@@ -110,6 +118,33 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
     }
   };
 
+  // Render reaction buttons for system messages only
+  const renderReactionButtons = () => {
+    if (message.sender === 'system' && onReact) {
+      return (
+        <div className="flex gap-2 mt-1.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`p-1 h-auto ${message.reaction === 'thumbsUp' ? 'bg-green-100' : ''}`}
+            onClick={() => handleReaction('thumbsUp')}
+          >
+            <ThumbsUp size={14} className={message.reaction === 'thumbsUp' ? 'text-green-600' : 'text-gray-500'} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`p-1 h-auto ${message.reaction === 'thumbsDown' ? 'bg-red-100' : ''}`}
+            onClick={() => handleReaction('thumbsDown')}
+          >
+            <ThumbsDown size={14} className={message.reaction === 'thumbsDown' ? 'text-red-600' : 'text-gray-500'} />
+          </Button>
+        </div>
+      );
+    }
+    return null;
+  };
+
   if (message.sender === 'status') {
     return (
       <div className="w-full flex justify-center">
@@ -127,8 +162,11 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
       }`}
     >
       {renderMessage()}
-      <div className={`text-xs mt-2 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-500'}`}>
-        {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      <div className="flex justify-between items-center">
+        <div className={`text-xs mt-2 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-500'}`}>
+          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
+        {renderReactionButtons()}
       </div>
     </div>
   );
