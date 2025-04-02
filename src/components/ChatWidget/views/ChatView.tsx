@@ -32,14 +32,14 @@ const ChatView = ({
 }: ChatViewProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [showInlineForm, setShowInlineForm] = useState(
+  const [showPreChatForm, setShowPreChatForm] = useState(
     config?.preChatForm?.enabled && !conversation.contactIdentified && !userFormData
   );
 
-  // Effect to update the showInlineForm state when userFormData changes
+  // Effect to update the showPreChatForm state when userFormData changes
   useEffect(() => {
     if (userFormData || conversation.contactIdentified) {
-      setShowInlineForm(false);
+      setShowPreChatForm(false);
     }
   }, [userFormData, conversation.contactIdentified]);
 
@@ -119,7 +119,7 @@ const ChatView = ({
 
   // Handle form submission
   const handleFormComplete = (formData: Record<string, string>) => {
-    setShowInlineForm(false);
+    setShowPreChatForm(false);
     
     // Update the parent form data if callback exists
     if (setUserFormData) {
@@ -142,18 +142,6 @@ const ChatView = ({
 
   // Determine if there could be more messages to load
   const hasMoreMessages = messages.length >= 20; // Assuming we load 20 messages at a time
-
-  // Handle creating inline form component when needed
-  const getInlineFormComponent = () => {
-    if (showInlineForm) {
-      return (
-        <div className="mb-4">
-          <PreChatForm config={config} onFormComplete={handleFormComplete} />
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div 
@@ -183,23 +171,32 @@ const ChatView = ({
         showSearchFeature={!!config?.features?.searchMessages}
       />
       
-      {getInlineFormComponent()}
-      
-      <MessageList 
-        messages={messages}
-        isTyping={isTyping || remoteIsTyping}
-        setMessageText={setMessageText}
-        readReceipts={readReceipts}
-        onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
-        searchResults={messageIds}
-        highlightMessage={highlightText}
-        searchTerm={searchTerm}
-        agentAvatar={agentAvatar}
-        userAvatar={userAvatar}
-        onScrollTop={handleLoadMoreMessages}
-        hasMoreMessages={hasMoreMessages}
-        isLoadingMore={isLoadingMore}
-      />
+      <div className="flex-1 overflow-y-auto p-4">
+        {showPreChatForm ? (
+          <div className="mb-4">
+            <PreChatForm 
+              config={config} 
+              onFormComplete={handleFormComplete} 
+            />
+          </div>
+        ) : (
+          <MessageList 
+            messages={messages}
+            isTyping={isTyping || remoteIsTyping}
+            setMessageText={setMessageText}
+            readReceipts={readReceipts}
+            onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
+            searchResults={messageIds}
+            highlightMessage={highlightText}
+            searchTerm={searchTerm}
+            agentAvatar={agentAvatar}
+            userAvatar={userAvatar}
+            onScrollTop={handleLoadMoreMessages}
+            hasMoreMessages={hasMoreMessages}
+            isLoadingMore={isLoadingMore}
+          />
+        )}
+      </div>
       
       <MessageInput
         messageText={messageText}
@@ -209,7 +206,7 @@ const ChatView = ({
         handleEndChat={handleEndChat}
         hasUserSentMessage={hasUserSentMessage}
         onTyping={handleUserTyping}
-        disabled={showInlineForm}
+        disabled={showPreChatForm}
       />
     </div>
   );
