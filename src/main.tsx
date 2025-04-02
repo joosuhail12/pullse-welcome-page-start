@@ -17,8 +17,7 @@ const initChatWidget = () => {
     root.render(
       <React.StrictMode>
         <ChatWidget 
-          workspaceId={config.workspaceId} 
-          config={config}
+          workspaceId={config.workspaceId}
         />
       </React.StrictMode>
     );
@@ -28,7 +27,9 @@ const initChatWidget = () => {
 };
 
 // Check if this is being loaded as the chat widget bundle
-if (document.currentScript?.src.includes('chat-widget.js')) {
+if (document.currentScript && 
+    (document.currentScript as HTMLScriptElement).src && 
+    (document.currentScript as HTMLScriptElement).src.includes('chat-widget.js')) {
   initChatWidget();
 } else {
   // Normal app initialization

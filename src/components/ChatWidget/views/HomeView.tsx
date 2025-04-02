@@ -92,12 +92,10 @@ const HomeView = ({
   };
 
   const renderFormFields = () => {
-    // Calculate grid columns based on field count
     const fields = config.preChatForm.fields;
-    const gridCols = fields.length > 2 ? 'grid-cols-2' : 'grid-cols-1';
     
     return (
-      <div className={`grid ${gridCols} gap-4 mb-5`}>
+      <div className="space-y-3 mt-3">
         {fields.map((field: PreChatFormField) => (
           <div key={field.id} className="space-y-1.5">
             <Label htmlFor={field.id} className="text-sm font-medium">
@@ -135,14 +133,24 @@ const HomeView = ({
         <h2 className="text-xl font-bold text-vivid-purple-500">
           {config.welcomeMessage}
         </h2>
-        <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-          Get help, ask questions, or start a conversation.
-        </p>
+        
+        {config.preChatForm.enabled && (
+          <div className="mt-2">
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Please provide your information to start the conversation:
+            </p>
+            {renderFormFields()}
+          </div>
+        )}
+        
+        {!config.preChatForm.enabled && (
+          <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+            Get help, ask questions, or start a conversation.
+          </p>
+        )}
         
         <AgentPresence />
       </div>
-      
-      {config.preChatForm.enabled && renderFormFields()}
       
       <div className="mt-auto">
         <Button 
