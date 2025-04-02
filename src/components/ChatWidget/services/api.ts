@@ -6,6 +6,8 @@
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import { getChatSessionId, setChatSessionId } from '../utils/cookies';
 import { sanitizeInput } from '../utils/validation';
+import { isRateLimited, generateCsrfToken } from '../utils/security';
+import { toast } from '@/components/ui/use-toast';
 
 /**
  * Fetch chat widget configuration from the API
@@ -36,7 +38,15 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
       url += `&sessionId=${encodeURIComponent(sessionId)}`;
     }
     
-    const response = await fetch(url);
+    // Include CSRF token in headers
+    const headers: HeadersInit = {
+      'X-CSRF-Token': generateCsrfToken()
+    };
+    
+    const response = await fetch(url, {
+      headers,
+      credentials: 'include' // Include cookies in request
+    });
     
     if (!response.ok) {
       // If we get an error response, fall back to default config
@@ -74,10 +84,23 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
  */
 export const sendChatMessage = async (message: string, workspaceId: string): Promise<any> => {
   try {
+    // Check rate limiting first
+    if (isRateLimited()) {
+      toast({
+        title: "Rate limit exceeded",
+        description: "Please wait before sending more messages",
+        variant: "destructive"
+      });
+      throw new Error('Rate limit exceeded');
+    }
+    
     // Validate and sanitize inputs
     const sanitizedMessage = sanitizeInput(message);
     const sanitizedWorkspaceId = sanitizeInput(workspaceId);
     const sessionId = getChatSessionId();
+    
+    // Generate CSRF token
+    const csrfToken = generateCsrfToken();
     
     const payload = {
       message: sanitizedMessage,
@@ -88,8 +111,10 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
     const response = await fetch('/api/chat-widget/message', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken
       },
+      credentials: 'include', // Include cookies in request
       body: JSON.stringify(payload)
     });
     

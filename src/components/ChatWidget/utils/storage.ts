@@ -4,12 +4,14 @@
  */
 import { Conversation } from '../types';
 import { getChatSessionId } from './cookies';
+import { encryptData, decryptData } from './security';
 
 const STORAGE_KEY = 'chat_widget_conversations';
 const MAX_STORED_CONVERSATIONS = 30;
+const MAX_CONVERSATION_AGE_DAYS = 30; // Retention period in days
 
 /**
- * Load all conversations from localStorage
+ * Load all conversations from localStorage with decryption
  */
 export function loadConversationsFromStorage(): Conversation[] {
   try {
@@ -18,11 +20,17 @@ export function loadConversationsFromStorage(): Conversation[] {
       return [];
     }
     
-    const parsedData = JSON.parse(data);
+    // Decrypt the data
+    const decryptedData = decryptData(data);
+    if (!decryptedData) {
+      return [];
+    }
+    
+    const parsedData = JSON.parse(decryptedData);
     const conversations = Array.isArray(parsedData) ? parsedData : [];
     
     // Fix timestamp format (convert string to Date)
-    return conversations.map(conversation => ({
+    const formattedConversations = conversations.map(conversation => ({
       ...conversation,
       timestamp: new Date(conversation.timestamp),
       messages: conversation.messages?.map(message => ({
@@ -30,6 +38,14 @@ export function loadConversationsFromStorage(): Conversation[] {
         timestamp: new Date(message.timestamp)
       }))
     }));
+    
+    // Apply retention policy - filter out old conversations
+    const retentionDate = new Date();
+    retentionDate.setDate(retentionDate.getDate() - MAX_CONVERSATION_AGE_DAYS);
+    
+    return formattedConversations.filter(conv => 
+      new Date(conv.timestamp) > retentionDate
+    );
   } catch (error) {
     console.error('Error loading conversations from storage', error);
     return [];
@@ -56,7 +72,7 @@ export function getSessionConversations(): Conversation[] {
 }
 
 /**
- * Save a conversation to localStorage
+ * Save a conversation to localStorage with encryption
  */
 export function saveConversationToStorage(conversation: Conversation): void {
   try {
@@ -86,7 +102,16 @@ export function saveConversationToStorage(conversation: Conversation): void {
       }
     }
     
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+    // Apply retention policy
+    const retentionDate = new Date();
+    retentionDate.setDate(retentionDate.getDate() - MAX_CONVERSATION_AGE_DAYS);
+    conversations = conversations.filter(conv => 
+      new Date(conv.timestamp) > retentionDate
+    );
+    
+    // Encrypt data before storing
+    const encryptedData = encryptData(JSON.stringify(conversations));
+    localStorage.setItem(STORAGE_KEY, encryptedData);
   } catch (error) {
     console.error('Error saving conversation to storage', error);
   }
@@ -99,7 +124,10 @@ export function deleteConversationFromStorage(conversationId: string): void {
   try {
     const conversations = loadConversationsFromStorage();
     const updatedConversations = conversations.filter(c => c.id !== conversationId);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedConversations));
+    
+    // Encrypt data before storing
+    const encryptedData = encryptData(JSON.stringify(updatedConversations));
+    localStorage.setItem(STORAGE_KEY, encryptedData);
   } catch (error) {
     console.error('Error deleting conversation from storage', error);
   }
