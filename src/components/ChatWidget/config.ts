@@ -37,7 +37,8 @@ export interface ChatFeatures {
 
 export interface ChatRealtime {
   enabled: boolean;
-  ablyApiKey?: string;
+  // No longer storing API key directly here
+  authEndpoint?: string;
 }
 
 export type ChatEventType = 
@@ -103,6 +104,8 @@ export const defaultConfig: ChatWidgetConfig = {
     chatSuggestions: false
   },
   realtime: {
-    enabled: false
+    enabled: false,
+    // Using auth endpoint instead of direct API key
+    authEndpoint: '/api/chat-widget/token'
   }
 };

@@ -8,7 +8,8 @@ import { useChatState } from './hooks/useChatState';
 import useWidgetConfig from './hooks/useWidgetConfig';
 import { dispatchChatEvent } from './utils/events';
 import { initializeAbly, cleanupAbly } from './utils/ably';
-import { MessageSquare, Bell } from 'lucide-react';
+import { getAblyAuthUrl } from './services/ablyAuth';
+import { MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
@@ -36,8 +37,11 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   
   // Initialize Ably when config is loaded
   useEffect(() => {
-    if (!loading && config.realtime?.enabled && config.realtime?.ablyApiKey) {
-      initializeAbly(config.realtime.ablyApiKey)
+    if (!loading && config.realtime?.enabled && workspaceId) {
+      // Use token auth URL instead of API key
+      const authUrl = getAblyAuthUrl(workspaceId);
+      
+      initializeAbly(authUrl)
         .catch(err => console.error('Failed to initialize Ably:', err));
       
       // Clean up Ably when component unmounts
@@ -45,7 +49,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         cleanupAbly();
       };
     }
-  }, [loading, config.realtime?.enabled, config.realtime?.ablyApiKey]);
+  }, [loading, config.realtime?.enabled, workspaceId]);
   
   // Apply custom branding if available
   const widgetStyle = {

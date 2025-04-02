@@ -1,19 +1,27 @@
+
 import Ably from 'ably';
 
 // Client instance to ensure singleton pattern
 let ablyClient: Ably.Realtime | null = null;
 
 /**
- * Initialize Ably client with given API key
- * @param apiKey Ably API key
+ * Initialize Ably client with token auth
+ * @param authUrl URL to fetch tokens from
  */
-export const initializeAbly = async (apiKey: string): Promise<void> => {
+export const initializeAbly = async (authUrl: string): Promise<void> => {
   if (ablyClient) {
     return; // Already initialized
   }
   
   try {
-    ablyClient = new Ably.Realtime({ key: apiKey });
+    // Use token authentication instead of API key
+    ablyClient = new Ably.Realtime({
+      authUrl: authUrl,
+      authMethod: 'POST',
+      authHeaders: {
+        'Content-Type': 'application/json'
+      }
+    });
     
     // Wait for connection to be established
     return new Promise((resolve, reject) => {

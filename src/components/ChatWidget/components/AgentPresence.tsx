@@ -28,7 +28,7 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
       return;
     }
     
-    // Channel for workspace-level presence
+    // Channel for workspace-level presence with proper scoping
     const channelName = `workspace:${workspaceId}:presence`;
 
     // Fetch initial presence
