@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -6,8 +7,8 @@ import { ChevronLeft, Send, Paperclip, Smile, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Picker } from 'emoji-mart';
-import 'emoji-mart/css/emoji-mart.css';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
 
 interface Message {
   id: string;
@@ -150,6 +151,11 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleEmojiSelect = (emoji: any) => {
+    setMessageText(prev => prev + emoji.native);
+    setShowEmojiPicker(false);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -401,12 +407,13 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent side="top" align="end" className="w-auto p-0 border-none">
-                  <Picker 
-                    onSelect={handleEmojiSelect} 
-                    title="Pick an emoji" 
-                    emoji="point_up" 
-                    theme="light"
-                  />
+                  <div className="emoji-picker-container">
+                    <Picker 
+                      data={data} 
+                      onEmojiSelect={handleEmojiSelect}
+                      theme="light"
+                    />
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
