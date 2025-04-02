@@ -1,0 +1,199 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pullse Chat Widget Demo</title>
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      line-height: 1.6;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 2rem;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 1rem;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+    .config-form {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    input, select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background: #8B5CF6;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    button:hover {
+      background: #7c3aed;
+    }
+    .color-preview {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      margin-left: 10px;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pullse Chat Widget Embedding Demo</h1>
+  
+  <p>This page demonstrates how to embed the Pullse Chat Widget on any website with custom configuration.</p>
+  
+  <h2>Quick Installation</h2>
+  <p>Add this script to your website:</p>
+  
+  <pre><code>&lt;script&gt;
+  (function(w,d,s,o,f,js,fjs){
+    w['PullseWidget']=o;w[o]=w[o]||function(){(w[o].q=w[o].q||[]).push(arguments)};
+    js=d.createElement(s),fjs=d.getElementsByTagName(s)[0];
+    js.id=o;js.src=f;js.async=1;fjs.parentNode.insertBefore(js,fjs);
+  }(window,document,'script','pullse','https://cdn.pullse.io/embed.js'));
+  
+  pullse('init', { 
+    workspaceId: 'YOUR_WORKSPACE_ID',
+    welcomeMessage: 'How can we help you today?',
+    primaryColor: '#8B5CF6'
+  });
+&lt;/script&gt;</code></pre>
+
+  <div class="config-form">
+    <h2>Widget Configuration</h2>
+    <p>Customize the chat widget and see the changes live:</p>
+    
+    <div class="form-group">
+      <label for="workspaceId">Workspace ID (required):</label>
+      <input type="text" id="workspaceId" value="demo-workspace-123" />
+    </div>
+    
+    <div class="form-group">
+      <label for="welcomeMessage">Welcome Message:</label>
+      <input type="text" id="welcomeMessage" value="Welcome! How can we help you today?" />
+    </div>
+    
+    <div class="form-group">
+      <label for="primaryColor">Primary Color:</label>
+      <input type="color" id="primaryColor" value="#8B5CF6" />
+      <span class="color-preview" style="background-color: #8B5CF6;"></span>
+    </div>
+    
+    <div class="form-group">
+      <label for="position">Position:</label>
+      <select id="position">
+        <option value="bottom-right">Bottom Right</option>
+        <option value="bottom-left">Bottom Left</option>
+        <option value="top-right">Top Right</option>
+        <option value="top-left">Top Left</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="hideBranding" />
+        Hide Branding
+      </label>
+    </div>
+    
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="autoOpen" />
+        Auto-open Widget
+      </label>
+    </div>
+    
+    <button id="updateWidget">Update Widget</button>
+    <button id="reinitWidget">Reinitialize Widget</button>
+  </div>
+  
+  <h2>Generated Code</h2>
+  <pre><code id="generatedCode"></code></pre>
+
+  <script>
+    // Demo functionality (not the actual embed script)
+    document.getElementById('primaryColor').addEventListener('input', function(e) {
+      document.querySelector('.color-preview').style.backgroundColor = e.target.value;
+    });
+    
+    function generateCode() {
+      const workspaceId = document.getElementById('workspaceId').value;
+      const welcomeMessage = document.getElementById('welcomeMessage').value;
+      const primaryColor = document.getElementById('primaryColor').value;
+      const position = document.getElementById('position').value;
+      const hideBranding = document.getElementById('hideBranding').checked;
+      const autoOpen = document.getElementById('autoOpen').checked;
+      
+      let code = `<script>
+  (function(w,d,s,o,f,js,fjs){
+    w['PullseWidget']=o;w[o]=w[o]||function(){(w[o].q=w[o].q||[]).push(arguments)};
+    js=d.createElement(s),fjs=d.getElementsByTagName(s)[0];
+    js.id=o;js.src=f;js.async=1;fjs.parentNode.insertBefore(js,fjs);
+  }(window,document,'script','pullse','https://cdn.pullse.io/embed.js'));
+  
+  pullse('init', { 
+    workspaceId: '${workspaceId}',`;
+      
+      if (welcomeMessage) code += `\n    welcomeMessage: '${welcomeMessage}',`;
+      if (primaryColor) code += `\n    primaryColor: '${primaryColor}',`;
+      if (position !== 'bottom-right') code += `\n    position: '${position}',`;
+      if (hideBranding) code += `\n    hideBranding: true,`;
+      if (autoOpen) code += `\n    autoOpen: true,`;
+      
+      // Remove trailing comma
+      code = code.replace(/,\s*$/, '');
+      
+      code += `\n  });
+<\/script>`;
+      
+      document.getElementById('generatedCode').textContent = code;
+    }
+    
+    document.getElementById('updateWidget').addEventListener('click', generateCode);
+    generateCode();
+  </script>
+  
+  <!-- For the demo, we'll load a mock version of the embed script -->
+  <script>
+    document.getElementById('reinitWidget').addEventListener('click', function() {
+      // Mock initialization for demo purposes
+      const workspaceId = document.getElementById('workspaceId').value;
+      const welcomeMessage = document.getElementById('welcomeMessage').value;
+      const primaryColor = document.getElementById('primaryColor').value;
+      const position = document.getElementById('position').value;
+      const hideBranding = document.getElementById('hideBranding').checked;
+      const autoOpen = document.getElementById('autoOpen').checked;
+      
+      alert(`Widget would be initialized with:\nWorkspace ID: ${workspaceId}\nWelcome Message: ${welcomeMessage}\nPrimary Color: ${primaryColor}\nPosition: ${position}\nHide Branding: ${hideBranding}\nAuto-open: ${autoOpen}`);
+    });
+  </script>
+</body>
+</html>
