@@ -51,7 +51,11 @@ export type ChatEventType =
   | 'chat:messageReceived'
   | 'contact:initiatedChat'
   | 'contact:formCompleted'
-  | 'message:reacted';
+  | 'message:reacted'
+  | 'chat:typingStarted'
+  | 'chat:typingStopped'
+  | 'message:fileUploaded'
+  | 'chat:ended';
 
 export interface ChatEventPayload {
   type: ChatEventType;
@@ -68,6 +72,10 @@ export interface ChatWidgetConfig {
   realtime?: ChatRealtime;
   sessionId?: string;
   onEvent?: (event: ChatEventPayload) => void;
+  // Added to support advanced event subscription
+  eventHandlers?: {
+    [key in ChatEventType]?: (payload: ChatEventPayload) => void;
+  };
 }
 
 export const defaultConfig: ChatWidgetConfig = {

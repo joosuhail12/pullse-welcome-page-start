@@ -6,6 +6,8 @@
  * with customizable configuration options.
  */
 
+import { ChatEventType, ChatEventPayload } from './config';
+
 interface PullseChatWidgetOptions {
   workspaceId: string;
   welcomeMessage?: string;
@@ -13,7 +15,13 @@ interface PullseChatWidgetOptions {
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
   hideBranding?: boolean;
   autoOpen?: boolean;
+  onEvent?: (event: ChatEventPayload) => void;
+  eventHandlers?: {
+    [key in ChatEventType]?: (payload: ChatEventPayload) => void;
+  };
 }
+
+type EventCallback = (payload: ChatEventPayload) => void;
 
 class PullseChatWidgetLoader {
   private options: PullseChatWidgetOptions;
@@ -21,6 +29,7 @@ class PullseChatWidgetLoader {
   private styleElement: HTMLStyleElement | null = null;
   private containerElement: HTMLDivElement | null = null;
   private initialized = false;
+  private eventListeners: Map<string, EventCallback[]> = new Map();
 
   constructor(options: PullseChatWidgetOptions) {
     // Set default options
@@ -124,6 +133,31 @@ class PullseChatWidgetLoader {
   }
 
   private loadWidget(): void {
+    // Handle widget events
+    const onEvent = (event: ChatEventPayload) => {
+      // Call the main onEvent handler if provided
+      if (this.options.onEvent) {
+        try {
+          this.options.onEvent(event);
+        } catch (e) {
+          console.error('Error in onEvent handler:', e);
+        }
+      }
+      
+      // Call specific event handlers if provided
+      const specificHandler = this.options.eventHandlers?.[event.type as ChatEventType];
+      if (specificHandler) {
+        try {
+          specificHandler(event);
+        } catch (e) {
+          console.error(`Error in ${event.type} handler:`, e);
+        }
+      }
+      
+      // Dispatch to registered listeners
+      this.dispatchToListeners(event);
+    };
+    
     // Create global config object
     (window as any).__PULLSE_CHAT_CONFIG__ = {
       workspaceId: this.options.workspaceId,
@@ -132,7 +166,9 @@ class PullseChatWidgetLoader {
         primaryColor: this.options.primaryColor,
         showBrandingBar: !this.options.hideBranding
       },
-      autoOpen: this.options.autoOpen
+      autoOpen: this.options.autoOpen,
+      onEvent: onEvent,
+      eventHandlers: this.options.eventHandlers
     };
     
     // Load the widget bundle
@@ -148,13 +184,102 @@ class PullseChatWidgetLoader {
     
     document.body.appendChild(this.scriptElement);
   }
+  
+  /**
+   * Subscribe to widget events
+   * @param eventType Event type to subscribe to, or 'all' for all events
+   * @param callback Function to call when event is triggered
+   * @returns Function to unsubscribe
+   */
+  public on(eventType: ChatEventType | 'all', callback: EventCallback): () => void {
+    const key = eventType;
+    
+    if (!this.eventListeners.has(key)) {
+      this.eventListeners.set(key, []);
+    }
+    
+    this.eventListeners.get(key)!.push(callback);
+    
+    // Return unsubscribe function
+    return () => this.off(eventType, callback);
+  }
+  
+  /**
+   * Unsubscribe from widget events
+   * @param eventType Event type to unsubscribe from
+   * @param callback Optional callback to remove (if not provided, removes all callbacks for event)
+   */
+  public off(eventType: ChatEventType | 'all', callback?: EventCallback): void {
+    const key = eventType;
+    
+    if (!this.eventListeners.has(key)) {
+      return;
+    }
+    
+    if (callback) {
+      // Remove specific callback
+      const listeners = this.eventListeners.get(key)!;
+      const index = listeners.indexOf(callback);
+      if (index !== -1) {
+        listeners.splice(index, 1);
+      }
+    } else {
+      // Remove all callbacks for this event
+      this.eventListeners.delete(key);
+    }
+  }
+  
+  /**
+   * Dispatch event to registered listeners
+   */
+  private dispatchToListeners(event: ChatEventPayload): void {
+    // Dispatch to specific event listeners
+    const listeners = this.eventListeners.get(event.type as ChatEventType);
+    if (listeners) {
+      listeners.forEach(callback => {
+        try {
+          callback(event);
+        } catch (e) {
+          console.error(`Error in ${event.type} listener:`, e);
+        }
+      });
+    }
+    
+    // Dispatch to 'all' event listeners
+    const allListeners = this.eventListeners.get('all');
+    if (allListeners) {
+      allListeners.forEach(callback => {
+        try {
+          callback(event);
+        } catch (e) {
+          console.error(`Error in 'all' listener:`, e);
+        }
+      });
+    }
+  }
 }
 
 // Create global Pullse object
-(window as any).Pullse = {
-  initChatWidget: (options: PullseChatWidgetOptions) => {
-    return new PullseChatWidgetLoader(options);
+(window as any).Pullse = (window as any).Pullse || {};
+(window as any).Pullse.initChatWidget = (options: PullseChatWidgetOptions) => {
+  return new PullseChatWidgetLoader(options);
+};
+
+// Add event API to global Pullse object
+(window as any).Pullse.on = (eventType: ChatEventType | 'all', callback: EventCallback) => {
+  if (!(window as any).__PULLSE_CHAT_INSTANCE__) {
+    console.error('Pullse Chat Widget not initialized');
+    return () => {};
   }
+  return (window as any).__PULLSE_CHAT_INSTANCE__.on(eventType, callback);
+};
+
+(window as any).Pullse.off = (eventType: ChatEventType | 'all', callback?: EventCallback) => {
+  if (!(window as any).__PULLSE_CHAT_INSTANCE__) {
+    console.error('Pullse Chat Widget not initialized');
+    return;
+  }
+  (window as any).__PULLSE_CHAT_INSTANCE__.off(eventType, callback);
 };
 
 // Export for ESM environments

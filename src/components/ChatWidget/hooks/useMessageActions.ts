@@ -80,19 +80,30 @@ export function useMessageActions(
       
       // Stop typing indicator when sending a message
       sendTypingIndicator(chatChannelName, sessionId, 'stop');
+      // Dispatch typing stopped event
+      dispatchChatEvent('chat:typingStopped', { userId: sessionId }, config);
     } else {
       // Fallback to the original behavior
       if (setIsTyping) {
         setIsTyping(true);
         
+        // Dispatch typing started event for agent
+        dispatchChatEvent('chat:typingStarted', { userId: 'agent' }, config);
+        
         setTimeout(() => {
           setIsTyping(false);
+          
+          // Dispatch typing stopped event for agent
+          dispatchChatEvent('chat:typingStopped', { userId: 'agent' }, config);
           
           const systemMessage = createSystemMessage(
             'Thank you for your message. How else can I assist you today?'
           );
           
           setMessages(prev => [...prev, systemMessage]);
+          
+          // Dispatch message received event
+          dispatchChatEvent('chat:messageReceived', { message: systemMessage }, config);
           
           // Process the system message (notification, event dispatch, etc)
           processSystemMessage(systemMessage, chatChannelName, sessionId, config);
@@ -106,7 +117,10 @@ export function useMessageActions(
     if (config?.realtime?.enabled) {
       sendTypingIndicator(chatChannelName, sessionId, 'start');
     }
-  }, [chatChannelName, config?.realtime?.enabled, sessionId]);
+    
+    // Dispatch typing started event
+    dispatchChatEvent('chat:typingStarted', { userId: sessionId }, config);
+  }, [chatChannelName, config, sessionId]);
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFileError(null);
@@ -153,8 +167,13 @@ export function useMessageActions(
     
     setMessages([...messages, fileMessage]);
     
-    // Dispatch message sent event for file
-    dispatchChatEvent('chat:messageSent', { message: fileMessage, isFile: true }, config);
+    // Dispatch file uploaded event
+    dispatchChatEvent('message:fileUploaded', { 
+      message: fileMessage,
+      fileName: sanitizedFileName,
+      fileSize: file.size,
+      fileType: file.type
+    }, config);
     
     if (setHasUserSentMessage) {
       setHasUserSentMessage(true);
@@ -181,6 +200,9 @@ export function useMessageActions(
         
         setMessages(prev => [...prev, systemMessage]);
         
+        // Dispatch message received event
+        dispatchChatEvent('chat:messageReceived', { message: systemMessage }, config);
+        
         // Process the system message (notification, event dispatch, etc)
         processSystemMessage(systemMessage, chatChannelName, sessionId, config);
       }, 1000);
@@ -198,7 +220,10 @@ export function useMessageActions(
     
     setMessages(prev => [...prev, statusMessage]);
     
-    // Dispatch chat close event
+    // Dispatch chat ended event
+    dispatchChatEvent('chat:ended', { endedByUser: true }, config);
+    
+    // Also dispatch chat close event for backward compatibility
     dispatchChatEvent('chat:close', { endedByUser: true }, config);
     
     // If realtime is enabled, publish the end chat event

@@ -27,15 +27,18 @@ const HomeView = ({
   const handleStartChat = () => {
     if (config.preChatForm.enabled) {
       setShowForm(true);
+      // Dispatch form shown event
+      dispatchChatEvent('contact:initiatedChat', { showForm: true }, config);
     } else {
-      dispatchChatEvent('contact:initiatedChat', undefined, config);
+      dispatchChatEvent('contact:initiatedChat', { showForm: false }, config);
       onStartChat({});
     }
   };
   
   // Handle form completion
   const handleFormComplete = (formData: Record<string, string>) => {
-    dispatchChatEvent('contact:initiatedChat', undefined, config);
+    dispatchChatEvent('contact:formCompleted', { formData }, config);
+    dispatchChatEvent('contact:initiatedChat', { formData }, config);
     onStartChat(formData);
   };
   
