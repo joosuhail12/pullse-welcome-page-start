@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { Conversation } from '../types';
-import { saveConversationToStorage, loadConversationsFromStorage } from '../utils/storage';
+import { saveConversationToStorage, loadConversationsFromStorage, clearConversationsFromStorage } from '../utils/storage';
+import { logout, checkSessionValidity } from '../utils/security';
 
 type ViewState = 'home' | 'messages' | 'chat';
 
@@ -11,8 +12,16 @@ export function useChatState() {
   const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(undefined);
   
   // Load any existing conversations when component mounts
+  // and verify session validity
   useEffect(() => {
-    loadConversationsFromStorage();
+    if (checkSessionValidity()) {
+      loadConversationsFromStorage();
+    } else {
+      // If session is invalid, redirect to home view
+      setViewState('home');
+      // Reset active conversation
+      setActiveConversation(null);
+    }
   }, []);
 
   const handleStartChat = (formData?: Record<string, string>) => {
@@ -67,6 +76,24 @@ export function useChatState() {
     saveConversationToStorage(updatedConversation);
   };
 
+  // Handle logout and session invalidation
+  const handleLogout = () => {
+    // Clear active conversation
+    setActiveConversation(null);
+    
+    // Return to home view
+    setViewState('home');
+    
+    // Clear form data
+    setUserFormData(undefined);
+    
+    // Invalidate the session
+    logout();
+    
+    // Optionally clear conversation history (depending on requirements)
+    // clearConversationsFromStorage();
+  };
+
   return {
     viewState,
     activeConversation,
@@ -75,6 +102,7 @@ export function useChatState() {
     handleChangeView,
     handleSelectConversation,
     handleUpdateConversation,
+    handleLogout,
     userFormData,
   };
 }

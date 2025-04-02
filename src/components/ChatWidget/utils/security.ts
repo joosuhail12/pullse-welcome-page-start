@@ -1,5 +1,5 @@
 
-import { getChatSessionId } from './cookies';
+import { getChatSessionId, invalidateSession, refreshSessionExpiry } from './cookies';
 
 // Store rate limiting data in memory
 const rateLimitStore: Record<string, { count: number; resetTime: number }> = {};
@@ -53,6 +53,9 @@ function simpleHash(str: string): string {
 export function generateCsrfToken(): string {
   const sessionId = getChatSessionId();
   if (!sessionId) return '';
+  
+  // Refresh session expiry on token generation
+  refreshSessionExpiry();
   
   // Secret should ideally be stored securely on the server
   // For client-side demo purposes only
@@ -146,4 +149,27 @@ export function signMessage(message: string, timestamp: number): string {
 export function verifyMessageSignature(message: string, timestamp: number, signature: string): boolean {
   const generatedSignature = signMessage(message, timestamp);
   return generatedSignature === signature;
+}
+
+/**
+ * Logout user and invalidate session
+ */
+export function logout(): void {
+  // Clear rate limiting data for the current session
+  const sessionId = getChatSessionId();
+  if (sessionId && rateLimitStore[sessionId]) {
+    delete rateLimitStore[sessionId];
+  }
+  
+  // Invalidate the session
+  invalidateSession();
+}
+
+/**
+ * Check if the session has expired and needs renewal
+ * @returns True if session is valid, false otherwise
+ */
+export function checkSessionValidity(): boolean {
+  const sessionId = getChatSessionId();
+  return !!sessionId;
 }
