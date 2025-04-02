@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { ChatWidgetConfig } from '../config';
 import PreChatForm from './PreChatForm';
 
@@ -12,7 +12,8 @@ interface PreChatFormSectionProps {
 // Use memo to prevent unnecessary re-renders
 const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: PreChatFormSectionProps) => {
   const [mounted, setMounted] = useState(false);
-  const [handledSubmission, setHandledSubmission] = useState(false);
+  const handledSubmissionRef = useRef(false);
+  const [submittedData, setSubmittedData] = useState<Record<string, string> | null>(null);
   
   // Subtle animation on mount with a slight delay for better sequencing
   useEffect(() => {
@@ -25,27 +26,34 @@ const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: P
     };
   }, []);
   
-  // Reset submission handling if processing state changes
+  // Reset submission handling when processing state changes
   useEffect(() => {
     if (!isProcessingForm) {
-      setHandledSubmission(false);
+      handledSubmissionRef.current = false;
     }
   }, [isProcessingForm]);
   
   // Memoize the handler to prevent recreation on each render
   const handleFormSubmit = useCallback((formData: Record<string, string>) => {
     // Prevent multiple submissions
-    if (isProcessingForm || handledSubmission) {
+    if (isProcessingForm || handledSubmissionRef.current) {
       console.log("Preventing duplicate form submission");
       return;
     }
     
-    console.log("PreChatFormSection handling form submission");
-    setHandledSubmission(true);
+    // Check for duplicate data
+    if (submittedData && JSON.stringify(submittedData) === JSON.stringify(formData)) {
+      console.log("Same form data submitted again, ignoring");
+      return;
+    }
     
-    // Call the callback directly with the form data
+    console.log("PreChatFormSection handling form submission");
+    handledSubmissionRef.current = true;
+    setSubmittedData(formData);
+    
+    // Call the callback with the form data
     onFormComplete(formData);
-  }, [onFormComplete, isProcessingForm, handledSubmission]);
+  }, [onFormComplete, isProcessingForm, submittedData]);
   
   // Apply custom branding if available
   const themeStyles = {

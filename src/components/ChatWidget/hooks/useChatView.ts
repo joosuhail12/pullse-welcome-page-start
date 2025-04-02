@@ -1,5 +1,5 @@
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { useChatMessages } from './useChatMessages';
@@ -25,6 +25,10 @@ export function useChatView({
   userFormData,
   setUserFormData
 }: UseChatViewProps) {
+  // Use ref to prevent stale closures
+  const conversationRef = useRef(conversation);
+  conversationRef.current = conversation;
+
   // Chat messages hook
   const {
     messages,
@@ -77,9 +81,9 @@ export function useChatView({
     messages,
     (updatedMessages) => {
       onUpdateConversation({
-        ...conversation,
+        ...conversationRef.current,
         messages: typeof updatedMessages === 'function' 
-          ? updatedMessages(conversation.messages || []) 
+          ? updatedMessages(conversationRef.current.messages || []) 
           : updatedMessages
       });
     },

@@ -1,5 +1,5 @@
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useRef } from 'react';
 import { Message } from '../types';
 import { ChatWidgetConfig } from '../config';
 import MessageInputSection from './MessageInputSection';
@@ -66,9 +66,20 @@ const ChatContent = memo<ChatContentProps>(({
     isProcessingForm
   });
   
+  // Track last form submission to prevent duplicates
+  const lastFormDataRef = useRef<Record<string, string> | null>(null);
+  
   // Memoize the form completion handler to prevent unnecessary re-renders
   const memoizedHandleFormComplete = useCallback((formData: Record<string, string>) => {
+    // Prevent duplicate submissions
+    if (lastFormDataRef.current && 
+        JSON.stringify(lastFormDataRef.current) === JSON.stringify(formData)) {
+      console.log("Duplicate form data detected, ignoring");
+      return;
+    }
+    
     console.log("Form complete handler called with data:", formData);
+    lastFormDataRef.current = formData;
     handleFormComplete(formData);
   }, [handleFormComplete]);
   

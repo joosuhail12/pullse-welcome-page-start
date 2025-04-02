@@ -22,6 +22,7 @@ export function useChatFormHandling({
 }: UseChatFormHandlingProps) {
   const [isProcessingForm, setIsProcessingForm] = useState(false);
   const formSubmissionRef = useRef(false);
+  const lastSubmittedDataRef = useRef<Record<string, string> | null>(null);
   
   // Use the pre-chat form hook with stable references
   const { showPreChatForm, hidePreChatForm } = usePreChatForm({ 
@@ -34,6 +35,13 @@ export function useChatFormHandling({
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     console.log("Form submission in useChatFormHandling with data:", formData);
     
+    // Check for duplicate submission with same data
+    if (lastSubmittedDataRef.current && 
+        JSON.stringify(lastSubmittedDataRef.current) === JSON.stringify(formData)) {
+      console.log("Preventing duplicate submission with same data");
+      return;
+    }
+    
     // Use ref to check if submission is already in progress
     if (formSubmissionRef.current || isProcessingForm) {
       console.log("Form submission already in progress, ignoring duplicate submission");
@@ -43,12 +51,14 @@ export function useChatFormHandling({
     // Set both state and ref to prevent multiple submissions
     formSubmissionRef.current = true;
     setIsProcessingForm(true);
+    lastSubmittedDataRef.current = formData;
     
     // First hide the form to prevent rendering issues
     hidePreChatForm();
     
-    // Use setTimeout to batch state updates
-    setTimeout(() => {
+    // Wrap in requestAnimationFrame to ensure state updates are batched
+    requestAnimationFrame(() => {
+      // After hiding the form, update user data and conversation
       if (setUserFormData) {
         setUserFormData(formData);
       }
@@ -67,7 +77,7 @@ export function useChatFormHandling({
         setIsProcessingForm(false);
         formSubmissionRef.current = false;
       }, 500);
-    }, 0);
+    });
   }, [conversation, config, hidePreChatForm, isProcessingForm, onUpdateConversation, setUserFormData]);
 
   return {
