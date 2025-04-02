@@ -5,6 +5,7 @@ export function createLauncherButton(config: WidgetConfig, loadWidgetCallback: (
   const launcherButton = document.createElement('button');
   launcherButton.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
   launcherButton.className = 'chat-widget-launcher';
+  launcherButton.id = 'pullse-chat-widget-launcher';
   
   // Create button style
   const buttonStyle = `
@@ -37,10 +38,18 @@ export function createLauncherButton(config: WidgetConfig, loadWidgetCallback: (
     launcherButton.setAttribute('style', buttonStyle);
   });
   
-  // Add click handler to load the widget
-  launcherButton.addEventListener('click', () => {
+  // Add click handler to load the widget - ensure it's properly connected
+  launcherButton.addEventListener('click', (e) => {
+    e.preventDefault();
+    console.log('Chat widget launcher clicked');
+    
+    // Call the callback immediately
     loadWidgetCallback();
-    document.body.removeChild(launcherButton);
+    
+    // Then remove the button from the DOM
+    if (document.body.contains(launcherButton)) {
+      document.body.removeChild(launcherButton);
+    }
   });
   
   return launcherButton;

@@ -22,7 +22,9 @@ import { ChatWidgetInterface, WidgetConfig } from './embed/types';
       // Merge custom config with the one from data attributes
       const mergedConfig = mergeConfigs(config, customConfig);
       
-      loadWidgetResources();
+      // Instead of loading resources again, we'll now directly initialize the widget
+      // We'll return the merged config for reference
+      console.log('Initializing chat widget with config:', mergedConfig);
       return mergedConfig;
     },
     open: () => console.warn('Chat widget is still loading...'),
@@ -37,20 +39,36 @@ import { ChatWidgetInterface, WidgetConfig } from './embed/types';
   const shouldLoadImmediately = WIDGET_SCRIPT.getAttribute('data-auto-load') === 'true';
   
   const loadWidget = () => {
+    console.log('Loading chat widget...');
+    
     // Load the actual widget bundle
     const scriptEl = loadWidgetResources();
     
     // Initialize the widget once loaded
     scriptEl.onload = () => {
-      if (window.ChatWidget && window.ChatWidget.init) {
-        window.ChatWidget.init(config);
+      console.log('Chat widget resources loaded successfully');
+      try {
+        if (window.ChatWidget && window.ChatWidget.init) {
+          const result = window.ChatWidget.init(config);
+          console.log('Chat widget initialized successfully', result);
+        } else {
+          console.error('Chat widget initialization failed - window.ChatWidget or init method not found');
+        }
+      } catch (error) {
+        console.error('Error initializing chat widget:', error);
       }
+    };
+
+    scriptEl.onerror = (error) => {
+      console.error('Failed to load chat widget resources:', error);
     };
   };
 
   if (shouldLoadImmediately) {
+    console.log('Auto-loading chat widget');
     loadWidget();
   } else {
+    console.log('Creating launcher button for chat widget');
     // Create a simple launcher button that will load the widget on click
     const launcherButton = createLauncherButton(config, loadWidget);
     
@@ -58,6 +76,7 @@ import { ChatWidgetInterface, WidgetConfig } from './embed/types';
     document.body.appendChild(launcherButton);
     
     // Replace the init function to remove the launcher
+    const originalInit = window.ChatWidget.init;
     window.ChatWidget.init = (customConfig = {}) => {
       if (document.body.contains(launcherButton)) {
         document.body.removeChild(launcherButton);
@@ -66,8 +85,10 @@ import { ChatWidgetInterface, WidgetConfig } from './embed/types';
       // Merge custom config with the one from data attributes
       const mergedConfig = mergeConfigs(config, customConfig);
       
-      loadWidget();
-      return mergedConfig;
+      return originalInit(mergedConfig);
     };
   }
+
+  // Log that the chat widget script has been successfully loaded
+  console.log('Chat widget embed script loaded successfully');
 })();
