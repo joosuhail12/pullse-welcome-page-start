@@ -6,7 +6,6 @@ import { defaultConfig, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
 import { dispatchChatEvent } from '../utils/events';
 import LazyImage from '../components/LazyImage';
-import TypingIndicator from '../components/TypingIndicator';
 
 interface HomeViewProps {
   onStartChat: (formData?: Record<string, string>) => void;
@@ -18,7 +17,6 @@ const HomeView = ({
   config = defaultConfig 
 }: HomeViewProps) => {
   const [mounted, setMounted] = useState(false);
-  const [typingIndex, setTypingIndex] = useState(0);
   const [typingComplete, setTypingComplete] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
@@ -62,28 +60,11 @@ const HomeView = ({
   useEffect(() => {
     setMounted(true);
     
-    if (config.welcomeMessage && !typingComplete) {
-      const initialDelay = setTimeout(() => {
-        const interval = setInterval(() => {
-          setTypingIndex(prev => {
-            if (prev < config.welcomeMessage.length) {
-              return prev + 1;
-            } else {
-              setTypingComplete(true);
-              clearInterval(interval);
-              return prev;
-            }
-          });
-        }, 40); // Slightly faster typing speed for better UX
-        
-        return () => clearInterval(interval);
-      }, 300); // Slightly shorter delay before typing starts
-      
-      return () => clearTimeout(initialDelay);
+    if (config.welcomeMessage) {
+      // Immediately set typing as complete
+      setTypingComplete(true);
     }
-    
-    return undefined;
-  }, [config.welcomeMessage, typingIndex, typingComplete]);
+  }, [config.welcomeMessage]);
 
   // Ensure proper focus management for accessibility
   useEffect(() => {
@@ -117,12 +98,7 @@ const HomeView = ({
           ref={welcomeTextRef}
           className={`text-2xl font-bold bg-gradient-to-r ${themeStyles.headerGradient} bg-clip-text text-transparent overflow-hidden focus:outline-none focus:ring-2 focus:ring-vivid-purple-300 focus:ring-offset-2 rounded-md`}
         >
-          {typingComplete 
-            ? config.welcomeMessage 
-            : config.welcomeMessage?.substring(0, typingIndex) || ''}
-          {!typingComplete && (
-            <span className="inline-block w-1 h-5 ml-0.5 bg-vivid-purple-500 opacity-75 animate-pulse"></span>
-          )}
+          {config.welcomeMessage || ''}
         </h2>
         
         <div 
@@ -205,17 +181,6 @@ const HomeView = ({
           <span className="font-medium">Start a conversation</span>
         </Button>
       </div>
-
-      {/* Optional typing indicator to show agents are online */}
-      {typingComplete && config.features?.typingIndicators && (
-        <div 
-          className="mt-3 transition-all duration-500 ease-in-out"
-          style={{ opacity: typingComplete ? 0.8 : 0 }}
-          aria-hidden="true"
-        >
-          <TypingIndicator />
-        </div>
-      )}
     </div>
   );
 };
