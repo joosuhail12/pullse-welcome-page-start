@@ -1,10 +1,16 @@
 
-import React, { memo } from 'react';
+import React, { useCallback } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
+import MessageInputSection from '../components/MessageInputSection';
 import ChatViewHeader from '../components/ChatViewHeader';
-import ChatContent from '../components/ChatContent';
-import { useChatView } from '../hooks/useChatView';
+import PreChatFormSection from '../components/PreChatFormSection';
+import MessagesSection from '../components/MessagesSection';
+import { useChatMessages } from '../hooks/useChatMessages';
+import { useMessageReactions } from '../hooks/useMessageReactions';
+import { useMessageSearch } from '../hooks/useMessageSearch';
+import { usePreChatForm } from '../hooks/usePreChatForm';
+import { dispatchChatEvent } from '../utils/events';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -16,7 +22,7 @@ interface ChatViewProps {
   setUserFormData?: (data: Record<string, string>) => void;
 }
 
-const ChatView = memo(({ 
+const ChatView = ({ 
   conversation, 
   onBack, 
   onUpdateConversation, 
@@ -25,11 +31,17 @@ const ChatView = memo(({
   userFormData,
   setUserFormData
 }: ChatViewProps) => {
-  // Use our custom hook to handle all the chat view logic
+  const [showSearch, setShowSearch] = React.useState(false);
+  
+  // Use the pre-chat form hook
+  const { showPreChatForm } = usePreChatForm({ 
+    conversation, 
+    config, 
+    userFormData 
+  });
+
+  // Chat messages hook
   const {
-    showSearch,
-    toggleSearch,
-    showPreChatForm,
     messages,
     messageText,
     setMessageText,
@@ -41,28 +53,90 @@ const ChatView = memo(({
     handleEndChat,
     remoteIsTyping,
     readReceipts,
-    handleMessageReaction,
+    loadPreviousMessages,
+    isLoadingMore
+  } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
+
+  // Message reactions hook
+  const {
+    handleMessageReaction
+  } = useMessageReactions(
+    messages,
+    message => setMessages(message),
+    `conversation:${conversation.id}`,
+    conversation.sessionId || '',
+    config
+  );
+
+  // Message search hook
+  const {
     searchTerm,
+    setSearchTerm,
     searchMessages,
     clearSearch,
     highlightText,
     messageIds,
-    isSearching,
-    agentAvatar,
-    userAvatar,
-    handleLoadMoreMessages,
-    handleFormComplete,
-    hasMoreMessages,
-    isLoadingMore,
-    isProcessingForm
-  } = useChatView({
-    conversation,
-    onUpdateConversation,
-    config,
-    playMessageSound,
-    userFormData,
-    setUserFormData
-  });
+    isSearching
+  } = useMessageSearch(messages);
+
+  // Function to share messages state with parent components
+  const setMessages = (updatedMessages: React.SetStateAction<typeof messages>) => {
+    if (typeof updatedMessages === 'function') {
+      const newMessages = updatedMessages(messages);
+      onUpdateConversation({
+        ...conversation,
+        messages: newMessages
+      });
+    } else {
+      onUpdateConversation({
+        ...conversation,
+        messages: updatedMessages
+      });
+    }
+  };
+
+  // Toggle search bar
+  const toggleSearch = () => {
+    setShowSearch(prev => !prev);
+    if (showSearch) {
+      clearSearch();
+    }
+  };
+
+  // Handle loading previous messages for infinite scroll
+  const handleLoadMoreMessages = useCallback(async () => {
+    if (!loadPreviousMessages) return;
+    
+    try {
+      await loadPreviousMessages();
+    } catch (error) {
+      console.error("Error loading more messages:", error);
+    }
+  }, [loadPreviousMessages]);
+
+  // Handle form submission
+  const handleFormComplete = (formData: Record<string, string>) => {
+    // Update the parent form data if callback exists
+    if (setUserFormData) {
+      setUserFormData(formData);
+    }
+    
+    // Flag the conversation as having identified the contact
+    onUpdateConversation({
+      ...conversation,
+      contactIdentified: true
+    });
+    
+    // Dispatch form completed event
+    dispatchChatEvent('contact:formCompleted', { formData }, config);
+  };
+
+  // Get avatar URLs from config
+  const agentAvatar = conversation.agentInfo?.avatar || config?.branding?.avatarUrl;
+  const userAvatar = undefined; // Could be set from user profile if available
+
+  // Determine if there could be more messages to load
+  const hasMoreMessages = messages.length >= 20; // Simplified check for more messages
 
   return (
     <div 
@@ -92,37 +166,42 @@ const ChatView = memo(({
         showSearchFeature={!!config?.features?.searchMessages}
       />
       
-      <ChatContent 
-        showPreChatForm={showPreChatForm}
-        messages={messages}
-        isTyping={isTyping}
-        remoteIsTyping={remoteIsTyping}
+      {showPreChatForm ? (
+        <PreChatFormSection 
+          config={config} 
+          onFormComplete={handleFormComplete} 
+        />
+      ) : (
+        <MessagesSection 
+          messages={messages}
+          isTyping={isTyping}
+          remoteIsTyping={remoteIsTyping}
+          setMessageText={setMessageText}
+          readReceipts={readReceipts}
+          onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
+          searchResults={messageIds}
+          highlightMessage={highlightText}
+          searchTerm={searchTerm}
+          agentAvatar={agentAvatar}
+          userAvatar={userAvatar}
+          onScrollTop={handleLoadMoreMessages}
+          hasMoreMessages={hasMoreMessages}
+          isLoadingMore={isLoadingMore}
+        />
+      )}
+      
+      <MessageInputSection
         messageText={messageText}
         setMessageText={setMessageText}
-        readReceipts={readReceipts}
-        onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
-        searchResults={messageIds}
-        highlightMessage={highlightText}
-        searchTerm={searchTerm}
-        agentAvatar={agentAvatar}
-        userAvatar={userAvatar}
-        onScrollTop={handleLoadMoreMessages}
-        hasMoreMessages={hasMoreMessages}
-        isLoadingMore={isLoadingMore}
         handleSendMessage={handleSendMessage}
         handleFileUpload={handleFileUpload}
         handleEndChat={handleEndChat}
         hasUserSentMessage={hasUserSentMessage}
-        handleUserTyping={handleUserTyping}
-        handleFormComplete={handleFormComplete}
-        config={config}
-        isProcessingForm={isProcessingForm}
+        onTyping={handleUserTyping}
+        disabled={showPreChatForm}
       />
     </div>
   );
-});
-
-// Adding display name for debugging purposes
-ChatView.displayName = 'ChatView';
+};
 
 export default ChatView;

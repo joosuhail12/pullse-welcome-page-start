@@ -1,19 +1,8 @@
 
-import { validateMessage, validateFile, sanitizeFileName } from './validation';
-
-// Sanitize user input to prevent XSS
-export function sanitizeInput(input: string): string {
-  if (!input) return '';
-  
-  // Basic sanitization - remove script tags and potentially dangerous content
-  return input
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .trim();
-}
+import { validateFormData, validateMessage, validateFile, sanitizeFileName } from './validation';
 
 // Validate a specific field based on its type and requirements
 export function validateField(name: string, value: string, isRequired: boolean): string | null {
-  if (value === undefined || value === null) value = ''; // Handle null/undefined values
   const sanitized = value.trim();
   
   if (isRequired && !sanitized) {
@@ -39,28 +28,4 @@ export function validateField(name: string, value: string, isRequired: boolean):
   return null;
 }
 
-// Validate all form data at once and sanitize inputs
-export function validateFormData(formData: Record<string, string>): Record<string, string> {
-  // Create a new object to hold sanitized values
-  const sanitizedData: Record<string, string> = {};
-  
-  // Check if formData is valid
-  if (!formData || typeof formData !== 'object') {
-    console.error('Invalid form data provided:', formData);
-    return {};
-  }
-  
-  // Sanitize each field
-  Object.keys(formData).forEach(key => {
-    const value = formData[key];
-    if (value !== undefined && value !== null) {
-      sanitizedData[key] = sanitizeInput(value);
-    } else {
-      sanitizedData[key] = '';
-    }
-  });
-  
-  return sanitizedData;
-}
-
-export { validateMessage, validateFile, sanitizeFileName };
+export { validateFormData, validateMessage, validateFile, sanitizeFileName };

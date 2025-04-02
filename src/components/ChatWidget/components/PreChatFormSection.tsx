@@ -1,32 +1,24 @@
 
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChatWidgetConfig } from '../config';
 import PreChatForm from './PreChatForm';
 
 interface PreChatFormSectionProps {
   config?: ChatWidgetConfig;
   onFormComplete: (formData: Record<string, string>) => void;
-  isProcessingForm?: boolean;
 }
 
-const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: PreChatFormSectionProps) => {
+const PreChatFormSection = ({ config, onFormComplete }: PreChatFormSectionProps) => {
   const [mounted, setMounted] = useState(false);
   
   // Subtle animation on mount with a slight delay for better sequencing
   useEffect(() => {
     const timer = setTimeout(() => {
       setMounted(true);
-    }, 300);
+    }, 400);
     
     return () => clearTimeout(timer);
   }, []);
-  
-  // Prevent re-renders by memoizing the callback
-  const handleFormSubmit = useCallback((formData: Record<string, string>) => {
-    if (!isProcessingForm) {
-      onFormComplete(formData);
-    }
-  }, [onFormComplete, isProcessingForm]);
   
   // Apply custom branding if available
   const themeStyles = {
@@ -46,17 +38,12 @@ const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: P
       aria-label="Pre-chat form"
       tabIndex={0}
     >
-      {config && (
-        <PreChatForm 
-          config={config} 
-          onFormComplete={handleFormSubmit} 
-          isProcessingForm={isProcessingForm}
-        />
-      )}
+      <PreChatForm 
+        config={config} 
+        onFormComplete={onFormComplete} 
+      />
     </div>
   );
-});
-
-PreChatFormSection.displayName = 'PreChatFormSection';
+};
 
 export default PreChatFormSection;
