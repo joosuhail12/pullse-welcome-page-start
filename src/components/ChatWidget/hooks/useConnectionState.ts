@@ -6,10 +6,10 @@ type ConnectionState = 'connected' | 'disconnected' | 'suspended' | 'connecting'
 
 export function useConnectionState() {
   // Get the initial state or default to 'unknown'
-  const initialState = getConnectionState() as ConnectionState || 'unknown';
+  const initialState = getConnectionState() || 'unknown';
   
   // Initialize state with the proper value
-  const [connectionState, setConnectionState] = useState<ConnectionState>(initialState);
+  const [connectionState, setConnectionState] = useState<ConnectionState>(initialState as ConnectionState);
   const [isConnected, setIsConnected] = useState<boolean>(initialState === 'connected');
   
   // Handle connection state change

@@ -7,7 +7,7 @@ import TabBar from './components/TabBar';
 import { useChatState } from './hooks/useChatState';
 import useWidgetConfig from './hooks/useWidgetConfig';
 import { dispatchChatEvent } from './utils/events';
-import { initializeAbly, cleanupAbly, getConnectionState } from './utils/ably';
+import { initializeAbly, cleanupAbly } from './utils/ably';
 import { getAblyAuthUrl } from './services/ablyAuth';
 import { MessageSquare, WifiOff, CloudOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,15 +15,15 @@ import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
 import { useConnectionState } from './hooks/useConnectionState';
-import { Toaster } from '@/components/ui/toaster';
 import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 import { getPendingMessageCount } from './utils/offlineQueue';
 
 interface ChatWidgetProps {
   workspaceId?: string;
 }
 
-export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
+export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
   const {
     viewState,
     activeConversation,
@@ -89,23 +89,21 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     }
   }, [isOpen, clearUnreadMessages]);
 
-  // Show loading state while config is being loaded
-  if (loading) {
-    return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
-  }
-
   // Toggles the chat widget open/closed
-  const toggleChat = () => {
-    const newIsOpen = !isOpen;
-    setIsOpen(newIsOpen);
-    
-    if (newIsOpen) {
-      dispatchChatEvent('chat:open', undefined, config);
-      clearUnreadMessages();
-    } else {
-      dispatchChatEvent('chat:close', undefined, config);
-    }
-  };
+  const toggleChat = useCallback(() => {
+    setIsOpen(prev => {
+      const newIsOpen = !prev;
+      
+      if (newIsOpen) {
+        dispatchChatEvent('chat:open', undefined, config);
+        clearUnreadMessages();
+      } else {
+        dispatchChatEvent('chat:close', undefined, config);
+      }
+      
+      return newIsOpen;
+    });
+  }, [config, clearUnreadMessages]);
 
   // Handle reconnection attempts
   const handleReconnect = useCallback(() => {
@@ -209,7 +207,12 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         </Button>
       </div>
     );
-  }, [config.branding?.primaryColor, config.realtime?.enabled, isConnected, isOpen, pendingMessages, unreadCount]);
+  }, [config.branding?.primaryColor, config.realtime?.enabled, isConnected, isOpen, pendingMessages, toggleChat, unreadCount]);
+
+  // Show loading state while config is being loaded
+  if (loading) {
+    return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
+  }
 
   return (
     <>
@@ -275,6 +278,9 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
       <Toaster />
     </>
   );
-};
+});
+
+// Add displayName for debugging and React DevTools
+ChatWidget.displayName = 'ChatWidget';
 
 export default ChatWidget;
