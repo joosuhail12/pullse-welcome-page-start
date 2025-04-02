@@ -5,6 +5,7 @@ import { subscribeToChannel, publishToChannel } from '../utils/ably';
 import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig } from '../config';
 import { getChatSessionId } from '../utils/cookies';
+import { processSystemMessage, sendTypingIndicator } from '../utils/messageHandlers';
 
 export function useRealTime(
   messages: Message[],
@@ -38,10 +39,7 @@ export function useRealTime(
     
     // Send typing:stop after 2 seconds of no typing
     const timeout = setTimeout(() => {
-      publishToChannel(chatChannelName, 'typing', {
-        status: 'stop',
-        userId: sessionId
-      });
+      sendTypingIndicator(chatChannelName, sessionId, 'stop');
     }, 2000);
     
     setTypingTimeout(timeout);
@@ -67,22 +65,8 @@ export function useRealTime(
             
             setMessages(prev => [...prev, newMessage]);
             
-            // Play sound notification if provided and chat is not visible
-            if (playMessageSound && document.visibilityState !== 'visible') {
-              playMessageSound();
-            }
-            
-            // Dispatch message received event
-            dispatchChatEvent('chat:messageReceived', { message: newMessage }, config);
-            
-            // Send read receipt after a short delay
-            setTimeout(() => {
-              publishToChannel(chatChannelName, 'read', {
-                messageId: newMessage.id,
-                userId: sessionId,
-                timestamp: new Date()
-              });
-            }, 2000);
+            // Process system message (sound, event, read receipt)
+            processSystemMessage(newMessage, chatChannelName, sessionId, config, playMessageSound);
           }
         }
       );
@@ -124,7 +108,7 @@ export function useRealTime(
         }
       };
 
-      // Add read receipt functionality for existing messages
+      // Process existing messages to send read receipts
       const processExistingMessages = () => {
         messages.forEach(message => {
           if (message.sender === 'system') {
@@ -163,26 +147,12 @@ export function useRealTime(
             
             const responseDelay = Math.floor(Math.random() * 400) + 200;
             setTimeout(() => {
-              const responses = [
-                "Thank you for your message. Is there anything else I can help with?",
-                "I appreciate your inquiry. Let me know if you need further assistance.",
-                "I've made a note of your request. Is there any other information you'd like to provide?",
-                "Thanks for sharing that information. Do you have any other questions?"
-              ];
+              const systemMessage = processNonRealtimeResponse(setMessages, config);
               
-              const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-              
-              const systemMessage: Message = {
-                id: `msg-${Date.now()}-system`,
-                text: randomResponse,
-                sender: 'system',
-                timestamp: new Date(),
-                type: 'text'
-              };
-              
-              setMessages(prev => [...prev, systemMessage]);
-              
-              // Dispatch message received event
+              // Process the system message (event dispatch, etc)
+              if (playMessageSound) {
+                playMessageSound();
+              }
               dispatchChatEvent('chat:messageReceived', { message: systemMessage }, config);
             }, responseDelay);
           }, typingDuration);
@@ -199,6 +169,19 @@ export function useRealTime(
       };
     }
   }, [hasUserSentMessage, config?.realtime?.enabled, chatChannelName, conversation.id, messages, sessionId, playMessageSound, sessionChannelName, setIsTyping, setMessages, clearTypingTimeoutCallback]);
+
+  // Helper function to create and add a non-realtime response
+  const processNonRealtimeResponse = (
+    setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+    config?: ChatWidgetConfig
+  ): Message => {
+    const { getRandomResponse, createSystemMessage } = require('../utils/messageHandlers');
+    const randomResponse = getRandomResponse();
+    const systemMessage = createSystemMessage(randomResponse);
+    
+    setMessages(prev => [...prev, systemMessage]);
+    return systemMessage;
+  };
 
   return {
     remoteIsTyping,

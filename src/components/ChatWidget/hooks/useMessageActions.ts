@@ -5,6 +5,12 @@ import { publishToChannel } from '../utils/ably';
 import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig } from '../config';
 import { getChatSessionId } from '../utils/cookies';
+import { 
+  createUserMessage, 
+  createSystemMessage, 
+  sendTypingIndicator, 
+  processSystemMessage 
+} from '../utils/messageHandlers';
 
 export function useMessageActions(
   messages: Message[],
@@ -20,13 +26,7 @@ export function useMessageActions(
   const handleSendMessage = useCallback(() => {
     if (!messageText.trim()) return;
     
-    const userMessage: Message = {
-      id: `msg-${Date.now()}-user`,
-      text: messageText,
-      sender: 'user',
-      timestamp: new Date(),
-      type: 'text'
-    };
+    const userMessage = createUserMessage(messageText);
     
     setMessages([...messages, userMessage]);
     setMessageText('');
@@ -49,10 +49,7 @@ export function useMessageActions(
       });
       
       // Stop typing indicator when sending a message
-      publishToChannel(chatChannelName, 'typing', {
-        status: 'stop',
-        userId: sessionId
-      });
+      sendTypingIndicator(chatChannelName, sessionId, 'stop');
     } else {
       // Fallback to the original behavior
       if (setIsTyping) {
@@ -61,18 +58,14 @@ export function useMessageActions(
         setTimeout(() => {
           setIsTyping(false);
           
-          const systemMessage: Message = {
-            id: `msg-${Date.now()}-system`,
-            text: 'Thank you for your message. How else can I assist you today?',
-            sender: 'system',
-            timestamp: new Date(),
-            type: 'text'
-          };
+          const systemMessage = createSystemMessage(
+            'Thank you for your message. How else can I assist you today?'
+          );
           
           setMessages(prev => [...prev, systemMessage]);
           
-          // Dispatch message received event
-          dispatchChatEvent('chat:messageReceived', { message: systemMessage }, config);
+          // Process the system message (notification, event dispatch, etc)
+          processSystemMessage(systemMessage, chatChannelName, sessionId, config);
         }, Math.floor(Math.random() * 400) + 200);
       }
     }
@@ -81,10 +74,7 @@ export function useMessageActions(
   const handleUserTyping = useCallback(() => {
     // If realtime is enabled, send typing indicator
     if (config?.realtime?.enabled) {
-      publishToChannel(chatChannelName, 'typing', {
-        status: 'start',
-        userId: sessionId
-      });
+      sendTypingIndicator(chatChannelName, sessionId, 'start');
     }
   }, [chatChannelName, config?.realtime?.enabled, sessionId]);
 
@@ -94,15 +84,14 @@ export function useMessageActions(
     
     const file = files[0];
     
-    const fileMessage: Message = {
-      id: `msg-${Date.now()}-user-file`,
-      text: `Uploaded: ${file.name}`,
-      sender: 'user',
-      timestamp: new Date(),
-      type: 'file',
-      fileName: file.name,
-      fileUrl: URL.createObjectURL(file)
-    };
+    const fileMessage = createUserMessage(
+      `Uploaded: ${file.name}`, 
+      'file',
+      { 
+        fileName: file.name, 
+        fileUrl: URL.createObjectURL(file) 
+      }
+    );
     
     setMessages([...messages, fileMessage]);
     
@@ -128,21 +117,17 @@ export function useMessageActions(
     } else {
       // Fallback to the original behavior
       setTimeout(() => {
-        const systemMessage: Message = {
-          id: `msg-${Date.now()}-system`,
-          text: `I've received your file ${file.name}. Is there anything specific you'd like me to help with regarding this file?`,
-          sender: 'system',
-          timestamp: new Date(),
-          type: 'text'
-        };
+        const systemMessage = createSystemMessage(
+          `I've received your file ${file.name}. Is there anything specific you'd like me to help with regarding this file?`
+        );
         
         setMessages(prev => [...prev, systemMessage]);
         
-        // Dispatch message received event
-        dispatchChatEvent('chat:messageReceived', { message: systemMessage }, config);
+        // Process the system message (notification, event dispatch, etc)
+        processSystemMessage(systemMessage, chatChannelName, sessionId, config);
       }, 1000);
     }
-  }, [messages, setMessages, config, setHasUserSentMessage, chatChannelName]);
+  }, [messages, setMessages, config, setHasUserSentMessage, chatChannelName, sessionId]);
 
   const handleEndChat = useCallback(() => {
     const statusMessage: Message = {

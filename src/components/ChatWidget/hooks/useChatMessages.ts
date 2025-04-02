@@ -5,6 +5,7 @@ import { ChatWidgetConfig } from '../config';
 import { getChatSessionId } from '../utils/cookies';
 import { useMessageActions } from './useMessageActions';
 import { useRealTime } from './useRealTime';
+import { createSystemMessage } from '../utils/messageHandlers';
 
 export function useChatMessages(
   conversation: Conversation,
@@ -12,15 +13,10 @@ export function useChatMessages(
   onUpdateConversation?: (updatedConversation: Conversation) => void,
   playMessageSound?: () => void
 ) {
+  // Initialize with conversation messages or a welcome message
   const [messages, setMessages] = useState<Message[]>(
     conversation.messages || [
-      {
-        id: 'msg-1',
-        text: 'Hello! How can I help you today?',
-        sender: 'system',
-        timestamp: new Date(),
-        type: 'text'
-      }
+      createSystemMessage('Hello! How can I help you today?')
     ]
   );
   const [isTyping, setIsTyping] = useState(false);
