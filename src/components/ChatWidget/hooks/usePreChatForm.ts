@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
-import { toast } from 'sonner';
 
 interface UsePreChatFormOptions {
   conversation: Conversation;
@@ -25,7 +24,8 @@ export function usePreChatForm({
     return shouldShow;
   });
 
-  // Only update showPreChatForm when dependencies actually change
+  // Only update showPreChatForm when dependencies actually change - using refs to prevent 
+  // unnecessary updates that could cause render loops
   useEffect(() => {
     const shouldShowForm = config?.preChatForm?.enabled && 
                           !conversation.contactIdentified && 

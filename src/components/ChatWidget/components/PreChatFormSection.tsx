@@ -19,7 +19,9 @@ const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: P
       setMounted(true);
     }, 400);
     
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+    };
   }, []);
   
   // Memoize the handler to prevent recreation on each render

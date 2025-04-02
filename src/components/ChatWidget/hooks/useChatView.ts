@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Message, Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from '../utils/events';
@@ -27,6 +27,7 @@ export function useChatView({
 }: UseChatViewProps) {
   const [showSearch, setShowSearch] = useState(false);
   const [isProcessingForm, setIsProcessingForm] = useState(false);
+  const formSubmissionRef = useRef(false); // Use ref to track form submission state
   
   // Use the pre-chat form hook with stable references
   const { showPreChatForm, hidePreChatForm } = usePreChatForm({ 
@@ -124,13 +125,15 @@ export function useChatView({
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     console.log("Form submission in useChatView with data:", formData);
     
-    // Prevent multiple submissions
-    if (isProcessingForm) {
+    // Prevent multiple submissions using both state and ref
+    if (isProcessingForm || formSubmissionRef.current) {
       console.log("Form submission already in progress, ignoring duplicate submission");
       return;
     }
     
+    // Set both state and ref to prevent submission during state update cycles
     setIsProcessingForm(true);
+    formSubmissionRef.current = true;
     
     // First hide the form to prevent rendering issues
     hidePreChatForm();
@@ -157,6 +160,7 @@ export function useChatView({
         // Reset processing flag after a short delay
         setTimeout(() => {
           setIsProcessingForm(false);
+          formSubmissionRef.current = false;
         }, 300);
       }
     }, 0);

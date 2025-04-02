@@ -1,10 +1,8 @@
-
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { validateField, validateFormData } from '../utils/formUtils';
-import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig } from '../config';
 
 interface PreChatFormProps {
@@ -19,6 +17,7 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formValid, setFormValid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasSubmittedRef = useRef(false);
 
   // Handle input change for form
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,17 +53,21 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
   // Submit form - using useCallback to prevent recreating this function
   const submitForm = useCallback(() => {
     // Multiple layers of protection against duplicate submissions
-    if (!formValid || isSubmitting || isProcessingForm) {
+    if (!formValid || isSubmitting || isProcessingForm || hasSubmittedRef.current) {
       console.log('Form submission prevented:', { 
         formValid, 
         isSubmitting, 
-        isProcessingForm
+        isProcessingForm,
+        hasSubmitted: hasSubmittedRef.current
       });
       return;
     }
     
     try {
+      // Set both state and ref to prevent submission
       setIsSubmitting(true);
+      hasSubmittedRef.current = true;
+      
       console.log("Validating form data before submission");
       const sanitizedData = validateFormData(formData);
       
@@ -72,13 +75,14 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
       onFormComplete(sanitizedData);
     } catch (error) {
       console.error("Error submitting form:", error);
+      // Reset only the state flag but keep the ref to prevent repeated submissions
       setIsSubmitting(false);
     }
   }, [formValid, isSubmitting, isProcessingForm, formData, onFormComplete]);
 
   // Handle keyboard submission
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && formValid && !isSubmitting && !isProcessingForm) {
+    if (e.key === 'Enter' && formValid && !isSubmitting && !isProcessingForm && !hasSubmittedRef.current) {
       submitForm();
     }
   }, [formValid, isSubmitting, isProcessingForm, submitForm]);
@@ -111,7 +115,7 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
             className={`h-8 text-sm ${formErrors[field.name] ? 'border-red-500' : ''}`}
             aria-describedby={formErrors[field.name] ? `${field.id}-error` : undefined}
             aria-invalid={!!formErrors[field.name]}
-            disabled={isSubmitting || isProcessingForm}
+            disabled={isSubmitting || isProcessingForm || hasSubmittedRef.current}
           />
           {formErrors[field.name] && (
             <p 
@@ -126,7 +130,7 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
       ))}
       <Button 
         onClick={submitForm} 
-        disabled={!formValid || isSubmitting || isProcessingForm}
+        disabled={!formValid || isSubmitting || isProcessingForm || hasSubmittedRef.current}
         className="w-full h-8 text-sm mt-2"
         style={{
           backgroundColor: config.branding?.primaryColor || '#8B5CF6',
