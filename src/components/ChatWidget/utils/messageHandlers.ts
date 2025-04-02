@@ -5,6 +5,7 @@ import { dispatchChatEvent } from './events';
 import { ChatWidgetConfig } from '../config';
 import { addMessageToQueue } from './offlineQueue';
 import { saveOfflineMessage } from './storage';
+import { toast } from '@/components/ui/use-toast';
 
 /**
  * Handles sending a read receipt for a message
@@ -20,7 +21,28 @@ export const sendReadReceipt = (
       messageId,
       userId: sessionId,
       timestamp: new Date()
-    }).catch(err => console.error('Error sending read receipt:', err));
+    }).catch(err => {
+      console.error('Error sending read receipt:', err);
+      // Queue read receipt for when connection is restored
+      const readReceipt = {
+        id: `read-${messageId}`,
+        messageId,
+        userId: sessionId,
+        timestamp: new Date(),
+        type: 'status'
+      };
+      addMessageToQueue(readReceipt as any, chatChannelName, 'read');
+    });
+  } else {
+    // Queue read receipt for when connection is restored
+    const readReceipt = {
+      id: `read-${messageId}`,
+      messageId,
+      userId: sessionId,
+      timestamp: new Date(),
+      type: 'status'
+    };
+    addMessageToQueue(readReceipt as any, chatChannelName, 'read');
   }
 };
 
@@ -38,7 +60,28 @@ export const sendDeliveryReceipt = (
       messageId,
       userId: sessionId,
       timestamp: new Date()
-    }).catch(err => console.error('Error sending delivery receipt:', err));
+    }).catch(err => {
+      console.error('Error sending delivery receipt:', err);
+      // Queue delivery receipt for when connection is restored
+      const deliveryReceipt = {
+        id: `delivery-${messageId}`,
+        messageId,
+        userId: sessionId,
+        timestamp: new Date(),
+        type: 'status'
+      };
+      addMessageToQueue(deliveryReceipt as any, chatChannelName, 'delivered');
+    });
+  } else {
+    // Queue delivery receipt for when connection is restored
+    const deliveryReceipt = {
+      id: `delivery-${messageId}`,
+      messageId,
+      userId: sessionId,
+      timestamp: new Date(),
+      type: 'status'
+    };
+    addMessageToQueue(deliveryReceipt as any, chatChannelName, 'delivered');
   }
 };
 
@@ -109,6 +152,9 @@ export const processSystemMessage = (
   // Dispatch message received event
   dispatchChatEvent('chat:messageReceived', { message }, config);
   
+  // Optimistically update message status to delivered
+  const updatedMessage = { ...message, status: 'delivered' };
+  
   // Update message status to delivered
   if (config?.features?.readReceipts) {
     // Check if we're online before sending receipts
@@ -116,10 +162,15 @@ export const processSystemMessage = (
       // Send delivered receipt immediately
       sendDeliveryReceipt(chatChannelName, message.id, sessionId);
       
-      // Send read receipt after a short delay
-      setTimeout(() => {
-        sendReadReceipt(chatChannelName, message.id, sessionId);
-      }, 2000);
+      // Send read receipt after a short delay if the document is visible
+      if (document.visibilityState === 'visible') {
+        setTimeout(() => {
+          sendReadReceipt(chatChannelName, message.id, sessionId);
+          
+          // Optimistically update message status to read in UI
+          updatedMessage.status = 'read';
+        }, 2000);
+      }
     } else {
       // Queue read receipts for later
       const deliveryReceipt = {
@@ -145,7 +196,7 @@ export const processSystemMessage = (
   
   // Store message for offline persistence
   const conversationId = chatChannelName.replace('conversation:', '');
-  saveOfflineMessage(conversationId, message);
+  saveOfflineMessage(conversationId, updatedMessage);
 };
 
 /**
@@ -162,6 +213,7 @@ export const sendTypingIndicator = (
       status,
       userId: sessionId
     }).catch(err => console.error('Error sending typing indicator:', err));
+    // We don't queue typing indicators when offline - not worth it
   }
 };
 
@@ -184,9 +236,50 @@ export const sendMessageReaction = (
   // Check if connected before sending
   if (getConnectionState() === 'connected') {
     publishToChannel(chatChannelName, 'reaction', reactionData)
-      .catch(err => console.error('Error sending message reaction:', err));
+      .catch(err => {
+        console.error('Error sending message reaction:', err);
+        // Queue reaction for when connection is restored
+        addMessageToQueue(reactionData as any, chatChannelName, 'reaction');
+        
+        // Show toast notification
+        toast({
+          title: "Reaction queued",
+          description: "Your reaction will be sent when you're back online",
+        });
+      });
   } else {
     // Queue reaction for when connection is restored
     addMessageToQueue(reactionData as any, chatChannelName, 'reaction');
+    
+    // Show toast notification
+    toast({
+      title: "Reaction queued",
+      description: "Your reaction will be sent when you're back online",
+    });
   }
+};
+
+/**
+ * Create optimistic response for offline mode
+ */
+export const createOptimisticResponse = (messageType: string): Message => {
+  let responseText = '';
+  
+  switch (messageType) {
+    case 'message':
+      responseText = 'Your message has been queued and will be delivered when you\'re back online.';
+      break;
+    case 'file':
+      responseText = 'Your file has been queued and will be processed when you\'re back online.';
+      break;
+    case 'reaction':
+      responseText = 'Your reaction has been queued and will be sent when you\'re back online.';
+      break;
+    default:
+      responseText = 'Your action has been queued for when you\'re back online.';
+  }
+  
+  const optimisticMessage = createSystemMessage(responseText);
+  optimisticMessage.status = 'pending';
+  return optimisticMessage;
 };

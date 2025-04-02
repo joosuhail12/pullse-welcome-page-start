@@ -8,6 +8,7 @@ import { getChatSessionId, setChatSessionId } from '../utils/cookies';
 import { sanitizeInput } from '../utils/validation';
 import { isRateLimited, generateCsrfToken, enforceHttps, signMessage, verifyMessageSignature } from '../utils/security';
 import { toast } from '@/components/ui/use-toast';
+import { addMessageToQueue, getMessageQueue } from '../utils/offlineQueue';
 
 /**
  * Fetch chat widget configuration from the API
@@ -53,6 +54,12 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
       'X-Request-Timestamp': timestamp.toString(),
       'X-Request-Signature': signMessage(sanitizedWorkspaceId, timestamp)
     };
+    
+    // Check for internet connection before making request
+    if (!navigator.onLine) {
+      console.warn('Offline mode: Using default chat widget config');
+      return { ...defaultConfig, workspaceId: sanitizedWorkspaceId };
+    }
     
     const response = await fetch(url, {
       headers,
@@ -137,6 +144,30 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
     const sanitizedWorkspaceId = sanitizeInput(workspaceId);
     const sessionId = getChatSessionId();
     
+    // Check for internet connection
+    if (!navigator.onLine) {
+      // Create a payload that will be queued for later
+      const offlinePayload = {
+        id: `api-${Date.now()}`,
+        text: sanitizedMessage,
+        workspaceId: sanitizedWorkspaceId,
+        sessionId,
+        type: 'api',
+        sender: 'user',
+        timestamp: new Date()
+      };
+      
+      // Add to offline queue for processing when back online
+      addMessageToQueue(offlinePayload as any, 'api-messages', 'api');
+      
+      toast({
+        title: "Offline mode",
+        description: "Message saved and will be sent when you're back online",
+      });
+      
+      throw new Error('Offline mode - message queued');
+    }
+    
     // Generate CSRF token and timestamp for request signing
     const csrfToken = generateCsrfToken();
     const timestamp = Date.now();
@@ -195,5 +226,35 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
   } catch (error) {
     console.error('Error sending chat message:', error);
     throw error;
+  }
+};
+
+/**
+ * Process any queued API messages when back online
+ * @returns Promise resolving when all queued messages are processed
+ */
+export const processQueuedApiMessages = async (): Promise<void> => {
+  const queue = getMessageQueue();
+  const apiMessages = queue.filter(item => item.eventType === 'api');
+  
+  if (apiMessages.length === 0) {
+    return;
+  }
+  
+  console.log(`Processing ${apiMessages.length} queued API messages`);
+  
+  for (const item of apiMessages) {
+    try {
+      const msg = item.message;
+      await sendChatMessage(msg.text, msg.workspaceId);
+      
+      // Remove from queue after successful sending
+      const messageId = msg.id;
+      const queue = getMessageQueue();
+      const updatedQueue = queue.filter(qItem => qItem.message.id !== messageId);
+      localStorage.setItem('pullse_chat_offline_queue', JSON.stringify(updatedQueue));
+    } catch (error) {
+      console.error('Error processing queued API message:', error);
+    }
   }
 };

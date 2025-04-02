@@ -4,6 +4,7 @@
  */
 import { Message } from '../types';
 import { encryptData, decryptData } from './security';
+import { toast } from '@/components/ui/use-toast';
 
 // Storage key for offline message queue
 const OFFLINE_QUEUE_KEY = 'pullse_chat_offline_queue';
@@ -15,6 +16,7 @@ export interface QueuedMessage {
   eventType: string;
   timestamp: number;
   retryCount: number;
+  status?: 'pending' | 'retrying' | 'failed';
 }
 
 /**
@@ -31,7 +33,8 @@ export function addMessageToQueue(
       channelName,
       eventType,
       timestamp: Date.now(),
-      retryCount: 0
+      retryCount: 0,
+      status: 'pending'
     };
 
     const queue = getMessageQueue();
@@ -40,6 +43,15 @@ export function addMessageToQueue(
     
     // Log the queue status
     console.log(`Message added to offline queue. Queue size: ${queue.length}`);
+    
+    // Notify the user visually that the message is queued
+    if (queue.length === 1) {
+      // Only show toast for first queued message to avoid spam
+      toast({
+        title: "Message queued",
+        description: "Will be sent automatically when connection is restored",
+      });
+    }
   } catch (error) {
     console.error('Error adding message to offline queue:', error);
   }
@@ -88,6 +100,15 @@ export function removeMessageFromQueue(messageId: string): void {
     const queue = getMessageQueue();
     const updatedQueue = queue.filter(item => item.message.id !== messageId);
     saveMessageQueue(updatedQueue);
+    
+    // If queue is now empty and was previously not, show a toast
+    if (queue.length > 0 && updatedQueue.length === 0) {
+      toast({
+        title: "All messages sent",
+        description: "Your queued messages have been delivered",
+        variant: "default"
+      });
+    }
   } catch (error) {
     console.error('Error removing message from queue:', error);
   }
@@ -99,6 +120,12 @@ export function removeMessageFromQueue(messageId: string): void {
 export function clearMessageQueue(): void {
   try {
     localStorage.removeItem(OFFLINE_QUEUE_KEY);
+    
+    // Show a toast when queue is cleared manually
+    toast({
+      title: "Queue cleared",
+      description: "All pending messages have been removed",
+    });
   } catch (error) {
     console.error('Error clearing message queue:', error);
   }
@@ -114,6 +141,7 @@ export function incrementRetryCount(messageId: string): boolean {
     
     if (messageIndex !== -1) {
       queue[messageIndex].retryCount += 1;
+      queue[messageIndex].status = queue[messageIndex].retryCount > 3 ? 'failed' : 'retrying';
       saveMessageQueue(queue);
       return true;
     }
@@ -130,4 +158,38 @@ export function incrementRetryCount(messageId: string): boolean {
  */
 export function getPendingMessageCount(): number {
   return getMessageQueue().length;
+}
+
+/**
+ * Update message status in the queue
+ */
+export function updateMessageStatus(messageId: string, status: 'pending' | 'retrying' | 'failed'): boolean {
+  try {
+    const queue = getMessageQueue();
+    const messageIndex = queue.findIndex(item => item.message.id === messageId);
+    
+    if (messageIndex !== -1) {
+      queue[messageIndex].status = status;
+      saveMessageQueue(queue);
+      return true;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error updating message status:', error);
+    return false;
+  }
+}
+
+/**
+ * Get failed messages from the queue
+ */
+export function getFailedMessages(): QueuedMessage[] {
+  try {
+    const queue = getMessageQueue();
+    return queue.filter(item => item.status === 'failed' || item.retryCount > 3);
+  } catch (error) {
+    console.error('Error getting failed messages:', error);
+    return [];
+  }
 }
