@@ -5,6 +5,7 @@ import { Paperclip, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { sanitizeInput } from '../utils/validation';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface MessageBubbleProps {
   message: Message;
@@ -12,6 +13,9 @@ interface MessageBubbleProps {
   onReact?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
   highlightSearchTerm?: (text: string, term: string) => { text: string; highlighted: boolean }[];
   searchTerm?: string;
+  showAvatar?: boolean;
+  isConsecutive?: boolean;
+  avatarUrl?: string;
 }
 
 const MessageBubble = ({ 
@@ -19,7 +23,10 @@ const MessageBubble = ({
   setMessageText, 
   onReact,
   highlightSearchTerm,
-  searchTerm
+  searchTerm,
+  showAvatar = true,
+  isConsecutive = false,
+  avatarUrl
 }: MessageBubbleProps) => {
   // Sanitize any text content before displaying
   const sanitizedText = message.text ? sanitizeInput(message.text) : '';
@@ -170,6 +177,24 @@ const MessageBubble = ({
     return null;
   };
 
+  // Render avatar for the system messages
+  const renderAvatar = () => {
+    if (!showAvatar || message.sender === 'status' || isConsecutive) return null;
+
+    const hasAvatar = !!avatarUrl;
+    const initials = message.sender === 'system' ? 'AI' : 'U';
+    const avatarClass = message.sender === 'system' ? 'bg-vivid-purple/20 text-vivid-purple' : 'bg-gray-200 text-gray-700';
+
+    return (
+      <div className={`flex-shrink-0 ${message.sender === 'user' ? 'order-last ml-2' : 'mr-2'}`}>
+        <Avatar className="h-8 w-8">
+          {hasAvatar && <AvatarImage src={avatarUrl} alt={message.sender} />}
+          <AvatarFallback className={avatarClass}>{initials}</AvatarFallback>
+        </Avatar>
+      </div>
+    );
+  };
+
   if (message.sender === 'status') {
     return (
       <div className="w-full flex justify-center">
@@ -178,21 +203,28 @@ const MessageBubble = ({
     );
   }
 
+  // Apply different styling for consecutive messages vs. first in group
+  const bubbleClasses = isConsecutive
+    ? message.sender === 'user'
+      ? 'chat-message-user rounded-tr-sm ml-10'
+      : 'chat-message-system rounded-tl-sm mr-10'
+    : message.sender === 'user'
+      ? 'chat-message-user'
+      : 'chat-message-system';
+
   return (
-    <div 
-      className={`max-w-[80%] ${
-        message.sender === 'user' 
-          ? 'chat-message-user' 
-          : 'chat-message-system'
-      }`}
-    >
-      {renderMessage()}
-      <div className="flex justify-between items-center">
-        <div className={`text-xs mt-2 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-500'}`}>
-          {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    <div className="flex items-start">
+      {message.sender === 'system' && renderAvatar()}
+      <div className={`max-w-[80%] ${bubbleClasses}`}>
+        {renderMessage()}
+        <div className="flex justify-between items-center">
+          <div className={`text-xs mt-2 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-500'}`}>
+            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </div>
+          {renderReactionButtons()}
         </div>
-        {renderReactionButtons()}
       </div>
+      {message.sender === 'user' && renderAvatar()}
     </div>
   );
 };

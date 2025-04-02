@@ -26,7 +26,7 @@ const ChatHeader = ({ conversation, onBack, onToggleSearch, showSearch }: ChatHe
         
         <div>
           <h2 className="font-medium">
-            {conversation.agentInfo?.name || 'Support'}
+            {conversation.title || 'Support Chat'}
           </h2>
           <AgentPresence 
             workspaceId={conversation.id.split(':')[0]}

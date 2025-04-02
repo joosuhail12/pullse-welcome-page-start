@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Message, Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { getChatSessionId } from '../utils/cookies';
@@ -21,6 +21,7 @@ export function useChatMessages(
   );
   const [isTyping, setIsTyping] = useState(false);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
+  const [page, setPage] = useState(1);
   
   // Get session ID
   const sessionId = getChatSessionId();
@@ -82,6 +83,22 @@ export function useChatMessages(
     }
   };
 
+  // Function to load previous messages (for infinite scroll)
+  const loadPreviousMessages = useCallback(async () => {
+    // Simulate loading previous messages with a delay
+    // In a real implementation, this would make an API call with pagination
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        setPage(prevPage => prevPage + 1);
+        // In a real implementation, you would fetch more messages here
+        // and prepend them to the messages array
+        
+        // For now, we'll just resolve the Promise
+        resolve();
+      }, 1000);
+    });
+  }, [page]);
+
   return {
     messages,
     messageText,
@@ -93,6 +110,7 @@ export function useChatMessages(
     handleUserTyping,
     handleFileUpload,
     handleEndChat,
-    readReceipts
+    readReceipts,
+    loadPreviousMessages
   };
 }

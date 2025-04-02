@@ -66,7 +66,7 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Soft purple color palette
+				// Custom theme colors
 				'soft-purple': {
 					50: '#F5F3FF',
 					100: '#E5DEFF',
@@ -83,7 +83,21 @@ export default {
 					700: '#6D28D9',
 					800: '#5B21B6',
 					900: '#4C1D95'
-				}
+				},
+				// Chat theme variables
+				'chat-header': {
+					DEFAULT: 'hsl(var(--chat-header-bg))',
+					foreground: 'hsl(var(--chat-header-text))'
+				},
+				'user-bubble': {
+					DEFAULT: 'hsl(var(--user-bubble-bg))',
+					foreground: 'hsl(var(--user-bubble-text))'
+				},
+				'system-bubble': {
+					DEFAULT: 'hsl(var(--system-bubble-bg))',
+					foreground: 'hsl(var(--system-bubble-text))'
+				},
+				'chat-bg': 'hsl(var(--chat-bg))'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

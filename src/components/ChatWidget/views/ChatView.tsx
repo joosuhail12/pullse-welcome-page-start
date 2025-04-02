@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import ChatHeader from '../components/ChatHeader';
@@ -26,6 +26,7 @@ const ChatView = ({
   playMessageSound
 }: ChatViewProps) => {
   const [showSearch, setShowSearch] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const {
     messages,
@@ -38,7 +39,8 @@ const ChatView = ({
     handleFileUpload,
     handleEndChat,
     remoteIsTyping,
-    readReceipts
+    readReceipts,
+    loadPreviousMessages
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
 
   // Add message reactions
@@ -87,8 +89,41 @@ const ChatView = ({
     }
   };
 
+  // Handle loading previous messages for infinite scroll
+  const handleLoadMoreMessages = useCallback(async () => {
+    if (!loadPreviousMessages) return;
+    
+    setIsLoadingMore(true);
+    try {
+      await loadPreviousMessages();
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [loadPreviousMessages]);
+
+  // Determine if there could be more messages to load
+  const hasMoreMessages = messages.length >= 20; // Assuming we load 20 messages at a time
+
+  // Get avatar URLs from config
+  const agentAvatar = conversation.agentInfo?.avatar || config?.branding?.avatarUrl;
+  const userAvatar = undefined; // Could be set from user profile if available
+
   return (
-    <div className="flex flex-col h-[600px]">
+    <div 
+      className="flex flex-col h-[600px]"
+      style={{
+        // Apply custom theme variables if available from config
+        ...(config?.branding?.primaryColor && {
+          '--chat-header-bg': config.branding.primaryColor,
+          '--chat-header-text': '#ffffff',
+          '--user-bubble-bg': config.branding.primaryColor,
+          '--user-bubble-text': '#ffffff',
+          '--system-bubble-bg': '#f3f4f6',
+          '--system-bubble-text': '#1f2937',
+          '--chat-bg': '#ffffff',
+        } as React.CSSProperties)
+      }}
+    >
       <ChatHeader 
         conversation={conversation} 
         onBack={onBack} 
@@ -114,6 +149,11 @@ const ChatView = ({
         searchResults={messageIds}
         highlightMessage={highlightText}
         searchTerm={searchTerm}
+        agentAvatar={agentAvatar}
+        userAvatar={userAvatar}
+        onScrollTop={handleLoadMoreMessages}
+        hasMoreMessages={hasMoreMessages}
+        isLoadingMore={isLoadingMore}
       />
       
       <MessageInput
