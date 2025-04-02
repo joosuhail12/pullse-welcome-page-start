@@ -4,7 +4,7 @@ import { getConnectionState, subscribeToConnectionState } from '../utils/ably';
 import { toast } from 'sonner';
 
 export function useConnectionState() {
-  const [connectionState, setConnectionState] = useState<'connected' | 'connecting' | 'disconnected' | 'suspended' | 'closed' | 'failed'>(
+  const [connectionState, setConnectionState] = useState<'connected' | 'connecting' | 'disconnected' | 'suspended' | 'closed' | 'failed' | 'initialized'>(
     getConnectionState() || 'disconnected'
   );
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -78,6 +78,6 @@ export function useConnectionState() {
     isOnline,
     isConnected: connectionState === 'connected',
     isConnecting: connectionState === 'connecting',
-    isDisconnected: ['disconnected', 'suspended', 'closed', 'failed'].includes(connectionState)
+    isDisconnected: ['disconnected', 'suspended', 'closed', 'failed', 'initialized'].includes(connectionState)
   };
 }

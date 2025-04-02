@@ -317,7 +317,7 @@ export const subscribeToPresence = (
  * @returns Function to stop monitoring
  */
 export const createConnectionMonitor = (
-  onStatusChange: (state: Ably.Types.ConnectionState, timeInState: number) => void
+  onStatusChange: (state: Ably.Types.ConnectionState, timeInCurrentState: number) => void
 ): () => void => {
   if (!ablyClient) {
     console.warn('Ably client not initialized');
@@ -326,7 +326,8 @@ export const createConnectionMonitor = (
   
   const statusHandler = () => {
     if (!ablyClient) return;
-    onStatusChange(ablyClient.connection.state, ablyClient.connection.timeSerial);
+    // Use connection state timestamp instead of timeSerial
+    onStatusChange(ablyClient.connection.state, Date.now());
   };
   
   // Initial status
@@ -355,13 +356,18 @@ export const cleanupAbly = (): void => {
     console.log('Cleaning up Ably resources');
     
     // Close all channels explicitly before closing the connection
-    for (const channelName in ablyClient.channels.all) {
-      try {
-        const channel = ablyClient.channels.get(channelName);
-        channel.detach();
-      } catch (e) {
-        console.error(`Error detaching channel ${channelName}:`, e);
-      }
+    // Use a different approach that doesn't rely on the 'all' property
+    if (ablyClient && ablyClient.channels) {
+      // Get channels and detach them individually
+      const activeChannels = Object.keys(ablyClient.channels);
+      activeChannels.forEach(channelName => {
+        try {
+          const channel = ablyClient!.channels.get(channelName);
+          channel.detach();
+        } catch (e) {
+          console.error(`Error detaching channel ${channelName}:`, e);
+        }
+      });
     }
     
     ablyClient.close();
