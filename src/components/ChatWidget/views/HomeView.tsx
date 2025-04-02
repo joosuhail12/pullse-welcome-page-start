@@ -1,11 +1,12 @@
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Sparkles } from 'lucide-react';
 import { defaultConfig, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
 import { dispatchChatEvent } from '../utils/events';
 import LazyImage from '../components/LazyImage';
+import TypingIndicator from '../components/TypingIndicator';
 
 interface HomeViewProps {
   onStartChat: (formData?: Record<string, string>) => void;
@@ -20,6 +21,8 @@ const HomeView = ({
   const [typingIndex, setTypingIndex] = useState(0);
   const [typingComplete, setTypingComplete] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
+  const welcomeTextRef = useRef<HTMLHeadingElement>(null);
   
   // Apply custom branding if available
   const buttonStyle = useMemo(() => {
@@ -42,8 +45,17 @@ const HomeView = ({
     // Always dispatch event when chat is initiated
     dispatchChatEvent('contact:initiatedChat', { showForm: config.preChatForm.enabled }, config);
     
-    // Start chat - the form will be shown in ChatView if needed
-    onStartChat();
+    // Start chat with selected prompt if available
+    onStartChat(selectedPrompt ? { initialPrompt: selectedPrompt } : undefined);
+  };
+
+  // Handle quick prompt selection
+  const handlePromptSelect = (prompt: string) => {
+    setSelectedPrompt(prompt);
+    // Dispatch event for prompt selection
+    dispatchChatEvent('quickPrompt:selected', { prompt }, config);
+    // Start chat with the selected prompt
+    onStartChat({ initialPrompt: prompt });
   };
 
   // More subtle typing animation effect for the welcome message
@@ -53,43 +65,57 @@ const HomeView = ({
     if (config.welcomeMessage && !typingComplete) {
       const initialDelay = setTimeout(() => {
         const interval = setInterval(() => {
-          if (typingIndex < config.welcomeMessage.length) {
-            setTypingIndex(prev => prev + 1);
-          } else {
-            setTypingComplete(true);
-            clearInterval(interval);
-          }
-        }, 50); // Slightly faster typing speed for better UX
+          setTypingIndex(prev => {
+            if (prev < config.welcomeMessage.length) {
+              return prev + 1;
+            } else {
+              setTypingComplete(true);
+              clearInterval(interval);
+              return prev;
+            }
+          });
+        }, 40); // Slightly faster typing speed for better UX
         
         return () => clearInterval(interval);
-      }, 400); // Slightly longer delay before typing starts for a more natural feel
+      }, 300); // Slightly shorter delay before typing starts
       
       return () => clearTimeout(initialDelay);
     }
     
     return undefined;
   }, [config.welcomeMessage, typingIndex, typingComplete]);
+
+  // Ensure proper focus management for accessibility
+  useEffect(() => {
+    if (typingComplete && welcomeTextRef.current) {
+      welcomeTextRef.current.setAttribute('tabindex', '0');
+      welcomeTextRef.current.setAttribute('aria-label', config.welcomeMessage || 'Welcome message');
+    }
+  }, [typingComplete, config.welcomeMessage]);
   
   return (
     <div 
-      className={`flex flex-col p-6 h-full bg-gradient-to-br ${themeStyles.backgroundGradient} rounded-lg backdrop-blur-sm bg-opacity-95 transition-opacity duration-700 ease-in-out ${mounted ? 'opacity-100' : 'opacity-0'}`}
+      className={`flex flex-col p-6 h-full bg-gradient-to-br ${themeStyles.backgroundGradient} rounded-lg backdrop-blur-sm bg-opacity-95 transition-all duration-700 ease-in-out ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
       style={{ fontFamily: themeStyles.fontFamily }}
+      role="dialog"
+      aria-labelledby="welcome-heading"
     >
       {/* Brand logo if provided */}
       {config.branding?.logoUrl && (
-        <div className="mb-4 flex justify-center">
-          <img 
+        <div className="mb-5 flex justify-center">
+          <LazyImage 
             src={config.branding.logoUrl} 
             alt="Brand Logo" 
-            className="h-10 object-contain transition-transform duration-500 hover:scale-105" 
+            className="h-12 object-contain transition-transform duration-500 hover:scale-105" 
           />
         </div>
       )}
       
       <div className="mb-6">
         <h2 
+          id="welcome-heading"
+          ref={welcomeTextRef}
           className={`text-2xl font-bold bg-gradient-to-r ${themeStyles.headerGradient} bg-clip-text text-transparent overflow-hidden focus:outline-none focus:ring-2 focus:ring-vivid-purple-300 focus:ring-offset-2 rounded-md`}
-          tabIndex={0}
         >
           {typingComplete 
             ? config.welcomeMessage 
@@ -100,13 +126,13 @@ const HomeView = ({
         </h2>
         
         <div 
-          className={`text-sm text-gray-800 mt-3 leading-relaxed transition-all duration-700 ease-in-out ${typingComplete ? 'opacity-100' : 'opacity-0'}`}
-          style={{ transform: typingComplete ? 'translateY(0)' : 'translateY(8px)' }}
+          className={`text-sm text-gray-800 mt-3 leading-relaxed transition-all duration-700 ease-in-out ${typingComplete ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
+          aria-hidden={!typingComplete}
         >
           {config.welcomeDescription ? (
-            <p>{config.welcomeDescription}</p>
+            <p className="text-gray-700">{config.welcomeDescription}</p>
           ) : (
-            <p>Get help, ask questions, or start a conversation with our support team.</p>
+            <p className="text-gray-700">Get help, ask questions, or start a conversation with our support team.</p>
           )}
           
           <AgentPresence />
@@ -132,6 +158,32 @@ const HomeView = ({
           />
         </div>
       )}
+
+      {/* Quick prompts section - shown when available and typing is complete */}
+      {config.features?.quickPrompts && config.quickPrompts && config.quickPrompts.length > 0 && typingComplete && (
+        <div className="mt-2 mb-4 transition-all duration-500" style={{
+          opacity: typingComplete ? 1 : 0,
+          transform: typingComplete ? 'translateY(0)' : 'translateY(8px)'
+        }}>
+          <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+            <Sparkles size={14} className="text-vivid-purple-500" /> 
+            Quick questions
+          </p>
+          <div className="flex flex-col gap-2">
+            {config.quickPrompts.slice(0, 3).map((prompt, index) => (
+              <button
+                key={index}
+                onClick={() => handlePromptSelect(prompt)}
+                className="text-sm text-left py-2 px-3 border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition-colors duration-150 text-gray-700 focus:outline-none focus:ring-2 focus:ring-vivid-purple-300"
+                style={{ animationDelay: `${index * 100}ms` }}
+                aria-label={`Ask: ${prompt}`}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Action Button with micro-interaction */}
       <div 
@@ -143,16 +195,27 @@ const HomeView = ({
       >
         <Button 
           onClick={handleStartChat}
-          className="chat-widget-button flex items-center justify-center gap-2 w-full py-3 rounded-xl shadow-md transition-all duration-300 hover:shadow-xl hover:translate-y-[-2px] focus:ring-2 focus:ring-vivid-purple-300 focus:ring-offset-2 focus:outline-none"
+          className="chat-widget-button group flex items-center justify-center gap-2 w-full py-5 rounded-xl shadow-md transition-all duration-300 hover:shadow-xl hover:translate-y-[-2px] focus:ring-2 focus:ring-vivid-purple-300 focus:ring-offset-2 focus:outline-none"
           style={buttonStyle}
         >
           <MessageSquare 
             size={20} 
             className="transition-transform duration-300 group-hover:rotate-12" 
           />
-          <span className="font-medium">Ask a question</span>
+          <span className="font-medium">Start a conversation</span>
         </Button>
       </div>
+
+      {/* Optional typing indicator to show agents are online */}
+      {typingComplete && config.features?.typingIndicators && (
+        <div 
+          className="mt-3 transition-all duration-500 ease-in-out"
+          style={{ opacity: typingComplete ? 0.8 : 0 }}
+          aria-hidden="true"
+        >
+          <TypingIndicator />
+        </div>
+      )}
     </div>
   );
 };
