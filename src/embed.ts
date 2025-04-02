@@ -2,17 +2,11 @@
 // Chat Widget Embed Script
 import { createRoot } from 'react-dom/client';
 import React from 'react';
+import { ChatWidgetInterface } from './embed/types';
 
 declare global {
   interface Window {
-    ChatWidget?: {
-      init: (config: any) => void;
-      open: () => void;
-      close: () => void;
-      toggle: () => void;
-      on?: (eventName: string, callback: (detail: any) => void) => () => void;
-      off?: (eventName: string, handler: any) => void;
-    };
+    ChatWidget?: ChatWidgetInterface;
   }
 }
 
@@ -151,7 +145,7 @@ if (typeof window !== 'undefined') {
     open: () => console.warn('Chat widget not initialized. Call ChatWidget.init() first.'),
     close: () => console.warn('Chat widget not initialized. Call ChatWidget.init() first.'),
     toggle: () => console.warn('Chat widget not initialized. Call ChatWidget.init() first.')
-  };
+  } as ChatWidgetInterface;
 }
 
 export default initChatWidget;

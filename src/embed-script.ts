@@ -8,7 +8,7 @@ import { ChatWidgetInterface, WidgetConfig } from './embed/types';
 // This is the script that gets embedded on websites
 (() => {
   // Store reference to the current script
-  const WIDGET_SCRIPT = document.currentScript || (function() {
+  const WIDGET_SCRIPT = document.currentScript as HTMLScriptElement || (function() {
     const scripts = document.getElementsByTagName('script');
     return scripts[scripts.length - 1];
   })();
