@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { defaultConfig, PreChatFormField } from '../config';
+import { defaultConfig, PreChatFormField, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
 
 interface HomeViewProps {
   onStartChat: (formData?: Record<string, string>) => void;
-  config?: typeof defaultConfig;
+  config?: ChatWidgetConfig;
 }
 
 const HomeView = ({ 
@@ -66,8 +66,16 @@ const HomeView = ({
     );
   };
   
+  // Apply custom branding if available
+  const buttonStyle = config.branding?.primaryColor 
+    ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
+    : {};
+  const fontStyle = config.branding?.fontFamily 
+    ? { fontFamily: config.branding.fontFamily }
+    : {};
+  
   return (
-    <div className="flex flex-col p-4 h-full">
+    <div className="flex flex-col p-4 h-full" style={fontStyle}>
       <div className="mb-3">
         <h2 className="text-xl font-bold text-vivid-purple">
           {config.welcomeMessage}
@@ -86,11 +94,19 @@ const HomeView = ({
           onClick={handleStartChat}
           disabled={config.preChatForm.enabled && !formValid}
           className="bg-vivid-purple hover:bg-vivid-purple/90 flex items-center gap-2 w-full"
+          style={buttonStyle}
         >
           <MessageSquare size={18} />
           <span>Ask a question</span>
         </Button>
       </div>
+      
+      {/* Render branding bar if enabled */}
+      {config.branding?.showBrandingBar && (
+        <div className="mt-3 pt-3 border-t border-gray-100 text-center">
+          <p className="text-xs text-gray-400">Powered by Pullse</p>
+        </div>
+      )}
     </div>
   );
 };

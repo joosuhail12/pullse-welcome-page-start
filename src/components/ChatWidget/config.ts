@@ -8,12 +8,27 @@ export interface PreChatFormField {
   placeholder?: string;
 }
 
+export interface BrandingConfig {
+  primaryColor: string;
+  fontFamily?: string;
+  avatarIcon?: string;
+  showBrandingBar: boolean;
+}
+
+export interface FeatureToggles {
+  inlineRatings: boolean;
+  feedback: boolean;
+}
+
 export interface ChatWidgetConfig {
   welcomeMessage: string;
   preChatForm: {
     enabled: boolean;
     fields: PreChatFormField[];
   };
+  branding?: BrandingConfig;
+  features?: FeatureToggles;
+  workspaceId?: string;
 }
 
 // Default configuration
@@ -55,5 +70,13 @@ export const defaultConfig: ChatWidgetConfig = {
         placeholder: 'Enter your phone number'
       }
     ]
+  },
+  branding: {
+    primaryColor: '#8B5CF6', // Default vivid-purple
+    showBrandingBar: true,
+  },
+  features: {
+    inlineRatings: false,
+    feedback: false
   }
 };

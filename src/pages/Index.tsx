@@ -3,6 +3,9 @@ import React from 'react';
 import ChatWidget from '@/components/ChatWidget/ChatWidget';
 
 const Index = () => {
+  // In a real app, this would come from your app's configuration or context
+  const workspaceId = "demo-workspace-123";
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-soft-purple-50 text-center">
       <div className="max-w-2xl px-6">
@@ -22,7 +25,7 @@ const Index = () => {
         </div>
       </div>
       
-      <ChatWidget />
+      <ChatWidget workspaceId={workspaceId} />
     </div>
   );
 };
