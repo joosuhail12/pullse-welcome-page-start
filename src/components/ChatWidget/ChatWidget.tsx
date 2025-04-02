@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -6,13 +7,16 @@ import TabBar from './components/TabBar';
 import { useChatState } from './hooks/useChatState';
 import useWidgetConfig from './hooks/useWidgetConfig';
 import { dispatchChatEvent } from './utils/events';
-import { initializeAbly, cleanupAbly } from './utils/ably';
+import { initializeAbly, cleanupAbly, getConnectionState } from './utils/ably';
 import { getAblyAuthUrl } from './services/ablyAuth';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
+import { useConnectionState } from './hooks/useConnectionState';
+import { Toaster } from '@/components/ui/toaster';
+import { toast } from 'sonner';
 
 interface ChatWidgetProps {
   workspaceId?: string;
@@ -35,13 +39,21 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
+  const { isConnected, connectionState } = useConnectionState();
   
   useEffect(() => {
     if (!loading && config.realtime?.enabled && workspaceId) {
       const authUrl = getAblyAuthUrl(workspaceId);
       
       initializeAbly(authUrl)
-        .catch(err => console.error('Failed to initialize Ably:', err));
+        .then(() => {
+          console.log('Ably initialized successfully');
+          toast.success('Chat connection established');
+        })
+        .catch(err => {
+          console.error('Failed to initialize Ably:', err);
+          toast.error('Failed to establish chat connection');
+        });
       
       return () => {
         cleanupAbly();
@@ -77,6 +89,29 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     }
   };
 
+  const handleReconnect = () => {
+    if (connectionState === 'disconnected' || connectionState === 'suspended' || connectionState === 'failed') {
+      toast.loading('Attempting to reconnect...', { id: 'reconnecting' });
+      
+      cleanupAbly();
+      
+      setTimeout(() => {
+        if (workspaceId) {
+          const authUrl = getAblyAuthUrl(workspaceId);
+          
+          initializeAbly(authUrl)
+            .then(() => {
+              toast.success('Successfully reconnected', { id: 'reconnecting' });
+            })
+            .catch(err => {
+              toast.error('Failed to reconnect', { id: 'reconnecting' });
+              console.error('Failed to reconnect:', err);
+            });
+        }
+      }, 1000);
+    }
+  };
+
   const wrappedHandleStartChat = (formData?: Record<string, string>) => {
     if (formData) {
       setUserFormData(formData);
@@ -103,6 +138,17 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
           className="h-4 w-auto"
         />
         <span>Pullse</span>
+        
+        {config.realtime?.enabled && (
+          <div 
+            className={`ml-1 w-2 h-2 rounded-full ${
+              isConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'
+            }`} 
+            title={`Connection: ${connectionState}`}
+            onClick={!isConnected ? handleReconnect : undefined}
+            style={{ cursor: !isConnected ? 'pointer' : 'default' }}
+          />
+        )}
       </div>
     );
   };
@@ -119,7 +165,11 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
           style={buttonStyle}
           onClick={toggleChat}
         >
-          <MessageSquare size={24} className="text-white" />
+          {config.realtime?.enabled && !isConnected ? (
+            <WifiOff size={24} className="text-white animate-pulse" />
+          ) : (
+            <MessageSquare size={24} className="text-white" />
+          )}
           {!isOpen && unreadCount > 0 && (
             <Badge 
               className="absolute -top-2 -right-2 bg-red-500 text-white border-white border-2" 
@@ -168,10 +218,23 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
                 {renderFooter()}
               </div>
             )}
+            
+            {/* Connection warning banner */}
+            {config.realtime?.enabled && !isConnected && (
+              <div 
+                className="absolute top-0 left-0 w-full bg-red-500 text-white text-xs py-1 px-2 text-center cursor-pointer"
+                onClick={handleReconnect}
+              >
+                Connection lost. Click to reconnect.
+              </div>
+            )}
           </div>
         </div>
       )}
       {renderLauncher()}
+      
+      {/* Add Sonner toaster for connection notifications */}
+      <Toaster />
     </>
   );
 };
