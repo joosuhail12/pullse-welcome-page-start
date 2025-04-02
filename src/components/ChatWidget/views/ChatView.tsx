@@ -12,13 +12,15 @@ interface ChatViewProps {
   onBack: () => void;
   onUpdateConversation: (updatedConversation: Conversation) => void;
   config?: ChatWidgetConfig;
+  playMessageSound?: () => void;
 }
 
 const ChatView = ({ 
   conversation, 
   onBack, 
   onUpdateConversation, 
-  config 
+  config,
+  playMessageSound
 }: ChatViewProps) => {
   const {
     messages,
@@ -29,16 +31,19 @@ const ChatView = ({
     handleSendMessage,
     handleUserTyping,
     handleFileUpload,
-    handleEndChat
-  } = useChatMessages(conversation, config, onUpdateConversation);
+    handleEndChat,
+    remoteIsTyping,
+    readReceipts
+  } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
 
   return (
     <div className="flex flex-col h-[600px]">
       <ChatHeader conversation={conversation} onBack={onBack} />
       <MessageList 
         messages={messages}
-        isTyping={isTyping}
+        isTyping={isTyping || remoteIsTyping}
         setMessageText={setMessageText}
+        readReceipts={readReceipts}
       />
       <MessageInput
         messageText={messageText}

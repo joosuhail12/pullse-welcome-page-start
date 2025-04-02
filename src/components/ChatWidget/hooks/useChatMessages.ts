@@ -1,18 +1,19 @@
-
 import { useState, useEffect } from 'react';
 import { Message, Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from '../utils/events';
 import { 
   subscribeToChannel, 
-  publishToChannel 
+  publishToChannel,
+  getAblyClient
 } from '../utils/ably';
 import { getChatSessionId } from '../utils/cookies';
 
 export function useChatMessages(
   conversation: Conversation,
   config?: ChatWidgetConfig,
-  onUpdateConversation?: (updatedConversation: Conversation) => void
+  onUpdateConversation?: (updatedConversation: Conversation) => void,
+  playMessageSound?: () => void
 ) {
   const [messageText, setMessageText] = useState('');
   const [messages, setMessages] = useState<Message[]>(
@@ -27,11 +28,14 @@ export function useChatMessages(
     ]
   );
   const [isTyping, setIsTyping] = useState(false);
+  const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [readReceipts, setReadReceipts] = useState<Record<string, boolean>>({});
 
   // Create channel name based on conversation
   const chatChannelName = `conversation:${conversation.id}`;
+  const sessionChannelName = `session:${getChatSessionId()}`;
   const sessionId = getChatSessionId();
 
   useEffect(() => {
@@ -52,7 +56,7 @@ export function useChatMessages(
     // If realtime is enabled, subscribe to the conversation channel
     if (config?.realtime?.enabled && conversation.id) {
       // Subscribe to new messages
-      const channel = subscribeToChannel(
+      const messageChannel = subscribeToChannel(
         chatChannelName,
         'message',
         (message) => {
@@ -67,28 +71,85 @@ export function useChatMessages(
             
             setMessages(prev => [...prev, newMessage]);
             
+            // Play sound notification if provided and chat is not visible
+            if (playMessageSound && document.visibilityState !== 'visible') {
+              playMessageSound();
+            }
+            
             // Dispatch message received event
             dispatchChatEvent('chat:messageReceived', { message: newMessage }, config);
+            
+            // Send read receipt after a short delay
+            setTimeout(() => {
+              publishToChannel(chatChannelName, 'read', {
+                messageId: newMessage.id,
+                userId: sessionId,
+                timestamp: new Date()
+              });
+            }, 2000);
           }
         }
       );
 
       // Subscribe to typing indicators
-      subscribeToChannel(
+      const typingChannel = subscribeToChannel(
         chatChannelName,
         'typing',
         (message) => {
-          if (message.data && message.data.status) {
-            setIsTyping(message.data.status === 'start');
+          if (message.data && message.data.status && message.data.userId !== sessionId) {
+            setRemoteIsTyping(message.data.status === 'start');
+          }
+        }
+      );
+      
+      // Subscribe to read receipts
+      const readChannel = subscribeToChannel(
+        chatChannelName,
+        'read',
+        (message) => {
+          if (message.data && message.data.messageId && message.data.userId !== sessionId) {
+            setReadReceipts(prev => ({
+              ...prev,
+              [message.data.messageId]: true
+            }));
           }
         }
       );
 
+      // Send notification on the session channel for unread tracking
+      const notifyNewMessage = (message: Message) => {
+        if (config?.realtime?.enabled && message.sender === 'system') {
+          publishToChannel(sessionChannelName, 'message', {
+            id: message.id,
+            text: message.text,
+            sender: message.sender,
+            timestamp: message.timestamp
+          });
+        }
+      };
+
+      // Add read receipt functionality for existing messages
+      const processExistingMessages = () => {
+        messages.forEach(message => {
+          if (message.sender === 'system') {
+            // Send read receipt for existing system messages
+            publishToChannel(chatChannelName, 'read', {
+              messageId: message.id,
+              userId: sessionId,
+              timestamp: new Date()
+            });
+          }
+        });
+      };
+      
+      // Process existing messages when component mounts
+      processExistingMessages();
+
       // Clean up subscriptions on unmount
       return () => {
-        if (channel) {
-          channel.unsubscribe();
-        }
+        if (messageChannel) messageChannel.unsubscribe();
+        if (typingChannel) typingChannel.unsubscribe();
+        if (readChannel) readChannel.unsubscribe();
       };
     } else {
       // Fallback to the original behavior when realtime is disabled
@@ -142,7 +203,7 @@ export function useChatMessages(
         }
       };
     }
-  }, [hasUserSentMessage, config?.realtime?.enabled, chatChannelName, conversation.id, typingTimeout, config]);
+  }, [hasUserSentMessage, config?.realtime?.enabled, chatChannelName, conversation.id, typingTimeout, config, messages, sessionId, playMessageSound, sessionChannelName]);
 
   const handleSendMessage = () => {
     if (!messageText.trim()) return;
@@ -173,6 +234,12 @@ export function useChatMessages(
         sender: userMessage.sender,
         timestamp: userMessage.timestamp,
         type: userMessage.type
+      });
+      
+      // Stop typing indicator when sending a message
+      publishToChannel(chatChannelName, 'typing', {
+        status: 'stop',
+        userId: sessionId
       });
     } else {
       // Fallback to the original behavior
@@ -307,10 +374,12 @@ export function useChatMessages(
     messageText,
     setMessageText,
     isTyping,
+    remoteIsTyping,
     hasUserSentMessage,
     handleSendMessage,
     handleUserTyping,
     handleFileUpload,
-    handleEndChat
+    handleEndChat,
+    readReceipts
   };
 }
