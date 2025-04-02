@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { ChatWidgetConfig } from '../config';
 import PreChatForm from './PreChatForm';
 
@@ -9,54 +9,39 @@ interface PreChatFormSectionProps {
   isProcessingForm?: boolean;
 }
 
-// Use memo to prevent unnecessary re-renders
 const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: PreChatFormSectionProps) => {
   const [mounted, setMounted] = useState(false);
-  const handledSubmissionRef = useRef(false);
-  const submittedDataRef = useRef<Record<string, string> | null>(null);
+  const [lastSubmittedData, setLastSubmittedData] = useState<Record<string, string> | null>(null);
   
   // Subtle animation on mount with a slight delay for better sequencing
   useEffect(() => {
     const timer = setTimeout(() => {
       setMounted(true);
-    }, 400);
+    }, 300);
     
-    return () => {
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, []);
   
-  // Reset submission handling when processing state changes to false
-  useEffect(() => {
-    if (isProcessingForm === false) {
-      handledSubmissionRef.current = false;
-    }
-  }, [isProcessingForm]);
-  
-  // Memoize the handler to prevent recreation on each render
+  // Form submission handler with deduplication
   const handleFormSubmit = useCallback((formData: Record<string, string>) => {
-    // Prevent multiple submissions
-    if (isProcessingForm || handledSubmissionRef.current) {
-      console.log("Preventing duplicate form submission");
+    if (isProcessingForm) {
+      console.log("Form already processing, preventing submission");
       return;
     }
     
-    // Check for duplicate data
+    // Check for duplicate submissions
     const formDataString = JSON.stringify(formData);
-    const prevDataString = submittedDataRef.current ? JSON.stringify(submittedDataRef.current) : null;
+    const prevDataString = lastSubmittedData ? JSON.stringify(lastSubmittedData) : null;
     
     if (prevDataString && prevDataString === formDataString) {
-      console.log("Same form data submitted again, ignoring");
+      console.log("Duplicate form data detected, ignoring");
       return;
     }
     
-    console.log("PreChatFormSection handling form submission");
-    handledSubmissionRef.current = true;
-    submittedDataRef.current = formData;
-    
-    // Call the callback with the form data
+    // Store the submitted data and forward the submission
+    setLastSubmittedData(formData);
     onFormComplete(formData);
-  }, [onFormComplete, isProcessingForm]);
+  }, [onFormComplete, isProcessingForm, lastSubmittedData]);
   
   // Apply custom branding if available
   const themeStyles = {
@@ -76,16 +61,17 @@ const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: P
       aria-label="Pre-chat form"
       tabIndex={0}
     >
-      <PreChatForm 
-        config={config} 
-        onFormComplete={handleFormSubmit} 
-        isProcessingForm={isProcessingForm}
-      />
+      {config && (
+        <PreChatForm 
+          config={config} 
+          onFormComplete={handleFormSubmit} 
+          isProcessingForm={isProcessingForm}
+        />
+      )}
     </div>
   );
 });
 
-// Add display name for debugging
 PreChatFormSection.displayName = 'PreChatFormSection';
 
 export default PreChatFormSection;

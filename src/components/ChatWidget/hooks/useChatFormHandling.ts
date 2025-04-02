@@ -1,5 +1,5 @@
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from '../utils/events';
@@ -25,40 +25,43 @@ export function useChatFormHandling({
   const lastSubmittedDataRef = useRef<Record<string, string> | null>(null);
   
   // Use the pre-chat form hook
-  const { showPreChatForm, hidePreChatForm } = usePreChatForm({ 
+  const { showPreChatForm, updateFormVisibility, hidePreChatForm } = usePreChatForm({ 
     conversation, 
     config, 
     userFormData 
   });
 
+  // Update visibility when dependencies change
+  useEffect(() => {
+    updateFormVisibility();
+  }, [updateFormVisibility]);
+
   // Handle form submission with improved state management
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
-    console.log("Form submission in useChatFormHandling with data:", formData);
+    // Check for processing state or duplicate submission
+    if (formSubmissionRef.current || isProcessingForm) {
+      console.log("Form submission already in progress, ignoring duplicate");
+      return;
+    }
     
-    // Check for duplicate submission with same data
+    // Compare with last submission to prevent duplicates
     if (lastSubmittedDataRef.current && 
         JSON.stringify(lastSubmittedDataRef.current) === JSON.stringify(formData)) {
       console.log("Preventing duplicate submission with same data");
       return;
     }
     
-    // Use ref to check if submission is already in progress
-    if (formSubmissionRef.current || isProcessingForm) {
-      console.log("Form submission already in progress, ignoring duplicate submission");
-      return;
-    }
-    
-    // Set refs before any state updates
+    // Set flags before starting the process
     formSubmissionRef.current = true;
     lastSubmittedDataRef.current = formData;
-    
-    // Set processing state
     setIsProcessingForm(true);
     
-    // First hide the form
+    console.log("Processing form completion with data:", formData);
+    
+    // Hide the form first
     hidePreChatForm();
     
-    // Batch updates to prevent cascading renders
+    // Update all state in batches
     setTimeout(() => {
       // Update user data
       if (setUserFormData) {
@@ -71,7 +74,7 @@ export function useChatFormHandling({
         contactIdentified: true
       });
       
-      // Dispatch event if config exists
+      // Dispatch event
       if (config) {
         dispatchChatEvent('contact:formCompleted', { formData }, config);
       }
@@ -80,10 +83,10 @@ export function useChatFormHandling({
       setTimeout(() => {
         setIsProcessingForm(false);
         formSubmissionRef.current = false;
-      }, 500);
+      }, 300);
     }, 0);
     
-  }, [conversation, config, hidePreChatForm, isProcessingForm, onUpdateConversation, setUserFormData]);
+  }, [conversation, config, hidePreChatForm, onUpdateConversation, setUserFormData, isProcessingForm]);
 
   return {
     showPreChatForm,
