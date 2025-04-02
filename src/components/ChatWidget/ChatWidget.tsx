@@ -1,20 +1,23 @@
 
 import React, { useEffect } from 'react';
-import HomeView from './views/HomeView';
-import MessagesView from './views/MessagesView';
-import ChatView from './views/ChatView';
-import TabBar from './components/TabBar';
 import { useChatState } from './hooks/useChatState';
 import useWidgetConfig from './hooks/useWidgetConfig';
 import { dispatchChatEvent } from './utils/events';
 import { initializeAbly, cleanupAbly } from './utils/ably';
 import { getAblyAuthUrl } from './services/ablyAuth';
-import { MessageSquare } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
 import { useChatWidgetContext } from './ChatWidgetProvider';
+import WidgetLauncher from './components/WidgetLauncher';
+import WidgetContainer from './components/WidgetContainer';
+import WidgetFooter from './components/WidgetFooter';
+import { 
+  getPositionClass, 
+  getMessageStyleClass, 
+  getButtonStyleClass,
+  getWidgetStyles,
+  getButtonStyle
+} from './utils/widgetStyles';
 
 interface ChatWidgetProps {
   workspaceId?: string;
@@ -62,41 +65,8 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     }
   }, [loading, config.workspaceId]);
   
-  // Apply custom branding if available
-  const widgetStyle = {
-    // Base styles
-    ...(config.branding?.primaryColor && {
-      '--vivid-purple': config.branding.primaryColor,
-    }),
-    // Enhanced styling
-    ...(config.branding?.borderRadius && {
-      '--radius': config.branding.borderRadius,
-    }),
-    ...(config.branding?.fontFamily && {
-      'fontFamily': config.branding.fontFamily,
-    }),
-    // Theme colors for bubbles and headers
-    ...(config.branding?.widgetHeader?.backgroundColor && {
-      '--chat-header-bg': config.branding.widgetHeader.backgroundColor,
-    }),
-    ...(config.branding?.widgetHeader?.textColor && {
-      '--chat-header-text': config.branding.widgetHeader.textColor,
-    }),
-    ...(config.branding?.userBubble?.backgroundColor && {
-      '--user-bubble-bg': config.branding.userBubble.backgroundColor,
-    }),
-    ...(config.branding?.userBubble?.textColor && {
-      '--user-bubble-text': config.branding.userBubble.textColor,
-    }),
-    ...(config.branding?.systemBubble?.backgroundColor && {
-      '--system-bubble-bg': config.branding.systemBubble.backgroundColor,
-    }),
-    ...(config.branding?.systemBubble?.textColor && {
-      '--system-bubble-text': config.branding.systemBubble.textColor,
-    }),
-    // Any custom CSS properties
-    ...(config.branding?.customCSS && config.branding.customCSS),
-  } as React.CSSProperties;
+  // Apply widget styling
+  const widgetStyle = getWidgetStyles(config);
 
   useEffect(() => {
     // Apply theme preference if set
@@ -142,121 +112,44 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     dispatchChatEvent('contact:initiatedChat', undefined, config);
   };
 
-  // Render footer only if branding bar is enabled
-  const renderFooter = () => {
-    if (!config.branding?.showBrandingBar) return null;
-    
-    return (
-      <div className="mt-auto border-t border-gray-100 p-2 flex items-center justify-center gap-1 text-xs text-gray-400">
-        <span>Powered by</span>
-        <img 
-          src="https://framerusercontent.com/images/9N8Z1vTRbJsHlrIuTjm6Ajga4dI.png" 
-          alt="Pullse Logo" 
-          className="h-4 w-auto"
-        />
-        <span>Pullse</span>
-      </div>
-    );
-  };
+  // Render footer using the dedicated component
+  const renderFooter = () => (
+    <WidgetFooter showBrandingBar={config.branding?.showBrandingBar} />
+  );
 
-  // Get correct position class based on config
-  const getPositionClass = () => {
-    switch (config.position) {
-      case 'bottom-left': return 'bottom-4 left-4';
-      case 'top-right': return 'top-4 right-4';
-      case 'top-left': return 'top-4 left-4';
-      default: return 'bottom-4 right-4';
-    }
-  };
-
-  // Get correct message style class based on config
-  const getMessageStyleClass = () => {
-    switch (config.branding?.messageStyle) {
-      case 'square': return 'chat-widget-squared';
-      case 'bubble': return 'chat-widget-bubbles';
-      default: return ''; // Default rounded style
-    }
-  };
-
-  // Determine button style class based on config
-  const getButtonStyleClass = () => {
-    switch (config.branding?.buttonStyle) {
-      case 'outline': return 'chat-widget-button-outline';
-      case 'ghost': return 'chat-widget-button-ghost';
-      case 'soft': return 'chat-widget-button-soft';
-      default: return 'chat-widget-button'; // Default solid style
-    }
-  };
-
-  // Render launcher button that can both open and close the widget
-  const renderLauncher = () => {
-    // Apply custom branding if available
-    const buttonStyle = config.branding?.primaryColor 
-      ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
-      : {};
-    
-    const positionClass = getPositionClass();
-    const buttonStyleClass = getButtonStyleClass();
-    
-    return (
-      <div className={`fixed ${positionClass} flex flex-col items-end`}>
-        <Button
-          className={`rounded-full w-14 h-14 flex items-center justify-center ${buttonStyleClass} relative`}
-          style={buttonStyle}
-          onClick={toggleChat}
-        >
-          <MessageSquare size={24} className="text-white" />
-          {!isOpen && unreadCount > 0 && (
-            <Badge 
-              className="absolute -top-2 -right-2 bg-red-500 text-white border-white border-2" 
-              variant="destructive"
-            >
-              {unreadCount}
-            </Badge>
-          )}
-        </Button>
-      </div>
-    );
-  };
+  // Get position and style classes
+  const positionClass = getPositionClass(config.position);
+  const messageStyleClass = getMessageStyleClass(config.branding?.messageStyle);
+  const buttonStyleClass = getButtonStyleClass(config.branding?.buttonStyle);
+  const buttonStyle = getButtonStyle(config.branding?.primaryColor);
 
   return (
     <>
       {isOpen && (
-        <div 
-          className={`fixed ${getPositionClass()} w-80 sm:w-96 h-[600px] z-50 chat-widget-container ${getMessageStyleClass()}`}
-          style={widgetStyle}
-        >
-          <div className="relative w-full h-full flex flex-col">
-            {viewState === 'chat' ? (
-              <ChatView 
-                conversation={activeConversation!} 
-                onBack={handleBackToMessages} 
-                onUpdateConversation={handleUpdateConversation}
-                config={config}
-                playMessageSound={playMessageSound}
-              />
-            ) : (
-              <div className="flex flex-col h-full">
-                <div className="flex-grow overflow-y-auto">
-                  {viewState === 'home' && (
-                    <HomeView 
-                      onStartChat={wrappedHandleStartChat} 
-                      config={config}
-                    />
-                  )}
-                  {viewState === 'messages' && <MessagesView onSelectConversation={handleSelectConversation} />}
-                </div>
-                
-                <TabBar viewState={viewState} onChangeView={handleChangeView} />
-                
-                {/* Render footer */}
-                {renderFooter()}
-              </div>
-            )}
-          </div>
-        </div>
+        <WidgetContainer
+          viewState={viewState}
+          activeConversation={activeConversation}
+          onBackToMessages={handleBackToMessages}
+          onChangeView={handleChangeView}
+          onSelectConversation={handleSelectConversation}
+          onUpdateConversation={handleUpdateConversation}
+          onStartChat={wrappedHandleStartChat}
+          config={config}
+          positionClass={positionClass}
+          messageStyleClass={messageStyleClass}
+          widgetStyle={widgetStyle}
+          playMessageSound={playMessageSound}
+          renderFooter={renderFooter}
+        />
       )}
-      {renderLauncher()}
+      <WidgetLauncher
+        unreadCount={unreadCount}
+        isOpen={isOpen}
+        onClick={toggleChat}
+        buttonStyle={buttonStyle}
+        positionClass={positionClass}
+        buttonStyleClass={buttonStyleClass}
+      />
     </>
   );
 };
