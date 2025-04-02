@@ -50,6 +50,9 @@ if (typeof window !== 'undefined') {
         ...api
       };
       
+      // Automatically trigger a widget open event after initialization
+      setTimeout(() => dispatchWidgetEvent(WIDGET_EVENTS.OPEN), 300);
+      
       return api;
     },
     open: () => {
@@ -65,6 +68,19 @@ if (typeof window !== 'undefined') {
       dispatchWidgetEvent(WIDGET_EVENTS.TOGGLE);
     }
   } as ChatWidgetInterface;
+  
+  // Add window-level debugging to track widget events
+  window.addEventListener('pullse:widget:open', () => {
+    console.log('🔔 Widget OPEN event received at window level');
+  });
+  
+  window.addEventListener('pullse:widget:close', () => {
+    console.log('🔔 Widget CLOSE event received at window level');
+  });
+  
+  window.addEventListener('pullse:widget:toggle', () => {
+    console.log('🔔 Widget TOGGLE event received at window level');
+  });
 }
 
 export default initChatWidget;

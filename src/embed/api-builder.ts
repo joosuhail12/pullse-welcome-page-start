@@ -1,5 +1,5 @@
 
-import { dispatchWidgetEvent, WIDGET_EVENTS } from './event-dispatcher';
+import { dispatchWidgetEvent, WIDGET_EVENTS, addWidgetEventListener } from './event-dispatcher';
 import { ChatWidgetInterface } from './types';
 
 /**
@@ -20,18 +20,10 @@ export function createWidgetAPI(): Partial<ChatWidgetInterface> {
       dispatchWidgetEvent(WIDGET_EVENTS.TOGGLE);
     },
     on: (eventName: string, callback: (detail: any) => void) => {
-      const eventPrefix = eventName.startsWith('pullse:') ? '' : 'pullse:';
-      const fullEventName = `${eventPrefix}${eventName}`;
-      
-      const handler = (event: CustomEvent) => {
-        callback(event.detail);
-      };
-      
-      window.addEventListener(fullEventName, handler as EventListener);
-      return () => window.removeEventListener(fullEventName, handler as EventListener);
+      return addWidgetEventListener(eventName, (event) => callback(event.detail));
     },
     off: (eventName: string, handler: EventListener) => {
-      const eventPrefix = eventName.startsWith('pullse:') ? '' : 'pullse:';
+      const eventPrefix = eventName.startsWith('pullse:') ? '' : 'pullse:widget:';
       const fullEventName = `${eventPrefix}${eventName}`;
       window.removeEventListener(fullEventName, handler);
     }

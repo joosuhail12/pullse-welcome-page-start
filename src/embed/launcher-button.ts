@@ -1,5 +1,6 @@
 
 import { WidgetConfig } from './types';
+import { dispatchWidgetEvent, WIDGET_EVENTS } from './event-dispatcher';
 
 export function createLauncherButton(config: WidgetConfig, loadWidgetCallback: () => void): HTMLButtonElement {
   const launcherButton = document.createElement('button');
@@ -41,14 +42,28 @@ export function createLauncherButton(config: WidgetConfig, loadWidgetCallback: (
   // Add click handler to load the widget - ensure it's properly connected
   launcherButton.addEventListener('click', (e) => {
     e.preventDefault();
-    console.log('Chat widget launcher clicked');
+    e.stopPropagation(); // Prevent event bubbling
     
-    // Call the callback immediately
+    console.log('💬 Chat widget launcher clicked');
+    
+    // Call the callback immediately to load widget resources
     loadWidgetCallback();
     
     // Then remove the button from the DOM
     if (document.body.contains(launcherButton)) {
       document.body.removeChild(launcherButton);
+      
+      // Force dispatch the open event after a delay to ensure widget is loaded
+      setTimeout(() => {
+        console.log('Launcher triggering open event');
+        dispatchWidgetEvent(WIDGET_EVENTS.OPEN);
+        
+        // Double check by also calling the global API method if available
+        if (window.ChatWidget && window.ChatWidget.open) {
+          console.log('Also calling global ChatWidget.open()');
+          window.ChatWidget.open();
+        }
+      }, 800);
     }
   });
   
