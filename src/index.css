@@ -131,33 +131,46 @@
   }
 }
 
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 /* Add custom components for chat widget styling */
 @layer components {
   .chat-widget-container {
-    @apply shadow-lg border border-gray-200 rounded-lg overflow-hidden bg-white;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    @apply shadow-xl border border-gray-200 rounded-xl overflow-hidden bg-white;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
   }
   
   .chat-message-bubble {
-    @apply p-4 rounded-lg shadow-sm;
+    @apply p-4 rounded-xl shadow-sm transition-all;
   }
   
   .chat-message-user {
-    @apply bg-user-bubble text-user-bubble-foreground rounded-br-none chat-message-bubble;
-    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+    @apply bg-user-bubble text-user-bubble-foreground rounded-br-sm chat-message-bubble;
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
   }
   
   .chat-message-system {
-    @apply bg-system-bubble text-system-bubble-foreground rounded-bl-none chat-message-bubble;
+    @apply bg-system-bubble text-system-bubble-foreground rounded-bl-sm chat-message-bubble;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   }
   
   .chat-widget-button {
     @apply bg-vivid-purple text-white shadow-lg hover:bg-vivid-purple/90 transition-all;
-    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.5);
   }
   
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out forwards;
+  }
+  
+  .animate-pulse-subtle {
+    animation: pulse 2s ease-in-out infinite;
   }
 }

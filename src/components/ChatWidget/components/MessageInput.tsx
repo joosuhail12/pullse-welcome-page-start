@@ -16,7 +16,7 @@ interface MessageInputProps {
   handleEndChat: () => void;
   hasUserSentMessage: boolean;
   onTyping?: () => void;
-  disabled?: boolean; // Add the disabled prop
+  disabled?: boolean;
 }
 
 const MessageInput = ({ 
@@ -27,7 +27,7 @@ const MessageInput = ({
   handleEndChat,
   hasUserSentMessage,
   onTyping,
-  disabled = false // Set a default value to false
+  disabled = false
 }: MessageInputProps) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -86,15 +86,18 @@ const MessageInput = ({
   };
 
   return (
-    <div className="border-t p-4">
+    <div className="p-4">
       <div className="flex flex-col">
         {fileError && (
-          <div className="mb-2 text-xs text-red-500 p-2 bg-red-50 rounded">
-            {fileError}
+          <div className="mb-2 text-xs text-red-500 p-2 bg-red-50 rounded-md animate-fade-in">
+            <div className="flex items-center">
+              <X size={14} className="mr-1" />
+              {fileError}
+            </div>
           </div>
         )}
-        <div className="flex items-center">
-          <label htmlFor="file-upload" className={`cursor-pointer p-2 ${disabled ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-100'} rounded-md`}>
+        <div className="flex items-center space-x-2">
+          <label htmlFor="file-upload" className={`cursor-pointer p-2.5 rounded-full ${disabled ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-100'} transition-colors`}>
             <Paperclip size={18} className="text-gray-500" />
             <input 
               id="file-upload" 
@@ -106,13 +109,13 @@ const MessageInput = ({
             />
           </label>
           
-          <div className="relative flex-grow mx-2">
+          <div className="relative flex-grow">
             <Textarea 
               value={messageText}
               onChange={handleChange}
               onKeyDown={handleKeyPress}
               placeholder="Type a message..."
-              className="flex-grow min-h-[44px] max-h-[120px] p-3 border rounded-md focus:outline-none resize-none pr-10 text-sm"
+              className="flex-grow min-h-[44px] max-h-[120px] p-3 border rounded-lg focus:outline-none resize-none pr-10 text-sm shadow-sm focus:ring-1 focus:ring-vivid-purple-300 transition-shadow"
               rows={1}
               maxLength={2000}
               disabled={disabled}
@@ -122,13 +125,13 @@ const MessageInput = ({
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full hover:bg-gray-100"
                   disabled={disabled}
                 >
                   <Smile size={18} className="text-gray-500" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent side="top" align="end" className="w-auto p-0 border-none">
+              <PopoverContent side="top" align="end" className="w-auto p-0 border-none shadow-lg rounded-lg">
                 <div className="emoji-picker-container">
                   <Picker 
                     data={data} 
@@ -143,7 +146,7 @@ const MessageInput = ({
           <Button 
             onClick={handleSendMessage}
             disabled={!messageText.trim() || disabled}
-            className="h-auto rounded-md chat-widget-button p-2.5"
+            className="h-10 w-10 rounded-full chat-widget-button p-0 flex items-center justify-center transition-transform hover:scale-105"
           >
             <Send size={18} />
           </Button>
@@ -155,7 +158,7 @@ const MessageInput = ({
               variant="outline" 
               size="sm" 
               onClick={handleEndChat}
-              className="text-xs text-gray-500"
+              className="text-xs text-gray-500 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors"
               disabled={disabled}
             >
               <X size={14} className="mr-1" /> End chat

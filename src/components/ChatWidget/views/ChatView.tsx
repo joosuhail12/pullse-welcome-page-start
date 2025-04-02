@@ -160,7 +160,7 @@ const ChatView = ({
 
   return (
     <div 
-      className="flex flex-col h-[600px]"
+      className="flex flex-col h-[600px] bg-gradient-to-b from-gray-50 to-white"
       style={{
         // Apply custom theme variables if available from config
         ...(config?.branding?.primaryColor && {
@@ -186,9 +186,9 @@ const ChatView = ({
         showSearchFeature={!!config?.features?.searchMessages}
       />
       
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto px-4 py-2 bg-opacity-50">
         {showPreChatForm ? (
-          <div className="mb-4">
+          <div className="mb-4 p-4 bg-white rounded-lg shadow-sm animate-fade-in">
             <PreChatForm 
               config={config} 
               onFormComplete={handleFormComplete} 
@@ -213,16 +213,18 @@ const ChatView = ({
         )}
       </div>
       
-      <MessageInput
-        messageText={messageText}
-        setMessageText={setMessageText}
-        handleSendMessage={handleSendMessage}
-        handleFileUpload={handleFileUpload}
-        handleEndChat={handleEndChat}
-        hasUserSentMessage={hasUserSentMessage}
-        onTyping={handleUserTyping}
-        disabled={showPreChatForm}
-      />
+      <div className="border-t border-gray-100 bg-white bg-opacity-70 backdrop-blur-sm">
+        <MessageInput
+          messageText={messageText}
+          setMessageText={setMessageText}
+          handleSendMessage={handleSendMessage}
+          handleFileUpload={handleFileUpload}
+          handleEndChat={handleEndChat}
+          hasUserSentMessage={hasUserSentMessage}
+          onTyping={handleUserTyping}
+          disabled={showPreChatForm}
+        />
+      </div>
     </div>
   );
 };

@@ -30,14 +30,14 @@ const HomeView = ({
   };
   
   return (
-    <div className="flex flex-col p-5 h-full">
-      <div className="mb-5">
-        <h2 className="text-xl font-bold text-vivid-purple-500">
+    <div className="flex flex-col p-6 h-full bg-gradient-to-br from-white to-gray-50">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-vivid-purple-600 to-vivid-purple-400 bg-clip-text text-transparent">
           {config.welcomeMessage}
         </h2>
         
-        <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-          Get help, ask questions, or start a conversation.
+        <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+          Get help, ask questions, or start a conversation with our support team.
         </p>
         
         <AgentPresence />
@@ -46,10 +46,10 @@ const HomeView = ({
       <div className="mt-auto">
         <Button 
           onClick={handleStartChat}
-          className="chat-widget-button flex items-center gap-2 w-full py-2.5"
+          className="chat-widget-button flex items-center gap-2 w-full py-3 rounded-lg shadow-md transition-all hover:shadow-lg"
           style={buttonStyle}
         >
-          <MessageSquare size={18} />
+          <MessageSquare size={20} />
           <span className="font-medium">Ask a question</span>
         </Button>
       </div>
