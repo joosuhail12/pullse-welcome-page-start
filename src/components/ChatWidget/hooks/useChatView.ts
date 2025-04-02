@@ -27,7 +27,7 @@ export function useChatView({
 }: UseChatViewProps) {
   const [showSearch, setShowSearch] = useState(false);
   const [isProcessingForm, setIsProcessingForm] = useState(false);
-  const formSubmissionRef = useRef(false); // Use ref to track form submission state
+  const formSubmissionRef = useRef(false);
   
   // Use the pre-chat form hook with stable references
   const { showPreChatForm, hidePreChatForm } = usePreChatForm({ 
@@ -121,50 +121,45 @@ export function useChatView({
     }
   }, [loadPreviousMessages]);
 
-  // Handle form submission - memoized to prevent re-renders
+  // Handle form submission with improved state management
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     console.log("Form submission in useChatView with data:", formData);
     
-    // Prevent multiple submissions using both state and ref
-    if (isProcessingForm || formSubmissionRef.current) {
+    // Use ref to check if submission is already in progress
+    if (formSubmissionRef.current || isProcessingForm) {
       console.log("Form submission already in progress, ignoring duplicate submission");
       return;
     }
     
-    // Set both state and ref to prevent submission during state update cycles
-    setIsProcessingForm(true);
+    // Set both state and ref to prevent multiple submissions
     formSubmissionRef.current = true;
+    setIsProcessingForm(true);
     
     // First hide the form to prevent rendering issues
     hidePreChatForm();
     
-    // Use setTimeout to separate state updates and prevent render loops
+    // Use setTimeout to batch state updates
     setTimeout(() => {
-      try {
-        // Update the parent form data if callback exists
-        if (setUserFormData) {
-          setUserFormData(formData);
-        }
-        
-        // Flag the conversation as having identified the contact
-        onUpdateConversation({
-          ...conversation,
-          contactIdentified: true
-        });
-        
-        // Dispatch form completed event
-        if (config) {
-          dispatchChatEvent('contact:formCompleted', { formData }, config);
-        }
-      } finally {
-        // Reset processing flag after a short delay
-        setTimeout(() => {
-          setIsProcessingForm(false);
-          formSubmissionRef.current = false;
-        }, 300);
+      if (setUserFormData) {
+        setUserFormData(formData);
       }
+      
+      onUpdateConversation({
+        ...conversation,
+        contactIdentified: true
+      });
+      
+      if (config) {
+        dispatchChatEvent('contact:formCompleted', { formData }, config);
+      }
+      
+      // Reset processing flags after a delay
+      setTimeout(() => {
+        setIsProcessingForm(false);
+        formSubmissionRef.current = false;
+      }, 500);
     }, 0);
-  }, [setUserFormData, conversation, onUpdateConversation, config, hidePreChatForm, isProcessingForm]);
+  }, [conversation, config, hidePreChatForm, isProcessingForm, onUpdateConversation, setUserFormData]);
 
   // Get avatar URLs from config
   const agentAvatar = useMemo(() => 

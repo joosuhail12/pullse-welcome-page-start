@@ -12,6 +12,7 @@ interface PreChatFormSectionProps {
 // Use memo to prevent unnecessary re-renders
 const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: PreChatFormSectionProps) => {
   const [mounted, setMounted] = useState(false);
+  const [handledSubmission, setHandledSubmission] = useState(false);
   
   // Subtle animation on mount with a slight delay for better sequencing
   useEffect(() => {
@@ -24,18 +25,27 @@ const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: P
     };
   }, []);
   
+  // Reset submission handling if processing state changes
+  useEffect(() => {
+    if (!isProcessingForm) {
+      setHandledSubmission(false);
+    }
+  }, [isProcessingForm]);
+  
   // Memoize the handler to prevent recreation on each render
   const handleFormSubmit = useCallback((formData: Record<string, string>) => {
-    if (isProcessingForm) {
+    // Prevent multiple submissions
+    if (isProcessingForm || handledSubmission) {
       console.log("Preventing duplicate form submission");
-      return; // Prevent multiple submissions
+      return;
     }
     
     console.log("PreChatFormSection handling form submission");
+    setHandledSubmission(true);
     
     // Call the callback directly with the form data
     onFormComplete(formData);
-  }, [onFormComplete, isProcessingForm]);
+  }, [onFormComplete, isProcessingForm, handledSubmission]);
   
   // Apply custom branding if available
   const themeStyles = {

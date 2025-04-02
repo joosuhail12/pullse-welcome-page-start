@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
+
+import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -17,9 +18,18 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formValid, setFormValid] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const hasSubmittedRef = useRef(false);
+  const submitAttemptedRef = useRef(false);
+  const formSubmittedRef = useRef(false);
+  
+  // Reset submission state when isProcessingForm changes to false
+  useEffect(() => {
+    if (!isProcessingForm && formSubmittedRef.current) {
+      // Reset state only if previously submitted
+      submitAttemptedRef.current = false;
+    }
+  }, [isProcessingForm]);
 
-  // Handle input change for form
+  // Handle input change for form with validation
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const field = config.preChatForm.fields.find(f => f.name === name);
@@ -27,17 +37,16 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
     // Validate this specific field
     const error = field ? validateField(name, value, field.required || false) : null;
     
-    // Update error state
+    // Update error and form data state
     setFormErrors(prev => ({
       ...prev,
       [name]: error || ''
     }));
     
-    // Store input value (sanitization moved to validation stage)
     setFormData(prev => ({ ...prev, [name]: value }));
   }, [config.preChatForm.fields]);
 
-  // Validate if the form is complete and valid
+  // Form validation effect
   useEffect(() => {
     if (!config.preChatForm.fields) return;
     
@@ -50,39 +59,41 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
     setFormValid(allRequiredFilled);
   }, [formData, formErrors, config.preChatForm.fields]);
 
-  // Submit form - using useCallback to prevent recreating this function
+  // Submit form with improved state handling
   const submitForm = useCallback(() => {
-    // Multiple layers of protection against duplicate submissions
-    if (!formValid || isSubmitting || isProcessingForm || hasSubmittedRef.current) {
+    // Multiple checks to prevent duplicate submissions
+    if (!formValid || isProcessingForm || isSubmitting || formSubmittedRef.current) {
       console.log('Form submission prevented:', { 
         formValid, 
-        isSubmitting, 
-        isProcessingForm,
-        hasSubmitted: hasSubmittedRef.current
+        isProcessingForm, 
+        isSubmitting,
+        formSubmitted: formSubmittedRef.current
       });
       return;
     }
     
+    // Set submission flags
+    submitAttemptedRef.current = true;
+    formSubmittedRef.current = true;
+    setIsSubmitting(true);
+    
     try {
-      // Set both state and ref to prevent submission
-      setIsSubmitting(true);
-      hasSubmittedRef.current = true;
-      
       console.log("Validating form data before submission");
       const sanitizedData = validateFormData(formData);
-      
       console.log("Form submission with data:", sanitizedData);
+      
+      // Call the callback with validated data
       onFormComplete(sanitizedData);
     } catch (error) {
       console.error("Error submitting form:", error);
       // Reset only the state flag but keep the ref to prevent repeated submissions
       setIsSubmitting(false);
     }
-  }, [formValid, isSubmitting, isProcessingForm, formData, onFormComplete]);
+  }, [formValid, isProcessingForm, isSubmitting, formData, onFormComplete]);
 
   // Handle keyboard submission
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && formValid && !isSubmitting && !isProcessingForm && !hasSubmittedRef.current) {
+    if (e.key === 'Enter' && formValid && !isSubmitting && !isProcessingForm && !formSubmittedRef.current) {
       submitForm();
     }
   }, [formValid, isSubmitting, isProcessingForm, submitForm]);
@@ -115,7 +126,7 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
             className={`h-8 text-sm ${formErrors[field.name] ? 'border-red-500' : ''}`}
             aria-describedby={formErrors[field.name] ? `${field.id}-error` : undefined}
             aria-invalid={!!formErrors[field.name]}
-            disabled={isSubmitting || isProcessingForm || hasSubmittedRef.current}
+            disabled={isSubmitting || isProcessingForm || formSubmittedRef.current}
           />
           {formErrors[field.name] && (
             <p 
@@ -130,7 +141,7 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
       ))}
       <Button 
         onClick={submitForm} 
-        disabled={!formValid || isSubmitting || isProcessingForm || hasSubmittedRef.current}
+        disabled={!formValid || isSubmitting || isProcessingForm || formSubmittedRef.current}
         className="w-full h-8 text-sm mt-2"
         style={{
           backgroundColor: config.branding?.primaryColor || '#8B5CF6',
