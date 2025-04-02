@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
@@ -186,7 +185,7 @@ const MessageList = ({
         
         {isTyping && (
           <div className="animate-fade-in" style={{ animationDuration: '200ms' }}>
-            <TypingIndicator avatarUrl={agentAvatar} />
+            <TypingIndicator />
           </div>
         )}
         
