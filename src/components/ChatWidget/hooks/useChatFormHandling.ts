@@ -1,5 +1,5 @@
 
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from '../utils/events';
@@ -21,6 +21,7 @@ export function useChatFormHandling({
   onUpdateConversation
 }: UseChatFormHandlingProps) {
   const [isProcessingForm, setIsProcessingForm] = useState(false);
+  
   // Use refs to track submission state without triggering re-renders
   const formSubmissionRef = useRef(false);
   const lastSubmittedDataRef = useRef<Record<string, string> | null>(null);
@@ -60,31 +61,27 @@ export function useChatFormHandling({
     // Hide the form immediately to prevent further submissions
     hidePreChatForm();
     
-    // Use setTimeout to batch state updates and prevent render cycles
-    setTimeout(() => {
-      // Update user data if handler provided
-      if (setUserFormData) {
-        setUserFormData(formData);
-      }
-      
-      // Update conversation
-      onUpdateConversation({
-        ...conversation,
-        contactIdentified: true
-      });
-      
-      // Dispatch event
-      if (config) {
-        dispatchChatEvent('contact:formCompleted', { formData }, config);
-      }
-      
-      // Reset processing flags after a small delay
-      setTimeout(() => {
-        setIsProcessingForm(false);
-        formSubmissionRef.current = false;
-      }, 300);
-    }, 0);
+    // Update user data if handler provided
+    if (setUserFormData) {
+      setUserFormData(formData);
+    }
     
+    // Update conversation
+    onUpdateConversation({
+      ...conversation,
+      contactIdentified: true
+    });
+    
+    // Dispatch event
+    if (config) {
+      dispatchChatEvent('contact:formCompleted', { formData }, config);
+    }
+    
+    // Reset processing flags after a small delay
+    setTimeout(() => {
+      setIsProcessingForm(false);
+      formSubmissionRef.current = false;
+    }, 300);
   }, [conversation, config, hidePreChatForm, isProcessingForm, onUpdateConversation, setUserFormData]);
 
   return {

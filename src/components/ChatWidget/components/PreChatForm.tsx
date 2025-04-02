@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, memo, useRef } from 'react';
+import React, { useState, useCallback, memo, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,13 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
   const formSubmittedRef = useRef(false);
   const submitAttemptedRef = useRef(false);
   
+  // Reset form submitted state when processing state changes
+  useEffect(() => {
+    if (!isProcessingForm) {
+      formSubmittedRef.current = false;
+    }
+  }, [isProcessingForm]);
+  
   // Handle input change with stable references
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (formSubmittedRef.current) return;
@@ -28,32 +35,32 @@ const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: 
     const { name, value } = e.target;
     const field = config.preChatForm.fields.find(f => f.name === name);
     
-    // Update form data first
     setFormData(prev => {
       const newData = { ...prev, [name]: value };
-      
-      // Validate this field
-      const error = field ? validateField(name, value, field.required || false) : null;
-      
-      // Update errors in a separate state update
+      return newData;
+    });
+    
+    // Validate field in a separate effect to avoid render loops
+    if (field) {
+      const error = validateField(name, value, field.required || false);
       setFormErrors(prevErrors => ({
         ...prevErrors,
         [name]: error || ''
       }));
-      
-      // Re-validate form after field change
-      const requiredFields = config.preChatForm.fields.filter(field => field.required);
-      const allRequiredFilled = requiredFields.every(field => {
-        const fieldValue = newData[field.name];
-        return fieldValue && fieldValue.trim() !== '';
-      });
-      
-      // Set form validity without depending on other state variables
-      setTimeout(() => setFormValid(allRequiredFilled && !Object.values(formErrors).some(Boolean)), 0);
-      
-      return newData;
+    }
+  }, [config.preChatForm.fields]);
+  
+  // Validate the entire form whenever form data changes
+  useEffect(() => {
+    const requiredFields = config.preChatForm.fields.filter(field => field.required);
+    const allRequiredFilled = requiredFields.every(field => {
+      const fieldValue = formData[field.name];
+      return fieldValue && fieldValue.trim() !== '';
     });
-  }, [config.preChatForm.fields, formErrors]);
+    
+    const hasErrors = Object.values(formErrors).some(Boolean);
+    setFormValid(allRequiredFilled && !hasErrors);
+  }, [config.preChatForm.fields, formData, formErrors]);
 
   // Submit form with better guards against multiple submissions
   const submitForm = useCallback(() => {

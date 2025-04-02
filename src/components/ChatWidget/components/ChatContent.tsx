@@ -66,25 +66,27 @@ const ChatContent = memo<ChatContentProps>(({
     isProcessingForm
   });
   
-  // Track last form submission to prevent duplicates
-  const lastFormDataRef = useRef<Record<string, string> | null>(null);
+  // Use a ref to track the already processed form submission
+  const formCompletionHandled = useRef(false);
   
   // Memoize the form completion handler to prevent unnecessary re-renders
-  const memoizedHandleFormComplete = useCallback((formData: Record<string, string>) => {
-    // Prevent duplicate submissions with same data reference
-    const formDataString = JSON.stringify(formData);
-    const prevDataString = lastFormDataRef.current ? JSON.stringify(lastFormDataRef.current) : null;
-    
-    if (prevDataString && prevDataString === formDataString) {
-      console.log("Duplicate form data detected in ChatContent, ignoring");
+  const handleFormSubmit = useCallback((formData: Record<string, string>) => {
+    if (formCompletionHandled.current) {
+      console.log("Form already handled, preventing duplicate submission");
       return;
     }
     
+    // Set the flag to prevent duplicate submissions
+    formCompletionHandled.current = true;
     console.log("Form complete handler called with data:", formData);
-    lastFormDataRef.current = formData;
     
     // Call the original handler
     handleFormComplete(formData);
+    
+    // Reset the flag after a delay to allow for form reset
+    setTimeout(() => {
+      formCompletionHandled.current = false;
+    }, 1000);
   }, [handleFormComplete]);
   
   return (
@@ -92,7 +94,7 @@ const ChatContent = memo<ChatContentProps>(({
       {showPreChatForm ? (
         <PreChatFormSection 
           config={config} 
-          onFormComplete={memoizedHandleFormComplete} 
+          onFormComplete={handleFormSubmit} 
           isProcessingForm={isProcessingForm}
         />
       ) : (

@@ -21,8 +21,8 @@ const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: P
     return () => clearTimeout(timer);
   }, []);
   
-  // Memoize handler to prevent unnecessary re-renders
-  const memoizedFormHandler = useCallback((formData: Record<string, string>) => {
+  // Prevent re-renders by memoizing the callback
+  const handleFormSubmit = useCallback((formData: Record<string, string>) => {
     if (!isProcessingForm) {
       onFormComplete(formData);
     }
@@ -49,7 +49,7 @@ const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: P
       {config && (
         <PreChatForm 
           config={config} 
-          onFormComplete={memoizedFormHandler} 
+          onFormComplete={handleFormSubmit} 
           isProcessingForm={isProcessingForm}
         />
       )}
