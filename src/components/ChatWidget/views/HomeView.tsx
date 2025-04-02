@@ -49,16 +49,21 @@ const HomeView = ({
     setMounted(true);
     
     if (config.welcomeMessage && !typingComplete) {
-      const interval = setInterval(() => {
-        if (typingIndex < config.welcomeMessage.length) {
-          setTypingIndex(prev => prev + 1);
-        } else {
-          setTypingComplete(true);
-          clearInterval(interval);
-        }
-      }, 30);
+      // Add a small delay before starting typing for a more natural feel
+      const initialDelay = setTimeout(() => {
+        const interval = setInterval(() => {
+          if (typingIndex < config.welcomeMessage.length) {
+            setTypingIndex(prev => prev + 1);
+          } else {
+            setTypingComplete(true);
+            clearInterval(interval);
+          }
+        }, 40); // Slightly faster typing speed
+        
+        return () => clearInterval(interval);
+      }, 300); // Delay before typing starts
       
-      return () => clearInterval(interval);
+      return () => clearTimeout(initialDelay);
     }
     
     return undefined;
@@ -85,10 +90,12 @@ const HomeView = ({
           {typingComplete 
             ? config.welcomeMessage 
             : config.welcomeMessage?.substring(0, typingIndex) || ''}
-          {!typingComplete && <span className="inline-block w-1 h-5 ml-0.5 bg-vivid-purple-500 animate-pulse"></span>}
+          {!typingComplete && (
+            <span className="inline-block w-1 h-5 ml-0.5 bg-vivid-purple-500 animate-pulse-soft"></span>
+          )}
         </h2>
         
-        <div className={`text-sm text-gray-600 mt-3 leading-relaxed transition-all duration-300 ease-in-out ${typingComplete ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`text-sm text-gray-600 mt-3 leading-relaxed transition-all duration-500 ease-in-out ${typingComplete ? 'opacity-100' : 'opacity-0'}`}>
           {config.welcomeDescription ? (
             <p>{config.welcomeDescription}</p>
           ) : (

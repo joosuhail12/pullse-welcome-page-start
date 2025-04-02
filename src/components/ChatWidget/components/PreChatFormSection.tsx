@@ -13,7 +13,11 @@ const PreChatFormSection = ({ config, onFormComplete }: PreChatFormSectionProps)
   
   // Animation on mount
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
   
   // Apply custom branding if available
@@ -24,7 +28,7 @@ const PreChatFormSection = ({ config, onFormComplete }: PreChatFormSectionProps)
   
   return (
     <div 
-      className={`mb-4 p-4 bg-gradient-to-br ${themeStyles.backgroundGradient} rounded-xl shadow-md backdrop-blur-sm transition-all duration-500 ease-in-out ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+      className={`mb-4 p-4 bg-gradient-to-br ${themeStyles.backgroundGradient} rounded-xl shadow-md backdrop-blur-sm transition-all duration-500 ease-in-out ${mounted ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-4'}`}
       style={{ fontFamily: themeStyles.fontFamily }}
     >
       <PreChatForm 
