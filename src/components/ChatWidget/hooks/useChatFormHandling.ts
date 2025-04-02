@@ -56,8 +56,8 @@ export function useChatFormHandling({
     // First hide the form to prevent rendering issues
     hidePreChatForm();
     
-    // Wrap in requestAnimationFrame to ensure state updates are batched
-    requestAnimationFrame(() => {
+    // Use setTimeout to ensure async state updates are properly sequenced
+    setTimeout(() => {
       // After hiding the form, update user data and conversation
       if (setUserFormData) {
         setUserFormData(formData);
@@ -77,7 +77,7 @@ export function useChatFormHandling({
         setIsProcessingForm(false);
         formSubmissionRef.current = false;
       }, 500);
-    });
+    }, 0);
   }, [conversation, config, hidePreChatForm, isProcessingForm, onUpdateConversation, setUserFormData]);
 
   return {

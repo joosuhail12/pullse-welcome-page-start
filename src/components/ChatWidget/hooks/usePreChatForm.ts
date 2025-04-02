@@ -33,39 +33,59 @@ export function usePreChatForm({
     return shouldShow;
   });
 
-  // Track if effect has run to prevent multiple updates
-  const hasEffectRunRef = useRef<boolean>(false);
+  // Use an additional ref to prevent effect from causing state updates during rendering
+  const shouldUpdateRef = useRef<boolean>(false);
 
   // Update refs when dependencies change, without causing re-renders
   useEffect(() => {
     // Update refs with latest values
-    formEnabledRef.current = config?.preChatForm?.enabled || false;
-    contactIdentifiedRef.current = conversation.contactIdentified || false;
-    hasUserFormDataRef.current = !!userFormData;
+    const newFormEnabled = config?.preChatForm?.enabled || false;
+    const newContactIdentified = conversation.contactIdentified || false;
+    const newHasUserFormData = !!userFormData;
     
-    // Calculate new form visibility
-    const shouldShowForm = formEnabledRef.current && 
-                          !contactIdentifiedRef.current && 
-                          !hasUserFormDataRef.current;
-    
-    // Only update state if necessary to prevent render loops
-    if (shouldShowForm !== showPreChatForm) {
-      console.log('Updating pre-chat form visibility:', { 
-        from: showPreChatForm, 
-        to: shouldShowForm,
-        contactIdentified: contactIdentifiedRef.current,
-        hasUserFormData: hasUserFormDataRef.current
-      });
-      setShowPreChatForm(shouldShowForm);
+    // Only update if values have actually changed to prevent unnecessary calculations
+    if (formEnabledRef.current !== newFormEnabled || 
+        contactIdentifiedRef.current !== newContactIdentified || 
+        hasUserFormDataRef.current !== newHasUserFormData) {
+      
+      // Update refs
+      formEnabledRef.current = newFormEnabled;
+      contactIdentifiedRef.current = newContactIdentified;
+      hasUserFormDataRef.current = newHasUserFormData;
+      
+      // Calculate new form visibility
+      const shouldShowForm = newFormEnabled && !newContactIdentified && !newHasUserFormData;
+      
+      // Only update state when necessary and in the next tick to avoid render loops
+      if (shouldShowForm !== showPreChatForm) {
+        console.log('Updating pre-chat form visibility:', { 
+          from: showPreChatForm, 
+          to: shouldShowForm,
+          contactIdentified: newContactIdentified,
+          hasUserFormData: newHasUserFormData
+        });
+        
+        shouldUpdateRef.current = true;
+      }
     }
-    
-    // Mark effect as run
-    hasEffectRunRef.current = true;
   }, [config?.preChatForm?.enabled, conversation.contactIdentified, userFormData, showPreChatForm]);
+
+  // Separate effect to apply state updates to avoid conflicts during render phase
+  useEffect(() => {
+    // Only update if needed
+    if (shouldUpdateRef.current) {
+      shouldUpdateRef.current = false;
+      const shouldShow = formEnabledRef.current && 
+                        !contactIdentifiedRef.current && 
+                        !hasUserFormDataRef.current;
+      setShowPreChatForm(shouldShow);
+    }
+  }, [showPreChatForm]);
 
   // Provide a manual way to hide the form
   const hidePreChatForm = useCallback(() => {
     console.log('Manually hiding pre-chat form');
+    shouldUpdateRef.current = false; // Reset update flag to prevent conflicts
     setShowPreChatForm(false);
   }, []);
 

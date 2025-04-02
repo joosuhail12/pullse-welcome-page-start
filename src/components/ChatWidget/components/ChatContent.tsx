@@ -71,15 +71,19 @@ const ChatContent = memo<ChatContentProps>(({
   
   // Memoize the form completion handler to prevent unnecessary re-renders
   const memoizedHandleFormComplete = useCallback((formData: Record<string, string>) => {
-    // Prevent duplicate submissions
-    if (lastFormDataRef.current && 
-        JSON.stringify(lastFormDataRef.current) === JSON.stringify(formData)) {
-      console.log("Duplicate form data detected, ignoring");
+    // Prevent duplicate submissions with same data reference
+    const formDataString = JSON.stringify(formData);
+    const prevDataString = lastFormDataRef.current ? JSON.stringify(lastFormDataRef.current) : null;
+    
+    if (prevDataString && prevDataString === formDataString) {
+      console.log("Duplicate form data detected in ChatContent, ignoring");
       return;
     }
     
     console.log("Form complete handler called with data:", formData);
     lastFormDataRef.current = formData;
+    
+    // Call the original handler
     handleFormComplete(formData);
   }, [handleFormComplete]);
   

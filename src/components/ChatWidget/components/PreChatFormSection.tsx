@@ -13,7 +13,7 @@ interface PreChatFormSectionProps {
 const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: PreChatFormSectionProps) => {
   const [mounted, setMounted] = useState(false);
   const handledSubmissionRef = useRef(false);
-  const [submittedData, setSubmittedData] = useState<Record<string, string> | null>(null);
+  const submittedDataRef = useRef<Record<string, string> | null>(null);
   
   // Subtle animation on mount with a slight delay for better sequencing
   useEffect(() => {
@@ -26,9 +26,9 @@ const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: P
     };
   }, []);
   
-  // Reset submission handling when processing state changes
+  // Reset submission handling when processing state changes to false
   useEffect(() => {
-    if (!isProcessingForm) {
+    if (isProcessingForm === false) {
       handledSubmissionRef.current = false;
     }
   }, [isProcessingForm]);
@@ -42,18 +42,21 @@ const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: P
     }
     
     // Check for duplicate data
-    if (submittedData && JSON.stringify(submittedData) === JSON.stringify(formData)) {
+    const formDataString = JSON.stringify(formData);
+    const prevDataString = submittedDataRef.current ? JSON.stringify(submittedDataRef.current) : null;
+    
+    if (prevDataString && prevDataString === formDataString) {
       console.log("Same form data submitted again, ignoring");
       return;
     }
     
     console.log("PreChatFormSection handling form submission");
     handledSubmissionRef.current = true;
-    setSubmittedData(formData);
+    submittedDataRef.current = formData;
     
     // Call the callback with the form data
     onFormComplete(formData);
-  }, [onFormComplete, isProcessingForm, submittedData]);
+  }, [onFormComplete, isProcessingForm]);
   
   // Apply custom branding if available
   const themeStyles = {
