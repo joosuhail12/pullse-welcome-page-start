@@ -27,11 +27,12 @@ const ChatViewHeader = React.memo(({
   isSearching,
   showSearchFeature
 }: ChatViewHeaderProps) => {
-  // Memoize search handler
+  // Memoize search handler using useCallback
   const handleSearch = useCallback((term: string) => {
     searchMessages(term);
   }, [searchMessages]);
   
+  // Memoize clear handler using useCallback
   const handleClear = useCallback(() => {
     clearSearch();
   }, [clearSearch]);
@@ -57,6 +58,7 @@ const ChatViewHeader = React.memo(({
   );
 });
 
+// Add displayName for debugging
 ChatViewHeader.displayName = 'ChatViewHeader';
 
 export default ChatViewHeader;

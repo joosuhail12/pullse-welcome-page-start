@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
 import ChatView from './views/ChatView';
@@ -99,7 +99,8 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     }
   };
 
-  const handleReconnect = () => {
+  // Use useCallback to prevent new function creation on every render
+  const handleReconnect = useCallback(() => {
     if (connectionState === 'disconnected' || connectionState === 'suspended' || connectionState === 'failed') {
       toast.loading('Attempting to reconnect...', { id: 'reconnecting' });
       
@@ -120,12 +121,13 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         }
       }, 1000);
     }
-  };
+  }, [connectionState, workspaceId]);
 
-  const wrappedHandleStartChat = () => {
+  // Use useCallback to stabilize this function reference
+  const wrappedHandleStartChat = useCallback(() => {
     handleStartChat();
     dispatchChatEvent('contact:initiatedChat', undefined, config);
-  };
+  }, [handleStartChat, config]);
 
   const renderFooter = () => {
     if (!config.branding?.showBrandingBar) return null;
