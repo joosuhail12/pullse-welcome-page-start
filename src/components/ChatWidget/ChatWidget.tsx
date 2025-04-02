@@ -8,7 +8,7 @@ import { useChatState } from './hooks/useChatState';
 import useWidgetConfig from './hooks/useWidgetConfig';
 import { dispatchChatEvent } from './utils/events';
 import { initializeAbly, cleanupAbly } from './utils/ably';
-import { MessageSquare, X } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ChatWidgetProps {
@@ -53,14 +53,15 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     return <div className="fixed bottom-4 right-4 w-80 sm:w-96 rounded-lg shadow-lg bg-white p-4">Loading...</div>;
   }
 
-  const handleOpenChat = () => {
-    setIsOpen(true);
-    dispatchChatEvent('chat:open', undefined, config);
-  };
-
-  const handleCloseChat = () => {
-    setIsOpen(false);
-    dispatchChatEvent('chat:close', undefined, config);
+  const toggleChat = () => {
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+    
+    if (newIsOpen) {
+      dispatchChatEvent('chat:open', undefined, config);
+    } else {
+      dispatchChatEvent('chat:close', undefined, config);
+    }
   };
 
   const wrappedHandleStartChat = (formData?: Record<string, string>) => {
@@ -91,10 +92,8 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     );
   };
 
-  // Render launcher button when widget is closed
+  // Render launcher button that can both open and close the widget
   const renderLauncher = () => {
-    if (isOpen) return null;
-    
     // Apply custom branding if available
     const buttonStyle = config.branding?.primaryColor 
       ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
@@ -104,7 +103,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
       <Button
         className="fixed bottom-4 right-4 rounded-full w-14 h-14 shadow-lg flex items-center justify-center bg-vivid-purple hover:bg-vivid-purple/90"
         style={buttonStyle}
-        onClick={handleOpenChat}
+        onClick={toggleChat}
       >
         <MessageSquare size={24} className="text-white" />
       </Button>
@@ -113,22 +112,12 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
 
   return (
     <>
-      {isOpen ? (
+      {isOpen && (
         <div 
           className="fixed bottom-4 right-4 w-80 sm:w-96 rounded-lg shadow-lg overflow-hidden flex flex-col bg-white border border-gray-200 max-h-[600px]"
           style={widgetStyle}
         >
           <div className="relative w-full max-h-[600px] flex flex-col">
-            {/* Close button */}
-            <Button
-              variant="ghost" 
-              size="icon"
-              className="absolute top-2 right-2 z-10 h-8 w-8"
-              onClick={handleCloseChat}
-            >
-              <X size={18} />
-            </Button>
-            
             {viewState === 'chat' ? (
               <ChatView 
                 conversation={activeConversation!} 
@@ -156,7 +145,8 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
             )}
           </div>
         </div>
-      ) : renderLauncher()}
+      )}
+      {renderLauncher()}
     </>
   );
 };
