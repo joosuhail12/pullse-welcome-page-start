@@ -15,7 +15,8 @@ const MessagesView: React.FC<MessagesViewProps> = ({ onSelectConversation }) => 
     const newConversation: Conversation = {
       id: `new-chat-${Date.now()}`,
       title: 'New Conversation',
-      lastMessage: { text: '', timestamp: new Date().toISOString() },
+      lastMessage: '', // Changed from object to string to match Conversation type
+      timestamp: new Date(), // Using Date object as expected by the type
       unreadCount: 0
     };
     
