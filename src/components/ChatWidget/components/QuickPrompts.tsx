@@ -36,11 +36,19 @@ const QuickPrompts = ({ prompts, typingComplete, onPromptSelect, config }: Quick
           <button
             key={index}
             onClick={() => handlePromptSelect(prompt)}
-            className="text-sm text-left py-2 px-3 border border-gray-200 rounded-md bg-white hover:bg-gray-50 transition-colors duration-150 text-gray-700 focus:outline-none focus:ring-2 focus:ring-vivid-purple-300"
+            className="text-sm text-left py-2 px-3 border border-gray-200 rounded-md bg-white 
+            transition-all duration-300 ease-in-out 
+            hover:bg-vivid-purple-50 hover:border-vivid-purple-200 
+            hover:text-vivid-purple-700 
+            focus:outline-none focus:ring-2 focus:ring-vivid-purple-300
+            active:scale-[0.98] active:bg-vivid-purple-100
+            group"
             style={{ animationDelay: `${index * 100}ms` }}
             aria-label={`Ask: ${prompt}`}
           >
-            {prompt}
+            <span className="transition-transform duration-300 group-hover:translate-x-1 inline-block">
+              {prompt}
+            </span>
           </button>
         ))}
       </div>
