@@ -5,7 +5,6 @@ import MessagesView from '../views/MessagesView';
 import ChatView from '../views/ChatView';
 import TabBar from './TabBar';
 import ChatFooter from './ChatFooter';
-import ConnectionBanner from './ConnectionBanner';
 import { Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from '../utils/events';
@@ -115,11 +114,7 @@ const ChatContainer = ({
           </div>
         )}
         
-        <ConnectionBanner 
-          isConnected={isConnected}
-          handleReconnect={handleReconnect}
-          realtimeEnabled={config.realtime?.enabled}
-        />
+        {/* ConnectionBanner has been removed */}
       </div>
     </div>
   );
