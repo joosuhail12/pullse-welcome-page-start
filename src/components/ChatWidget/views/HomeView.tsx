@@ -16,7 +16,7 @@ const HomeView = ({
   onStartChat, 
   config = defaultConfig 
 }: HomeViewProps) => {
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(config.preChatForm.enabled);
   
   // Apply custom branding if available
   const buttonStyle = config.branding?.primaryColor 

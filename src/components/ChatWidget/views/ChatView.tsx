@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageList from '../components/MessageList';
@@ -33,8 +33,15 @@ const ChatView = ({
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showInlineForm, setShowInlineForm] = useState(
-    !userFormData && config?.preChatForm?.enabled && !conversation.contactIdentified
+    config?.preChatForm?.enabled && !conversation.contactIdentified && !userFormData
   );
+
+  // Effect to update the showInlineForm state when userFormData changes
+  useEffect(() => {
+    if (userFormData || conversation.contactIdentified) {
+      setShowInlineForm(false);
+    }
+  }, [userFormData, conversation.contactIdentified]);
 
   // Chat messages hook
   const {
@@ -124,6 +131,9 @@ const ChatView = ({
       ...conversation,
       contactIdentified: true
     });
+    
+    // Dispatch form completed event
+    dispatchChatEvent('contact:formCompleted', { formData }, config);
   };
 
   // Get avatar URLs from config
@@ -136,9 +146,13 @@ const ChatView = ({
   // Handle creating inline form component when needed
   const getInlineFormComponent = () => {
     if (showInlineForm) {
-      return <PreChatForm config={config} onFormComplete={handleFormComplete} />;
+      return (
+        <div className="mb-4">
+          <PreChatForm config={config} onFormComplete={handleFormComplete} />
+        </div>
+      );
     }
-    return undefined;
+    return null;
   };
 
   return (
@@ -169,6 +183,8 @@ const ChatView = ({
         showSearchFeature={!!config?.features?.searchMessages}
       />
       
+      {getInlineFormComponent()}
+      
       <MessageList 
         messages={messages}
         isTyping={isTyping || remoteIsTyping}
@@ -183,7 +199,6 @@ const ChatView = ({
         onScrollTop={handleLoadMoreMessages}
         hasMoreMessages={hasMoreMessages}
         isLoadingMore={isLoadingMore}
-        inlineFormComponent={getInlineFormComponent()}
       />
       
       <MessageInput

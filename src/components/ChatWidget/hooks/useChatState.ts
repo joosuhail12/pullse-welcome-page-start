@@ -104,5 +104,6 @@ export function useChatState() {
     handleUpdateConversation,
     handleLogout,
     userFormData,
+    setUserFormData, // Make sure to export this function
   };
 }
