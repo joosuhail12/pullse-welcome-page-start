@@ -246,13 +246,17 @@ export const processQueuedApiMessages = async (): Promise<void> => {
   for (const item of apiMessages) {
     try {
       const msg = item.message;
-      await sendChatMessage(msg.text, msg.workspaceId);
-      
-      // Remove from queue after successful sending
-      const messageId = msg.id;
-      const queue = getMessageQueue();
-      const updatedQueue = queue.filter(qItem => qItem.message.id !== messageId);
-      localStorage.setItem('pullse_chat_offline_queue', JSON.stringify(updatedQueue));
+      if (typeof msg.text === 'string') {
+        // Access workspaceId from the custom property in the message
+        const workspaceId = (msg as any).workspaceId || '';
+        await sendChatMessage(msg.text, workspaceId);
+        
+        // Remove from queue after successful sending
+        const messageId = msg.id;
+        const queue = getMessageQueue();
+        const updatedQueue = queue.filter(qItem => qItem.message.id !== messageId);
+        localStorage.setItem('pullse_chat_offline_queue', JSON.stringify(updatedQueue));
+      }
     } catch (error) {
       console.error('Error processing queued API message:', error);
     }
