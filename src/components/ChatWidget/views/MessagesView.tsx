@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -29,7 +28,6 @@ interface MessagesViewProps {
   onSelectConversation: (conversation: Conversation) => void;
 }
 
-// Helper function to group conversations by date
 const groupConversationsByDate = (conversations: Conversation[]) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -66,13 +64,11 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   const [groupByDate, setGroupByDate] = useState(true);
 
   useEffect(() => {
-    // Load conversations from localStorage
     const loadConversations = () => {
       setIsLoading(true);
       try {
         const storedConversations = localStorage.getItem('chat-conversations');
         if (storedConversations) {
-          // Parse and convert string timestamps back to Date objects
           const parsedConversations = JSON.parse(storedConversations).map((conv: any) => ({
             ...conv,
             timestamp: new Date(conv.timestamp)
@@ -83,7 +79,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         console.error('Error loading conversations:', error);
         toast.error('Failed to load conversations');
       } finally {
-        // Add a small delay to show the skeleton loading effect
         setTimeout(() => {
           setIsLoading(false);
         }, 800);
@@ -94,13 +89,12 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   }, []);
 
   const handleDeleteConversation = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Prevent triggering the parent onClick
+    e.stopPropagation();
     
     try {
       const updatedConversations = conversations.filter(conv => conv.id !== id);
       setConversations(updatedConversations);
       
-      // Update localStorage
       localStorage.setItem('chat-conversations', JSON.stringify(updatedConversations));
       
       toast.success('Conversation deleted');
@@ -115,19 +109,15 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     const diff = now.getTime() - date.getTime();
     
     if (diff < 1000 * 60 * 60) {
-      // Less than an hour ago
       return `${Math.floor(diff / (1000 * 60))}m ago`;
     } else if (diff < 1000 * 60 * 60 * 24) {
-      // Less than a day ago
       return `${Math.floor(diff / (1000 * 60 * 60))}h ago`;
     } else {
-      // More than a day ago
       return format(date, 'MMM d');
     }
   };
 
   const handleStartNewChat = () => {
-    // Notify the parent component to start a new chat
     onSelectConversation({
       id: `conv-${Date.now()}`,
       title: 'New Conversation',
@@ -147,7 +137,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   const filteredConversations = useMemo(() => {
     let result = [...conversations];
     
-    // Apply search filtering
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
@@ -157,7 +146,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       );
     }
     
-    // Apply sorting
     result.sort((a, b) => {
       const timeA = a.timestamp.getTime();
       const timeB = b.timestamp.getTime();
@@ -168,16 +156,13 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     return result;
   }, [conversations, searchTerm, sortOrder]);
   
-  // Decide whether to group conversations or not
   const groupedConversations = useMemo(() => {
     if (!groupByDate) return { ungrouped: filteredConversations };
     return groupConversationsByDate(filteredConversations);
   }, [filteredConversations, groupByDate]);
 
-  // Check if the search returned no results
   const hasNoSearchResults = searchTerm && Object.values(groupedConversations).every(group => group.length === 0);
 
-  // Generate loading skeletons for the loading state
   const renderSkeletons = () => {
     return Array(3).fill(null).map((_, i) => (
       <div key={`skeleton-${i}`} className="p-3 border border-gray-100 rounded-md">
@@ -193,7 +178,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     ));
   };
 
-  // Render a conversation list item
   const renderConversationItem = (conversation: Conversation) => (
     <div 
       key={conversation.id}
@@ -220,7 +204,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     </div>
   );
 
-  // Render empty state illustration
   const renderEmptyState = () => (
     <div className="text-center py-8 animate-fade-in">
       <div className="inline-block rounded-full bg-soft-purple p-4 mb-4">
@@ -231,7 +214,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       <Button 
         variant="outline" 
         size="sm" 
-        className="mt-2 border-vivid-purple text-vivid-purple hover:bg-vivid-purple hover:text-white transition-colors"
+        className="mt-2 border-vivid-purple text-vivid-purple hover:bg-vivid-purple hover:text-white transition-colors duration-300 ease-in-out hover:border-vivid-purple-600 active:scale-95"
         onClick={handleStartNewChat}
       >
         <MessageSquare className="mr-1.5" size={16} />
@@ -240,7 +223,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     </div>
   );
 
-  // Render no search results state
   const renderNoSearchResults = () => (
     <div className="text-center py-8 animate-fade-in">
       <div className="inline-block rounded-full bg-gray-100 p-4 mb-4">
@@ -262,7 +244,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search and controls bar */}
       <div className="p-2 border-b border-gray-100 sticky top-0 bg-white z-10">
         <div className="relative mb-2">
           <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -320,7 +301,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         </div>
       </div>
       
-      {/* Content section */}
       <div className="flex-1 overflow-y-auto p-2 pb-6">
         {isLoading ? (
           <div className="space-y-3 animate-pulse">
