@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -27,32 +26,29 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     handleBackToMessages,
     handleChangeView,
     handleSelectConversation,
-    handleUpdateConversation
+    handleUpdateConversation,
+    userFormData,
+    setUserFormData
   } = useChatState();
   
   const { config, loading } = useWidgetConfig(workspaceId);
   const [isOpen, setIsOpen] = useState(false);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
-  const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(undefined);
   
-  // Initialize Ably when config is loaded
   useEffect(() => {
     if (!loading && config.realtime?.enabled && workspaceId) {
-      // Use token auth URL instead of API key
       const authUrl = getAblyAuthUrl(workspaceId);
       
       initializeAbly(authUrl)
         .catch(err => console.error('Failed to initialize Ably:', err));
       
-      // Clean up Ably when component unmounts
       return () => {
         cleanupAbly();
       };
     }
   }, [loading, config.realtime?.enabled, workspaceId]);
   
-  // Apply custom branding if available
   const widgetStyle = {
     ...(config.branding?.primaryColor && {
       '--vivid-purple': config.branding.primaryColor,
@@ -60,7 +56,6 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   };
 
   useEffect(() => {
-    // Clear unread messages when chat is opened
     if (isOpen) {
       clearUnreadMessages();
     }
@@ -89,15 +84,13 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     
     handleStartChat(formData);
     
-    // Dispatch appropriate event based on whether form data was provided
-    if (formData) {
+    if (formData && Object.keys(formData).length > 0) {
       dispatchChatEvent('contact:formCompleted', { formData }, config);
     }
     
     dispatchChatEvent('contact:initiatedChat', undefined, config);
   };
 
-  // Render footer only if branding bar is enabled
   const renderFooter = () => {
     if (!config.branding?.showBrandingBar) return null;
     
@@ -114,9 +107,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     );
   };
 
-  // Render launcher button that can both open and close the widget
   const renderLauncher = () => {
-    // Apply custom branding if available
     const buttonStyle = config.branding?.primaryColor 
       ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
       : {};
@@ -174,7 +165,6 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
                 
                 <TabBar viewState={viewState} onChangeView={handleChangeView} />
                 
-                {/* Render footer */}
                 {renderFooter()}
               </div>
             )}
