@@ -44,12 +44,11 @@ const HomeView = ({
     onStartChat();
   };
 
-  // Typing animation effect for the welcome message
+  // More subtle typing animation effect for the welcome message
   useEffect(() => {
     setMounted(true);
     
     if (config.welcomeMessage && !typingComplete) {
-      // Add a small delay before starting typing for a more natural feel
       const initialDelay = setTimeout(() => {
         const interval = setInterval(() => {
           if (typingIndex < config.welcomeMessage.length) {
@@ -58,10 +57,10 @@ const HomeView = ({
             setTypingComplete(true);
             clearInterval(interval);
           }
-        }, 40); // Slightly faster typing speed
+        }, 50); // Slightly faster typing speed for better UX
         
         return () => clearInterval(interval);
-      }, 300); // Delay before typing starts
+      }, 400); // Slightly longer delay before typing starts for a more natural feel
       
       return () => clearTimeout(initialDelay);
     }
@@ -71,7 +70,7 @@ const HomeView = ({
   
   return (
     <div 
-      className={`flex flex-col p-6 h-full bg-gradient-to-br ${themeStyles.backgroundGradient} rounded-lg backdrop-blur-sm bg-opacity-95 transition-all duration-500 ease-in-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+      className={`flex flex-col p-6 h-full bg-gradient-to-br ${themeStyles.backgroundGradient} rounded-lg backdrop-blur-sm bg-opacity-95 transition-opacity duration-700 ease-in-out ${mounted ? 'opacity-100' : 'opacity-0'}`}
       style={{ fontFamily: themeStyles.fontFamily }}
     >
       {/* Brand logo if provided */}
@@ -80,22 +79,22 @@ const HomeView = ({
           <img 
             src={config.branding.logoUrl} 
             alt="Brand Logo" 
-            className="h-10 object-contain animate-fade-in transition-transform duration-300 hover:scale-105" 
+            className="h-10 object-contain transition-transform duration-500 hover:scale-105" 
           />
         </div>
       )}
       
-      <div className="mb-6 animate-fade-in animation-delay-100">
-        <h2 className={`text-2xl font-bold bg-gradient-to-r ${themeStyles.headerGradient} bg-clip-text text-transparent overflow-hidden`}>
+      <div className="mb-6">
+        <h2 className={`text-2xl font-bold bg-gradient-to-r ${themeStyles.headerGradient} bg-clip-text text-transparent overflow-hidden focus:outline-none focus:ring-2 focus:ring-vivid-purple-300 focus:ring-offset-2 rounded-md tabindex="0"`}>
           {typingComplete 
             ? config.welcomeMessage 
             : config.welcomeMessage?.substring(0, typingIndex) || ''}
           {!typingComplete && (
-            <span className="inline-block w-1 h-5 ml-0.5 bg-vivid-purple-500 animate-pulse-soft"></span>
+            <span className="inline-block w-1 h-5 ml-0.5 bg-vivid-purple-500 animate-pulse"></span>
           )}
         </h2>
         
-        <div className={`text-sm text-gray-600 mt-3 leading-relaxed transition-all duration-500 ease-in-out ${typingComplete ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`text-sm text-gray-800 mt-3 leading-relaxed transition-opacity duration-700 ease-in-out ${typingComplete ? 'opacity-100' : 'opacity-0'}`}>
           {config.welcomeDescription ? (
             <p>{config.welcomeDescription}</p>
           ) : (
@@ -107,7 +106,8 @@ const HomeView = ({
       </div>
       
       {config.welcomeImageUrl && (
-        <div className="my-4 flex justify-center animate-fade-in animation-delay-200">
+        <div className="my-4 flex justify-center transition-all duration-700 ease-in-out opacity-0 transform translate-y-4" 
+             style={{ opacity: typingComplete ? 1 : 0, transform: typingComplete ? 'translateY(0)' : 'translateY(10px)' }}>
           <img 
             src={config.welcomeImageUrl} 
             alt="Welcome" 
@@ -117,10 +117,11 @@ const HomeView = ({
         </div>
       )}
       
-      <div className="mt-auto animate-fade-in animation-delay-400">
+      <div className="mt-auto transition-all duration-700 delay-200 ease-in-out opacity-0 transform translate-y-4" 
+           style={{ opacity: typingComplete ? 1 : 0, transform: typingComplete ? 'translateY(0)' : 'translateY(10px)' }}>
         <Button 
           onClick={handleStartChat}
-          className="chat-widget-button flex items-center gap-2 w-full py-3 rounded-xl shadow-md transition-all duration-300 hover:shadow-xl group"
+          className="chat-widget-button flex items-center justify-center gap-2 w-full py-3 rounded-xl shadow-md transition-all duration-300 hover:shadow-xl group focus:ring-2 focus:ring-vivid-purple-300 focus:ring-offset-2 focus:outline-none"
           style={buttonStyle}
         >
           <MessageSquare size={20} className="group-hover:scale-110 transition-transform" />
