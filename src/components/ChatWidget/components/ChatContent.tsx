@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Message } from '../types';
 import { ChatWidgetConfig } from '../config';
 import MessageInputSection from './MessageInputSection';
@@ -32,7 +32,8 @@ interface ChatContentProps {
   config?: ChatWidgetConfig;
 }
 
-const ChatContent: React.FC<ChatContentProps> = ({
+// Using memo to prevent unnecessary re-renders
+const ChatContent = memo<ChatContentProps>(({
   showPreChatForm,
   messages,
   isTyping,
@@ -95,6 +96,9 @@ const ChatContent: React.FC<ChatContentProps> = ({
       />
     </>
   );
-};
+});
+
+// Adding display name for debugging purposes
+ChatContent.displayName = 'ChatContent';
 
 export default ChatContent;

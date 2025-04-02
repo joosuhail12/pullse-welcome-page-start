@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import ChatViewHeader from '../components/ChatViewHeader';
@@ -16,7 +16,7 @@ interface ChatViewProps {
   setUserFormData?: (data: Record<string, string>) => void;
 }
 
-const ChatView: React.FC<ChatViewProps> = ({ 
+const ChatView: React.FC<ChatViewProps> = memo(({ 
   conversation, 
   onBack, 
   onUpdateConversation, 
@@ -118,6 +118,9 @@ const ChatView: React.FC<ChatViewProps> = ({
       />
     </div>
   );
-};
+});
+
+// Adding display name for debugging purposes
+ChatView.displayName = 'ChatView';
 
 export default ChatView;

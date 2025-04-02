@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Message, Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from '../utils/events';
@@ -51,20 +51,15 @@ export function useChatView({
     isLoadingMore
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
 
-  // The issue might be here - preventing unnecessary re-renders
+  // Create a stable memoized function for updating messages
+  // This prevents recreating the function on each render
   const setMessages = useCallback((updatedMessages: React.SetStateAction<Message[]>) => {
-    if (typeof updatedMessages === 'function') {
-      // We won't directly call the function here which might cause infinite loops
-      onUpdateConversation({
-        ...conversation,
-        messages: updatedMessages(conversation.messages || [])
-      });
-    } else {
-      onUpdateConversation({
-        ...conversation,
-        messages: updatedMessages
-      });
-    }
+    onUpdateConversation({
+      ...conversation,
+      messages: typeof updatedMessages === 'function' 
+        ? updatedMessages(conversation.messages || []) 
+        : updatedMessages
+    });
   }, [conversation, onUpdateConversation]);
 
   // Message reactions hook
