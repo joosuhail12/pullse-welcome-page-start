@@ -92,7 +92,7 @@ const HomeView = ({
       
       {config.preChatForm.enabled && renderFormFields()}
       
-      <div className="flex-grow flex flex-col justify-end">
+      <div className="mt-auto">
         <Button 
           onClick={handleStartChat}
           disabled={config.preChatForm.enabled && !formValid}

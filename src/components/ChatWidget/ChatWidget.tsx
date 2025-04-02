@@ -50,7 +50,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   };
 
   if (loading) {
-    return <div className="fixed bottom-4 right-4 w-80 sm:w-96 rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
+    return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
   }
 
   const toggleChat = () => {
@@ -114,10 +114,10 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     <>
       {isOpen && (
         <div 
-          className="fixed bottom-24 right-4 w-80 sm:w-96 flex flex-col max-h-[600px] z-50 chat-widget-container"
+          className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] z-50 chat-widget-container"
           style={widgetStyle}
         >
-          <div className="relative w-full max-h-[600px] flex flex-col">
+          <div className="relative w-full h-full flex flex-col">
             {viewState === 'chat' ? (
               <ChatView 
                 conversation={activeConversation!} 
@@ -126,7 +126,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
                 config={config}
               />
             ) : (
-              <div className="flex flex-col h-96">
+              <div className="flex flex-col h-full">
                 <div className="flex-grow overflow-y-auto">
                   {viewState === 'home' && (
                     <HomeView 
