@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
@@ -105,6 +106,32 @@ const MessageList = ({
     }
   }, [messages, isTyping, autoScroll]);
 
+  // Render read receipt indicator with improved styling
+  const renderReadReceipt = (message: Message) => {
+    if (message.sender !== 'user') return null;
+    
+    return (
+      <div className="flex justify-end mt-1 text-xs text-gray-500">
+        {message.status === 'read' || readReceipts[message.id] ? (
+          <div className="flex items-center text-vivid-purple">
+            <CheckCheck size={12} />
+            <span className="ml-1 text-[10px]">Read</span>
+          </div>
+        ) : message.status === 'delivered' ? (
+          <div className="flex items-center">
+            <CheckCheck size={12} />
+            <span className="ml-1 text-[10px]">Delivered</span>
+          </div>
+        ) : (
+          <div className="flex items-center">
+            <Check size={12} />
+            <span className="ml-1 text-[10px]">Sent</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <ScrollArea className="flex-grow p-4 bg-chat-bg" ref={scrollAreaRef}>
       <div className="space-y-4">
@@ -159,26 +186,7 @@ const MessageList = ({
               )}
               
               {/* Read receipt indicators for user messages */}
-              {message.sender === 'user' && (
-                <div className="flex justify-end mt-1 text-xs text-gray-500">
-                  {message.status === 'read' || readReceipts[message.id] ? (
-                    <div className="flex items-center">
-                      <CheckCheck size={12} className="text-vivid-purple" />
-                      <span className="ml-1 text-[10px]">Read</span>
-                    </div>
-                  ) : message.status === 'delivered' ? (
-                    <div className="flex items-center">
-                      <CheckCheck size={12} />
-                      <span className="ml-1 text-[10px]">Delivered</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center">
-                      <Check size={12} />
-                      <span className="ml-1 text-[10px]">Sent</span>
-                    </div>
-                  )}
-                </div>
-              )}
+              {renderReadReceipt(message)}
             </div>
           </div>
         ))}
