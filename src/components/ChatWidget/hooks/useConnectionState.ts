@@ -5,12 +5,9 @@ import { subscribeToConnectionState, getConnectionState } from '../utils/ably';
 type ConnectionState = 'connected' | 'disconnected' | 'suspended' | 'connecting' | 'failed' | 'unknown';
 
 export function useConnectionState() {
-  // Get the initial state or default to 'unknown'
-  const initialState = getConnectionState() || 'unknown';
-  
   // Initialize state with the proper value
-  const [connectionState, setConnectionState] = useState<ConnectionState>(initialState as ConnectionState);
-  const [isConnected, setIsConnected] = useState<boolean>(initialState === 'connected');
+  const [connectionState, setConnectionState] = useState<ConnectionState>('unknown');
+  const [isConnected, setIsConnected] = useState<boolean>(false);
   
   // Handle connection state change
   const handleConnectionChange = useCallback((newState: string) => {
@@ -22,7 +19,7 @@ export function useConnectionState() {
     setIsConnected(typedState === 'connected');
   }, []);
   
-  // Subscribe to connection state changes
+  // Subscribe to connection state changes only once on mount
   useEffect(() => {
     // Get current state and update if it exists
     const currentState = getConnectionState();
