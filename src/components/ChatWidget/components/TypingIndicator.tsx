@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-const TypingIndicator = () => {
+const TypingIndicator = React.memo(() => {
   return (
     <div className="flex justify-start" role="status" aria-label="Agent is typing">
       <div className="bg-gray-100 rounded-lg p-3 rounded-bl-none max-w-[80%] shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200/30">
@@ -22,6 +22,8 @@ const TypingIndicator = () => {
       </div>
     </div>
   );
-};
+});
+
+TypingIndicator.displayName = 'TypingIndicator';
 
 export default TypingIndicator;

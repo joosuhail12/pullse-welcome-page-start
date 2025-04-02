@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Conversation } from '../types';
 import ChatHeader from './ChatHeader';
 import SearchBar from './SearchBar';
@@ -16,7 +16,7 @@ interface ChatViewHeaderProps {
   showSearchFeature: boolean;
 }
 
-const ChatViewHeader = ({ 
+const ChatViewHeader = React.memo(({ 
   conversation, 
   onBack, 
   showSearch, 
@@ -27,6 +27,15 @@ const ChatViewHeader = ({
   isSearching,
   showSearchFeature
 }: ChatViewHeaderProps) => {
+  // Memoize search handler
+  const handleSearch = useCallback((term: string) => {
+    searchMessages(term);
+  }, [searchMessages]);
+  
+  const handleClear = useCallback(() => {
+    clearSearch();
+  }, [clearSearch]);
+  
   return (
     <>
       <ChatHeader 
@@ -38,14 +47,16 @@ const ChatViewHeader = ({
       
       {showSearch && showSearchFeature && (
         <SearchBar 
-          onSearch={searchMessages} 
-          onClear={clearSearch} 
+          onSearch={handleSearch}
+          onClear={handleClear}
           resultCount={searchResultCount}
           isSearching={isSearching}
         />
       )}
     </>
   );
-};
+});
+
+ChatViewHeader.displayName = 'ChatViewHeader';
 
 export default ChatViewHeader;

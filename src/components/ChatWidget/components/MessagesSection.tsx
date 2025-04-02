@@ -20,7 +20,7 @@ interface MessagesSectionProps {
   isLoadingMore?: boolean;
 }
 
-const MessagesSection = ({ 
+const MessagesSection = React.memo(({ 
   messages,
   isTyping,
   remoteIsTyping,
@@ -55,6 +55,8 @@ const MessagesSection = ({
       />
     </div>
   );
-};
+});
+
+MessagesSection.displayName = 'MessagesSection';
 
 export default MessagesSection;
