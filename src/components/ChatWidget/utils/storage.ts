@@ -1,5 +1,6 @@
 
 import { Conversation } from '../types';
+import { getChatSessionId } from './cookies';
 
 export const saveConversationToStorage = (conversation: Conversation) => {
   try {
@@ -40,5 +41,71 @@ export const loadConversationsFromStorage = (): Conversation[] => {
   } catch (error) {
     console.error('Failed to load conversations from localStorage', error);
     return [];
+  }
+};
+
+/**
+ * Gets the current session conversation, if any
+ * @returns The session conversation or null if not found
+ */
+export const getSessionConversation = (): Conversation | null => {
+  try {
+    const sessionId = getChatSessionId();
+    if (!sessionId) return null;
+    
+    const conversations = loadConversationsFromStorage();
+    return conversations.find(conv => conv.sessionId === sessionId) || null;
+  } catch (error) {
+    console.error('Failed to get session conversation:', error);
+    return null;
+  }
+};
+
+/**
+ * Creates or updates a session-based conversation
+ * @param sessionId The session ID
+ * @param updates Optional updates to apply to the conversation
+ * @returns The created or updated conversation
+ */
+export const createOrUpdateSessionConversation = (
+  sessionId: string, 
+  updates?: Partial<Conversation>
+): Conversation => {
+  try {
+    // Check if a conversation for this session already exists
+    const conversations = loadConversationsFromStorage();
+    const existingConversation = conversations.find(conv => conv.sessionId === sessionId);
+    
+    if (existingConversation) {
+      // Update existing conversation
+      const updatedConversation = {
+        ...existingConversation,
+        ...updates,
+        sessionId,
+        timestamp: new Date() // Update timestamp
+      };
+      saveConversationToStorage(updatedConversation);
+      return updatedConversation;
+    }
+    
+    // Create new conversation
+    const newConversation: Conversation = {
+      id: `conv-${Date.now()}`,
+      title: 'New Conversation',
+      lastMessage: '',
+      timestamp: new Date(),
+      sessionId,
+      agentInfo: {
+        name: 'Support Agent',
+        avatar: undefined
+      },
+      ...(updates || {})
+    };
+    
+    saveConversationToStorage(newConversation);
+    return newConversation;
+  } catch (error) {
+    console.error('Failed to create or update session conversation:', error);
+    throw error;
   }
 };
