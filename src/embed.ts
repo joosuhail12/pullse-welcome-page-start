@@ -10,6 +10,8 @@ declare global {
       open: () => void;
       close: () => void;
       toggle: () => void;
+      on?: (eventName: string, callback: (detail: any) => void) => () => void;
+      off?: (eventName: string, handler: any) => void;
     };
   }
 }
@@ -99,7 +101,7 @@ function initChatWidget(config: any = {}) {
     );
   });
   
-  // Return public API
+  // Return public API with event handling methods
   return {
     open: () => {
       const event = new CustomEvent('pullse:widget:open');
@@ -112,6 +114,22 @@ function initChatWidget(config: any = {}) {
     toggle: () => {
       const event = new CustomEvent('pullse:widget:toggle');
       window.dispatchEvent(event);
+    },
+    on: (eventName: string, callback: (detail: any) => void) => {
+      const eventPrefix = eventName.startsWith('pullse:') ? '' : 'pullse:';
+      const fullEventName = `${eventPrefix}${eventName}`;
+      
+      const handler = (event: CustomEvent) => {
+        callback(event.detail);
+      };
+      
+      window.addEventListener(fullEventName, handler as EventListener);
+      return () => window.removeEventListener(fullEventName, handler as EventListener);
+    },
+    off: (eventName: string, handler: EventListener) => {
+      const eventPrefix = eventName.startsWith('pullse:') ? '' : 'pullse:';
+      const fullEventName = `${eventPrefix}${eventName}`;
+      window.removeEventListener(fullEventName, handler);
     }
   };
 }

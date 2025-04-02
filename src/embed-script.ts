@@ -58,6 +58,16 @@
     }
   };
   
+  // Define the ChatWidget interface with event handling methods
+  interface ChatWidgetInterface {
+    init: (config?: any) => any;
+    open: () => void;
+    close: () => void;
+    toggle: () => void;
+    on?: (eventName: string, callback: (detail: any) => void) => () => void;
+    off?: (eventName: string, handler: any) => void;
+  }
+  
   // Create global namespace for the widget
   window.ChatWidget = {
     init: (customConfig = {}) => {
@@ -98,7 +108,7 @@
     close: () => console.warn('Chat widget is still loading...'),
     toggle: () => console.warn('Chat widget is still loading...'),
     
-    // Event handling
+    // Event handling methods
     on: (eventName, callback) => {
       const eventPrefix = eventName.startsWith('pullse:') ? '' : 'pullse:';
       const fullEventName = `${eventPrefix}${eventName}`;
@@ -117,7 +127,7 @@
       const fullEventName = `${eventPrefix}${eventName}`;
       window.removeEventListener(fullEventName, handler);
     }
-  };
+  } as ChatWidgetInterface;
 
   // Only load the widget when needed (on button click or immediately if auto-open is set)
   const shouldLoadImmediately = getDataAttribute('auto-load', 'false') === 'true';
