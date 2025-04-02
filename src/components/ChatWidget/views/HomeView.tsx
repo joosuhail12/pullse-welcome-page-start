@@ -38,6 +38,7 @@ const HomeView = ({
         
         <p className="text-sm text-gray-600 mt-3 leading-relaxed">
           Get help, ask questions, or start a conversation with our support team.
+          We now support chat history with pagination.
         </p>
         
         <AgentPresence />

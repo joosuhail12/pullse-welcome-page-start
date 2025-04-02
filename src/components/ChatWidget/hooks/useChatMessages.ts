@@ -22,6 +22,7 @@ export function useChatMessages(
   const [isTyping, setIsTyping] = useState(false);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const [page, setPage] = useState(1);
+  const [isLoadingPreviousMessages, setIsLoadingPreviousMessages] = useState(false);
   
   // Get session ID
   const sessionId = getChatSessionId();
@@ -85,18 +86,51 @@ export function useChatMessages(
 
   // Function to load previous messages (for infinite scroll)
   const loadPreviousMessages = useCallback(async () => {
-    // Simulate loading previous messages with a delay
-    // In a real implementation, this would make an API call with pagination
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        setPage(prevPage => prevPage + 1);
-        // In a real implementation, you would fetch more messages here
-        // and prepend them to the messages array
-        
-        // For now, we'll just resolve the Promise
-        resolve();
-      }, 1000);
-    });
+    // Set loading state
+    setIsLoadingPreviousMessages(true);
+    
+    try {
+      console.log('Loading previous messages for page:', page + 1);
+      
+      // Simulate API call to fetch older messages
+      await new Promise<void>((resolve) => {
+        setTimeout(() => {
+          // In a real implementation, this would be fetching from an API
+          // Mock creating older messages for demonstration
+          const oldMessages: Message[] = [];
+          
+          // In a real implementation, you would fetch these from an API
+          // For demo purposes, we're generating mock older messages
+          if (page < 5) { // Limit to 5 pages of history for demo
+            for (let i = 0; i < 10; i++) {
+              const timestamp = new Date();
+              timestamp.setMinutes(timestamp.getMinutes() - (page * 10) - i);
+              
+              const mockMessage: Message = {
+                id: `old-msg-${page}-${i}`,
+                text: `This is an older message #${i} from page ${page + 1}`,
+                sender: i % 2 === 0 ? 'user' : 'system',
+                timestamp,
+                type: 'text',
+                status: 'read',
+              };
+              
+              oldMessages.push(mockMessage);
+            }
+            
+            // Add these older messages to the beginning of our messages array
+            setMessages(prevMessages => [...oldMessages.reverse(), ...prevMessages]);
+            setPage(prevPage => prevPage + 1);
+          }
+          
+          resolve();
+        }, 1000); // Simulate network delay
+      });
+    } catch (error) {
+      console.error("Error loading previous messages:", error);
+    } finally {
+      setIsLoadingPreviousMessages(false);
+    }
   }, [page]);
 
   return {
@@ -111,6 +145,7 @@ export function useChatMessages(
     handleFileUpload,
     handleEndChat,
     readReceipts,
-    loadPreviousMessages
+    loadPreviousMessages,
+    isLoadingMore: isLoadingPreviousMessages
   };
 }

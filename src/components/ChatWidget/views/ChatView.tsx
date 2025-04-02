@@ -31,7 +31,6 @@ const ChatView = ({
   setUserFormData
 }: ChatViewProps) => {
   const [showSearch, setShowSearch] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   
   // Check if pre-chat form should be shown based on config and conversation state
   const [showPreChatForm, setShowPreChatForm] = useState(
@@ -71,7 +70,8 @@ const ChatView = ({
     handleEndChat,
     remoteIsTyping,
     readReceipts,
-    loadPreviousMessages
+    loadPreviousMessages,
+    isLoadingMore
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
 
   // Message reactions hook
@@ -124,11 +124,10 @@ const ChatView = ({
   const handleLoadMoreMessages = useCallback(async () => {
     if (!loadPreviousMessages) return;
     
-    setIsLoadingMore(true);
     try {
       await loadPreviousMessages();
-    } finally {
-      setIsLoadingMore(false);
+    } catch (error) {
+      console.error("Error loading more messages:", error);
     }
   }, [loadPreviousMessages]);
 
@@ -156,7 +155,7 @@ const ChatView = ({
   const userAvatar = undefined; // Could be set from user profile if available
 
   // Determine if there could be more messages to load
-  const hasMoreMessages = messages.length >= 20; // Assuming we load 20 messages at a time
+  const hasMoreMessages = messages.length >= 20 || page > 1; // Assuming we load 20 messages at a time
 
   return (
     <div 
