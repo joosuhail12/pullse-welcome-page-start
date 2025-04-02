@@ -24,6 +24,15 @@ export interface ChatBranding {
   fontFamily?: string;
   avatarUrl?: string;
   showBrandingBar?: boolean;
+  // New branding options
+  logoUrl?: string;
+  backgroundGradient?: string;
+  headerGradient?: string;
+  buttonStyle?: 'solid' | 'outline' | 'ghost';
+  borderRadius?: 'sm' | 'md' | 'lg' | 'full';
+  widgetPosition?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  widgetSize?: 'sm' | 'md' | 'lg';
+  theme?: 'light' | 'dark' | 'auto';
 }
 
 export interface ChatFeatures {
@@ -36,6 +45,9 @@ export interface ChatFeatures {
   messageReactions?: boolean;
   typingIndicators?: boolean;
   searchMessages?: boolean;
+  quickPrompts?: boolean;  // New feature flag for quick prompts
+  welcomeScreen?: boolean;
+  offlineSupport?: boolean;
 }
 
 export interface ChatRealtime {
@@ -55,7 +67,8 @@ export type ChatEventType =
   | 'chat:typingStarted'
   | 'chat:typingStopped'
   | 'message:fileUploaded'
-  | 'chat:ended';
+  | 'chat:ended'
+  | 'quickPrompt:selected';  // New event type for quick prompts
 
 export interface ChatEventPayload {
   type: ChatEventType;
@@ -66,6 +79,10 @@ export interface ChatEventPayload {
 export interface ChatWidgetConfig {
   workspaceId: string;
   welcomeMessage: string;
+  // New welcome content options
+  welcomeDescription?: string;
+  welcomeImageUrl?: string;
+  quickPrompts?: string[];
   preChatForm: PreChatForm;
   branding?: ChatBranding;
   features?: ChatFeatures;
@@ -81,6 +98,12 @@ export interface ChatWidgetConfig {
 export const defaultConfig: ChatWidgetConfig = {
   workspaceId: 'default',
   welcomeMessage: 'Welcome! How can we help you today?',
+  welcomeDescription: 'Get help, ask questions, or start a conversation with our support team.',
+  quickPrompts: [
+    'How do I reset my password?',
+    'What are your business hours?',
+    'Can I get a refund?'
+  ],
   preChatForm: {
     enabled: true,
     title: 'Start a Conversation',
@@ -105,7 +128,12 @@ export const defaultConfig: ChatWidgetConfig = {
   },
   branding: {
     primaryColor: '#8B5CF6',
-    showBrandingBar: true
+    showBrandingBar: true,
+    theme: 'light',
+    borderRadius: 'md',
+    widgetPosition: 'bottom-right',
+    widgetSize: 'md',
+    buttonStyle: 'solid'
   },
   features: {
     fileUpload: true,
@@ -116,7 +144,10 @@ export const defaultConfig: ChatWidgetConfig = {
     chatSuggestions: false,
     messageReactions: true,
     typingIndicators: true,
-    searchMessages: true
+    searchMessages: true,
+    quickPrompts: true,
+    welcomeScreen: true,
+    offlineSupport: true
   },
   realtime: {
     enabled: false,
@@ -124,3 +155,4 @@ export const defaultConfig: ChatWidgetConfig = {
     authEndpoint: '/api/chat-widget/token'
   }
 };
+
