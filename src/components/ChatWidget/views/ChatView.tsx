@@ -55,7 +55,8 @@ const ChatView = memo(({
     handleLoadMoreMessages,
     handleFormComplete,
     hasMoreMessages,
-    isLoadingMore
+    isLoadingMore,
+    isProcessingForm
   } = useChatView({
     conversation,
     onUpdateConversation,
@@ -123,6 +124,7 @@ const ChatView = memo(({
         handleUserTyping={handleUserTyping}
         handleFormComplete={handleFormComplete}
         config={config}
+        isProcessingForm={isProcessingForm}
       />
     </div>
   );

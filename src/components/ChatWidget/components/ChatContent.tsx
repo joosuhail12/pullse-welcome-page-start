@@ -30,6 +30,7 @@ interface ChatContentProps {
   handleUserTyping: () => void;
   handleFormComplete: (formData: Record<string, string>) => void;
   config?: ChatWidgetConfig;
+  isProcessingForm?: boolean;
 }
 
 // Using memo to prevent unnecessary re-renders
@@ -56,11 +57,13 @@ const ChatContent = memo<ChatContentProps>(({
   hasUserSentMessage,
   handleUserTyping,
   handleFormComplete,
-  config
+  config,
+  isProcessingForm
 }: ChatContentProps) => {
   console.log("ChatContent rendering", { 
     messageCount: messages.length, 
-    showPreChatForm
+    showPreChatForm,
+    isProcessingForm
   });
   
   // Memoize the form completion handler to prevent unnecessary re-renders
@@ -75,6 +78,7 @@ const ChatContent = memo<ChatContentProps>(({
         <PreChatFormSection 
           config={config} 
           onFormComplete={memoizedHandleFormComplete} 
+          isProcessingForm={isProcessingForm}
         />
       ) : (
         <MessagesSection 

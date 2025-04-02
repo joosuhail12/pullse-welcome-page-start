@@ -10,10 +10,11 @@ import { ChatWidgetConfig } from '../config';
 interface PreChatFormProps {
   config: ChatWidgetConfig;
   onFormComplete: (formData: Record<string, string>) => void;
+  isProcessingForm?: boolean;
 }
 
 // Use memo to prevent unnecessary re-renders
-const PreChatForm = memo(({ config, onFormComplete }: PreChatFormProps) => {
+const PreChatForm = memo(({ config, onFormComplete, isProcessingForm = false }: PreChatFormProps) => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formValid, setFormValid] = useState(false);
@@ -52,8 +53,13 @@ const PreChatForm = memo(({ config, onFormComplete }: PreChatFormProps) => {
 
   // Submit form - using useCallback to prevent recreating this function
   const submitForm = useCallback(() => {
-    if (!formValid || isSubmitting) {
-      console.log('Form submission prevented - invalid or already submitting:', { formValid, isSubmitting });
+    // Multiple layers of protection against duplicate submissions
+    if (!formValid || isSubmitting || isProcessingForm) {
+      console.log('Form submission prevented:', { 
+        formValid, 
+        isSubmitting, 
+        isProcessingForm
+      });
       return;
     }
     
@@ -62,25 +68,20 @@ const PreChatForm = memo(({ config, onFormComplete }: PreChatFormProps) => {
       console.log("Validating form data before submission");
       const sanitizedData = validateFormData(formData);
       
-      // Dispatch form completion event
-      if (config) {
-        dispatchChatEvent('contact:formCompleted', { formData: sanitizedData }, config);
-      }
-      
       console.log("Form submission with data:", sanitizedData);
       onFormComplete(sanitizedData);
     } catch (error) {
       console.error("Error submitting form:", error);
       setIsSubmitting(false);
     }
-  }, [formValid, isSubmitting, formData, config, onFormComplete]);
+  }, [formValid, isSubmitting, isProcessingForm, formData, onFormComplete]);
 
   // Handle keyboard submission
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && formValid && !isSubmitting) {
+    if (e.key === 'Enter' && formValid && !isSubmitting && !isProcessingForm) {
       submitForm();
     }
-  }, [formValid, isSubmitting, submitForm]);
+  }, [formValid, isSubmitting, isProcessingForm, submitForm]);
 
   return (
     <div 
@@ -110,7 +111,7 @@ const PreChatForm = memo(({ config, onFormComplete }: PreChatFormProps) => {
             className={`h-8 text-sm ${formErrors[field.name] ? 'border-red-500' : ''}`}
             aria-describedby={formErrors[field.name] ? `${field.id}-error` : undefined}
             aria-invalid={!!formErrors[field.name]}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isProcessingForm}
           />
           {formErrors[field.name] && (
             <p 
@@ -125,7 +126,7 @@ const PreChatForm = memo(({ config, onFormComplete }: PreChatFormProps) => {
       ))}
       <Button 
         onClick={submitForm} 
-        disabled={!formValid || isSubmitting}
+        disabled={!formValid || isSubmitting || isProcessingForm}
         className="w-full h-8 text-sm mt-2"
         style={{
           backgroundColor: config.branding?.primaryColor || '#8B5CF6',
@@ -133,7 +134,7 @@ const PreChatForm = memo(({ config, onFormComplete }: PreChatFormProps) => {
         }}
         aria-label="Start Chat"
       >
-        {isSubmitting ? 'Starting chat...' : 'Start Chat'}
+        {isSubmitting || isProcessingForm ? 'Starting chat...' : 'Start Chat'}
       </Button>
     </div>
   );

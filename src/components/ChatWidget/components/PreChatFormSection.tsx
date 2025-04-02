@@ -6,12 +6,12 @@ import PreChatForm from './PreChatForm';
 interface PreChatFormSectionProps {
   config?: ChatWidgetConfig;
   onFormComplete: (formData: Record<string, string>) => void;
+  isProcessingForm?: boolean;
 }
 
 // Use memo to prevent unnecessary re-renders
-const PreChatFormSection = memo(({ config, onFormComplete }: PreChatFormSectionProps) => {
+const PreChatFormSection = memo(({ config, onFormComplete, isProcessingForm }: PreChatFormSectionProps) => {
   const [mounted, setMounted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Subtle animation on mount with a slight delay for better sequencing
   useEffect(() => {
@@ -24,17 +24,16 @@ const PreChatFormSection = memo(({ config, onFormComplete }: PreChatFormSectionP
   
   // Memoize the handler to prevent recreation on each render
   const handleFormSubmit = useCallback((formData: Record<string, string>) => {
-    if (isSubmitting) {
+    if (isProcessingForm) {
       console.log("Preventing duplicate form submission");
       return; // Prevent multiple submissions
     }
     
     console.log("PreChatFormSection handling form submission");
-    setIsSubmitting(true);
     
     // Call the callback directly with the form data
     onFormComplete(formData);
-  }, [onFormComplete, isSubmitting]);
+  }, [onFormComplete, isProcessingForm]);
   
   // Apply custom branding if available
   const themeStyles = {
@@ -57,6 +56,7 @@ const PreChatFormSection = memo(({ config, onFormComplete }: PreChatFormSectionP
       <PreChatForm 
         config={config} 
         onFormComplete={handleFormSubmit} 
+        isProcessingForm={isProcessingForm}
       />
     </div>
   );

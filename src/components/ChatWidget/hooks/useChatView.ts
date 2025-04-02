@@ -26,6 +26,7 @@ export function useChatView({
   setUserFormData
 }: UseChatViewProps) {
   const [showSearch, setShowSearch] = useState(false);
+  const [isProcessingForm, setIsProcessingForm] = useState(false);
   
   // Use the pre-chat form hook with stable references
   const { showPreChatForm, hidePreChatForm } = usePreChatForm({ 
@@ -123,28 +124,43 @@ export function useChatView({
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     console.log("Form submission in useChatView with data:", formData);
     
+    // Prevent multiple submissions
+    if (isProcessingForm) {
+      console.log("Form submission already in progress, ignoring duplicate submission");
+      return;
+    }
+    
+    setIsProcessingForm(true);
+    
     // First hide the form to prevent rendering issues
     hidePreChatForm();
     
-    // Use a short timeout to ensure state updates don't conflict 
+    // Use setTimeout to separate state updates and prevent render loops
     setTimeout(() => {
-      // Update the parent form data if callback exists
-      if (setUserFormData) {
-        setUserFormData(formData);
-      }
-      
-      // Flag the conversation as having identified the contact
-      onUpdateConversation({
-        ...conversation,
-        contactIdentified: true
-      });
-      
-      // Dispatch form completed event
-      if (config) {
-        dispatchChatEvent('contact:formCompleted', { formData }, config);
+      try {
+        // Update the parent form data if callback exists
+        if (setUserFormData) {
+          setUserFormData(formData);
+        }
+        
+        // Flag the conversation as having identified the contact
+        onUpdateConversation({
+          ...conversation,
+          contactIdentified: true
+        });
+        
+        // Dispatch form completed event
+        if (config) {
+          dispatchChatEvent('contact:formCompleted', { formData }, config);
+        }
+      } finally {
+        // Reset processing flag after a short delay
+        setTimeout(() => {
+          setIsProcessingForm(false);
+        }, 300);
       }
     }, 0);
-  }, [setUserFormData, conversation, onUpdateConversation, config, hidePreChatForm]);
+  }, [setUserFormData, conversation, onUpdateConversation, config, hidePreChatForm, isProcessingForm]);
 
   // Get avatar URLs from config
   const agentAvatar = useMemo(() => 
@@ -187,6 +203,7 @@ export function useChatView({
     handleLoadMoreMessages,
     handleFormComplete,
     hasMoreMessages,
-    isLoadingMore
+    isLoadingMore,
+    isProcessingForm
   };
 }

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
+import { toast } from 'sonner';
 
 interface UsePreChatFormOptions {
   conversation: Conversation;
@@ -24,8 +25,7 @@ export function usePreChatForm({
     return shouldShow;
   });
 
-  // Use this effect to update the form visibility when dependencies change
-  // This prevents direct state updates during render which can cause infinite loops
+  // Only update showPreChatForm when dependencies actually change
   useEffect(() => {
     const shouldShowForm = config?.preChatForm?.enabled && 
                           !conversation.contactIdentified && 

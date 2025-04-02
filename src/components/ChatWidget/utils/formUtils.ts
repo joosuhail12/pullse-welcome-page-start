@@ -44,9 +44,20 @@ export function validateFormData(formData: Record<string, string>): Record<strin
   // Create a new object to hold sanitized values
   const sanitizedData: Record<string, string> = {};
   
+  // Check if formData is valid
+  if (!formData || typeof formData !== 'object') {
+    console.error('Invalid form data provided:', formData);
+    return {};
+  }
+  
   // Sanitize each field
   Object.keys(formData).forEach(key => {
-    sanitizedData[key] = sanitizeInput(formData[key]);
+    const value = formData[key];
+    if (value !== undefined && value !== null) {
+      sanitizedData[key] = sanitizeInput(value);
+    } else {
+      sanitizedData[key] = '';
+    }
   });
   
   return sanitizedData;
