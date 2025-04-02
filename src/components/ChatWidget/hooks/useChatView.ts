@@ -51,12 +51,28 @@ export function useChatView({
     isLoadingMore
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
 
+  // The issue might be here - preventing unnecessary re-renders
+  const setMessages = useCallback((updatedMessages: React.SetStateAction<Message[]>) => {
+    if (typeof updatedMessages === 'function') {
+      // We won't directly call the function here which might cause infinite loops
+      onUpdateConversation({
+        ...conversation,
+        messages: updatedMessages(conversation.messages || [])
+      });
+    } else {
+      onUpdateConversation({
+        ...conversation,
+        messages: updatedMessages
+      });
+    }
+  }, [conversation, onUpdateConversation]);
+
   // Message reactions hook
   const {
     handleMessageReaction
   } = useMessageReactions(
     messages,
-    message => setMessages(message),
+    setMessages,
     `conversation:${conversation.id}`,
     conversation.sessionId || '',
     config
@@ -73,29 +89,10 @@ export function useChatView({
     isSearching
   } = useMessageSearch(messages);
 
-  // Function to share messages state with parent components
-  const setMessages = (updatedMessages: React.SetStateAction<typeof messages>) => {
-    if (typeof updatedMessages === 'function') {
-      const newMessages = updatedMessages(messages);
-      onUpdateConversation({
-        ...conversation,
-        messages: newMessages
-      });
-    } else {
-      onUpdateConversation({
-        ...conversation,
-        messages: updatedMessages
-      });
-    }
-  };
-
   // Toggle search bar
-  const toggleSearch = () => {
+  const toggleSearch = useCallback(() => {
     setShowSearch(prev => !prev);
-    if (showSearch) {
-      clearSearch();
-    }
-  };
+  }, []);
 
   // Handle loading previous messages for infinite scroll
   const handleLoadMoreMessages = useCallback(async () => {
@@ -109,7 +106,7 @@ export function useChatView({
   }, [loadPreviousMessages]);
 
   // Handle form submission
-  const handleFormComplete = (formData: Record<string, string>) => {
+  const handleFormComplete = useCallback((formData: Record<string, string>) => {
     // Update the parent form data if callback exists
     if (setUserFormData) {
       setUserFormData(formData);
@@ -123,7 +120,7 @@ export function useChatView({
     
     // Dispatch form completed event
     dispatchChatEvent('contact:formCompleted', { formData }, config);
-  };
+  }, [setUserFormData, conversation, onUpdateConversation, config]);
 
   // Get avatar URLs from config
   const agentAvatar = conversation.agentInfo?.avatar || config?.branding?.avatarUrl;

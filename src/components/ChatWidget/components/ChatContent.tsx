@@ -32,7 +32,7 @@ interface ChatContentProps {
   config?: ChatWidgetConfig;
 }
 
-const ChatContent = ({
+const ChatContent: React.FC<ChatContentProps> = ({
   showPreChatForm,
   messages,
   isTyping,

@@ -16,7 +16,7 @@ interface ChatViewProps {
   setUserFormData?: (data: Record<string, string>) => void;
 }
 
-const ChatView = ({ 
+const ChatView: React.FC<ChatViewProps> = ({ 
   conversation, 
   onBack, 
   onUpdateConversation, 
