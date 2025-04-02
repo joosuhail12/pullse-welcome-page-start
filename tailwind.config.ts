@@ -61,7 +61,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Soft purple color palette
+				'soft-purple': {
+					50: '#F5F3FF',
+					100: '#E5DEFF',
+					DEFAULT: '#E5DEFF'
+				},
+				'vivid-purple': '#8B5CF6'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
