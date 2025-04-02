@@ -102,7 +102,9 @@ export default {
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				sm: 'calc(var(--radius) - 4px)',
+				xl: 'calc(var(--radius) + 2px)',
+				'2xl': 'calc(var(--radius) + 4px)',
 			},
 			keyframes: {
 				'accordion-down': {
@@ -131,6 +133,26 @@ export default {
 						transform: 'translateY(0)'
 					}
 				},
+				'fade-in-right': {
+					from: {
+						opacity: '0',
+						transform: 'translateX(10px)'
+					},
+					to: {
+						opacity: '1',
+						transform: 'translateX(0)'
+					}
+				},
+				'fade-in-left': {
+					from: {
+						opacity: '0',
+						transform: 'translateX(-10px)'
+					},
+					to: {
+						opacity: '1',
+						transform: 'translateX(0)'
+					}
+				},
 				'typing-bounce': {
 					'0%, 100%': {
 						transform: 'translateY(0)'
@@ -138,18 +160,36 @@ export default {
 					'50%': {
 						transform: 'translateY(-5px)'
 					}
-				}
+				},
+				'scale-in': {
+					'0%': {
+						transform: 'scale(0.95)',
+						opacity: '0'
+					},
+					'100%': {
+						transform: 'scale(1)',
+						opacity: '1'
+					}
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out forwards',
-				'typing-bounce': 'typing-bounce 1s infinite'
+				'fade-in-right': 'fade-in-right 0.3s ease-out forwards',
+				'fade-in-left': 'fade-in-left 0.3s ease-out forwards',
+				'typing-bounce': 'typing-bounce 1s infinite',
+				'scale-in': 'scale-in 0.2s ease-out',
 			},
 			boxShadow: {
 				'chat-bubble': '0 2px 8px rgba(0, 0, 0, 0.05)',
-				'chat-widget': '0 4px 20px rgba(0, 0, 0, 0.1)'
-			}
+				'chat-widget': '0 4px 20px rgba(0, 0, 0, 0.1)',
+				'chat-widget-hover': '0 6px 24px rgba(0, 0, 0, 0.15)',
+				'glassmorphic': '0 8px 32px rgba(31, 38, 135, 0.15)',
+			},
+			backdropBlur: {
+				xs: '2px',
+			},
 		}
 	},
 	plugins: [require("tailwindcss-animate")],

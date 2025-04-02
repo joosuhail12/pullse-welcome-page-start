@@ -166,6 +166,12 @@
   .chat-widget-container {
     @apply shadow-xl border border-gray-200 rounded-xl overflow-hidden bg-white;
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(12px);
+    transition: all 0.3s ease;
+  }
+  
+  .chat-widget-container:hover {
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   }
   
   .chat-message-bubble {
@@ -175,11 +181,21 @@
   .chat-message-user {
     @apply bg-user-bubble text-user-bubble-foreground rounded-br-sm chat-message-bubble;
     box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+    transition: box-shadow 0.2s ease;
+  }
+  
+  .chat-message-user:hover {
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
   }
   
   .chat-message-system {
     @apply bg-system-bubble text-system-bubble-foreground rounded-bl-sm chat-message-bubble;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s ease;
+  }
+  
+  .chat-message-system:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
   }
   
   .chat-widget-button {
