@@ -29,7 +29,6 @@ const ChatHeader = ({ conversation, onBack, onToggleSearch, showSearch }: ChatHe
             {conversation.agentInfo?.name || 'Support'}
           </h2>
           <AgentPresence 
-            userStatus="online" 
             workspaceId={conversation.id.split(':')[0]}
           />
         </div>
