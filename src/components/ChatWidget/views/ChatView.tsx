@@ -35,29 +35,45 @@ interface Conversation {
     name: string;
     avatar?: string;
   };
+  messages?: Message[];
 }
 
 interface ChatViewProps {
   conversation: Conversation;
   onBack: () => void;
+  onUpdateConversation: (updatedConversation: Conversation) => void;
 }
 
-const ChatView = ({ conversation, onBack }: ChatViewProps) => {
+const ChatView = ({ conversation, onBack, onUpdateConversation }: ChatViewProps) => {
   const [messageText, setMessageText] = useState('');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'msg-1',
-      text: 'Hello! How can I help you today?',
-      sender: 'system',
-      timestamp: new Date(),
-      type: 'text'
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>(
+    conversation.messages || [
+      {
+        id: 'msg-1',
+        text: 'Hello! How can I help you today?',
+        sender: 'system',
+        timestamp: new Date(),
+        type: 'text'
+      }
+    ]
+  );
   const [isTyping, setIsTyping] = useState(false);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      const updatedConversation = {
+        ...conversation,
+        messages: messages,
+        lastMessage: messages[messages.length - 1].text,
+        timestamp: messages[messages.length - 1].timestamp
+      };
+      onUpdateConversation(updatedConversation);
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
