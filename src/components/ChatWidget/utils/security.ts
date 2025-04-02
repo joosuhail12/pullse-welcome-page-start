@@ -105,3 +105,45 @@ export function decryptData(encryptedData: string): string {
     return '';
   }
 }
+
+/**
+ * Enforce HTTPS by redirecting HTTP requests to HTTPS
+ * @returns True if already on HTTPS, false if redirection occurred
+ */
+export function enforceHttps(): boolean {
+  if (
+    typeof window !== 'undefined' && 
+    window.location.protocol === 'http:' &&
+    !window.location.hostname.includes('localhost') &&
+    !window.location.hostname.includes('127.0.0.1')
+  ) {
+    window.location.href = window.location.href.replace('http:', 'https:');
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Sign a message to ensure data integrity
+ * @param message The message to sign
+ * @param timestamp Timestamp when the message was created
+ * @returns Signature for the message
+ */
+export function signMessage(message: string, timestamp: number): string {
+  const sessionId = getChatSessionId() || '';
+  const signatureKey = 'message-integrity-key';
+  const dataToSign = `${message}|${timestamp}|${sessionId}|${signatureKey}`;
+  return simpleHash(dataToSign);
+}
+
+/**
+ * Verify message signature to ensure data integrity
+ * @param message Original message
+ * @param timestamp Original timestamp
+ * @param signature Signature to verify
+ * @returns True if signature is valid, false otherwise
+ */
+export function verifyMessageSignature(message: string, timestamp: number, signature: string): boolean {
+  const generatedSignature = signMessage(message, timestamp);
+  return generatedSignature === signature;
+}
