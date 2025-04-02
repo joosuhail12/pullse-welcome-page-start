@@ -24,32 +24,6 @@ export interface ChatBranding {
   fontFamily?: string;
   avatarUrl?: string;
   showBrandingBar?: boolean;
-  // Enhanced styling options
-  borderRadius?: string;
-  buttonStyle?: 'solid' | 'outline' | 'ghost' | 'soft';
-  messageStyle?: 'rounded' | 'square' | 'bubble';
-  theme?: 'light' | 'dark' | 'auto';
-  // Custom CSS properties
-  customCSS?: {
-    [key: string]: string;
-  };
-  widgetHeader?: {
-    backgroundColor?: string;
-    textColor?: string;
-  };
-  userBubble?: {
-    backgroundColor?: string;
-    textColor?: string;
-  };
-  systemBubble?: {
-    backgroundColor?: string;
-    textColor?: string;
-  };
-  inputBox?: {
-    backgroundColor?: string;
-    textColor?: string;
-    borderColor?: string;
-  };
 }
 
 export interface ChatFeatures {
@@ -77,17 +51,7 @@ export type ChatEventType =
   | 'chat:messageReceived'
   | 'contact:initiatedChat'
   | 'contact:formCompleted'
-  | 'message:reacted'
-  // New events
-  | 'widget:loaded'
-  | 'message:delivered'
-  | 'message:read'
-  | 'conversation:ended'
-  | 'file:uploaded'
-  | 'file:error'
-  | 'search:performed'
-  | 'error:occurred'
-  | 'agent:typing';
+  | 'message:reacted';
 
 export interface ChatEventPayload {
   type: ChatEventType;
@@ -104,13 +68,6 @@ export interface ChatWidgetConfig {
   realtime?: ChatRealtime;
   sessionId?: string;
   onEvent?: (event: ChatEventPayload) => void;
-  // New options for custom event handling
-  events?: {
-    // Allows registering multiple event handlers by event type
-    [key in ChatEventType]?: Array<(payload: ChatEventPayload) => void>;
-  };
-  // Position options
-  position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 }
 
 export const defaultConfig: ChatWidgetConfig = {
@@ -140,11 +97,7 @@ export const defaultConfig: ChatWidgetConfig = {
   },
   branding: {
     primaryColor: '#8B5CF6',
-    showBrandingBar: true,
-    borderRadius: '0.5rem',
-    buttonStyle: 'solid',
-    messageStyle: 'rounded',
-    theme: 'light',
+    showBrandingBar: true
   },
   features: {
     fileUpload: true,
@@ -161,7 +114,5 @@ export const defaultConfig: ChatWidgetConfig = {
     enabled: false,
     // Using auth endpoint instead of direct API key
     authEndpoint: '/api/chat-widget/token'
-  },
-  position: 'bottom-right'
+  }
 };
-
