@@ -25,8 +25,8 @@ const HomeView = ({
     // Always dispatch event when chat is initiated
     dispatchChatEvent('contact:initiatedChat', { showForm: config.preChatForm.enabled }, config);
     
-    // Pass empty object if no form is enabled, the ChatView will handle showing the form
-    onStartChat({});
+    // Start chat - the form will be shown in ChatView if needed
+    onStartChat();
   };
   
   return (

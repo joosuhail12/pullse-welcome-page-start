@@ -32,6 +32,8 @@ const ChatView = ({
 }: ChatViewProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  
+  // Check if pre-chat form should be shown based on config and conversation state
   const [showPreChatForm, setShowPreChatForm] = useState(
     config?.preChatForm?.enabled && !conversation.contactIdentified && !userFormData
   );
@@ -40,8 +42,21 @@ const ChatView = ({
   useEffect(() => {
     if (userFormData || conversation.contactIdentified) {
       setShowPreChatForm(false);
+    } else if (config?.preChatForm?.enabled && !conversation.contactIdentified) {
+      // Ensure form shows when conditions are met
+      setShowPreChatForm(true);
     }
-  }, [userFormData, conversation.contactIdentified]);
+  }, [userFormData, conversation.contactIdentified, config?.preChatForm?.enabled]);
+
+  // Debug log for form visibility state
+  useEffect(() => {
+    console.log('Pre-chat form visibility:', { 
+      showPreChatForm,
+      formEnabled: config?.preChatForm?.enabled,
+      contactIdentified: conversation.contactIdentified,
+      hasUserFormData: !!userFormData
+    });
+  }, [showPreChatForm, config?.preChatForm?.enabled, conversation.contactIdentified, userFormData]);
 
   // Chat messages hook
   const {
