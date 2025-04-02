@@ -1,11 +1,10 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { defaultConfig, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
 import { dispatchChatEvent } from '../utils/events';
-import PreChatForm from '../components/PreChatForm';
 
 interface HomeViewProps {
   onStartChat: (formData?: Record<string, string>) => void;
@@ -16,8 +15,6 @@ const HomeView = ({
   onStartChat, 
   config = defaultConfig 
 }: HomeViewProps) => {
-  const [showForm, setShowForm] = useState(config.preChatForm.enabled);
-  
   // Apply custom branding if available
   const buttonStyle = config.branding?.primaryColor 
     ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
@@ -25,21 +22,11 @@ const HomeView = ({
   
   // Handle direct chat start (no form)
   const handleStartChat = () => {
-    if (config.preChatForm.enabled) {
-      setShowForm(true);
-      // Dispatch form shown event
-      dispatchChatEvent('contact:initiatedChat', { showForm: true }, config);
-    } else {
-      dispatchChatEvent('contact:initiatedChat', { showForm: false }, config);
-      onStartChat({});
-    }
-  };
-  
-  // Handle form completion
-  const handleFormComplete = (formData: Record<string, string>) => {
-    dispatchChatEvent('contact:formCompleted', { formData }, config);
-    dispatchChatEvent('contact:initiatedChat', { formData }, config);
-    onStartChat(formData);
+    // Always dispatch event when chat is initiated
+    dispatchChatEvent('contact:initiatedChat', { showForm: config.preChatForm.enabled }, config);
+    
+    // Pass empty object if no form is enabled, the ChatView will handle showing the form
+    onStartChat({});
   };
   
   return (
@@ -56,23 +43,16 @@ const HomeView = ({
         <AgentPresence />
       </div>
       
-      {showForm ? (
-        <PreChatForm 
-          config={config} 
-          onFormComplete={handleFormComplete} 
-        />
-      ) : (
-        <div className="mt-auto">
-          <Button 
-            onClick={handleStartChat}
-            className="chat-widget-button flex items-center gap-2 w-full py-2.5"
-            style={buttonStyle}
-          >
-            <MessageSquare size={18} />
-            <span className="font-medium">Ask a question</span>
-          </Button>
-        </div>
-      )}
+      <div className="mt-auto">
+        <Button 
+          onClick={handleStartChat}
+          className="chat-widget-button flex items-center gap-2 w-full py-2.5"
+          style={buttonStyle}
+        >
+          <MessageSquare size={18} />
+          <span className="font-medium">Ask a question</span>
+        </Button>
+      </div>
     </div>
   );
 };
