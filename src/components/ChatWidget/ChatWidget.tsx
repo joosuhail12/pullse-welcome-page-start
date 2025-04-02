@@ -114,7 +114,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     <>
       {isOpen && (
         <div 
-          className="fixed bottom-4 right-4 w-80 sm:w-96 rounded-lg shadow-lg overflow-hidden flex flex-col bg-white border border-gray-200 max-h-[600px]"
+          className="fixed bottom-24 right-4 w-80 sm:w-96 rounded-lg shadow-lg overflow-hidden flex flex-col bg-white border border-gray-200 max-h-[600px] z-50"
           style={widgetStyle}
         >
           <div className="relative w-full max-h-[600px] flex flex-col">
