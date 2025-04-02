@@ -34,11 +34,38 @@ export default defineConfig(({ mode }) => ({
       },
       injectManifest: {
         globPatterns: [
-          '**/*.{js,css,html,mp3,svg,png,ico}'
+          '**/*.{js,css,html,mp3,svg,png,ico,jpg,jpeg}'
         ]
       },
       devOptions: {
         enabled: true
+      },
+      // Improve image cache strategy
+      workbox: {
+        runtimeCaching: [
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+              },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*\/api\/.*/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 5 * 60, // 5 minutes
+              },
+            },
+          }
+        ]
       }
     })
   ].filter(Boolean),
