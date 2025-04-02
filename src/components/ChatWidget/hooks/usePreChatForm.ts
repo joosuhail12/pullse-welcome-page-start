@@ -14,29 +14,35 @@ export function usePreChatForm({
   config = defaultConfig, 
   userFormData 
 }: UsePreChatFormOptions) {
-  // Initial state depends on whether form is enabled and contact isn't identified yet
+  // Initialize form visibility state just once - don't update it automatically
   const [showPreChatForm, setShowPreChatForm] = useState(() => {
-    return config?.preChatForm?.enabled && 
-           !conversation.contactIdentified && 
-           !userFormData;
+    const shouldShow = config?.preChatForm?.enabled && 
+                      !conversation.contactIdentified && 
+                      !userFormData;
+                      
+    console.log('Initial pre-chat form state:', shouldShow);
+    return shouldShow;
   });
 
-  // Effect to update the showPreChatForm state when dependencies change
+  // Use this effect to log state changes but not update state directly
   useEffect(() => {
-    const shouldShowForm = config?.preChatForm?.enabled && 
-                         !conversation.contactIdentified && 
-                         !userFormData;
-                         
-    setShowPreChatForm(shouldShowForm);
-    
-    // Debug log for form visibility state
-    console.log('Pre-chat form visibility updated:', { 
-      showPreChatForm: shouldShowForm,
+    console.log('Pre-chat form dependencies changed:', { 
       formEnabled: config?.preChatForm?.enabled,
       contactIdentified: conversation.contactIdentified,
-      hasUserFormData: !!userFormData
+      hasUserFormData: !!userFormData,
+      currentlyShowing: showPreChatForm
     });
-  }, [userFormData, conversation.contactIdentified, config?.preChatForm?.enabled]);
+  }, [userFormData, conversation.contactIdentified, config?.preChatForm?.enabled, showPreChatForm]);
 
-  return { showPreChatForm };
+  // Provide a manual way to hide the form that doesn't depend on effect
+  const hidePreChatForm = useCallback(() => {
+    console.log('Manually hiding pre-chat form');
+    setShowPreChatForm(false);
+  }, []);
+
+  return { 
+    showPreChatForm, 
+    setShowPreChatForm, // Expose setter for explicit control
+    hidePreChatForm // Convenience method to hide the form
+  };
 }

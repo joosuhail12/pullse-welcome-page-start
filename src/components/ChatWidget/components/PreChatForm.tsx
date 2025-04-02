@@ -64,7 +64,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
       // Pass data back to parent with a small delay to prevent race conditions
       setTimeout(() => {
         onFormComplete(sanitizedData);
-      }, 0);
+      }, 10);
     } catch (error) {
       console.error("Error submitting form:", error);
       setIsSubmitting(false);

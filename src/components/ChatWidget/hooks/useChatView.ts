@@ -28,7 +28,7 @@ export function useChatView({
   const [showSearch, setShowSearch] = useState(false);
   
   // Use the pre-chat form hook with stable references
-  const { showPreChatForm } = usePreChatForm({ 
+  const { showPreChatForm, hidePreChatForm } = usePreChatForm({ 
     conversation, 
     config, 
     userFormData 
@@ -123,6 +123,9 @@ export function useChatView({
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     console.log("Form submission in useChatView with data:", formData);
     
+    // First hide the form to prevent rendering issues
+    hidePreChatForm();
+    
     // Update the parent form data if callback exists
     if (setUserFormData) {
       setUserFormData(formData);
@@ -136,7 +139,7 @@ export function useChatView({
     
     // Dispatch form completed event
     dispatchChatEvent('contact:formCompleted', { formData }, config);
-  }, [setUserFormData, conversation, onUpdateConversation, config]);
+  }, [setUserFormData, conversation, onUpdateConversation, config, hidePreChatForm]);
 
   // Get avatar URLs from config
   const agentAvatar = useMemo(() => 
