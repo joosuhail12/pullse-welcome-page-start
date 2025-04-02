@@ -6,7 +6,7 @@ import { initializeAbly, cleanupAbly } from '../utils/ably';
 import { getAblyAuthUrl } from '../services/ablyAuth';
 import { getPendingMessageCount } from '../utils/offlineQueue';
 
-export function useConnectionManager(workspaceId?: string, config: ChatWidgetConfig) {
+export function useConnectionManager(workspaceId: string | undefined, config: ChatWidgetConfig) {
   const [pendingMessages, setPendingMessages] = useState(getPendingMessageCount());
   const { isConnected, connectionState } = useConnectionState();
 
@@ -72,5 +72,5 @@ export function useConnectionManager(workspaceId?: string, config: ChatWidgetCon
   };
 }
 
-// Need to import the useConnectionState hook used above
+// Import the useConnectionState hook
 import { useConnectionState } from './useConnectionState';

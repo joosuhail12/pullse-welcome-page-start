@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useChatState } from './hooks/useChatState';
 import useWidgetConfig from './hooks/useWidgetConfig';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
@@ -29,7 +29,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   } = useChatState();
   
   // Configuration and messaging hooks
-  const { config, loading } = useWidgetConfig(workspaceId);
+  const { config, loading } = useWidgetConfig(workspaceId || '');
   const [isOpen, setIsOpen] = useState(false);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
@@ -40,7 +40,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     connectionState,
     pendingMessages,
     handleReconnect
-  } = useConnectionManager(workspaceId, config);
+  } = useConnectionManager(workspaceId || '', config);
 
   // Handle widget open/close
   useEffect(() => {
@@ -49,17 +49,21 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     }
   }, [isOpen, clearUnreadMessages]);
 
-  const toggleChat = () => {
-    const newIsOpen = !isOpen;
-    setIsOpen(newIsOpen);
-    
-    if (newIsOpen) {
-      dispatchChatEvent('chat:open', undefined, config);
-      clearUnreadMessages();
-    } else {
-      dispatchChatEvent('chat:close', undefined, config);
-    }
-  };
+  // Use memoized toggleChat to avoid infinite re-renders
+  const toggleChat = useCallback(() => {
+    setIsOpen(prevIsOpen => {
+      const newIsOpen = !prevIsOpen;
+      
+      if (newIsOpen) {
+        dispatchChatEvent('chat:open', undefined, config);
+        clearUnreadMessages();
+      } else {
+        dispatchChatEvent('chat:close', undefined, config);
+      }
+      
+      return newIsOpen;
+    });
+  }, [config, clearUnreadMessages]);
 
   if (loading) {
     return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;

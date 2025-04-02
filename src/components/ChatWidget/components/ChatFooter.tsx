@@ -8,13 +8,20 @@ interface ChatFooterProps {
   handleReconnect: () => void;
 }
 
-const ChatFooter = ({ 
+const ChatFooter = React.memo(({ 
   showBrandingBar, 
   isConnected, 
   connectionState, 
   handleReconnect 
 }: ChatFooterProps) => {
   if (!showBrandingBar) return null;
+  
+  // Use memoized handler to avoid causing re-renders
+  const handleClick = React.useCallback(() => {
+    if (!isConnected) {
+      handleReconnect();
+    }
+  }, [isConnected, handleReconnect]);
   
   return (
     <div className="mt-auto border-t border-gray-100 p-2 flex items-center justify-center gap-1 text-xs text-gray-400">
@@ -31,11 +38,13 @@ const ChatFooter = ({
           isConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'
         }`} 
         title={`Connection: ${connectionState}`}
-        onClick={!isConnected ? handleReconnect : undefined}
+        onClick={handleClick}
         style={{ cursor: !isConnected ? 'pointer' : 'default' }}
       />
     </div>
   );
-};
+});
+
+ChatFooter.displayName = 'ChatFooter';
 
 export default ChatFooter;

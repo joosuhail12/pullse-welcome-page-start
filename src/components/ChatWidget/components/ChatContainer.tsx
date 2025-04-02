@@ -8,6 +8,7 @@ import ChatFooter from './ChatFooter';
 import ConnectionBanner from './ConnectionBanner';
 import { Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
+import { dispatchChatEvent } from '../utils/events';
 
 interface ChatContainerProps {
   viewState: 'home' | 'messages' | 'chat';
@@ -44,8 +45,8 @@ const ChatContainer = ({
   handleReconnect,
   playMessageSound
 }: ChatContainerProps) => {
-  // Wrapper function for handling start chat
-  const wrappedHandleStartChat = (formData?: Record<string, string>) => {
+  // Wrapper function for handling start chat - moved out of render function
+  const wrappedHandleStartChat = React.useCallback((formData?: Record<string, string>) => {
     if (formData) {
       setUserFormData(formData);
     }
@@ -57,13 +58,15 @@ const ChatContainer = ({
     }
     
     dispatchChatEvent('contact:initiatedChat', undefined, config);
-  };
+  }, [setUserFormData, handleStartChat, config]);
 
-  const widgetStyle = {
-    ...(config.branding?.primaryColor && {
-      '--vivid-purple': config.branding.primaryColor,
-    } as React.CSSProperties)
-  };
+  const widgetStyle = React.useMemo(() => {
+    return {
+      ...(config.branding?.primaryColor && {
+        '--vivid-purple': config.branding.primaryColor,
+      } as React.CSSProperties)
+    };
+  }, [config.branding?.primaryColor]);
 
   return (
     <div 
@@ -123,6 +126,3 @@ const ChatContainer = ({
 };
 
 export default ChatContainer;
-
-// Import event dispatcher
-import { dispatchChatEvent } from '../utils/events';

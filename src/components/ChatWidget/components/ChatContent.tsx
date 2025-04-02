@@ -60,12 +60,6 @@ const ChatContent = memo<ChatContentProps>(({
   config,
   isProcessingForm
 }: ChatContentProps) => {
-  console.log("ChatContent rendering", { 
-    messageCount: messages.length, 
-    showPreChatForm,
-    isProcessingForm
-  });
-  
   // Use a ref to track the already processed form submission
   const formCompletionHandled = useRef(false);
   

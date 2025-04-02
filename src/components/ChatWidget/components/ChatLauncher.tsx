@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { MessageSquare, WifiOff, CloudOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,7 @@ interface ChatLauncherProps {
   handleReconnect: () => void;
 }
 
-const ChatLauncher = ({
+const ChatLauncher = React.memo(({
   isOpen,
   toggleChat,
   unreadCount,
@@ -25,9 +25,12 @@ const ChatLauncher = ({
   primaryColor,
   handleReconnect
 }: ChatLauncherProps) => {
-  const buttonStyle = primaryColor
-    ? { backgroundColor: primaryColor, borderColor: primaryColor }
-    : {};
+  // Memoize the button style to prevent re-renders
+  const buttonStyle = useMemo(() => {
+    return primaryColor
+      ? { backgroundColor: primaryColor, borderColor: primaryColor }
+      : {};
+  }, [primaryColor]);
 
   return (
     <div className="fixed bottom-4 right-4 flex flex-col items-end">
@@ -67,6 +70,8 @@ const ChatLauncher = ({
       </Button>
     </div>
   );
-};
+});
+
+ChatLauncher.displayName = 'ChatLauncher';
 
 export default ChatLauncher;
