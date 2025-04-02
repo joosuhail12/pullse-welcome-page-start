@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -214,10 +215,10 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       <Button 
         variant="outline" 
         size="sm" 
-        className="mt-2 border-vivid-purple text-vivid-purple hover:bg-vivid-purple hover:text-white transition-colors duration-300 ease-in-out hover:border-vivid-purple-600 active:scale-95"
+        className="mt-2 border-vivid-purple text-vivid-purple hover:bg-vivid-purple hover:text-white transition-all duration-300 ease-in-out hover:border-vivid-purple-600 active:scale-95 group"
         onClick={handleStartNewChat}
       >
-        <MessageSquare className="mr-1.5" size={16} />
+        <MessageSquare className="mr-1.5 group-hover:text-white transition-colors" size={16} />
         Start a new conversation
       </Button>
     </div>
