@@ -4,14 +4,17 @@ import { Message, Conversation } from '../types';
 import ChatHeader from '../components/ChatHeader';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
+import { dispatchChatEvent } from '../utils/events';
+import { ChatWidgetConfig } from '../config';
 
 interface ChatViewProps {
   conversation: Conversation;
   onBack: () => void;
   onUpdateConversation: (updatedConversation: Conversation) => void;
+  config?: ChatWidgetConfig;
 }
 
-const ChatView = ({ conversation, onBack, onUpdateConversation }: ChatViewProps) => {
+const ChatView = ({ conversation, onBack, onUpdateConversation, config }: ChatViewProps) => {
   const [messageText, setMessageText] = useState('');
   const [messages, setMessages] = useState<Message[]>(
     conversation.messages || [
@@ -71,6 +74,9 @@ const ChatView = ({ conversation, onBack, onUpdateConversation }: ChatViewProps)
             };
             
             setMessages(prev => [...prev, systemMessage]);
+            
+            // Dispatch message received event
+            dispatchChatEvent('chat:messageReceived', { message: systemMessage }, config);
           }, responseDelay);
         }, typingDuration);
       }, randomTimeout);
@@ -80,7 +86,7 @@ const ChatView = ({ conversation, onBack, onUpdateConversation }: ChatViewProps)
     
     const typingInterval = setInterval(simulateAgentTyping, 15000);
     return () => clearInterval(typingInterval);
-  }, [hasUserSentMessage]);
+  }, [hasUserSentMessage, config]);
 
   const handleSendMessage = () => {
     if (!messageText.trim()) return;
@@ -95,6 +101,9 @@ const ChatView = ({ conversation, onBack, onUpdateConversation }: ChatViewProps)
     
     setMessages([...messages, userMessage]);
     setMessageText('');
+    
+    // Dispatch message sent event
+    dispatchChatEvent('chat:messageSent', { message: userMessage }, config);
     
     if (!hasUserSentMessage) {
       setHasUserSentMessage(true);
@@ -114,6 +123,9 @@ const ChatView = ({ conversation, onBack, onUpdateConversation }: ChatViewProps)
       };
       
       setMessages(prev => [...prev, systemMessage]);
+      
+      // Dispatch message received event
+      dispatchChatEvent('chat:messageReceived', { message: systemMessage }, config);
     }, Math.floor(Math.random() * 400) + 200);
   };
 
@@ -135,6 +147,9 @@ const ChatView = ({ conversation, onBack, onUpdateConversation }: ChatViewProps)
     
     setMessages([...messages, fileMessage]);
     
+    // Dispatch message sent event for file
+    dispatchChatEvent('chat:messageSent', { message: fileMessage, isFile: true }, config);
+    
     if (!hasUserSentMessage) {
       setHasUserSentMessage(true);
     }
@@ -151,6 +166,9 @@ const ChatView = ({ conversation, onBack, onUpdateConversation }: ChatViewProps)
       };
       
       setMessages(prev => [...prev, systemMessage]);
+      
+      // Dispatch message received event
+      dispatchChatEvent('chat:messageReceived', { message: systemMessage }, config);
     }, 1000);
   };
 
@@ -164,6 +182,9 @@ const ChatView = ({ conversation, onBack, onUpdateConversation }: ChatViewProps)
     };
     
     setMessages(prev => [...prev, statusMessage]);
+    
+    // Dispatch chat close event
+    dispatchChatEvent('chat:close', { endedByUser: true }, config);
   };
 
   return (

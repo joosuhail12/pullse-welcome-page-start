@@ -20,6 +20,20 @@ export interface FeatureToggles {
   feedback: boolean;
 }
 
+export type ChatEventType = 
+  | 'chat:open'
+  | 'chat:close'
+  | 'chat:messageSent'
+  | 'chat:messageReceived' 
+  | 'contact:initiatedChat'
+  | 'contact:formCompleted';
+
+export interface ChatEventPayload {
+  type: ChatEventType;
+  timestamp: Date;
+  data?: any;
+}
+
 export interface ChatWidgetConfig {
   welcomeMessage: string;
   preChatForm: {
@@ -29,6 +43,7 @@ export interface ChatWidgetConfig {
   branding?: BrandingConfig;
   features?: FeatureToggles;
   workspaceId?: string;
+  onEvent?: (event: ChatEventPayload) => void;
 }
 
 // Default configuration

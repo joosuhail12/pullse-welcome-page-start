@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
@@ -6,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { defaultConfig, PreChatFormField, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
+import { dispatchChatEvent } from '../utils/events';
 
 interface HomeViewProps {
   onStartChat: (formData?: Record<string, string>) => void;
@@ -34,6 +34,11 @@ const HomeView = ({
   };
   
   const handleStartChat = () => {
+    if (config.preChatForm.enabled && formValid) {
+      // Dispatch form completion event before starting chat
+      dispatchChatEvent('contact:formCompleted', { formData }, config);
+    }
+    
     onStartChat(formData);
   };
 
