@@ -55,7 +55,9 @@
     const launcherButton = document.createElement('button');
     launcherButton.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
     launcherButton.className = 'chat-widget-launcher';
-    launcherButton.style = `
+    
+    // Fix: Use setAttribute for style instead of direct assignment
+    const buttonStyle = `
       position: fixed;
       bottom: 20px;
       right: 20px;
@@ -73,14 +75,15 @@
       justify-content: center;
       transition: transform 0.3s ease;
     `;
+    launcherButton.setAttribute('style', buttonStyle);
     
     // Add hover effect
     launcherButton.addEventListener('mouseover', () => {
-      launcherButton.style.transform = 'scale(1.05)';
+      launcherButton.setAttribute('style', buttonStyle + 'transform: scale(1.05);');
     });
     
     launcherButton.addEventListener('mouseout', () => {
-      launcherButton.style.transform = 'scale(1)';
+      launcherButton.setAttribute('style', buttonStyle);
     });
     
     // Add click handler to load the widget
