@@ -49,8 +49,17 @@ import { ChatWidgetInterface, WidgetConfig } from './embed/types';
       console.log('Chat widget resources loaded successfully');
       try {
         if (window.ChatWidget && window.ChatWidget.init) {
+          // Important: Actually open the chat widget after initialization
           const result = window.ChatWidget.init(config);
           console.log('Chat widget initialized successfully', result);
+          
+          // Force open the chat widget after initialization
+          setTimeout(() => {
+            if (window.ChatWidget && window.ChatWidget.open) {
+              window.ChatWidget.open();
+              console.log('Chat widget opened');
+            }
+          }, 100);
         } else {
           console.error('Chat widget initialization failed - window.ChatWidget or init method not found');
         }

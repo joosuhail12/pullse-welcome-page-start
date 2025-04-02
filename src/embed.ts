@@ -14,6 +14,8 @@ declare global {
  * Initialize the chat widget with the provided configuration
  */
 function initChatWidget(config: any = {}) {
+  console.log('Initializing chat widget with config:', config);
+
   // Create container element if it doesn't exist
   let containerEl = document.getElementById('pullse-chat-widget-container');
   
@@ -21,6 +23,7 @@ function initChatWidget(config: any = {}) {
     containerEl = document.createElement('div');
     containerEl.id = 'pullse-chat-widget-container';
     document.body.appendChild(containerEl);
+    console.log('Created chat widget container element');
   }
   
   // Create a placeholder for the widget while it's loading
@@ -63,18 +66,32 @@ function initChatWidget(config: any = {}) {
   `;
   document.head.appendChild(style);
   
+  console.log('Loading chat widget components...');
+  
   // Dynamically import the widget components
   Promise.all([
     import('./components/ChatWidget/ChatWidgetProvider'),
     import('./components/ChatWidget/ChatWidget')
   ]).then(([{ ChatWidgetProvider }, { default: ChatWidget }]) => {
+    console.log('Chat widget components loaded successfully');
+    
     const root = createRoot(containerEl);
     root.render(
       React.createElement(
         ChatWidgetProvider, 
-        { config, children: React.createElement(ChatWidget, { workspaceId: config.workspaceId }) }
+        { 
+          config, 
+          children: React.createElement(ChatWidget, { workspaceId: config.workspaceId })
+        }
       )
     );
+    
+    // Force widget to be shown
+    setTimeout(() => {
+      const event = new CustomEvent('pullse:widget:open');
+      window.dispatchEvent(event);
+      console.log('Chat widget opened via event');
+    }, 200);
   }).catch(err => {
     console.error('Failed to load chat widget:', err);
     // Create a fallback for error cases
@@ -98,6 +115,7 @@ function initChatWidget(config: any = {}) {
   // Return public API with event handling methods
   return {
     open: () => {
+      console.log('Opening chat widget via API');
       const event = new CustomEvent('pullse:widget:open');
       window.dispatchEvent(event);
     },
@@ -130,8 +148,12 @@ function initChatWidget(config: any = {}) {
 
 // Expose the widget to the global scope
 if (typeof window !== 'undefined') {
+  console.log('Setting up global ChatWidget object');
+  
   window.ChatWidget = {
     init: (config: any) => {
+      console.log('ChatWidget.init called with config:', config);
+      
       const api = initChatWidget(config);
       
       // Add methods to global object
