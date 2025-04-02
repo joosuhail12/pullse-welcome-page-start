@@ -1,7 +1,7 @@
 
 import { createRoot } from 'react-dom/client';
 import React from 'react';
-import { dispatchWidgetEvent, WIDGET_EVENTS } from './event-dispatcher';
+import { dispatchWidgetEvent, WIDGET_EVENTS, forceTriggerEvent } from './event-dispatcher';
 
 /**
  * Creates a container element for the widget if it doesn't exist
@@ -88,6 +88,7 @@ export async function renderWidget(containerEl: HTMLElement, config: any): Promi
     );
     
     console.log('Chat widget rendered successfully');
+    dispatchWidgetEvent('render');
     
     // Open the widget after a short delay to ensure it's fully loaded
     attemptOpenWidget();
@@ -123,23 +124,37 @@ export function renderErrorFallback(containerEl: HTMLElement): void {
  * Makes multiple attempts to open the widget to ensure it opens
  */
 export function attemptOpenWidget(): void {
-  // First attempt after a short delay
-  setTimeout(() => {
-    console.log('Attempting to open widget (Attempt 1)');
-    dispatchWidgetEvent(WIDGET_EVENTS.OPEN);
-    
-    // Second attempt after another delay
+  console.log('Starting multiple attempts to open widget');
+  
+  // Use different methods and timing to maximize chances of success
+  const attempts = [
+    { delay: 100, method: 'dispatch', name: 'First attempt' },
+    { delay: 500, method: 'dispatch', name: 'Second attempt' },
+    { delay: 1000, method: 'api', name: 'API attempt' },
+    { delay: 1500, method: 'force', name: 'Force attempt' },
+    { delay: 2000, method: 'direct', name: 'Direct DOM event' }
+  ];
+  
+  attempts.forEach(({ delay, method, name }) => {
     setTimeout(() => {
-      console.log('Attempting to open widget (Attempt 2)');
-      dispatchWidgetEvent(WIDGET_EVENTS.OPEN);
+      console.log(`${name}: Opening widget after ${delay}ms via ${method}`);
       
-      // Final fallback using global API
-      setTimeout(() => {
-        if (window.ChatWidget && window.ChatWidget.open) {
-          console.log('Final attempt: Opening widget via global API');
-          window.ChatWidget.open();
-        }
-      }, 500);
-    }, 500);
-  }, 100);
+      switch (method) {
+        case 'dispatch':
+          dispatchWidgetEvent(WIDGET_EVENTS.OPEN);
+          break;
+        case 'api':
+          if (window.ChatWidget && window.ChatWidget.open) {
+            window.ChatWidget.open();
+          }
+          break;
+        case 'force':
+          forceTriggerEvent(WIDGET_EVENTS.OPEN);
+          break;
+        case 'direct':
+          document.dispatchEvent(new CustomEvent('pullse:widget:open', { bubbles: true }));
+          break;
+      }
+    }, delay);
+  });
 }

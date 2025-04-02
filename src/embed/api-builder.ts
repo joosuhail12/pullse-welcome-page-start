@@ -20,11 +20,16 @@ export function createWidgetAPI(): Partial<ChatWidgetInterface> {
       dispatchWidgetEvent(WIDGET_EVENTS.TOGGLE);
     },
     on: (eventName: string, callback: (detail: any) => void) => {
-      return addWidgetEventListener(eventName, (event) => callback(event.detail));
+      console.log(`Registering event listener for ${eventName}`);
+      return addWidgetEventListener(eventName, (event) => {
+        console.log(`Event ${eventName} triggered with:`, event.detail);
+        callback(event.detail);
+      });
     },
     off: (eventName: string, handler: EventListener) => {
       const eventPrefix = eventName.startsWith('pullse:') ? '' : 'pullse:widget:';
       const fullEventName = `${eventPrefix}${eventName}`;
+      console.log(`Removing event listener for ${fullEventName}`);
       window.removeEventListener(fullEventName, handler);
     }
   };
