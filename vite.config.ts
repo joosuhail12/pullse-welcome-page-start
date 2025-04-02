@@ -35,8 +35,53 @@ export default defineConfig(({ mode }) => ({
             : assetInfo.name === 'embed-script'
             ? 'assets/chat-embed.[hash].js'
             : 'assets/[name].[hash].js';
-        }
+        },
+        // Configure chunk splitting
+        manualChunks: (id) => {
+          // Put React runtime in a separate chunk
+          if (id.includes('node_modules/react/') || 
+              id.includes('node_modules/react-dom/')) {
+            return 'vendor-react';
+          }
+          
+          // UI components in their own chunk
+          if (id.includes('/components/ui/')) {
+            return 'ui-components';
+          }
+          
+          // Ably SDK in its own chunk
+          if (id.includes('node_modules/ably/')) {
+            return 'vendor-ably';
+          }
+          
+          // Group other dependencies
+          if (id.includes('node_modules/')) {
+            return 'vendor-others';
+          }
+          
+          // Split ChatWidget views into their own chunks
+          if (id.includes('/components/ChatWidget/views/')) {
+            return 'chat-widget-views';
+          }
+          
+          return undefined; // Let Rollup decide for other modules
+        },
+        // Set a larger chunk size threshold for better splitting
+        chunkSizeWarningLimit: 500, // in kBs
       }
     },
+    // Enable minification for all environments
+    minify: true,
+    // Sourcemaps for development only
+    sourcemap: mode === 'development',
+    // Generate separate CSS chunks
+    cssCodeSplit: true,
+  },
+  // Add optimization options
+  optimizeDeps: {
+    // Forces pre-bundling of these dependencies
+    include: ['react', 'react-dom'],
+    // Exclude dependencies with issues in pre-bundling
+    exclude: []
   },
 }));

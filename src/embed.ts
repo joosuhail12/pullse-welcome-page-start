@@ -2,7 +2,6 @@
 // Chat Widget Embed Script
 import { createRoot } from 'react-dom/client';
 import React from 'react';
-import { ChatWidgetProvider, ChatWidget } from './components/ChatWidget';
 
 declare global {
   interface Window {
@@ -28,15 +27,77 @@ function initChatWidget(config: any = {}) {
     document.body.appendChild(containerEl);
   }
   
-  // Render the chat widget
-  const root = createRoot(containerEl);
-  root.render(
-    React.createElement(
-      ChatWidgetProvider, 
-      { config },
-      React.createElement(ChatWidget, { workspaceId: config.workspaceId })
-    )
+  // Create a placeholder for the widget while it's loading
+  const placeholderRoot = createRoot(containerEl);
+  placeholderRoot.render(
+    React.createElement('div', {
+      className: 'chat-widget-loading',
+      style: {
+        position: 'fixed',
+        bottom: '24px',
+        right: '24px',
+        width: '60px',
+        height: '60px',
+        borderRadius: '50%',
+        backgroundColor: config.branding?.primaryColor || '#6366f1',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+        zIndex: 9999
+      }
+    }, React.createElement('div', {
+      style: {
+        width: '24px',
+        height: '24px',
+        borderRadius: '50%',
+        border: '3px solid rgba(255,255,255,0.3)',
+        borderTopColor: '#fff',
+        animation: 'chat-widget-spin 1s linear infinite'
+      }
+    }))
   );
+  
+  // Add the loading animation style
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes chat-widget-spin {
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Dynamically import the widget components
+  Promise.all([
+    import('./components/ChatWidget/ChatWidgetProvider'),
+    import('./components/ChatWidget/ChatWidget')
+  ]).then(([{ ChatWidgetProvider }, { default: ChatWidget }]) => {
+    const root = createRoot(containerEl);
+    root.render(
+      React.createElement(
+        ChatWidgetProvider, 
+        { config, children: React.createElement(ChatWidget, { workspaceId: config.workspaceId }) }
+      )
+    );
+  }).catch(err => {
+    console.error('Failed to load chat widget:', err);
+    // Create a fallback for error cases
+    const root = createRoot(containerEl);
+    root.render(
+      React.createElement('div', {
+        style: { 
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          padding: '16px',
+          backgroundColor: '#fff',
+          borderRadius: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          zIndex: 9999
+        }
+      }, React.createElement('p', null, 'Failed to load chat widget. Please try again later.'))
+    );
+  });
   
   // Return public API
   return {
