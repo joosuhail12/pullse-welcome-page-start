@@ -4,6 +4,7 @@ import { Message } from '../types';
 import { Paperclip } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { sanitizeInput } from '../utils/validation';
 
 interface MessageBubbleProps {
   message: Message;
@@ -11,21 +12,30 @@ interface MessageBubbleProps {
 }
 
 const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
+  // Sanitize any text content before displaying
+  const sanitizedText = message.text ? sanitizeInput(message.text) : '';
+  
   const renderMessage = () => {
     switch (message.type) {
       case 'file':
         return (
           <div className="flex flex-col">
-            <p>{message.text}</p>
+            <p>{sanitizedText}</p>
             <div className="mt-2 p-2 bg-gray-100 rounded-md flex items-center">
               <Paperclip size={16} className="mr-2" />
-              <span className="text-sm text-blue-600 underline">{message.fileName}</span>
+              <span className="text-sm text-blue-600 underline">
+                {message.fileName ? sanitizeInput(message.fileName) : 'File'}
+              </span>
             </div>
           </div>
         );
       
       case 'card':
-        if (!message.cardData) return <p>{message.text}</p>;
+        if (!message.cardData) return <p>{sanitizedText}</p>;
+        
+        // Sanitize card data
+        const cardTitle = message.cardData.title ? sanitizeInput(message.cardData.title) : '';
+        const cardDesc = message.cardData.description ? sanitizeInput(message.cardData.description) : '';
         
         return (
           <Card className="w-full max-w-xs mt-2 shadow-sm">
@@ -33,14 +43,14 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
               <div className="aspect-video overflow-hidden">
                 <img 
                   src={message.cardData.imageUrl} 
-                  alt={message.cardData.title} 
+                  alt={cardTitle} 
                   className="w-full h-full object-cover"
                 />
               </div>
             )}
             <CardContent className="p-4">
-              <h4 className="font-semibold">{message.cardData.title}</h4>
-              <p className="text-sm text-gray-600 mt-1">{message.cardData.description}</p>
+              <h4 className="font-semibold">{cardTitle}</h4>
+              <p className="text-sm text-gray-600 mt-1">{cardDesc}</p>
               
               {message.cardData.buttons && message.cardData.buttons.length > 0 && (
                 <div className="mt-3 flex flex-col gap-2">
@@ -51,7 +61,7 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
                       variant="outline" 
                       className="w-full"
                     >
-                      {button.text}
+                      {sanitizeInput(button.text)}
                     </Button>
                   ))}
                 </div>
@@ -63,7 +73,7 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
       case 'quick_reply':
         return (
           <div className="flex flex-col">
-            <p>{message.text}</p>
+            <p>{sanitizedText}</p>
             {message.quickReplies && message.quickReplies.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {message.quickReplies.map((reply, i) => (
@@ -74,11 +84,12 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
                     className="text-xs py-1.5 h-auto"
                     onClick={() => {
                       if (setMessageText) {
-                        setMessageText(reply.text);
+                        // Sanitize the quick reply text before setting
+                        setMessageText(sanitizeInput(reply.text));
                       }
                     }}
                   >
-                    {reply.text}
+                    {sanitizeInput(reply.text)}
                   </Button>
                 ))}
               </div>
@@ -89,13 +100,13 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
       case 'status':
         return (
           <div className="bg-gray-100 py-1.5 px-4 rounded-full text-xs text-gray-500 text-center shadow-sm">
-            {message.text}
+            {sanitizedText}
           </div>
         );
       
       case 'text':
       default:
-        return <p className="leading-relaxed">{message.text}</p>;
+        return <p className="leading-relaxed">{sanitizedText}</p>;
     }
   };
 

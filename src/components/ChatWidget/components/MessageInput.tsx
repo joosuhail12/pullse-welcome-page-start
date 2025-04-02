@@ -6,6 +6,7 @@ import { Send, Paperclip, Smile, X } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
+import { validateMessage, validateFile, sanitizeFileName } from '../utils/validation';
 
 interface MessageInputProps {
   messageText: string;
@@ -27,6 +28,7 @@ const MessageInput = ({
   onTyping
 }: MessageInputProps) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
   
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -36,12 +38,15 @@ const MessageInput = ({
   };
 
   const handleEmojiSelect = (emoji: any) => {
-    setMessageText(messageText + emoji.native);
+    const sanitized = validateMessage(messageText + emoji.native);
+    setMessageText(sanitized);
     setShowEmojiPicker(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessageText(e.target.value);
+    // Validate and sanitize input
+    const sanitized = validateMessage(e.target.value);
+    setMessageText(sanitized);
     
     // Trigger typing indicator
     if (onTyping) {
@@ -49,9 +54,43 @@ const MessageInput = ({
     }
   };
 
+  const handleFileValidation = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    
+    // Validate file
+    if (!validateFile(file)) {
+      setFileError("Invalid file. Please upload images, PDFs, or documents under 5MB.");
+      e.target.value = '';
+      return;
+    }
+    
+    // Sanitize filename
+    const sanitizedName = sanitizeFileName(file.name);
+    
+    // Create a new file with sanitized name if name was changed
+    if (sanitizedName !== file.name) {
+      const sanitizedFile = new File([file], sanitizedName, { type: file.type });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(sanitizedFile);
+      e.target.files = dataTransfer.files;
+    }
+    
+    // Proceed with upload
+    handleFileUpload(e);
+  };
+
   return (
     <div className="border-t p-4">
       <div className="flex flex-col">
+        {fileError && (
+          <div className="mb-2 text-xs text-red-500 p-2 bg-red-50 rounded">
+            {fileError}
+          </div>
+        )}
         <div className="flex items-center">
           <label htmlFor="file-upload" className="cursor-pointer p-2 hover:bg-gray-100 rounded-md">
             <Paperclip size={18} className="text-gray-500" />
@@ -59,7 +98,8 @@ const MessageInput = ({
               id="file-upload" 
               type="file" 
               className="hidden" 
-              onChange={handleFileUpload} 
+              onChange={handleFileValidation}
+              accept="image/jpeg,image/png,image/gif,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             />
           </label>
           
@@ -71,6 +111,7 @@ const MessageInput = ({
               placeholder="Type a message..."
               className="flex-grow min-h-[44px] max-h-[120px] p-3 border rounded-md focus:outline-none resize-none pr-10 text-sm"
               rows={1}
+              maxLength={2000}  // Add maxlength attribute
             />
             <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
               <PopoverTrigger asChild>

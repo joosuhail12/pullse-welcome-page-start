@@ -11,6 +11,7 @@ import {
   sendTypingIndicator, 
   processSystemMessage 
 } from '../utils/messageHandlers';
+import { validateMessage, validateFile, sanitizeFileName } from '../utils/validation';
 
 export function useMessageActions(
   messages: Message[],
@@ -22,11 +23,14 @@ export function useMessageActions(
   setIsTyping?: React.Dispatch<React.SetStateAction<boolean>>
 ) {
   const [messageText, setMessageText] = useState('');
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const handleSendMessage = useCallback(() => {
-    if (!messageText.trim()) return;
+    // Validate and sanitize input
+    const sanitizedText = validateMessage(messageText);
+    if (!sanitizedText.trim()) return;
     
-    const userMessage = createUserMessage(messageText);
+    const userMessage = createUserMessage(sanitizedText);
     
     setMessages([...messages, userMessage]);
     setMessageText('');
@@ -79,16 +83,26 @@ export function useMessageActions(
   }, [chatChannelName, config?.realtime?.enabled, sessionId]);
 
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null);
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
     const file = files[0];
     
+    // Validate file
+    if (!validateFile(file)) {
+      setFileError("Invalid file. Please upload images, PDFs, or documents under 5MB.");
+      return;
+    }
+    
+    // Sanitize the file name
+    const sanitizedFileName = sanitizeFileName(file.name);
+    
     const fileMessage = createUserMessage(
-      `Uploaded: ${file.name}`, 
+      `Uploaded: ${sanitizedFileName}`, 
       'file',
       { 
-        fileName: file.name, 
+        fileName: sanitizedFileName, 
         fileUrl: URL.createObjectURL(file) 
       }
     );
@@ -118,7 +132,7 @@ export function useMessageActions(
       // Fallback to the original behavior
       setTimeout(() => {
         const systemMessage = createSystemMessage(
-          `I've received your file ${file.name}. Is there anything specific you'd like me to help with regarding this file?`
+          `I've received your file ${sanitizedFileName}. Is there anything specific you'd like me to help with regarding this file?`
         );
         
         setMessages(prev => [...prev, systemMessage]);
@@ -155,6 +169,7 @@ export function useMessageActions(
   return {
     messageText,
     setMessageText,
+    fileError,
     handleSendMessage,
     handleUserTyping,
     handleFileUpload,
