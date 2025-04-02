@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
 import ChatView from './views/ChatView';
+import { Home, MessageSquare } from 'lucide-react';
 
 type ViewState = 'home' | 'messages' | 'chat';
 
@@ -53,29 +53,38 @@ export const ChatWidget = () => {
             onBack={handleBackToMessages} 
           />
         ) : (
-          <Tabs 
-            defaultValue="home" 
-            value={viewState} 
-            onValueChange={(value) => handleChangeView(value as ViewState)}
-            className="w-full"
-          >
-            <div className="border-b">
-              <TabsList className="w-full grid grid-cols-2">
-                <TabsTrigger value="home" className="py-3">Home</TabsTrigger>
-                <TabsTrigger value="messages" className="py-3">Messages</TabsTrigger>
-              </TabsList>
+          <div className="flex flex-col h-96">
+            <div className="flex-grow overflow-y-auto">
+              {viewState === 'home' && <HomeView onStartChat={handleStartChat} />}
+              {viewState === 'messages' && <MessagesView onSelectConversation={handleStartChat} />}
             </div>
             
-            <div className="h-96 overflow-y-auto">
-              <TabsContent value="home" className="mt-0">
-                <HomeView onStartChat={handleStartChat} />
-              </TabsContent>
-              
-              <TabsContent value="messages" className="mt-0">
-                <MessagesView onSelectConversation={handleStartChat} />
-              </TabsContent>
+            {/* Tab Bar */}
+            <div className="border-t flex justify-around">
+              <button 
+                onClick={() => handleChangeView('home')} 
+                className={`flex flex-col items-center py-3 px-4 flex-1 ${
+                  viewState === 'home' 
+                    ? 'text-vivid-purple border-t-2 border-vivid-purple -mt-px' 
+                    : 'text-gray-500'
+                }`}
+              >
+                <Home size={20} />
+                <span className="text-xs mt-1">Home</span>
+              </button>
+              <button 
+                onClick={() => handleChangeView('messages')} 
+                className={`flex flex-col items-center py-3 px-4 flex-1 ${
+                  viewState === 'messages' 
+                    ? 'text-vivid-purple border-t-2 border-vivid-purple -mt-px' 
+                    : 'text-gray-500'
+                }`}
+              >
+                <MessageSquare size={20} />
+                <span className="text-xs mt-1">Messages</span>
+              </button>
             </div>
-          </Tabs>
+          </div>
         )}
       </div>
     </div>
