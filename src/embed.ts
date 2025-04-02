@@ -7,6 +7,7 @@ import {
   renderWidget 
 } from './embed/widget-initializer';
 import { createWidgetAPI } from './embed/api-builder';
+import { dispatchWidgetEvent, WIDGET_EVENTS } from './embed/event-dispatcher';
 
 declare global {
   interface Window {
@@ -24,8 +25,6 @@ function initChatWidget(config: any = {}) {
   const containerEl = createWidgetContainer();
   renderLoadingPlaceholder(containerEl, config.branding?.primaryColor);
   
-  console.log('Loading chat widget components...');
-  
   // Render the actual widget
   renderWidget(containerEl, config)
     .catch(err => console.error('Failed to load chat widget components:', err));
@@ -38,6 +37,7 @@ function initChatWidget(config: any = {}) {
 if (typeof window !== 'undefined') {
   console.log('Setting up global ChatWidget object');
   
+  // Create the global API with streamlined implementation
   window.ChatWidget = {
     init: (config: any) => {
       console.log('ChatWidget.init called with config:', config);
@@ -54,18 +54,15 @@ if (typeof window !== 'undefined') {
     },
     open: () => {
       console.log('Global open method called');
-      const event = new CustomEvent('pullse:widget:open');
-      window.dispatchEvent(event);
+      dispatchWidgetEvent(WIDGET_EVENTS.OPEN);
     },
     close: () => {
       console.log('Global close method called');
-      const event = new CustomEvent('pullse:widget:close');
-      window.dispatchEvent(event);
+      dispatchWidgetEvent(WIDGET_EVENTS.CLOSE);
     },
     toggle: () => {
       console.log('Global toggle method called');
-      const event = new CustomEvent('pullse:widget:toggle');
-      window.dispatchEvent(event);
+      dispatchWidgetEvent(WIDGET_EVENTS.TOGGLE);
     }
   } as ChatWidgetInterface;
 }

@@ -1,21 +1,23 @@
 
-import { dispatchWidgetEvent } from './event-dispatcher';
+import { dispatchWidgetEvent, WIDGET_EVENTS } from './event-dispatcher';
 import { ChatWidgetInterface } from './types';
 
 /**
- * Creates the public API methods for the widget
+ * Creates the public API methods for the widget with consistent behavior
  */
 export function createWidgetAPI(): Partial<ChatWidgetInterface> {
   return {
     open: () => {
       console.log('Opening chat widget via API');
-      dispatchWidgetEvent('open');
+      dispatchWidgetEvent(WIDGET_EVENTS.OPEN);
     },
     close: () => {
-      dispatchWidgetEvent('close');
+      console.log('Closing chat widget via API');
+      dispatchWidgetEvent(WIDGET_EVENTS.CLOSE);
     },
     toggle: () => {
-      dispatchWidgetEvent('toggle');
+      console.log('Toggling chat widget via API');
+      dispatchWidgetEvent(WIDGET_EVENTS.TOGGLE);
     },
     on: (eventName: string, callback: (detail: any) => void) => {
       const eventPrefix = eventName.startsWith('pullse:') ? '' : 'pullse:';

@@ -1,7 +1,6 @@
-
 import { createRoot } from 'react-dom/client';
 import React from 'react';
-import { dispatchWidgetEvent } from './event-dispatcher';
+import { dispatchWidgetEvent, WIDGET_EVENTS } from './event-dispatcher';
 
 /**
  * Creates a container element for the widget if it doesn't exist
@@ -89,7 +88,7 @@ export async function renderWidget(containerEl: HTMLElement, config: any): Promi
     
     console.log('Chat widget rendered successfully');
     
-    // Try to open the widget with multiple attempts
+    // Attempt to open the widget once
     attemptOpenWidget();
     
   } catch (err) {
@@ -120,29 +119,20 @@ export function renderErrorFallback(containerEl: HTMLElement): void {
 }
 
 /**
- * Makes multiple attempts to open the widget
+ * Makes a single attempt to open the widget with a fallback
  */
 export function attemptOpenWidget(): void {
-  // First attempt after 100ms
+  // Attempt after a short delay to ensure everything is loaded
   setTimeout(() => {
-    console.log('First attempt to open widget');
-    if (window.ChatWidget && window.ChatWidget.open) {
-      window.ChatWidget.open();
-    }
+    console.log('Attempting to open widget');
+    dispatchWidgetEvent(WIDGET_EVENTS.OPEN);
+    
+    // Fallback attempt after a delay if needed
+    setTimeout(() => {
+      if (window.ChatWidget && window.ChatWidget.open) {
+        console.log('Fallback: Opening widget via global API');
+        window.ChatWidget.open();
+      }
+    }, 500);
   }, 100);
-  
-  // Second attempt after 500ms using event
-  setTimeout(() => {
-    console.log('Second attempt to open widget');
-    dispatchWidgetEvent('open');
-  }, 500);
-  
-  // Third attempt after 1.5s as failsafe
-  setTimeout(() => {
-    console.log('Third attempt to open widget');
-    if (window.ChatWidget && window.ChatWidget.open) {
-      window.ChatWidget.open();
-      console.log('Chat widget opened via API failsafe');
-    }
-  }, 1500);
 }
