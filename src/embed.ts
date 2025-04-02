@@ -75,23 +75,36 @@ function initChatWidget(config: any = {}) {
   ]).then(([{ ChatWidgetProvider }, { default: ChatWidget }]) => {
     console.log('Chat widget components loaded successfully');
     
-    const root = createRoot(containerEl);
-    root.render(
-      React.createElement(
-        ChatWidgetProvider, 
-        { 
-          config, 
-          children: React.createElement(ChatWidget, { workspaceId: config.workspaceId })
+    try {
+      const root = createRoot(containerEl);
+      root.render(
+        React.createElement(
+          ChatWidgetProvider, 
+          { 
+            config, 
+            children: React.createElement(ChatWidget, { workspaceId: config.workspaceId })
+          }
+        )
+      );
+      
+      // Force widget to be shown with a longer delay to ensure everything is rendered
+      setTimeout(() => {
+        console.log('Dispatching open event for chat widget');
+        const event = new CustomEvent('pullse:widget:open');
+        window.dispatchEvent(event);
+        console.log('Chat widget opened via event');
+      }, 500);
+
+      // Add a failsafe open attempt after 1 second if the widget still isn't visible
+      setTimeout(() => {
+        if (window.ChatWidget && window.ChatWidget.open) {
+          window.ChatWidget.open();
+          console.log('Chat widget opened via API failsafe');
         }
-      )
-    );
-    
-    // Force widget to be shown
-    setTimeout(() => {
-      const event = new CustomEvent('pullse:widget:open');
-      window.dispatchEvent(event);
-      console.log('Chat widget opened via event');
-    }, 200);
+      }, 1000);
+    } catch (err) {
+      console.error('Failed to render chat widget:', err);
+    }
   }).catch(err => {
     console.error('Failed to load chat widget:', err);
     // Create a fallback for error cases

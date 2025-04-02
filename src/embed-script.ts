@@ -7,6 +7,8 @@ import { ChatWidgetInterface, WidgetConfig } from './embed/types';
 
 // This is the script that gets embedded on websites
 (() => {
+  console.log('Chat widget embed script starting...');
+  
   // Store reference to the current script
   const WIDGET_SCRIPT = document.currentScript as HTMLScriptElement || (function() {
     const scripts = document.getElementsByTagName('script');
@@ -41,25 +43,46 @@ import { ChatWidgetInterface, WidgetConfig } from './embed/types';
   const loadWidget = () => {
     console.log('Loading chat widget...');
     
+    // Create a clear loading indicator for debugging
+    const loadingIndicator = document.createElement('div');
+    loadingIndicator.id = 'pullse-chat-widget-loading';
+    loadingIndicator.style.position = 'fixed';
+    loadingIndicator.style.bottom = '24px';
+    loadingIndicator.style.right = '24px';
+    loadingIndicator.style.padding = '8px';
+    loadingIndicator.style.background = '#f0f0f0';
+    loadingIndicator.style.borderRadius = '4px';
+    loadingIndicator.style.zIndex = '9999';
+    loadingIndicator.textContent = 'Loading chat widget...';
+    document.body.appendChild(loadingIndicator);
+    
     // Load the actual widget bundle
     const scriptEl = loadWidgetResources();
     
     // Initialize the widget once loaded
     scriptEl.onload = () => {
       console.log('Chat widget resources loaded successfully');
+      
+      // Remove loading indicator
+      if (document.body.contains(loadingIndicator)) {
+        document.body.removeChild(loadingIndicator);
+      }
+      
       try {
         if (window.ChatWidget && window.ChatWidget.init) {
           // Important: Actually open the chat widget after initialization
           const result = window.ChatWidget.init(config);
           console.log('Chat widget initialized successfully', result);
           
-          // Force open the chat widget after initialization
+          // Force open the chat widget after initialization with a longer timeout
           setTimeout(() => {
             if (window.ChatWidget && window.ChatWidget.open) {
               window.ChatWidget.open();
               console.log('Chat widget opened');
+            } else {
+              console.error('Failed to open chat widget: open method not available');
             }
-          }, 100);
+          }, 500);
         } else {
           console.error('Chat widget initialization failed - window.ChatWidget or init method not found');
         }
@@ -70,6 +93,31 @@ import { ChatWidgetInterface, WidgetConfig } from './embed/types';
 
     scriptEl.onerror = (error) => {
       console.error('Failed to load chat widget resources:', error);
+      
+      // Remove loading indicator on error
+      if (document.body.contains(loadingIndicator)) {
+        document.body.removeChild(loadingIndicator);
+      }
+      
+      // Show error to user
+      const errorEl = document.createElement('div');
+      errorEl.style.position = 'fixed';
+      errorEl.style.bottom = '24px';
+      errorEl.style.right = '24px';
+      errorEl.style.padding = '12px';
+      errorEl.style.background = '#f44336';
+      errorEl.style.color = 'white';
+      errorEl.style.borderRadius = '4px';
+      errorEl.style.zIndex = '9999';
+      errorEl.textContent = 'Failed to load chat widget.';
+      document.body.appendChild(errorEl);
+      
+      // Remove error after 5 seconds
+      setTimeout(() => {
+        if (document.body.contains(errorEl)) {
+          document.body.removeChild(errorEl);
+        }
+      }, 5000);
     };
   };
 

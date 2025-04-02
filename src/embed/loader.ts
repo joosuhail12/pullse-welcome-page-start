@@ -10,11 +10,16 @@ export function loadWidgetResources(): HTMLScriptElement {
   // In development, use a local path; in production, use the CDN path
   const isDev = process.env.NODE_ENV === 'development';
   
-  // Ensure we're loading the correct file - use embed.ts for local development
-  script.src = isDev ? '/src/embed.ts' : 'https://cdn.pullse.com/chat-widget.js';
+  // Use the correct path for local development (resolver will handle this)
+  // The key issue was that we were loading a .ts file directly which browsers can't execute
+  script.src = isDev ? '/src/embed.js' : 'https://cdn.pullse.com/chat-widget.js';
   
   script.async = true;
   script.type = 'module'; // Add the correct script type for modules
+  
+  // Add debug info as data attributes
+  script.dataset.source = 'widget-loader';
+  script.dataset.timestamp = new Date().toISOString();
   
   // The script needs to be added to the document to load
   document.head.appendChild(script);
