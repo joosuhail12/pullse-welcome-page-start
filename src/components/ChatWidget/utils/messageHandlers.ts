@@ -1,4 +1,3 @@
-
 import { Message } from '../types';
 import { publishToChannel, getConnectionState } from './ably';
 import { dispatchChatEvent } from './events';
@@ -153,7 +152,10 @@ export const processSystemMessage = (
   dispatchChatEvent('chat:messageReceived', { message }, config);
   
   // Optimistically update message status to delivered
-  const updatedMessage = { ...message, status: 'delivered' as const };
+  const updatedMessage: Message = { 
+    ...message, 
+    status: 'delivered' 
+  };
   
   // Update message status to delivered
   if (config?.features?.readReceipts) {
@@ -168,7 +170,8 @@ export const processSystemMessage = (
           sendReadReceipt(chatChannelName, message.id, sessionId);
           
           // Optimistically update message status to read in UI
-          updatedMessage.status = 'read';
+          // Use type assertion to handle the status update
+          updatedMessage.status = 'read' as const;
         }, 2000);
       }
     } else {
