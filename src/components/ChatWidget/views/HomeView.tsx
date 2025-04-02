@@ -5,6 +5,7 @@ import { MessageSquare } from 'lucide-react';
 import { defaultConfig, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
 import { dispatchChatEvent } from '../utils/events';
+import LazyImage from '../components/LazyImage';
 
 interface HomeViewProps {
   onStartChat: (formData?: Record<string, string>) => void;
@@ -18,6 +19,7 @@ const HomeView = ({
   const [mounted, setMounted] = useState(false);
   const [typingIndex, setTypingIndex] = useState(0);
   const [typingComplete, setTypingComplete] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   // Apply custom branding if available
   const buttonStyle = useMemo(() => {
@@ -85,16 +87,22 @@ const HomeView = ({
       )}
       
       <div className="mb-6">
-        <h2 className={`text-2xl font-bold bg-gradient-to-r ${themeStyles.headerGradient} bg-clip-text text-transparent overflow-hidden focus:outline-none focus:ring-2 focus:ring-vivid-purple-300 focus:ring-offset-2 rounded-md tabindex="0"`}>
+        <h2 
+          className={`text-2xl font-bold bg-gradient-to-r ${themeStyles.headerGradient} bg-clip-text text-transparent overflow-hidden focus:outline-none focus:ring-2 focus:ring-vivid-purple-300 focus:ring-offset-2 rounded-md`}
+          tabIndex={0}
+        >
           {typingComplete 
             ? config.welcomeMessage 
             : config.welcomeMessage?.substring(0, typingIndex) || ''}
           {!typingComplete && (
-            <span className="inline-block w-1 h-5 ml-0.5 bg-vivid-purple-500 animate-pulse"></span>
+            <span className="inline-block w-1 h-5 ml-0.5 bg-vivid-purple-500 opacity-75 animate-pulse"></span>
           )}
         </h2>
         
-        <div className={`text-sm text-gray-800 mt-3 leading-relaxed transition-opacity duration-700 ease-in-out ${typingComplete ? 'opacity-100' : 'opacity-0'}`}>
+        <div 
+          className={`text-sm text-gray-800 mt-3 leading-relaxed transition-all duration-700 ease-in-out ${typingComplete ? 'opacity-100' : 'opacity-0'}`}
+          style={{ transform: typingComplete ? 'translateY(0)' : 'translateY(8px)' }}
+        >
           {config.welcomeDescription ? (
             <p>{config.welcomeDescription}</p>
           ) : (
@@ -105,26 +113,43 @@ const HomeView = ({
         </div>
       </div>
       
+      {/* Welcome image with subtle entrance animation */}
       {config.welcomeImageUrl && (
-        <div className="my-4 flex justify-center transition-all duration-700 ease-in-out opacity-0 transform translate-y-4" 
-             style={{ opacity: typingComplete ? 1 : 0, transform: typingComplete ? 'translateY(0)' : 'translateY(10px)' }}>
-          <img 
+        <div 
+          className={`my-4 flex justify-center overflow-hidden rounded-lg transition-all duration-700 ease-in-out`}
+          style={{ 
+            opacity: typingComplete ? 1 : 0,
+            transform: typingComplete ? 'translateY(0)' : 'translateY(10px)',
+            maxHeight: typingComplete ? '160px' : '0px',
+          }}
+        >
+          <LazyImage 
             src={config.welcomeImageUrl} 
             alt="Welcome" 
-            className="max-h-32 object-contain rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105" 
-            loading="lazy"
+            className="max-h-40 w-auto object-cover rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
+            onLoad={() => setImageLoaded(true)}
+            placeholderColor="#f3f4f6"
           />
         </div>
       )}
       
-      <div className="mt-auto transition-all duration-700 delay-200 ease-in-out opacity-0 transform translate-y-4" 
-           style={{ opacity: typingComplete ? 1 : 0, transform: typingComplete ? 'translateY(0)' : 'translateY(10px)' }}>
+      {/* Action Button with micro-interaction */}
+      <div 
+        className="mt-auto transition-all duration-700 delay-200 ease-in-out"
+        style={{ 
+          opacity: typingComplete ? 1 : 0,
+          transform: typingComplete ? 'translateY(0)' : 'translateY(10px)'
+        }}
+      >
         <Button 
           onClick={handleStartChat}
-          className="chat-widget-button flex items-center justify-center gap-2 w-full py-3 rounded-xl shadow-md transition-all duration-300 hover:shadow-xl group focus:ring-2 focus:ring-vivid-purple-300 focus:ring-offset-2 focus:outline-none"
+          className="chat-widget-button flex items-center justify-center gap-2 w-full py-3 rounded-xl shadow-md transition-all duration-300 hover:shadow-xl hover:translate-y-[-2px] focus:ring-2 focus:ring-vivid-purple-300 focus:ring-offset-2 focus:outline-none"
           style={buttonStyle}
         >
-          <MessageSquare size={20} className="group-hover:scale-110 transition-transform" />
+          <MessageSquare 
+            size={20} 
+            className="transition-transform duration-300 group-hover:rotate-12" 
+          />
           <span className="font-medium">Ask a question</span>
         </Button>
       </div>

@@ -11,11 +11,11 @@ interface PreChatFormSectionProps {
 const PreChatFormSection = ({ config, onFormComplete }: PreChatFormSectionProps) => {
   const [mounted, setMounted] = useState(false);
   
-  // Subtle animation on mount
+  // Subtle animation on mount with a slight delay for better sequencing
   useEffect(() => {
     const timer = setTimeout(() => {
       setMounted(true);
-    }, 300);
+    }, 400);
     
     return () => clearTimeout(timer);
   }, []);
@@ -28,8 +28,12 @@ const PreChatFormSection = ({ config, onFormComplete }: PreChatFormSectionProps)
   
   return (
     <div 
-      className={`mb-4 p-4 bg-gradient-to-br ${themeStyles.backgroundGradient} rounded-xl shadow-md backdrop-blur-sm transition-all duration-700 ease-in-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-      style={{ fontFamily: themeStyles.fontFamily }}
+      className={`mb-4 p-4 bg-gradient-to-br ${themeStyles.backgroundGradient} rounded-xl shadow-md backdrop-blur-sm transition-all duration-500 ease-in-out`}
+      style={{ 
+        fontFamily: themeStyles.fontFamily,
+        opacity: mounted ? 1 : 0,
+        transform: mounted ? 'translateY(0)' : 'translateY(8px)'
+      }}
       role="region"
       aria-label="Pre-chat form"
       tabIndex={0}
