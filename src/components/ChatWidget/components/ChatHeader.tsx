@@ -14,18 +14,22 @@ interface ChatHeaderProps {
 
 const ChatHeader = ({ conversation, onBack, onToggleSearch, showSearch }: ChatHeaderProps) => {
   return (
-    <div className="bg-vivid-purple text-white p-4 flex items-center justify-between shadow-sm z-10">
+    <header 
+      className="bg-vivid-purple text-white p-4 flex items-center justify-between shadow-sm z-10"
+      role="banner"
+    >
       <div className="flex items-center gap-3">
         <Button 
           variant="ghost" 
           className="p-2 h-auto w-auto text-white hover:text-white hover:bg-vivid-purple/90"
           onClick={onBack}
+          aria-label="Go back"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={18} aria-hidden="true" />
         </Button>
         
         <div>
-          <h2 className="font-medium">
+          <h2 className="font-medium" id="conversation-title">
             {conversation.title || 'Support Chat'}
           </h2>
           <AgentPresence 
@@ -39,11 +43,14 @@ const ChatHeader = ({ conversation, onBack, onToggleSearch, showSearch }: ChatHe
           variant="ghost"
           className="p-2 h-auto w-auto text-white hover:text-white hover:bg-vivid-purple/90"
           onClick={onToggleSearch}
+          aria-label={showSearch ? "Close search" : "Search messages"}
+          aria-expanded={showSearch}
+          aria-controls="search-panel"
         >
-          {showSearch ? <X size={18} /> : <Search size={18} />}
+          {showSearch ? <X size={18} aria-hidden="true" /> : <Search size={18} aria-hidden="true" />}
         </Button>
       )}
-    </div>
+    </header>
   );
 };
 

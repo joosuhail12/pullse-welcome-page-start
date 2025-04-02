@@ -64,16 +64,29 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
     onFormComplete(sanitizedData);
   };
 
+  // Handle keyboard submission
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && formValid) {
+      submitForm();
+    }
+  };
+
   return (
-    <div className="bg-gray-50 p-4 rounded-lg mb-4 shadow-sm border border-gray-100">
-      <p className="text-sm text-gray-600 mb-3">
+    <div 
+      className="bg-gray-50 p-4 rounded-lg mb-4 shadow-sm border border-gray-100"
+      role="form"
+      aria-labelledby="form-title"
+      onKeyDown={handleKeyDown}
+    >
+      <p className="text-sm text-gray-600 mb-3" id="form-title">
         Please provide your information to continue:
       </p>
       {config.preChatForm.fields.map((field) => (
         <div key={field.id} className="mb-3">
           <Label htmlFor={field.id} className="text-xs font-medium mb-1 block">
             {field.label}
-            {field.required && <span className="text-red-500 ml-1">*</span>}
+            {field.required && <span className="text-red-500 ml-1" aria-hidden="true">*</span>}
+            {field.required && <span className="sr-only">(required)</span>}
           </Label>
           <Input
             id={field.id}
@@ -84,9 +97,17 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
             value={formData[field.name] || ''}
             onChange={handleInputChange}
             className={`h-8 text-sm ${formErrors[field.name] ? 'border-red-500' : ''}`}
+            aria-describedby={formErrors[field.name] ? `${field.id}-error` : undefined}
+            aria-invalid={!!formErrors[field.name]}
           />
           {formErrors[field.name] && (
-            <p className="text-xs text-red-500 mt-1">{formErrors[field.name]}</p>
+            <p 
+              className="text-xs text-red-500 mt-1" 
+              id={`${field.id}-error`}
+              role="alert"
+            >
+              {formErrors[field.name]}
+            </p>
           )}
         </div>
       ))}
@@ -98,6 +119,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
           backgroundColor: config.branding?.primaryColor || '#8B5CF6',
           borderColor: config.branding?.primaryColor || '#8B5CF6'
         }}
+        aria-label="Start Chat"
       >
         Start Chat
       </Button>

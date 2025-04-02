@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -43,7 +42,6 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   const { isConnected, connectionState } = useConnectionState();
   const [pendingMessages, setPendingMessages] = useState(getPendingMessageCount());
   
-  // Check for pending messages periodically
   useEffect(() => {
     const checkPendingInterval = setInterval(() => {
       setPendingMessages(getPendingMessageCount());
@@ -175,8 +173,9 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
           <div 
             className="mb-2 bg-orange-100 text-orange-800 px-2 py-1 rounded-md text-xs flex items-center gap-1 cursor-help"
             title="Messages waiting to be sent when connection is restored"
+            aria-live="polite"
           >
-            <CloudOff size={12} /> {pendingMessages} pending
+            <CloudOff size={12} aria-hidden="true" /> {pendingMessages} pending
           </div>
         )}
         
@@ -184,16 +183,21 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
           className="rounded-full w-14 h-14 flex items-center justify-center chat-widget-button relative"
           style={buttonStyle}
           onClick={toggleChat}
+          aria-label={isOpen ? "Close chat" : "Open chat"}
+          aria-expanded={isOpen}
+          aria-controls="chat-widget-container"
+          aria-haspopup="dialog"
         >
           {config.realtime?.enabled && !isConnected ? (
-            <WifiOff size={24} className="text-white animate-pulse" />
+            <WifiOff size={24} className="text-white animate-pulse" aria-hidden="true" />
           ) : (
-            <MessageSquare size={24} className="text-white" />
+            <MessageSquare size={24} className="text-white" aria-hidden="true" />
           )}
           {!isOpen && unreadCount > 0 && (
             <Badge 
               className="absolute -top-2 -right-2 bg-red-500 text-white border-white border-2" 
               variant="destructive"
+              aria-label={`${unreadCount} unread messages`}
             >
               {unreadCount}
             </Badge>
@@ -209,6 +213,10 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         <div 
           className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] z-50 chat-widget-container"
           style={widgetStyle}
+          id="chat-widget-container"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Chat Widget"
         >
           <div className="relative w-full h-full flex flex-col">
             {viewState === 'chat' ? (
@@ -230,7 +238,11 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
                       config={config}
                     />
                   )}
-                  {viewState === 'messages' && <MessagesView onSelectConversation={handleSelectConversation} />}
+                  {viewState === 'messages' && (
+                    <div id="messages-view" tabIndex={-1}>
+                      <MessagesView onSelectConversation={handleSelectConversation} />
+                    </div>
+                  )}
                 </div>
                 
                 <TabBar viewState={viewState} onChangeView={handleChangeView} />
@@ -244,6 +256,8 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
               <div 
                 className="absolute top-0 left-0 w-full bg-red-500 text-white text-xs py-1 px-2 text-center cursor-pointer"
                 onClick={handleReconnect}
+                role="alert"
+                aria-live="assertive"
               >
                 Connection lost. Click to reconnect.
               </div>

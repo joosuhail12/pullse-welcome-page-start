@@ -60,12 +60,22 @@ const HomeView = ({
     }
   }, [config.welcomeMessage]);
 
+  // Handle keyboard navigation
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Tab' && e.shiftKey) {
+      // Handle shift+tab focus logic if needed
+    }
+  };
+
   return (
     <div 
       className={`flex flex-col p-6 h-full bg-gradient-to-br ${themeStyles.backgroundGradient} rounded-lg backdrop-blur-sm bg-opacity-95 transition-all duration-700 ease-in-out ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
       style={{ fontFamily: themeStyles.fontFamily }}
-      role="dialog"
+      role="region"
       aria-labelledby="welcome-heading"
+      id="home-view"
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
     >
       <BrandLogo logoUrl={config.branding?.logoUrl} />
       
