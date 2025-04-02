@@ -1,7 +1,7 @@
 
 import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, ArrowRight } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 import { defaultConfig, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
 import { dispatchChatEvent } from '../utils/events';
@@ -84,28 +84,6 @@ const HomeView = ({
             className="max-h-32 object-contain rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105" 
             loading="lazy"
           />
-        </div>
-      )}
-      
-      {config.features?.quickPrompts && config.quickPrompts?.length > 0 && (
-        <div className="mb-6 space-y-2 animate-fade-in animation-delay-300">
-          <p className="text-xs text-gray-500 mb-1">Quick questions:</p>
-          <div className="space-y-2">
-            {config.quickPrompts.map((prompt, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  onStartChat();
-                  dispatchChatEvent('quickPrompt:selected', { prompt }, config);
-                }}
-                className="w-full text-left text-sm py-2 px-3 rounded-lg bg-white bg-opacity-70 hover:bg-opacity-100 transition-colors flex items-center justify-between border border-gray-100 shadow-sm hover:shadow-md group"
-                style={{animationDelay: `${(i+1) * 100}ms`}}
-              >
-                <span>{prompt}</span>
-                <ArrowRight size={14} className="text-gray-400 group-hover:translate-x-1 transition-transform" />
-              </button>
-            ))}
-          </div>
         </div>
       )}
       
