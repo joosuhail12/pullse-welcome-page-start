@@ -1,5 +1,5 @@
 
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { Message } from '../types';
 import { ChatWidgetConfig } from '../config';
 import MessageInputSection from './MessageInputSection';
@@ -58,6 +58,11 @@ const ChatContent = memo<ChatContentProps>(({
   handleFormComplete,
   config
 }: ChatContentProps) => {
+  console.log("ChatContent rendering", { 
+    messageCount: messages.length, 
+    showPreChatForm
+  });
+  
   return (
     <>
       {showPreChatForm ? (
@@ -93,6 +98,7 @@ const ChatContent = memo<ChatContentProps>(({
         hasUserSentMessage={hasUserSentMessage}
         onTyping={handleUserTyping}
         disabled={showPreChatForm}
+        config={config}
       />
     </>
   );

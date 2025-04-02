@@ -41,18 +41,20 @@ export function useChatView({
     setMessageText,
     isTyping,
     hasUserSentMessage,
-    handleSendMessage,
-    handleUserTyping,
-    handleFileUpload,
-    handleEndChat,
+    handleSendMessage: originalHandleSendMessage,
+    handleUserTyping: originalHandleUserTyping,
+    handleFileUpload: originalHandleFileUpload,
+    handleEndChat: originalHandleEndChat,
     remoteIsTyping,
     readReceipts,
     loadPreviousMessages,
     isLoadingMore
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
 
+  // Memoize the conversation messages reference to prevent unnecessary renders
+  const memoizedMessages = useMemo(() => messages, [messages]);
+
   // Create a stable memoized function for updating messages
-  // This prevents recreating the function on each render
   const setMessages = useCallback((updatedMessages: React.SetStateAction<Message[]>) => {
     onUpdateConversation({
       ...conversation,
@@ -62,11 +64,28 @@ export function useChatView({
     });
   }, [conversation, onUpdateConversation]);
 
+  // Memoize the message actions to prevent recreating them on each render
+  const handleSendMessage = useCallback(() => {
+    originalHandleSendMessage();
+  }, [originalHandleSendMessage]);
+  
+  const handleUserTyping = useCallback(() => {
+    originalHandleUserTyping();
+  }, [originalHandleUserTyping]);
+  
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    originalHandleFileUpload(e);
+  }, [originalHandleFileUpload]);
+  
+  const handleEndChat = useCallback(() => {
+    originalHandleEndChat();
+  }, [originalHandleEndChat]);
+
   // Message reactions hook
   const {
     handleMessageReaction
   } = useMessageReactions(
-    messages,
+    memoizedMessages,
     setMessages,
     `conversation:${conversation.id}`,
     conversation.sessionId || '',
@@ -82,7 +101,7 @@ export function useChatView({
     highlightText,
     messageIds,
     isSearching
-  } = useMessageSearch(messages);
+  } = useMessageSearch(memoizedMessages);
 
   // Toggle search bar
   const toggleSearch = useCallback(() => {
@@ -118,17 +137,21 @@ export function useChatView({
   }, [setUserFormData, conversation, onUpdateConversation, config]);
 
   // Get avatar URLs from config
-  const agentAvatar = conversation.agentInfo?.avatar || config?.branding?.avatarUrl;
+  const agentAvatar = useMemo(() => 
+    conversation.agentInfo?.avatar || config?.branding?.avatarUrl,
+    [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]
+  );
+  
   const userAvatar = undefined; // Could be set from user profile if available
 
   // Determine if there could be more messages to load
-  const hasMoreMessages = messages.length >= 20; // Simplified check for more messages
+  const hasMoreMessages = memoizedMessages.length >= 20; // Simplified check for more messages
 
   return {
     showSearch,
     toggleSearch,
     showPreChatForm,
-    messages,
+    messages: memoizedMessages,
     messageText,
     setMessageText,
     isTyping,

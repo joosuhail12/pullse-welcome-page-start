@@ -1,5 +1,5 @@
 
-import React, { memo } from 'react';
+import React, { memo, useEffect } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import ChatViewHeader from '../components/ChatViewHeader';
@@ -16,7 +16,7 @@ interface ChatViewProps {
   setUserFormData?: (data: Record<string, string>) => void;
 }
 
-const ChatView: React.FC<ChatViewProps> = memo(({ 
+const ChatView = memo(({ 
   conversation, 
   onBack, 
   onUpdateConversation, 
@@ -25,6 +25,8 @@ const ChatView: React.FC<ChatViewProps> = memo(({
   userFormData,
   setUserFormData
 }: ChatViewProps) => {
+  console.log("ChatView rendering", { conversationId: conversation.id });
+  
   // Use our custom hook to handle all the chat view logic
   const {
     showSearch,
@@ -62,6 +64,12 @@ const ChatView: React.FC<ChatViewProps> = memo(({
     userFormData,
     setUserFormData
   });
+
+  // Add debugging of re-renders
+  useEffect(() => {
+    console.log("ChatView mounted or updated");
+    return () => console.log("ChatView unmounted");
+  }, []);
 
   return (
     <div 

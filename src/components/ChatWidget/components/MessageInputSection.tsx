@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import MessageInput from './MessageInput';
 
 interface MessageInputSectionProps {
@@ -14,7 +14,8 @@ interface MessageInputSectionProps {
   config?: any; // For future theming options
 }
 
-const MessageInputSection = ({ 
+// Memoize the MessageInputSection to prevent unnecessary re-renders
+const MessageInputSection = memo(({ 
   messageText, 
   setMessageText, 
   handleSendMessage, 
@@ -25,6 +26,8 @@ const MessageInputSection = ({
   disabled,
   config
 }: MessageInputSectionProps) => {
+  console.log("MessageInputSection rendering");
+  
   // Apply custom styling based on config if provided
   const borderStyle = config?.branding?.theme === 'dark' 
     ? 'border-gray-700' 
@@ -48,6 +51,8 @@ const MessageInputSection = ({
       />
     </div>
   );
-};
+});
+
+MessageInputSection.displayName = 'MessageInputSection';
 
 export default MessageInputSection;

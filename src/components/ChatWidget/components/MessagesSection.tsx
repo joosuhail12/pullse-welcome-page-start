@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Message } from '../types';
 import MessageList from './MessageList';
 import ChatBackground from './ChatBackground';
@@ -21,7 +21,8 @@ interface MessagesSectionProps {
   isLoadingMore?: boolean;
 }
 
-const MessagesSection = ({ 
+// Memoize the MessagesSection to prevent unnecessary re-renders
+const MessagesSection = memo(({ 
   messages,
   isTyping,
   remoteIsTyping,
@@ -37,6 +38,8 @@ const MessagesSection = ({
   hasMoreMessages,
   isLoadingMore
 }: MessagesSectionProps) => {
+  console.log("MessagesSection rendering", { messageCount: messages.length });
+  
   return (
     <div className="flex-1 overflow-y-auto px-4 py-2 bg-opacity-50 relative">
       <ChatBackground />
@@ -59,6 +62,8 @@ const MessagesSection = ({
       </div>
     </div>
   );
-};
+});
+
+MessagesSection.displayName = 'MessagesSection';
 
 export default MessagesSection;

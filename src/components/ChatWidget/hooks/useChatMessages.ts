@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Message, Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { getChatSessionId } from '../utils/cookies';
@@ -44,6 +44,11 @@ export function useChatMessages(
     playMessageSound
   );
   
+  // Use the message actions hook with memoized setMessages function
+  const setMessagesCallback = useCallback((newMessages: React.SetStateAction<Message[]>) => {
+    setMessages(newMessages);
+  }, []);
+  
   // Use the message actions hook
   const {
     messageText,
@@ -54,7 +59,7 @@ export function useChatMessages(
     handleEndChat
   } = useMessageActions(
     messages,
-    setMessages,
+    setMessagesCallback,
     chatChannelName,
     sessionId,
     config,
@@ -77,12 +82,12 @@ export function useChatMessages(
   }, [messages, conversation, onUpdateConversation, sessionId]);
 
   // Wrap the handleUserTyping function to also handle typing timeout
-  const handleUserTyping = () => {
+  const handleUserTyping = useCallback(() => {
     baseHandleUserTyping();
     if (config?.realtime?.enabled) {
       handleTypingTimeout();
     }
-  };
+  }, [baseHandleUserTyping, config?.realtime?.enabled, handleTypingTimeout]);
 
   // Function to load previous messages (for infinite scroll)
   const loadPreviousMessages = useCallback(async () => {
@@ -131,10 +136,13 @@ export function useChatMessages(
     } finally {
       setIsLoadingPreviousMessages(false);
     }
-  }, [page]);
+  }, [page, setMessages]);
+
+  // Memoize the messages to prevent unnecessary renders
+  const memoizedMessages = useMemo(() => messages, [messages]);
 
   return {
-    messages,
+    messages: memoizedMessages,
     messageText,
     setMessageText,
     isTyping,
