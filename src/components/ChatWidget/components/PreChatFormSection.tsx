@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChatWidgetConfig } from '../config';
 import PreChatForm from './PreChatForm';
 
@@ -9,6 +9,13 @@ interface PreChatFormSectionProps {
 }
 
 const PreChatFormSection = ({ config, onFormComplete }: PreChatFormSectionProps) => {
+  const [mounted, setMounted] = useState(false);
+  
+  // Animation on mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
   // Apply custom branding if available
   const themeStyles = {
     fontFamily: config?.branding?.fontFamily || 'inherit',
@@ -17,7 +24,7 @@ const PreChatFormSection = ({ config, onFormComplete }: PreChatFormSectionProps)
   
   return (
     <div 
-      className={`mb-4 p-4 bg-gradient-to-br ${themeStyles.backgroundGradient} rounded-xl shadow-md animate-fade-in backdrop-blur-sm`}
+      className={`mb-4 p-4 bg-gradient-to-br ${themeStyles.backgroundGradient} rounded-xl shadow-md backdrop-blur-sm transition-all duration-500 ease-in-out ${mounted ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
       style={{ fontFamily: themeStyles.fontFamily }}
     >
       <PreChatForm 

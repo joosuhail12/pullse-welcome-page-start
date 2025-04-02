@@ -171,6 +171,22 @@ export default {
 						opacity: '1'
 					}
 				},
+				'pulse-soft': {
+					'0%, 100%': {
+						opacity: '0.6'
+					},
+					'50%': {
+						opacity: '1'
+					}
+				},
+				'float': {
+					'0%, 100%': {
+						transform: 'translateY(0)'
+					},
+					'50%': {
+						transform: 'translateY(-5px)'
+					}
+				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
@@ -180,12 +196,15 @@ export default {
 				'fade-in-left': 'fade-in-left 0.3s ease-out forwards',
 				'typing-bounce': 'typing-bounce 1s infinite',
 				'scale-in': 'scale-in 0.2s ease-out',
+				'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+				'float': 'float 3s ease-in-out infinite',
 			},
 			boxShadow: {
 				'chat-bubble': '0 2px 8px rgba(0, 0, 0, 0.05)',
 				'chat-widget': '0 4px 20px rgba(0, 0, 0, 0.1)',
 				'chat-widget-hover': '0 6px 24px rgba(0, 0, 0, 0.15)',
 				'glassmorphic': '0 8px 32px rgba(31, 38, 135, 0.15)',
+				'glow': '0 0 15px rgba(139, 92, 246, 0.5)'
 			},
 			backdropBlur: {
 				xs: '2px',
