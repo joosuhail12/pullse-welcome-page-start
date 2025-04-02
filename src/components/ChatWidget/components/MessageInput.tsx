@@ -34,7 +34,8 @@ const MessageInput = ({
   };
 
   const handleEmojiSelect = (emoji: any) => {
-    setMessageText(prev => prev + emoji.native);
+    // Fixed: This is the problematic line - we need to properly handle emoji selection
+    setMessageText(messageText + emoji.native);
     setShowEmojiPicker(false);
   };
 
