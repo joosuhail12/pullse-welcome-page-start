@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -6,6 +5,9 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ChevronLeft, Send, Paperclip, Smile, X } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Picker } from 'emoji-mart';
+import 'emoji-mart/css/emoji-mart.css';
 
 interface Message {
   id: string;
@@ -55,8 +57,8 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
       setTimeout(() => {
@@ -65,22 +67,18 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     }
   }, [messages]);
 
-  // Simulate connecting to Ably presence channel for agent typing indicator
   useEffect(() => {
     const simulateAgentTyping = () => {
-      // Only show typing indicator if user has sent a message
       if (!hasUserSentMessage) return;
       
       const randomTimeout = Math.floor(Math.random() * 10000) + 5000;
       const typingTimeout = setTimeout(() => {
         setIsTyping(true);
         
-        // Simulate typing duration between 1-3 seconds
         const typingDuration = Math.floor(Math.random() * 2000) + 1000;
         setTimeout(() => {
           setIsTyping(false);
           
-          // Simulate agent response after typing
           const responseDelay = Math.floor(Math.random() * 400) + 200;
           setTimeout(() => {
             const responses = [
@@ -115,7 +113,6 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
   const handleSendMessage = () => {
     if (!messageText.trim()) return;
     
-    // Add user message
     const userMessage: Message = {
       id: `msg-${Date.now()}-user`,
       text: messageText,
@@ -127,15 +124,12 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     setMessages([...messages, userMessage]);
     setMessageText('');
     
-    // Set flag that user has sent at least one message
     if (!hasUserSentMessage) {
       setHasUserSentMessage(true);
     }
     
-    // Simulate agent typing indicator
     setIsTyping(true);
     
-    // Simulate response with typing delay
     setTimeout(() => {
       setIsTyping(false);
       
@@ -164,7 +158,6 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     
     const file = files[0];
     
-    // Simulate file upload
     const fileMessage: Message = {
       id: `msg-${Date.now()}-user-file`,
       text: `Uploaded: ${file.name}`,
@@ -177,15 +170,12 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     
     setMessages([...messages, fileMessage]);
     
-    // Set flag that user has sent at least one message
     if (!hasUserSentMessage) {
       setHasUserSentMessage(true);
     }
     
-    // Clear the input
     e.target.value = '';
     
-    // Simulate agent response after file upload
     setTimeout(() => {
       const systemMessage: Message = {
         id: `msg-${Date.now()}-system`,
@@ -262,8 +252,6 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
                     className="text-xs py-1 h-auto"
                     onClick={() => {
                       setMessageText(reply.text);
-                      // Optional: auto-send the quick reply
-                      // setTimeout(handleSendMessage, 100);
                     }}
                   >
                     {reply.text}
@@ -288,7 +276,6 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
   };
 
   const handleEndChat = () => {
-    // Add a status message
     const statusMessage: Message = {
       id: `msg-${Date.now()}-status`,
       text: 'Chat ended',
@@ -298,9 +285,6 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
     };
     
     setMessages(prev => [...prev, statusMessage]);
-    
-    // Additional logic for ending chat can be added here
-    // For example, you might want to disable the input
   };
 
   return (
@@ -368,7 +352,6 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
             </div>
           ))}
           
-          {/* Typing indicator */}
           {isTyping && (
             <div className="flex justify-start">
               <div className="bg-gray-100 rounded-lg p-3 rounded-bl-none max-w-[80%]">
@@ -398,14 +381,35 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
               />
             </label>
             
-            <Textarea 
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Type a message..."
-              className="flex-grow min-h-[40px] max-h-[120px] p-2 border rounded-md focus:outline-none resize-none mx-2"
-              rows={1}
-            />
+            <div className="relative flex-grow mx-2">
+              <Textarea 
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={handleKeyPress}
+                placeholder="Type a message..."
+                className="flex-grow min-h-[40px] max-h-[120px] p-2 border rounded-md focus:outline-none resize-none pr-10"
+                rows={1}
+              />
+              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                  >
+                    <Smile size={18} className="text-gray-500" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent side="top" align="end" className="w-auto p-0 border-none">
+                  <Picker 
+                    onSelect={handleEmojiSelect} 
+                    title="Pick an emoji" 
+                    emoji="point_up" 
+                    theme="light"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
             
             <Button 
               onClick={handleSendMessage}
