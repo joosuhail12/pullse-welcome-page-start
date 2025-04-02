@@ -2,6 +2,7 @@
 import React from 'react';
 import { Message } from '../types';
 import MessageList from './MessageList';
+import ChatBackground from './ChatBackground';
 
 interface MessagesSectionProps {
   messages: Message[];
@@ -37,22 +38,25 @@ const MessagesSection = ({
   isLoadingMore
 }: MessagesSectionProps) => {
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-2 bg-opacity-50">
-      <MessageList 
-        messages={messages}
-        isTyping={isTyping || remoteIsTyping}
-        setMessageText={setMessageText}
-        readReceipts={readReceipts}
-        onMessageReaction={onMessageReaction}
-        searchResults={searchResults}
-        highlightMessage={highlightMessage}
-        searchTerm={searchTerm}
-        agentAvatar={agentAvatar}
-        userAvatar={userAvatar}
-        onScrollTop={onScrollTop}
-        hasMoreMessages={hasMoreMessages}
-        isLoadingMore={isLoadingMore}
-      />
+    <div className="flex-1 overflow-y-auto px-4 py-2 bg-opacity-50 relative">
+      <ChatBackground />
+      <div className="relative z-10">
+        <MessageList 
+          messages={messages}
+          isTyping={isTyping || remoteIsTyping}
+          setMessageText={setMessageText}
+          readReceipts={readReceipts}
+          onMessageReaction={onMessageReaction}
+          searchResults={searchResults}
+          highlightMessage={highlightMessage}
+          searchTerm={searchTerm}
+          agentAvatar={agentAvatar}
+          userAvatar={userAvatar}
+          onScrollTop={onScrollTop}
+          hasMoreMessages={hasMoreMessages}
+          isLoadingMore={isLoadingMore}
+        />
+      </div>
     </div>
   );
 };

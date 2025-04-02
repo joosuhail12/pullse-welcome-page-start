@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
@@ -46,80 +45,63 @@ const MessageList = ({
   const [autoScroll, setAutoScroll] = useState(true);
   const [lastScrollTop, setLastScrollTop] = useState(0);
   
-  // Virtualization and pagination states
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 30 });
   const [messagesPerPage, setMessagesPerPage] = useState(30);
   const [currentPage, setCurrentPage] = useState(1);
   
-  // Calculate total pages for pagination controls
   const totalMessages = messages.length;
   const totalPages = Math.ceil(totalMessages / messagesPerPage);
 
-  // Function to check if a message should be grouped with the previous one
   const isConsecutiveMessage = (index: number) => {
     if (index === 0) return false;
     const currentMsg = messages[index];
     const prevMsg = messages[index - 1];
     
-    // Group messages if they are from the same sender and within 2 minutes of each other
     return currentMsg.sender === prevMsg.sender && 
            currentMsg.type !== 'status' &&
            prevMsg.type !== 'status' &&
            currentMsg.timestamp.getTime() - prevMsg.timestamp.getTime() < 2 * 60 * 1000;
   };
 
-  // Function to highlight search results
   const isMessageHighlighted = (messageId: string) => {
     return searchResults?.includes(messageId) || false;
   };
 
-  // Get paginated messages
   const getPaginatedMessages = useCallback(() => {
-    // Calculate the range of messages to display
     const start = (currentPage - 1) * messagesPerPage;
     const end = Math.min(start + messagesPerPage, totalMessages);
     
-    // Update the visible range for virtualization
     setVisibleRange({ start, end });
     
-    // Return the slice of messages for the current page
     return messages.slice(start, end);
   }, [currentPage, messagesPerPage, messages, totalMessages]);
   
-  // Current visible messages
   const currentMessages = getPaginatedMessages();
 
-  // Handle scroll events with throttling
   const handleScroll = useCallback(() => {
     if (!scrollViewportRef.current) return;
 
     const { scrollTop, scrollHeight, clientHeight } = scrollViewportRef.current;
     
-    // Check if we're near the bottom to enable auto-scroll
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
     setAutoScroll(isNearBottom);
 
-    // Check if we're at the top to load more messages (infinite scroll)
     if (scrollTop === 0 && lastScrollTop !== 0 && onScrollTop && hasMoreMessages && !isLoadingMore) {
       onScrollTop().then(() => {
-        // After loading more messages, update pagination
-        setCurrentPage(1); // Reset to first page after loading more
+        setCurrentPage(1);
       });
     }
 
     setLastScrollTop(scrollTop);
   }, [lastScrollTop, onScrollTop, hasMoreMessages, isLoadingMore]);
 
-  // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    setAutoScroll(false); // Disable auto-scroll when changing pages
+    setAutoScroll(false);
   };
 
-  // Get the viewport element from ScrollArea and attach scroll event
   useEffect(() => {
     if (scrollAreaRef.current) {
-      // Find the viewport element within the ScrollArea
       const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (viewport) {
         scrollViewportRef.current = viewport as HTMLDivElement;
@@ -134,7 +116,6 @@ const MessageList = ({
     };
   }, [handleScroll]);
 
-  // Auto-scroll to bottom when new messages arrive or page changes
   useEffect(() => {
     if ((autoScroll && messagesEndRef.current) || currentPage === totalPages) {
       setTimeout(() => {
@@ -143,7 +124,6 @@ const MessageList = ({
     }
   }, [currentMessages, isTyping, autoScroll, currentPage, totalPages]);
 
-  // Render read receipt indicator with improved styling
   const renderReadReceipt = (message: Message) => {
     if (message.sender !== 'user') return null;
     
@@ -151,7 +131,7 @@ const MessageList = ({
       <div className="flex justify-end mt-1 text-xs text-gray-500">
         {message.status === 'read' || readReceipts[message.id] ? (
           <div className="flex items-center text-vivid-purple">
-            <CheckCheck size={12} />
+            <CheckCheck size={12} className="text-vivid-purple" />
             <span className="ml-1 text-[10px]">Read</span>
           </div>
         ) : message.status === 'delivered' ? (
@@ -169,7 +149,6 @@ const MessageList = ({
     );
   };
 
-  // Render pagination controls
   const renderPagination = () => {
     if (totalPages <= 1) return null;
     
@@ -177,7 +156,6 @@ const MessageList = ({
       <Pagination className="py-2">
         <PaginationContent>
           {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-            // For simplicity, show max 5 pages
             const pageNum = i + 1;
             return (
               <PaginationItem key={pageNum}>
@@ -211,16 +189,14 @@ const MessageList = ({
   };
 
   return (
-    <ScrollArea className="flex-grow p-4 bg-chat-bg" ref={scrollAreaRef}>
+    <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
       <div className="space-y-4">
-        {/* Pagination controls at top */}
         {totalMessages > messagesPerPage && (
           <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm py-1 rounded-lg shadow-sm">
             {renderPagination()}
           </div>
         )}
         
-        {/* Loading indicator for infinite scroll */}
         {isLoadingMore && (
           <div className="w-full text-center py-2 text-sm text-gray-500">
             <div className="animate-pulse flex justify-center">
@@ -232,9 +208,7 @@ const MessageList = ({
           </div>
         )}
         
-        {/* Show messages with virtualization */}
         {currentMessages.map((message, idx) => {
-          // Calculate the actual index in the full messages array
           const index = (currentPage - 1) * messagesPerPage + idx;
           
           return (
@@ -246,13 +220,12 @@ const MessageList = ({
                   : message.sender === 'status' 
                     ? 'justify-center' 
                     : 'justify-start'
-              } animate-fade-in ${isMessageHighlighted(message.id) ? 'bg-yellow-100 p-2 rounded-lg' : ''} ${
+              } ${isMessageHighlighted(message.id) ? 'bg-yellow-100 p-2 rounded-lg' : ''} ${
                 isConsecutiveMessage(index) ? 'mt-1' : 'mt-4'
               }`}
               style={{ 
-                animationDelay: `${idx * 20}ms`,
-                animationDuration: '200ms',
-                opacity: 0 // Start with opacity 0, animation will bring to 1
+                animationDelay: `${idx * 50}ms`,
+                animationDuration: '300ms'
               }}
               id={message.id}
             >
@@ -271,7 +244,7 @@ const MessageList = ({
                 )}
                 
                 {message.sender === 'status' && (
-                  <div className="w-full flex justify-center">
+                  <div className="w-full flex justify-center animate-fade-in">
                     <MessageBubble 
                       message={message}
                       highlightSearchTerm={highlightMessage}
@@ -280,14 +253,12 @@ const MessageList = ({
                   </div>
                 )}
                 
-                {/* Render inline form after the first system message if provided */}
                 {inlineFormComponent && idx === 0 && message.sender === 'system' && (
-                  <div className="mt-3 w-full">
+                  <div className="mt-3 w-full animate-fade-in">
                     {inlineFormComponent}
                   </div>
                 )}
                 
-                {/* Read receipt indicators for user messages */}
                 {renderReadReceipt(message)}
               </div>
             </div>
@@ -302,7 +273,6 @@ const MessageList = ({
         
         <div ref={messagesEndRef} />
         
-        {/* Bottom pagination controls */}
         {totalMessages > messagesPerPage && (
           <div className="sticky bottom-0 z-10 bg-white/80 backdrop-blur-sm py-1 rounded-lg shadow-sm mt-4">
             {renderPagination()}
