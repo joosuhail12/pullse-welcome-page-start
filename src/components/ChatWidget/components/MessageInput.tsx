@@ -50,7 +50,7 @@ const MessageInput = ({
   };
 
   return (
-    <div className="border-t p-3">
+    <div className="border-t p-4">
       <div className="flex flex-col">
         <div className="flex items-center">
           <label htmlFor="file-upload" className="cursor-pointer p-2 hover:bg-gray-100 rounded-md">
@@ -69,7 +69,7 @@ const MessageInput = ({
               onChange={handleChange}
               onKeyDown={handleKeyPress}
               placeholder="Type a message..."
-              className="flex-grow min-h-[40px] max-h-[120px] p-2 border rounded-md focus:outline-none resize-none pr-10"
+              className="flex-grow min-h-[44px] max-h-[120px] p-3 border rounded-md focus:outline-none resize-none pr-10 text-sm"
               rows={1}
             />
             <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
@@ -97,14 +97,14 @@ const MessageInput = ({
           <Button 
             onClick={handleSendMessage}
             disabled={!messageText.trim()}
-            className="h-auto rounded-md bg-vivid-purple hover:bg-vivid-purple/90 p-2"
+            className="h-auto rounded-md chat-widget-button p-2.5"
           >
             <Send size={18} />
           </Button>
         </div>
         
         {hasUserSentMessage && (
-          <div className="flex justify-center mt-2">
+          <div className="flex justify-center mt-3">
             <Button 
               variant="outline" 
               size="sm" 

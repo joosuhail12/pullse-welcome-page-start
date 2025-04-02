@@ -50,7 +50,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   };
 
   if (loading) {
-    return <div className="fixed bottom-4 right-4 w-80 sm:w-96 rounded-lg shadow-lg bg-white p-4">Loading...</div>;
+    return <div className="fixed bottom-4 right-4 w-80 sm:w-96 rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
   }
 
   const toggleChat = () => {
@@ -101,7 +101,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     
     return (
       <Button
-        className="fixed bottom-4 right-4 rounded-full w-14 h-14 shadow-lg flex items-center justify-center bg-vivid-purple hover:bg-vivid-purple/90"
+        className="fixed bottom-4 right-4 rounded-full w-14 h-14 flex items-center justify-center chat-widget-button"
         style={buttonStyle}
         onClick={toggleChat}
       >
@@ -114,7 +114,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     <>
       {isOpen && (
         <div 
-          className="fixed bottom-24 right-4 w-80 sm:w-96 rounded-lg shadow-lg overflow-hidden flex flex-col bg-white border border-gray-200 max-h-[600px] z-50"
+          className="fixed bottom-24 right-4 w-80 sm:w-96 flex flex-col max-h-[600px] z-50 chat-widget-container"
           style={widgetStyle}
         >
           <div className="relative w-full max-h-[600px] flex flex-col">

@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -49,6 +50,9 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Vivid Purple color as our system default */
+    --vivid-purple: 262 83% 63%; /* #8B5CF6 in HSL */
   }
 
   .dark {
@@ -87,6 +91,9 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Vivid Purple color remains the same in dark mode */
+    --vivid-purple: 262 83% 63%;
   }
 }
 
@@ -97,5 +104,33 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Add custom components for chat widget styling */
+@layer components {
+  .chat-widget-container {
+    @apply shadow-lg border border-gray-200 rounded-lg overflow-hidden bg-white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .chat-message-bubble {
+    @apply p-4 rounded-lg shadow-sm;
+  }
+  
+  .chat-message-user {
+    @apply bg-vivid-purple text-white rounded-br-none chat-message-bubble;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  }
+  
+  .chat-message-system {
+    @apply bg-gray-100 text-gray-800 rounded-bl-none chat-message-bubble;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+  
+  .chat-widget-button {
+    @apply bg-vivid-purple text-white shadow-lg hover:bg-vivid-purple/90 transition-all;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
   }
 }

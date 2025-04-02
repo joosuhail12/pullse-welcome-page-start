@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -18,6 +19,9 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Inter', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -68,7 +72,18 @@ export default {
 					100: '#E5DEFF',
 					DEFAULT: '#E5DEFF'
 				},
-				'vivid-purple': '#8B5CF6'
+				'vivid-purple': {
+					DEFAULT: 'hsl(var(--vivid-purple))',
+					100: '#EDE9FE',
+					200: '#DDD6FE',
+					300: '#C4B5FD',
+					400: '#A78BFA',
+					500: '#8B5CF6',
+					600: '#7C3AED',
+					700: '#6D28D9',
+					800: '#5B21B6',
+					900: '#4C1D95'
+				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -96,6 +111,10 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
+			},
+			boxShadow: {
+				'chat-bubble': '0 2px 8px rgba(0, 0, 0, 0.05)',
+				'chat-widget': '0 4px 20px rgba(0, 0, 0, 0.1)'
 			}
 		}
 	},

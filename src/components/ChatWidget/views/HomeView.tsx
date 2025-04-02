@@ -49,10 +49,10 @@ const HomeView = ({
     const gridCols = fields.length > 2 ? 'grid-cols-2' : 'grid-cols-1';
     
     return (
-      <div className={`grid ${gridCols} gap-3 mb-4`}>
+      <div className={`grid ${gridCols} gap-4 mb-5`}>
         {fields.map((field: PreChatFormField) => (
-          <div key={field.id} className="space-y-1">
-            <Label htmlFor={field.id} className="text-xs">
+          <div key={field.id} className="space-y-1.5">
+            <Label htmlFor={field.id} className="text-sm font-medium">
               {field.label}
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </Label>
@@ -64,7 +64,7 @@ const HomeView = ({
               placeholder={field.placeholder}
               value={formData[field.name] || ''}
               onChange={handleInputChange}
-              className="h-8 text-sm"
+              className="h-10 text-sm"
             />
           </div>
         ))}
@@ -76,17 +76,14 @@ const HomeView = ({
   const buttonStyle = config.branding?.primaryColor 
     ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
     : {};
-  const fontStyle = config.branding?.fontFamily 
-    ? { fontFamily: config.branding.fontFamily }
-    : {};
   
   return (
-    <div className="flex flex-col p-4 h-full" style={fontStyle}>
-      <div className="mb-3">
-        <h2 className="text-xl font-bold text-vivid-purple">
+    <div className="flex flex-col p-5 h-full">
+      <div className="mb-5">
+        <h2 className="text-xl font-bold text-vivid-purple-500">
           {config.welcomeMessage}
         </h2>
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-sm text-gray-600 mt-2 leading-relaxed">
           Get help, ask questions, or start a conversation.
         </p>
         
@@ -99,11 +96,11 @@ const HomeView = ({
         <Button 
           onClick={handleStartChat}
           disabled={config.preChatForm.enabled && !formValid}
-          className="bg-vivid-purple hover:bg-vivid-purple/90 flex items-center gap-2 w-full"
+          className="chat-widget-button flex items-center gap-2 w-full py-2.5"
           style={buttonStyle}
         >
           <MessageSquare size={18} />
-          <span>Ask a question</span>
+          <span className="font-medium">Ask a question</span>
         </Button>
       </div>
     </div>

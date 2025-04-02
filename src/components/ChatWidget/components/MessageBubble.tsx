@@ -28,7 +28,7 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
         if (!message.cardData) return <p>{message.text}</p>;
         
         return (
-          <Card className="w-full max-w-xs mt-2">
+          <Card className="w-full max-w-xs mt-2 shadow-sm">
             {message.cardData.imageUrl && (
               <div className="aspect-video overflow-hidden">
                 <img 
@@ -38,12 +38,12 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
                 />
               </div>
             )}
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <h4 className="font-semibold">{message.cardData.title}</h4>
-              <p className="text-sm text-gray-600">{message.cardData.description}</p>
+              <p className="text-sm text-gray-600 mt-1">{message.cardData.description}</p>
               
               {message.cardData.buttons && message.cardData.buttons.length > 0 && (
-                <div className="mt-2 flex flex-col gap-2">
+                <div className="mt-3 flex flex-col gap-2">
                   {message.cardData.buttons.map((button, i) => (
                     <Button 
                       key={i} 
@@ -65,13 +65,13 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
           <div className="flex flex-col">
             <p>{message.text}</p>
             {message.quickReplies && message.quickReplies.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {message.quickReplies.map((reply, i) => (
                   <Button 
                     key={i} 
                     size="sm" 
                     variant="secondary" 
-                    className="text-xs py-1 h-auto"
+                    className="text-xs py-1.5 h-auto"
                     onClick={() => {
                       if (setMessageText) {
                         setMessageText(reply.text);
@@ -88,14 +88,14 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
       
       case 'status':
         return (
-          <div className="bg-gray-100 py-1 px-3 rounded-full text-xs text-gray-500 text-center">
+          <div className="bg-gray-100 py-1.5 px-4 rounded-full text-xs text-gray-500 text-center shadow-sm">
             {message.text}
           </div>
         );
       
       case 'text':
       default:
-        return <p>{message.text}</p>;
+        return <p className="leading-relaxed">{message.text}</p>;
     }
   };
 
@@ -109,14 +109,14 @@ const MessageBubble = ({ message, setMessageText }: MessageBubbleProps) => {
 
   return (
     <div 
-      className={`max-w-[80%] rounded-lg p-3 ${
+      className={`max-w-[80%] ${
         message.sender === 'user' 
-          ? 'bg-vivid-purple text-white rounded-br-none' 
-          : 'bg-gray-100 text-gray-800 rounded-bl-none'
+          ? 'chat-message-user' 
+          : 'chat-message-system'
       }`}
     >
       {renderMessage()}
-      <div className={`text-xs mt-1 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-500'}`}>
+      <div className={`text-xs mt-2 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-500'}`}>
         {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </div>
     </div>
