@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
 import ChatView from './views/ChatView';
@@ -9,7 +9,7 @@ import useWidgetConfig from './hooks/useWidgetConfig';
 import { dispatchChatEvent } from './utils/events';
 import { initializeAbly, cleanupAbly, getConnectionState } from './utils/ably';
 import { getAblyAuthUrl } from './services/ablyAuth';
-import { MessageSquare, WifiOff, Cloud, CloudOff } from 'lucide-react';
+import { MessageSquare, WifiOff, CloudOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
@@ -43,6 +43,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   const { isConnected, connectionState } = useConnectionState();
   const [pendingMessages, setPendingMessages] = useState(getPendingMessageCount());
   
+  // Effect for checking pending messages
   useEffect(() => {
     const checkPendingInterval = setInterval(() => {
       setPendingMessages(getPendingMessageCount());
@@ -51,6 +52,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     return () => clearInterval(checkPendingInterval);
   }, []);
   
+  // Initialize Ably when config is loaded
   useEffect(() => {
     if (!loading && config.realtime?.enabled && workspaceId) {
       const authUrl = getAblyAuthUrl(workspaceId);
@@ -71,22 +73,28 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     }
   }, [loading, config.realtime?.enabled, workspaceId]);
   
-  const widgetStyle = {
-    ...(config.branding?.primaryColor && {
-      '--vivid-purple': config.branding.primaryColor,
-    } as React.CSSProperties)
-  };
+  // Memoize the widget style to prevent re-renders
+  const widgetStyle = useMemo(() => {
+    return {
+      ...(config.branding?.primaryColor && {
+        '--vivid-purple': config.branding.primaryColor,
+      } as React.CSSProperties)
+    };
+  }, [config.branding?.primaryColor]);
 
+  // Clear unread messages when opening the widget
   useEffect(() => {
     if (isOpen) {
       clearUnreadMessages();
     }
   }, [isOpen, clearUnreadMessages]);
 
+  // Show loading state while config is being loaded
   if (loading) {
     return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
   }
 
+  // Toggles the chat widget open/closed
   const toggleChat = () => {
     const newIsOpen = !isOpen;
     setIsOpen(newIsOpen);
@@ -99,7 +107,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     }
   };
 
-  // Use useCallback to prevent new function creation on every render
+  // Handle reconnection attempts
   const handleReconnect = useCallback(() => {
     if (connectionState === 'disconnected' || connectionState === 'suspended' || connectionState === 'failed') {
       toast.loading('Attempting to reconnect...', { id: 'reconnecting' });
@@ -123,13 +131,14 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     }
   }, [connectionState, workspaceId]);
 
-  // Use useCallback to stabilize this function reference
+  // Memoize the startChat handler
   const wrappedHandleStartChat = useCallback(() => {
     handleStartChat();
     dispatchChatEvent('contact:initiatedChat', undefined, config);
   }, [handleStartChat, config]);
 
-  const renderFooter = () => {
+  // Render the footer section with the branding bar
+  const renderFooter = useCallback(() => {
     if (!config.branding?.showBrandingBar) return null;
     
     return (
@@ -154,9 +163,10 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         )}
       </div>
     );
-  };
+  }, [config.branding?.showBrandingBar, config.realtime?.enabled, isConnected, connectionState, handleReconnect]);
 
-  const renderLauncher = () => {
+  // Render the launcher button
+  const renderLauncher = useCallback(() => {
     const buttonStyle = config.branding?.primaryColor 
       ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
       : {};
@@ -199,7 +209,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         </Button>
       </div>
     );
-  };
+  }, [config.branding?.primaryColor, config.realtime?.enabled, isConnected, isOpen, pendingMessages, unreadCount]);
 
   return (
     <>
