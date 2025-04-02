@@ -153,7 +153,7 @@ export const processSystemMessage = (
   dispatchChatEvent('chat:messageReceived', { message }, config);
   
   // Optimistically update message status to delivered
-  const updatedMessage = { ...message, status: 'delivered' };
+  const updatedMessage = { ...message, status: 'delivered' as const };
   
   // Update message status to delivered
   if (config?.features?.readReceipts) {
