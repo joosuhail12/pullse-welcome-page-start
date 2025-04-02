@@ -16,6 +16,7 @@ interface MessageInputProps {
   handleEndChat: () => void;
   hasUserSentMessage: boolean;
   onTyping?: () => void;
+  disabled?: boolean; // Add the disabled prop
 }
 
 const MessageInput = ({ 
@@ -25,7 +26,8 @@ const MessageInput = ({
   handleFileUpload,
   handleEndChat,
   hasUserSentMessage,
-  onTyping
+  onTyping,
+  disabled = false // Set a default value to false
 }: MessageInputProps) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -92,7 +94,7 @@ const MessageInput = ({
           </div>
         )}
         <div className="flex items-center">
-          <label htmlFor="file-upload" className="cursor-pointer p-2 hover:bg-gray-100 rounded-md">
+          <label htmlFor="file-upload" className={`cursor-pointer p-2 ${disabled ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-100'} rounded-md`}>
             <Paperclip size={18} className="text-gray-500" />
             <input 
               id="file-upload" 
@@ -100,6 +102,7 @@ const MessageInput = ({
               className="hidden" 
               onChange={handleFileValidation}
               accept="image/jpeg,image/png,image/gif,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              disabled={disabled}
             />
           </label>
           
@@ -111,7 +114,8 @@ const MessageInput = ({
               placeholder="Type a message..."
               className="flex-grow min-h-[44px] max-h-[120px] p-3 border rounded-md focus:outline-none resize-none pr-10 text-sm"
               rows={1}
-              maxLength={2000}  // Add maxlength attribute
+              maxLength={2000}
+              disabled={disabled}
             />
             <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
               <PopoverTrigger asChild>
@@ -119,6 +123,7 @@ const MessageInput = ({
                   variant="ghost" 
                   size="icon" 
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                  disabled={disabled}
                 >
                   <Smile size={18} className="text-gray-500" />
                 </Button>
@@ -137,7 +142,7 @@ const MessageInput = ({
           
           <Button 
             onClick={handleSendMessage}
-            disabled={!messageText.trim()}
+            disabled={!messageText.trim() || disabled}
             className="h-auto rounded-md chat-widget-button p-2.5"
           >
             <Send size={18} />
@@ -151,6 +156,7 @@ const MessageInput = ({
               size="sm" 
               onClick={handleEndChat}
               className="text-xs text-gray-500"
+              disabled={disabled}
             >
               <X size={14} className="mr-1" /> End chat
             </Button>
