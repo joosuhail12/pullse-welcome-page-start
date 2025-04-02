@@ -22,17 +22,18 @@ const PreChatFormSection = memo(({ config, onFormComplete }: PreChatFormSectionP
     return () => clearTimeout(timer);
   }, []);
   
-  // Memoize the handler to prevent recreation
+  // Memoize the handler to prevent recreation on each render
   const handleFormSubmit = useCallback((formData: Record<string, string>) => {
-    if (isSubmitting) return; // Prevent multiple submissions
+    if (isSubmitting) {
+      console.log("Preventing duplicate form submission");
+      return; // Prevent multiple submissions
+    }
     
-    setIsSubmitting(true);
     console.log("PreChatFormSection handling form submission");
+    setIsSubmitting(true);
     
-    // Use setTimeout to ensure the state update happens before form completion
-    setTimeout(() => {
-      onFormComplete(formData);
-    }, 10);
+    // Call the callback directly with the form data
+    onFormComplete(formData);
   }, [onFormComplete, isSubmitting]);
   
   // Apply custom branding if available

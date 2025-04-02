@@ -1,9 +1,19 @@
 
-import { validateFormData, validateMessage, validateFile, sanitizeFileName } from './validation';
+import { validateMessage, validateFile, sanitizeFileName } from './validation';
+
+// Sanitize user input to prevent XSS
+export function sanitizeInput(input: string): string {
+  if (!input) return '';
+  
+  // Basic sanitization - remove script tags and potentially dangerous content
+  return input
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .trim();
+}
 
 // Validate a specific field based on its type and requirements
 export function validateField(name: string, value: string, isRequired: boolean): string | null {
-  if (!value) value = ''; // Handle null/undefined values
+  if (value === undefined || value === null) value = ''; // Handle null/undefined values
   const sanitized = value.trim();
   
   if (isRequired && !sanitized) {
@@ -29,4 +39,17 @@ export function validateField(name: string, value: string, isRequired: boolean):
   return null;
 }
 
-export { validateFormData, validateMessage, validateFile, sanitizeFileName };
+// Validate all form data at once and sanitize inputs
+export function validateFormData(formData: Record<string, string>): Record<string, string> {
+  // Create a new object to hold sanitized values
+  const sanitizedData: Record<string, string> = {};
+  
+  // Sanitize each field
+  Object.keys(formData).forEach(key => {
+    sanitizedData[key] = sanitizeInput(formData[key]);
+  });
+  
+  return sanitizedData;
+}
+
+export { validateMessage, validateFile, sanitizeFileName };

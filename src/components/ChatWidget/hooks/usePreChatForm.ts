@@ -15,7 +15,6 @@ export function usePreChatForm({
   userFormData 
 }: UsePreChatFormOptions) {
   // Initialize form visibility state just once using useState with a function
-  // This prevents re-evaluation on every render
   const [showPreChatForm, setShowPreChatForm] = useState(() => {
     const shouldShow = config?.preChatForm?.enabled && 
                       !conversation.contactIdentified && 
@@ -25,14 +24,23 @@ export function usePreChatForm({
     return shouldShow;
   });
 
-  // Use this effect to log state changes but not update state directly
+  // Use this effect to update the form visibility when dependencies change
+  // This prevents direct state updates during render which can cause infinite loops
   useEffect(() => {
-    console.log('Pre-chat form dependencies changed:', { 
-      formEnabled: config?.preChatForm?.enabled,
-      contactIdentified: conversation.contactIdentified,
-      hasUserFormData: !!userFormData,
-      currentlyShowing: showPreChatForm
-    });
+    const shouldShowForm = config?.preChatForm?.enabled && 
+                          !conversation.contactIdentified && 
+                          !userFormData;
+    
+    // Only update if the calculated state is different from current state
+    if (shouldShowForm !== showPreChatForm) {
+      console.log('Updating pre-chat form visibility:', { 
+        from: showPreChatForm, 
+        to: shouldShowForm,
+        contactIdentified: conversation.contactIdentified,
+        hasUserFormData: !!userFormData
+      });
+      setShowPreChatForm(shouldShowForm);
+    }
   }, [userFormData, conversation.contactIdentified, config?.preChatForm?.enabled, showPreChatForm]);
 
   // Provide a manual way to hide the form that doesn't depend on effect
@@ -43,7 +51,6 @@ export function usePreChatForm({
 
   return { 
     showPreChatForm, 
-    setShowPreChatForm, // Expose setter for explicit control
-    hidePreChatForm // Convenience method to hide the form
+    hidePreChatForm // Only expose the hide method, not the direct setter
   };
 }

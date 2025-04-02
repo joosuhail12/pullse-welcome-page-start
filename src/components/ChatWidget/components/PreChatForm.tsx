@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { validateField, validateFormData, sanitizeInput } from '../utils/validation';
+import { validateField, validateFormData } from '../utils/formUtils';
 import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig } from '../config';
 
@@ -33,9 +33,8 @@ const PreChatForm = memo(({ config, onFormComplete }: PreChatFormProps) => {
       [name]: error || ''
     }));
     
-    // Sanitize input before storing
-    const sanitized = sanitizeInput(value);
-    setFormData(prev => ({ ...prev, [name]: sanitized }));
+    // Store input value (sanitization moved to validation stage)
+    setFormData(prev => ({ ...prev, [name]: value }));
   }, [config.preChatForm.fields]);
 
   // Validate if the form is complete and valid
@@ -45,22 +44,26 @@ const PreChatForm = memo(({ config, onFormComplete }: PreChatFormProps) => {
     const requiredFields = config.preChatForm.fields.filter(field => field.required);
     const allRequiredFilled = requiredFields.every(field => {
       const fieldValue = formData[field.name];
-      return fieldValue && fieldValue.trim() !== '' && !validateField(field.name, fieldValue, true);
+      return fieldValue && fieldValue.trim() !== '' && !formErrors[field.name];
     });
     
     setFormValid(allRequiredFilled);
-  }, [formData, config.preChatForm.fields]);
+  }, [formData, formErrors, config.preChatForm.fields]);
 
   // Submit form - using useCallback to prevent recreating this function
   const submitForm = useCallback(() => {
-    if (!formValid || isSubmitting) return;
+    if (!formValid || isSubmitting) {
+      console.log('Form submission prevented - invalid or already submitting:', { formValid, isSubmitting });
+      return;
+    }
     
     try {
       setIsSubmitting(true);
+      console.log("Validating form data before submission");
       const sanitizedData = validateFormData(formData);
       
       // Dispatch form completion event
-      if (config) { // Check config exists to prevent errors
+      if (config) {
         dispatchChatEvent('contact:formCompleted', { formData: sanitizedData }, config);
       }
       

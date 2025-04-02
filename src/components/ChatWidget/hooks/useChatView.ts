@@ -126,21 +126,24 @@ export function useChatView({
     // First hide the form to prevent rendering issues
     hidePreChatForm();
     
-    // Update the parent form data if callback exists
-    if (setUserFormData) {
-      setUserFormData(formData);
-    }
-    
-    // Flag the conversation as having identified the contact
-    onUpdateConversation({
-      ...conversation,
-      contactIdentified: true
-    });
-    
-    // Dispatch form completed event
-    if (config) {
-      dispatchChatEvent('contact:formCompleted', { formData }, config);
-    }
+    // Use a short timeout to ensure state updates don't conflict 
+    setTimeout(() => {
+      // Update the parent form data if callback exists
+      if (setUserFormData) {
+        setUserFormData(formData);
+      }
+      
+      // Flag the conversation as having identified the contact
+      onUpdateConversation({
+        ...conversation,
+        contactIdentified: true
+      });
+      
+      // Dispatch form completed event
+      if (config) {
+        dispatchChatEvent('contact:formCompleted', { formData }, config);
+      }
+    }, 0);
   }, [setUserFormData, conversation, onUpdateConversation, config, hidePreChatForm]);
 
   // Get avatar URLs from config
