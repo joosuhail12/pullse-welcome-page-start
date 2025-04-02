@@ -56,28 +56,25 @@ export function useChatFormHandling({
     // First hide the form to prevent rendering issues
     hidePreChatForm();
     
-    // Use setTimeout to ensure async state updates are properly sequenced
+    // Update user data and conversation - single synchronous block to prevent render cascades
+    if (setUserFormData) {
+      setUserFormData(formData);
+    }
+    
+    onUpdateConversation({
+      ...conversation,
+      contactIdentified: true
+    });
+    
+    if (config) {
+      dispatchChatEvent('contact:formCompleted', { formData }, config);
+    }
+    
+    // Reset processing flags after a delay to ensure state updates have propagated
     setTimeout(() => {
-      // After hiding the form, update user data and conversation
-      if (setUserFormData) {
-        setUserFormData(formData);
-      }
-      
-      onUpdateConversation({
-        ...conversation,
-        contactIdentified: true
-      });
-      
-      if (config) {
-        dispatchChatEvent('contact:formCompleted', { formData }, config);
-      }
-      
-      // Reset processing flags after a delay
-      setTimeout(() => {
-        setIsProcessingForm(false);
-        formSubmissionRef.current = false;
-      }, 500);
-    }, 0);
+      setIsProcessingForm(false);
+      formSubmissionRef.current = false;
+    }, 500);
   }, [conversation, config, hidePreChatForm, isProcessingForm, onUpdateConversation, setUserFormData]);
 
   return {
