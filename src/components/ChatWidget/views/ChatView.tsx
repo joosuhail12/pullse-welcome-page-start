@@ -1,13 +1,27 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, Send } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { ChevronLeft, Send, Paperclip, Smile, X } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface Message {
   id: string;
   text: string;
-  sender: 'user' | 'system';
+  sender: 'user' | 'system' | 'status';
   timestamp: Date;
+  type?: 'text' | 'file' | 'card' | 'quick_reply' | 'status';
+  fileUrl?: string;
+  fileName?: string;
+  cardData?: {
+    title: string;
+    description: string;
+    imageUrl?: string;
+    buttons?: Array<{ text: string; action: string }>;
+  };
+  quickReplies?: Array<{ text: string; action: string }>;
 }
 
 interface Conversation {
@@ -15,6 +29,10 @@ interface Conversation {
   title: string;
   lastMessage: string;
   timestamp: Date;
+  agentInfo?: {
+    name: string;
+    avatar?: string;
+  };
 }
 
 interface ChatViewProps {
@@ -29,9 +47,70 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       id: 'msg-1',
       text: 'Hello! How can I help you today?',
       sender: 'system',
-      timestamp: new Date()
+      timestamp: new Date(),
+      type: 'text'
     }
   ]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [messages]);
+
+  // Simulate connecting to Ably presence channel for agent typing indicator
+  useEffect(() => {
+    const simulateAgentTyping = () => {
+      // Only show typing indicator if user has sent a message
+      if (!hasUserSentMessage) return;
+      
+      const randomTimeout = Math.floor(Math.random() * 10000) + 5000;
+      const typingTimeout = setTimeout(() => {
+        setIsTyping(true);
+        
+        // Simulate typing duration between 1-3 seconds
+        const typingDuration = Math.floor(Math.random() * 2000) + 1000;
+        setTimeout(() => {
+          setIsTyping(false);
+          
+          // Simulate agent response after typing
+          const responseDelay = Math.floor(Math.random() * 400) + 200;
+          setTimeout(() => {
+            const responses = [
+              "Thank you for your message. Is there anything else I can help with?",
+              "I appreciate your inquiry. Let me know if you need further assistance.",
+              "I've made a note of your request. Is there any other information you'd like to provide?",
+              "Thanks for sharing that information. Do you have any other questions?"
+            ];
+            
+            const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+            
+            const systemMessage: Message = {
+              id: `msg-${Date.now()}-system`,
+              text: randomResponse,
+              sender: 'system',
+              timestamp: new Date(),
+              type: 'text'
+            };
+            
+            setMessages(prev => [...prev, systemMessage]);
+          }, responseDelay);
+        }, typingDuration);
+      }, randomTimeout);
+      
+      return () => clearTimeout(typingTimeout);
+    };
+    
+    const typingInterval = setInterval(simulateAgentTyping, 15000);
+    return () => clearInterval(typingInterval);
+  }, [hasUserSentMessage]);
 
   const handleSendMessage = () => {
     if (!messageText.trim()) return;
@@ -41,22 +120,35 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       id: `msg-${Date.now()}-user`,
       text: messageText,
       sender: 'user',
-      timestamp: new Date()
+      timestamp: new Date(),
+      type: 'text'
     };
     
     setMessages([...messages, userMessage]);
     setMessageText('');
     
-    // Simulate response (in a real app, this would call an API)
+    // Set flag that user has sent at least one message
+    if (!hasUserSentMessage) {
+      setHasUserSentMessage(true);
+    }
+    
+    // Simulate agent typing indicator
+    setIsTyping(true);
+    
+    // Simulate response with typing delay
     setTimeout(() => {
+      setIsTyping(false);
+      
       const systemMessage: Message = {
         id: `msg-${Date.now()}-system`,
-        text: 'Thank you for your message. Our team will get back to you shortly.',
+        text: 'Thank you for your message. How else can I assist you today?',
         sender: 'system',
-        timestamp: new Date()
+        timestamp: new Date(),
+        type: 'text'
       };
+      
       setMessages(prev => [...prev, systemMessage]);
-    }, 1000);
+    }, Math.floor(Math.random() * 400) + 200);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -64,6 +156,151 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    
+    // Simulate file upload
+    const fileMessage: Message = {
+      id: `msg-${Date.now()}-user-file`,
+      text: `Uploaded: ${file.name}`,
+      sender: 'user',
+      timestamp: new Date(),
+      type: 'file',
+      fileName: file.name,
+      fileUrl: URL.createObjectURL(file)
+    };
+    
+    setMessages([...messages, fileMessage]);
+    
+    // Set flag that user has sent at least one message
+    if (!hasUserSentMessage) {
+      setHasUserSentMessage(true);
+    }
+    
+    // Clear the input
+    e.target.value = '';
+    
+    // Simulate agent response after file upload
+    setTimeout(() => {
+      const systemMessage: Message = {
+        id: `msg-${Date.now()}-system`,
+        text: `I've received your file ${file.name}. Is there anything specific you'd like me to help with regarding this file?`,
+        sender: 'system',
+        timestamp: new Date(),
+        type: 'text'
+      };
+      
+      setMessages(prev => [...prev, systemMessage]);
+    }, 1000);
+  };
+
+  const renderMessage = (message: Message) => {
+    switch (message.type) {
+      case 'file':
+        return (
+          <div className="flex flex-col">
+            <p>{message.text}</p>
+            <div className="mt-2 p-2 bg-gray-100 rounded-md flex items-center">
+              <Paperclip size={16} className="mr-2" />
+              <span className="text-sm text-blue-600 underline">{message.fileName}</span>
+            </div>
+          </div>
+        );
+      
+      case 'card':
+        if (!message.cardData) return <p>{message.text}</p>;
+        
+        return (
+          <Card className="w-full max-w-xs mt-2">
+            {message.cardData.imageUrl && (
+              <div className="aspect-video overflow-hidden">
+                <img 
+                  src={message.cardData.imageUrl} 
+                  alt={message.cardData.title} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            <CardContent className="p-3">
+              <h4 className="font-semibold">{message.cardData.title}</h4>
+              <p className="text-sm text-gray-600">{message.cardData.description}</p>
+              
+              {message.cardData.buttons && message.cardData.buttons.length > 0 && (
+                <div className="mt-2 flex flex-col gap-2">
+                  {message.cardData.buttons.map((button, i) => (
+                    <Button 
+                      key={i} 
+                      size="sm" 
+                      variant="outline" 
+                      className="w-full"
+                    >
+                      {button.text}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      
+      case 'quick_reply':
+        return (
+          <div className="flex flex-col">
+            <p>{message.text}</p>
+            {message.quickReplies && message.quickReplies.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {message.quickReplies.map((reply, i) => (
+                  <Button 
+                    key={i} 
+                    size="sm" 
+                    variant="secondary" 
+                    className="text-xs py-1 h-auto"
+                    onClick={() => {
+                      setMessageText(reply.text);
+                      // Optional: auto-send the quick reply
+                      // setTimeout(handleSendMessage, 100);
+                    }}
+                  >
+                    {reply.text}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'status':
+        return (
+          <div className="bg-gray-100 py-1 px-3 rounded-full text-xs text-gray-500 text-center">
+            {message.text}
+          </div>
+        );
+      
+      case 'text':
+      default:
+        return <p>{message.text}</p>;
+    }
+  };
+
+  const handleEndChat = () => {
+    // Add a status message
+    const statusMessage: Message = {
+      id: `msg-${Date.now()}-status`,
+      text: 'Chat ended',
+      sender: 'status',
+      timestamp: new Date(),
+      type: 'status'
+    };
+    
+    setMessages(prev => [...prev, statusMessage]);
+    
+    // Additional logic for ending chat can be added here
+    // For example, you might want to disable the input
   };
 
   return (
@@ -77,48 +314,120 @@ const ChatView = ({ conversation, onBack }: ChatViewProps) => {
         >
           <ChevronLeft size={16} />
         </Button>
-        <h3 className="text-lg font-medium">{conversation.title}</h3>
+        <div className="flex items-center">
+          <Avatar className="h-8 w-8">
+            {conversation.agentInfo?.avatar ? (
+              <AvatarImage src={conversation.agentInfo.avatar} alt="Agent" />
+            ) : (
+              <AvatarFallback className="bg-vivid-purple text-white">
+                {conversation.agentInfo?.name?.charAt(0) || 'A'}
+              </AvatarFallback>
+            )}
+          </Avatar>
+          <div className="ml-2">
+            <h3 className="text-sm font-medium">
+              {conversation.agentInfo?.name || 'Agent'}
+            </h3>
+          </div>
+        </div>
       </div>
       
-      <div className="flex-grow overflow-y-auto p-3 space-y-3">
-        {messages.map(message => (
-          <div 
-            key={message.id} 
-            className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
+      <ScrollArea className="flex-grow p-3" ref={scrollAreaRef}>
+        <div className="space-y-4">
+          {messages.map(message => (
             <div 
-              className={`max-w-[80%] rounded-lg p-3 ${
+              key={message.id} 
+              className={`flex ${
                 message.sender === 'user' 
-                  ? 'bg-vivid-purple text-white rounded-br-none' 
-                  : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                  ? 'justify-end' 
+                  : message.sender === 'status' 
+                    ? 'justify-center' 
+                    : 'justify-start'
               }`}
             >
-              <p>{message.text}</p>
-              <div className={`text-xs mt-1 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-500'}`}>
-                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {message.sender !== 'status' && (
+                <div 
+                  className={`max-w-[80%] rounded-lg p-3 ${
+                    message.sender === 'user' 
+                      ? 'bg-vivid-purple text-white rounded-br-none' 
+                      : 'bg-gray-100 text-gray-800 rounded-bl-none'
+                  }`}
+                >
+                  {renderMessage(message)}
+                  <div className={`text-xs mt-1 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-500'}`}>
+                    {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              )}
+              
+              {message.sender === 'status' && (
+                <div className="w-full flex justify-center">
+                  {renderMessage(message)}
+                </div>
+              )}
+            </div>
+          ))}
+          
+          {/* Typing indicator */}
+          {isTyping && (
+            <div className="flex justify-start">
+              <div className="bg-gray-100 rounded-lg p-3 rounded-bl-none max-w-[80%]">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          )}
+          
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
       
       <div className="border-t p-3">
-        <div className="flex">
-          <textarea 
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder="Type a message..."
-            className="flex-grow min-h-[40px] max-h-[120px] p-2 border rounded-l-md focus:outline-none resize-none"
-            rows={1}
-          />
-          <Button 
-            onClick={handleSendMessage}
-            disabled={!messageText.trim()}
-            className="h-auto rounded-l-none bg-vivid-purple hover:bg-vivid-purple/90"
-          >
-            <Send size={18} />
-          </Button>
+        <div className="flex flex-col">
+          <div className="flex items-center">
+            <label htmlFor="file-upload" className="cursor-pointer p-2 hover:bg-gray-100 rounded-md">
+              <Paperclip size={18} className="text-gray-500" />
+              <input 
+                id="file-upload" 
+                type="file" 
+                className="hidden" 
+                onChange={handleFileUpload} 
+              />
+            </label>
+            
+            <Textarea 
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="Type a message..."
+              className="flex-grow min-h-[40px] max-h-[120px] p-2 border rounded-md focus:outline-none resize-none mx-2"
+              rows={1}
+            />
+            
+            <Button 
+              onClick={handleSendMessage}
+              disabled={!messageText.trim()}
+              className="h-auto rounded-md bg-vivid-purple hover:bg-vivid-purple/90 p-2"
+            >
+              <Send size={18} />
+            </Button>
+          </div>
+          
+          {hasUserSentMessage && (
+            <div className="flex justify-center mt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleEndChat}
+                className="text-xs text-gray-500"
+              >
+                <X size={14} className="mr-1" /> End chat
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

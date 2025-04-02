@@ -12,6 +12,10 @@ interface Conversation {
   title: string;
   lastMessage: string;
   timestamp: Date;
+  agentInfo?: {
+    name: string;
+    avatar?: string;
+  };
 }
 
 export const ChatWidget = () => {
@@ -30,7 +34,11 @@ export const ChatWidget = () => {
       id: `conv-${Date.now()}`,
       title: formData?.name ? `Chat with ${formData.name}` : 'New Conversation',
       lastMessage: '',
-      timestamp: new Date()
+      timestamp: new Date(),
+      agentInfo: {
+        name: 'Support Agent',
+        avatar: undefined // You could set a default avatar URL here
+      }
     };
     setActiveConversation(newConversation);
     setViewState('chat');
