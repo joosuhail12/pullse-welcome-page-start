@@ -1,4 +1,3 @@
-
 export interface Message {
   id: string;
   text: string;
@@ -21,14 +20,17 @@ export interface Message {
 export interface Conversation {
   id: string;
   title: string;
-  lastMessage: string;
+  messages?: Message[];
   timestamp: Date;
+  lastMessage?: string;
+  status?: 'active' | 'ended';
   agentInfo?: {
-    name: string;
+    name?: string;
     avatar?: string;
   };
-  messages?: Message[];
+  metadata?: any;
   sessionId?: string;
+  contactIdentified?: boolean;
 }
 
 export interface Agent {

@@ -34,6 +34,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
+  const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(undefined);
   
   // Initialize Ably when config is loaded
   useEffect(() => {
@@ -82,6 +83,10 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   };
 
   const wrappedHandleStartChat = (formData?: Record<string, string>) => {
+    if (formData) {
+      setUserFormData(formData);
+    }
+    
     handleStartChat(formData);
     
     // Dispatch appropriate event based on whether form data was provided
@@ -152,6 +157,8 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
                 onUpdateConversation={handleUpdateConversation}
                 config={config}
                 playMessageSound={playMessageSound}
+                userFormData={userFormData}
+                setUserFormData={setUserFormData}
               />
             ) : (
               <div className="flex flex-col h-full">

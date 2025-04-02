@@ -20,6 +20,7 @@ interface MessageListProps {
   onScrollTop?: () => void; // Callback for infinite scroll
   hasMoreMessages?: boolean; // Whether there are more messages to load
   isLoadingMore?: boolean; // Whether we're currently loading more messages
+  inlineFormComponent?: React.ReactNode; // New prop for inline form component
 }
 
 const MessageList = ({ 
@@ -35,7 +36,8 @@ const MessageList = ({
   userAvatar,
   onScrollTop,
   hasMoreMessages = false,
-  isLoadingMore = false
+  isLoadingMore = false,
+  inlineFormComponent
 }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -142,6 +144,7 @@ const MessageList = ({
           </div>
         )}
         
+        {/* Show messages */}
         {messages.map((message, index) => (
           <div 
             key={message.id} 
@@ -182,6 +185,13 @@ const MessageList = ({
                     highlightSearchTerm={highlightMessage}
                     searchTerm={searchTerm}
                   />
+                </div>
+              )}
+              
+              {/* Render inline form after the first system message if provided */}
+              {inlineFormComponent && index === 0 && message.sender === 'system' && (
+                <div className="mt-3 w-full">
+                  {inlineFormComponent}
                 </div>
               )}
               
