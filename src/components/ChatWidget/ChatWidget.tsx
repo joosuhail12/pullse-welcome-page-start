@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
 import ChatView from './views/ChatView';
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
+import { useChatWidgetContext } from './ChatWidgetProvider';
 
 interface ChatWidgetProps {
   workspaceId?: string;
@@ -30,16 +31,19 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     handleUpdateConversation
   } = useChatState();
   
-  const { config, loading } = useWidgetConfig(workspaceId);
-  const [isOpen, setIsOpen] = useState(false);
+  // Use the context for configuration and open state
+  const { config, isOpen, setIsOpen } = useChatWidgetContext();
+  const { loading } = useWidgetConfig(workspaceId ?? config.workspaceId);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
   
   // Initialize Ably when config is loaded
   useEffect(() => {
-    if (!loading && config.realtime?.enabled && workspaceId) {
+    const effectiveWorkspaceId = workspaceId ?? config.workspaceId;
+    
+    if (!loading && config.realtime?.enabled && effectiveWorkspaceId) {
       // Use token auth URL instead of API key
-      const authUrl = getAblyAuthUrl(workspaceId);
+      const authUrl = getAblyAuthUrl(effectiveWorkspaceId);
       
       initializeAbly(authUrl)
         .catch(err => console.error('Failed to initialize Ably:', err));
@@ -49,7 +53,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         cleanupAbly();
       };
     }
-  }, [loading, config.realtime?.enabled, workspaceId]);
+  }, [loading, config.realtime?.enabled, workspaceId, config.workspaceId]);
   
   // Apply custom branding if available
   const widgetStyle = {
