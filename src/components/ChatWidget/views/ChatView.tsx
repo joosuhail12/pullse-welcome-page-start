@@ -1,14 +1,15 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
-import MessageList from '../components/MessageList';
-import MessageInput from '../components/MessageInput';
+import MessageInputSection from '../components/MessageInputSection';
 import ChatViewHeader from '../components/ChatViewHeader';
-import PreChatForm from '../components/PreChatForm';
+import PreChatFormSection from '../components/PreChatFormSection';
+import MessagesSection from '../components/MessagesSection';
 import { useChatMessages } from '../hooks/useChatMessages';
 import { useMessageReactions } from '../hooks/useMessageReactions';
 import { useMessageSearch } from '../hooks/useMessageSearch';
+import { usePreChatForm } from '../hooks/usePreChatForm';
 import { dispatchChatEvent } from '../utils/events';
 
 interface ChatViewProps {
@@ -30,32 +31,14 @@ const ChatView = ({
   userFormData,
   setUserFormData
 }: ChatViewProps) => {
-  const [showSearch, setShowSearch] = useState(false);
+  const [showSearch, setShowSearch] = React.useState(false);
   
-  // Check if pre-chat form should be shown based on config and conversation state
-  const [showPreChatForm, setShowPreChatForm] = useState(
-    config?.preChatForm?.enabled && !conversation.contactIdentified && !userFormData
-  );
-
-  // Effect to update the showPreChatForm state when userFormData changes
-  useEffect(() => {
-    if (userFormData || conversation.contactIdentified) {
-      setShowPreChatForm(false);
-    } else if (config?.preChatForm?.enabled && !conversation.contactIdentified) {
-      // Ensure form shows when conditions are met
-      setShowPreChatForm(true);
-    }
-  }, [userFormData, conversation.contactIdentified, config?.preChatForm?.enabled]);
-
-  // Debug log for form visibility state
-  useEffect(() => {
-    console.log('Pre-chat form visibility:', { 
-      showPreChatForm,
-      formEnabled: config?.preChatForm?.enabled,
-      contactIdentified: conversation.contactIdentified,
-      hasUserFormData: !!userFormData
-    });
-  }, [showPreChatForm, config?.preChatForm?.enabled, conversation.contactIdentified, userFormData]);
+  // Use the pre-chat form hook
+  const { showPreChatForm } = usePreChatForm({ 
+    conversation, 
+    config, 
+    userFormData 
+  });
 
   // Chat messages hook
   const {
@@ -133,8 +116,6 @@ const ChatView = ({
 
   // Handle form submission
   const handleFormComplete = (formData: Record<string, string>) => {
-    setShowPreChatForm(false);
-    
     // Update the parent form data if callback exists
     if (setUserFormData) {
       setUserFormData(formData);
@@ -154,7 +135,7 @@ const ChatView = ({
   const agentAvatar = conversation.agentInfo?.avatar || config?.branding?.avatarUrl;
   const userAvatar = undefined; // Could be set from user profile if available
 
-  // Determine if there could be more messages to load - fixed by removing page reference
+  // Determine if there could be more messages to load
   const hasMoreMessages = messages.length >= 20; // Simplified check for more messages
 
   return (
@@ -185,45 +166,40 @@ const ChatView = ({
         showSearchFeature={!!config?.features?.searchMessages}
       />
       
-      <div className="flex-1 overflow-y-auto px-4 py-2 bg-opacity-50">
-        {showPreChatForm ? (
-          <div className="mb-4 p-4 bg-white rounded-lg shadow-sm animate-fade-in">
-            <PreChatForm 
-              config={config} 
-              onFormComplete={handleFormComplete} 
-            />
-          </div>
-        ) : (
-          <MessageList 
-            messages={messages}
-            isTyping={isTyping || remoteIsTyping}
-            setMessageText={setMessageText}
-            readReceipts={readReceipts}
-            onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
-            searchResults={messageIds}
-            highlightMessage={highlightText}
-            searchTerm={searchTerm}
-            agentAvatar={agentAvatar}
-            userAvatar={userAvatar}
-            onScrollTop={handleLoadMoreMessages}
-            hasMoreMessages={hasMoreMessages}
-            isLoadingMore={isLoadingMore}
-          />
-        )}
-      </div>
-      
-      <div className="border-t border-gray-100 bg-white bg-opacity-70 backdrop-blur-sm">
-        <MessageInput
-          messageText={messageText}
-          setMessageText={setMessageText}
-          handleSendMessage={handleSendMessage}
-          handleFileUpload={handleFileUpload}
-          handleEndChat={handleEndChat}
-          hasUserSentMessage={hasUserSentMessage}
-          onTyping={handleUserTyping}
-          disabled={showPreChatForm}
+      {showPreChatForm ? (
+        <PreChatFormSection 
+          config={config} 
+          onFormComplete={handleFormComplete} 
         />
-      </div>
+      ) : (
+        <MessagesSection 
+          messages={messages}
+          isTyping={isTyping}
+          remoteIsTyping={remoteIsTyping}
+          setMessageText={setMessageText}
+          readReceipts={readReceipts}
+          onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
+          searchResults={messageIds}
+          highlightMessage={highlightText}
+          searchTerm={searchTerm}
+          agentAvatar={agentAvatar}
+          userAvatar={userAvatar}
+          onScrollTop={handleLoadMoreMessages}
+          hasMoreMessages={hasMoreMessages}
+          isLoadingMore={isLoadingMore}
+        />
+      )}
+      
+      <MessageInputSection
+        messageText={messageText}
+        setMessageText={setMessageText}
+        handleSendMessage={handleSendMessage}
+        handleFileUpload={handleFileUpload}
+        handleEndChat={handleEndChat}
+        hasUserSentMessage={hasUserSentMessage}
+        onTyping={handleUserTyping}
+        disabled={showPreChatForm}
+      />
     </div>
   );
 };
