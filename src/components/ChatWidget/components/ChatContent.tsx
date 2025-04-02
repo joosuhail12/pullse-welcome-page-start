@@ -63,9 +63,10 @@ const ChatContent = memo<ChatContentProps>(({
     showPreChatForm
   });
   
-  // Memoize the form completion handler
+  // Memoize the form completion handler to prevent unnecessary re-renders
   const memoizedHandleFormComplete = useCallback((formData: Record<string, string>) => {
     console.log("Form complete called with data:", formData);
+    // Use the handler directly rather than setting additional state
     handleFormComplete(formData);
   }, [handleFormComplete]);
   

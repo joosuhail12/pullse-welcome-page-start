@@ -3,6 +3,7 @@ import { validateFormData, validateMessage, validateFile, sanitizeFileName } fro
 
 // Validate a specific field based on its type and requirements
 export function validateField(name: string, value: string, isRequired: boolean): string | null {
+  if (!value) value = ''; // Handle null/undefined values
   const sanitized = value.trim();
   
   if (isRequired && !sanitized) {

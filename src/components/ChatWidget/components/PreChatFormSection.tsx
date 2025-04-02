@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { ChatWidgetConfig } from '../config';
 import PreChatForm from './PreChatForm';
 
@@ -8,7 +8,8 @@ interface PreChatFormSectionProps {
   onFormComplete: (formData: Record<string, string>) => void;
 }
 
-const PreChatFormSection = ({ config, onFormComplete }: PreChatFormSectionProps) => {
+// Use memo to prevent unnecessary re-renders
+const PreChatFormSection = memo(({ config, onFormComplete }: PreChatFormSectionProps) => {
   const [mounted, setMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -58,6 +59,9 @@ const PreChatFormSection = ({ config, onFormComplete }: PreChatFormSectionProps)
       />
     </div>
   );
-};
+});
+
+// Add display name for debugging
+PreChatFormSection.displayName = 'PreChatFormSection';
 
 export default PreChatFormSection;

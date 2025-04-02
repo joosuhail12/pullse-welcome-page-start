@@ -14,7 +14,8 @@ export function usePreChatForm({
   config = defaultConfig, 
   userFormData 
 }: UsePreChatFormOptions) {
-  // Initialize form visibility state just once - don't update it automatically
+  // Initialize form visibility state just once using useState with a function
+  // This prevents re-evaluation on every render
   const [showPreChatForm, setShowPreChatForm] = useState(() => {
     const shouldShow = config?.preChatForm?.enabled && 
                       !conversation.contactIdentified && 

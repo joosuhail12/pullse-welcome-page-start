@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,8 @@ interface PreChatFormProps {
   onFormComplete: (formData: Record<string, string>) => void;
 }
 
-const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
+// Use memo to prevent unnecessary re-renders
+const PreChatForm = memo(({ config, onFormComplete }: PreChatFormProps) => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formValid, setFormValid] = useState(false);
@@ -39,6 +40,8 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
 
   // Validate if the form is complete and valid
   useEffect(() => {
+    if (!config.preChatForm.fields) return;
+    
     const requiredFields = config.preChatForm.fields.filter(field => field.required);
     const allRequiredFilled = requiredFields.every(field => {
       const fieldValue = formData[field.name];
@@ -57,14 +60,12 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
       const sanitizedData = validateFormData(formData);
       
       // Dispatch form completion event
-      dispatchChatEvent('contact:formCompleted', { formData: sanitizedData }, config);
+      if (config) { // Check config exists to prevent errors
+        dispatchChatEvent('contact:formCompleted', { formData: sanitizedData }, config);
+      }
       
       console.log("Form submission with data:", sanitizedData);
-      
-      // Pass data back to parent with a small delay to prevent race conditions
-      setTimeout(() => {
-        onFormComplete(sanitizedData);
-      }, 10);
+      onFormComplete(sanitizedData);
     } catch (error) {
       console.error("Error submitting form:", error);
       setIsSubmitting(false);
@@ -88,7 +89,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
       <p className="text-sm text-gray-600 mb-3" id="form-title">
         Please provide your information to continue:
       </p>
-      {config.preChatForm.fields.map((field) => (
+      {config.preChatForm.fields && config.preChatForm.fields.map((field) => (
         <div key={field.id} className="mb-3">
           <Label htmlFor={field.id} className="text-xs font-medium mb-1 block">
             {field.label}
@@ -133,6 +134,9 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
       </Button>
     </div>
   );
-};
+});
+
+// Add display name for debugging
+PreChatForm.displayName = 'PreChatForm';
 
 export default PreChatForm;

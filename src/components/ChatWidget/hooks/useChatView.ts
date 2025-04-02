@@ -138,7 +138,9 @@ export function useChatView({
     });
     
     // Dispatch form completed event
-    dispatchChatEvent('contact:formCompleted', { formData }, config);
+    if (config) {
+      dispatchChatEvent('contact:formCompleted', { formData }, config);
+    }
   }, [setUserFormData, conversation, onUpdateConversation, config, hidePreChatForm]);
 
   // Get avatar URLs from config
