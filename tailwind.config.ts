@@ -188,6 +188,14 @@ export default {
 					'50%': {
 						transform: 'translateY(-5px)'
 					}
+				},
+				'skeleton-pulse': {
+					'0%, 100%': {
+						opacity: '0.5'
+					},
+					'50%': {
+						opacity: '0.8'
+					}
 				}
 			},
 			animation: {
@@ -200,6 +208,7 @@ export default {
 				'scale-in': 'scale-in 0.2s ease-out',
 				'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
 				'float': 'float 3s ease-in-out infinite',
+				'skeleton-pulse': 'skeleton-pulse 1.5s ease-in-out infinite'
 			},
 			boxShadow: {
 				'chat-bubble': '0 2px 8px rgba(0, 0, 0, 0.05)',

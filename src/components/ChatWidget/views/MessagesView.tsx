@@ -1,8 +1,22 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { 
+  MessageSquare, 
+  Plus, 
+  Trash2, 
+  Search, 
+  SortAsc, 
+  SortDesc, 
+  Inbox, 
+  Calendar,
+  ArrowUpDown,
+  X
+} from 'lucide-react';
 import { toast } from 'sonner';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
+import { format } from 'date-fns';
 
 interface Conversation {
   id: string;
@@ -15,9 +29,41 @@ interface MessagesViewProps {
   onSelectConversation: (conversation: Conversation) => void;
 }
 
+// Helper function to group conversations by date
+const groupConversationsByDate = (conversations: Conversation[]) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  
+  return conversations.reduce((groups, conversation) => {
+    const conversationDate = new Date(conversation.timestamp);
+    conversationDate.setHours(0, 0, 0, 0);
+    
+    let group = 'Older';
+    
+    if (conversationDate.getTime() === today.getTime()) {
+      group = 'Today';
+    } else if (conversationDate.getTime() === yesterday.getTime()) {
+      group = 'Yesterday';
+    }
+    
+    if (!groups[group]) {
+      groups[group] = [];
+    }
+    
+    groups[group].push(conversation);
+    return groups;
+  }, {} as Record<string, Conversation[]>);
+};
+
 const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+  const [groupByDate, setGroupByDate] = useState(true);
 
   useEffect(() => {
     // Load conversations from localStorage
@@ -37,7 +83,10 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         console.error('Error loading conversations:', error);
         toast.error('Failed to load conversations');
       } finally {
-        setIsLoading(false);
+        // Add a small delay to show the skeleton loading effect
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 800);
       }
     };
 
@@ -73,7 +122,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       return `${Math.floor(diff / (1000 * 60 * 60))}h ago`;
     } else {
       // More than a day ago
-      return date.toLocaleDateString();
+      return format(date, 'MMM d');
     }
   };
 
@@ -87,65 +136,216 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     });
   };
 
+  const toggleSortOrder = () => {
+    setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest');
+  };
+
+  const toggleGrouping = () => {
+    setGroupByDate(!groupByDate);
+  };
+
+  const filteredConversations = useMemo(() => {
+    let result = [...conversations];
+    
+    // Apply search filtering
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        conv => 
+          conv.title.toLowerCase().includes(term) || 
+          conv.lastMessage.toLowerCase().includes(term)
+      );
+    }
+    
+    // Apply sorting
+    result.sort((a, b) => {
+      const timeA = a.timestamp.getTime();
+      const timeB = b.timestamp.getTime();
+      
+      return sortOrder === 'newest' ? timeB - timeA : timeA - timeB;
+    });
+    
+    return result;
+  }, [conversations, searchTerm, sortOrder]);
+  
+  // Decide whether to group conversations or not
+  const groupedConversations = useMemo(() => {
+    if (!groupByDate) return { ungrouped: filteredConversations };
+    return groupConversationsByDate(filteredConversations);
+  }, [filteredConversations, groupByDate]);
+
+  // Check if the search returned no results
+  const hasNoSearchResults = searchTerm && Object.values(groupedConversations).every(group => group.length === 0);
+
+  // Generate loading skeletons for the loading state
+  const renderSkeletons = () => {
+    return Array(3).fill(null).map((_, i) => (
+      <div key={`skeleton-${i}`} className="p-3 border border-gray-100 rounded-md">
+        <div className="flex justify-between items-start mb-2">
+          <div className="flex items-center">
+            <Skeleton className="h-4 w-4 mr-2" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+          <Skeleton className="h-3 w-12" />
+        </div>
+        <Skeleton className="h-4 w-4/5 mt-1" />
+      </div>
+    ));
+  };
+
+  // Render a conversation list item
+  const renderConversationItem = (conversation: Conversation) => (
+    <div 
+      key={conversation.id}
+      onClick={() => onSelectConversation(conversation)}
+      className="p-3 rounded-md hover:bg-soft-purple-50 cursor-pointer border border-gray-100 transition-colors group relative animate-fade-in"
+    >
+      <div className="flex justify-between items-start">
+        <div className="flex items-center">
+          <MessageSquare size={16} className="text-vivid-purple mr-2 flex-shrink-0" />
+          <span className="font-medium text-gray-800 truncate">{conversation.title}</span>
+        </div>
+        <span className="text-xs text-gray-500">{formatTime(conversation.timestamp)}</span>
+      </div>
+      <p className="text-sm text-gray-600 mt-1 line-clamp-1">{conversation.lastMessage || 'No messages yet'}</p>
+      
+      <Button
+        variant="ghost"
+        size="sm"
+        className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
+        onClick={(e) => handleDeleteConversation(e, conversation.id)}
+      >
+        <Trash2 size={14} className="text-gray-400 hover:text-red-500" />
+      </Button>
+    </div>
+  );
+
+  // Render empty state illustration
+  const renderEmptyState = () => (
+    <div className="text-center py-8 animate-fade-in">
+      <div className="inline-block rounded-full bg-soft-purple p-4 mb-4">
+        <Inbox className="h-8 w-8 text-vivid-purple" />
+      </div>
+      <p className="text-lg font-semibold text-gray-700">No conversations yet</p>
+      <p className="text-gray-500 mb-4">Start a new conversation to get help</p>
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="mt-2 border-vivid-purple text-vivid-purple hover:bg-vivid-purple hover:text-white transition-colors"
+        onClick={handleStartNewChat}
+      >
+        <MessageSquare className="mr-1.5" size={16} />
+        Start a new conversation
+      </Button>
+    </div>
+  );
+
+  // Render no search results state
+  const renderNoSearchResults = () => (
+    <div className="text-center py-8 animate-fade-in">
+      <div className="inline-block rounded-full bg-gray-100 p-4 mb-4">
+        <Search className="h-6 w-6 text-gray-500" />
+      </div>
+      <p className="text-lg font-semibold text-gray-700">No matching conversations</p>
+      <p className="text-gray-500 mb-4">Try a different search term</p>
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={() => setSearchTerm('')}
+        className="mt-2"
+      >
+        <X className="mr-1.5" size={16} />
+        Clear search
+      </Button>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col p-2 h-full">
-      <div className="mb-3 flex justify-between items-center px-2">
-        <h2 className="font-semibold text-gray-700">Recent Conversations</h2>
-        <Button 
-          variant="ghost" 
-          size="sm"
-          className="text-vivid-purple hover:text-vivid-purple/90"
-          onClick={handleStartNewChat}
-        >
-          <Plus size={18} />
-        </Button>
+    <div className="flex flex-col h-full">
+      {/* Search and controls bar */}
+      <div className="p-2 border-b border-gray-100 sticky top-0 bg-white z-10">
+        <div className="relative mb-2">
+          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Search conversations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9 pr-8 py-1 h-9 text-sm"
+          />
+          {searchTerm && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
+              onClick={() => setSearchTerm('')}
+            >
+              <X size={14} />
+            </Button>
+          )}
+        </div>
+        
+        <div className="flex justify-between items-center px-0.5">
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className={`text-xs px-2 py-1 h-7 ${sortOrder === 'newest' ? 'bg-gray-100' : ''}`}
+              onClick={toggleSortOrder}
+            >
+              {sortOrder === 'newest' ? <SortDesc size={14} /> : <SortAsc size={14} />}
+              <span className="ml-1">{sortOrder === 'newest' ? 'Newest' : 'Oldest'}</span>
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className={`text-xs px-2 py-1 h-7 ${groupByDate ? 'bg-gray-100' : ''}`}
+              onClick={toggleGrouping}
+            >
+              <Calendar size={14} />
+              <span className="ml-1 hidden sm:inline">Group by date</span>
+            </Button>
+          </div>
+          
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="text-vivid-purple hover:text-vivid-purple/90 h-7"
+            onClick={handleStartNewChat}
+          >
+            <Plus size={16} />
+            <span className="ml-1 hidden sm:inline">New</span>
+          </Button>
+        </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto">
+      {/* Content section */}
+      <div className="flex-1 overflow-y-auto p-2 pb-6">
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="h-5 w-5 border-2 border-vivid-purple border-t-transparent rounded-full animate-spin"></div>
+          <div className="space-y-3 animate-pulse">
+            {renderSkeletons()}
           </div>
+        ) : hasNoSearchResults ? (
+          renderNoSearchResults()
+        ) : filteredConversations.length === 0 ? (
+          renderEmptyState()
         ) : (
-          <div className="space-y-2">
-            {conversations.map(conversation => (
-              <div 
-                key={conversation.id}
-                onClick={() => onSelectConversation(conversation)}
-                className="p-3 rounded-md hover:bg-soft-purple-50 cursor-pointer border border-gray-100 transition-colors group relative"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center">
-                    <MessageSquare size={16} className="text-vivid-purple mr-2 flex-shrink-0" />
-                    <span className="font-medium text-gray-800 truncate">{conversation.title}</span>
+          <div>
+            {groupByDate ? (
+              Object.entries(groupedConversations).map(([date, convs]) => 
+                convs.length > 0 ? (
+                  <div key={date} className="mb-4">
+                    <h3 className="text-xs font-medium text-gray-500 mb-2 ml-1">{date}</h3>
+                    <div className="space-y-2">
+                      {convs.map(renderConversationItem)}
+                    </div>
                   </div>
-                  <span className="text-xs text-gray-500">{formatTime(conversation.timestamp)}</span>
-                </div>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-1">{conversation.lastMessage || 'No messages yet'}</p>
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
-                  onClick={(e) => handleDeleteConversation(e, conversation.id)}
-                >
-                  <Trash2 size={14} className="text-gray-400 hover:text-red-500" />
-                </Button>
-              </div>
-            ))}
-
-            {conversations.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <MessageSquare className="mx-auto mb-2 text-gray-400" size={24} />
-                <p>No conversations yet</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2 text-vivid-purple border-vivid-purple"
-                  onClick={handleStartNewChat}
-                >
-                  Start a new conversation
-                </Button>
+                ) : null
+              )
+            ) : (
+              <div className="space-y-2">
+                {filteredConversations.map(renderConversationItem)}
               </div>
             )}
           </div>
