@@ -57,7 +57,7 @@ export const subscribeToChannel = (
   channelName: string,
   eventName: string,
   callback: (message: Ably.Types.Message) => void
-): Ably.Types.RealtimeChannelPromise | undefined => {
+): Ably.Types.RealtimeChannelCallbacks | undefined => {
   const client = getAblyClient();
   if (!client) {
     console.warn('Ably client not initialized');
@@ -115,7 +115,16 @@ export const getPresence = async (channelName: string): Promise<Ably.Types.Prese
   
   try {
     const channel = client.channels.get(channelName);
-    return await channel.presence.get();
+    return new Promise<Ably.Types.PresenceMessage[]>((resolve) => {
+      channel.presence.get((err, members) => {
+        if (err) {
+          console.error(`Error getting presence for channel ${channelName}:`, err);
+          resolve([]);
+        } else {
+          resolve(members || []);
+        }
+      });
+    });
   } catch (error) {
     console.error(`Error getting presence for channel ${channelName}:`, error);
     return [];
@@ -140,9 +149,9 @@ export const subscribeToPresence = (
   try {
     const channel = client.channels.get(channelName);
     
-    const updateCallback = async () => {
-      const presence = await channel.presence.get();
-      callback(presence);
+    const updateCallback = () => {
+      // Use our async wrapper for presence.get
+      getPresence(channelName).then(callback);
     };
     
     // Initial presence data
@@ -166,10 +175,16 @@ export const cleanupAbly = (): void => {
   }
   
   try {
+    // Get all active channels
+    const channelKeys = Object.keys(ablyClient.channels.all);
+    
     // Unsubscribe from all channels
-    ablyClient.channels.all().forEach((channel: any) => {
-      channel.unsubscribe();
-      channel.detach();
+    channelKeys.forEach(channelName => {
+      const channel = ablyClient?.channels.get(channelName);
+      if (channel) {
+        channel.unsubscribe();
+        channel.detach();
+      }
     });
     
     // Close connection
