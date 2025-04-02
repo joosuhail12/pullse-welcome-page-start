@@ -55,19 +55,65 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     }
   }, [loading, config.realtime?.enabled, workspaceId, config.workspaceId]);
   
+  // When widget loads, dispatch event
+  useEffect(() => {
+    if (!loading) {
+      dispatchChatEvent('widget:loaded', { workspaceId: config.workspaceId }, config);
+    }
+  }, [loading, config.workspaceId]);
+  
   // Apply custom branding if available
   const widgetStyle = {
+    // Base styles
     ...(config.branding?.primaryColor && {
       '--vivid-purple': config.branding.primaryColor,
-    } as React.CSSProperties)
-  };
+    }),
+    // Enhanced styling
+    ...(config.branding?.borderRadius && {
+      '--radius': config.branding.borderRadius,
+    }),
+    ...(config.branding?.fontFamily && {
+      'fontFamily': config.branding.fontFamily,
+    }),
+    // Theme colors for bubbles and headers
+    ...(config.branding?.widgetHeader?.backgroundColor && {
+      '--chat-header-bg': config.branding.widgetHeader.backgroundColor,
+    }),
+    ...(config.branding?.widgetHeader?.textColor && {
+      '--chat-header-text': config.branding.widgetHeader.textColor,
+    }),
+    ...(config.branding?.userBubble?.backgroundColor && {
+      '--user-bubble-bg': config.branding.userBubble.backgroundColor,
+    }),
+    ...(config.branding?.userBubble?.textColor && {
+      '--user-bubble-text': config.branding.userBubble.textColor,
+    }),
+    ...(config.branding?.systemBubble?.backgroundColor && {
+      '--system-bubble-bg': config.branding.systemBubble.backgroundColor,
+    }),
+    ...(config.branding?.systemBubble?.textColor && {
+      '--system-bubble-text': config.branding.systemBubble.textColor,
+    }),
+    // Any custom CSS properties
+    ...(config.branding?.customCSS && config.branding.customCSS),
+  } as React.CSSProperties;
 
   useEffect(() => {
+    // Apply theme preference if set
+    if (config.branding?.theme) {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDarkMode = 
+        config.branding.theme === 'dark' || 
+        (config.branding.theme === 'auto' && prefersDark);
+      
+      document.documentElement.classList.toggle('dark', isDarkMode);
+    }
+    
     // Clear unread messages when chat is opened
     if (isOpen) {
       clearUnreadMessages();
     }
-  }, [isOpen, clearUnreadMessages]);
+  }, [isOpen, clearUnreadMessages, config.branding?.theme]);
 
   if (loading) {
     return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
@@ -113,6 +159,35 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     );
   };
 
+  // Get correct position class based on config
+  const getPositionClass = () => {
+    switch (config.position) {
+      case 'bottom-left': return 'bottom-4 left-4';
+      case 'top-right': return 'top-4 right-4';
+      case 'top-left': return 'top-4 left-4';
+      default: return 'bottom-4 right-4';
+    }
+  };
+
+  // Get correct message style class based on config
+  const getMessageStyleClass = () => {
+    switch (config.branding?.messageStyle) {
+      case 'square': return 'chat-widget-squared';
+      case 'bubble': return 'chat-widget-bubbles';
+      default: return ''; // Default rounded style
+    }
+  };
+
+  // Determine button style class based on config
+  const getButtonStyleClass = () => {
+    switch (config.branding?.buttonStyle) {
+      case 'outline': return 'chat-widget-button-outline';
+      case 'ghost': return 'chat-widget-button-ghost';
+      case 'soft': return 'chat-widget-button-soft';
+      default: return 'chat-widget-button'; // Default solid style
+    }
+  };
+
   // Render launcher button that can both open and close the widget
   const renderLauncher = () => {
     // Apply custom branding if available
@@ -120,10 +195,13 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
       ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
       : {};
     
+    const positionClass = getPositionClass();
+    const buttonStyleClass = getButtonStyleClass();
+    
     return (
-      <div className="fixed bottom-4 right-4 flex flex-col items-end">
+      <div className={`fixed ${positionClass} flex flex-col items-end`}>
         <Button
-          className="rounded-full w-14 h-14 flex items-center justify-center chat-widget-button relative"
+          className={`rounded-full w-14 h-14 flex items-center justify-center ${buttonStyleClass} relative`}
           style={buttonStyle}
           onClick={toggleChat}
         >
@@ -145,7 +223,7 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     <>
       {isOpen && (
         <div 
-          className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] z-50 chat-widget-container"
+          className={`fixed ${getPositionClass()} w-80 sm:w-96 h-[600px] z-50 chat-widget-container ${getMessageStyleClass()}`}
           style={widgetStyle}
         >
           <div className="relative w-full h-full flex flex-col">

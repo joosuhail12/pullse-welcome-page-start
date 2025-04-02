@@ -7,25 +7,120 @@
     return scripts[scripts.length - 1];
   })();
 
+  // Helper function to get data-attribute with fallback
+  const getDataAttribute = (name, fallback) => {
+    const attr = WIDGET_SCRIPT.getAttribute(`data-${name}`);
+    return attr !== null ? attr : fallback;
+  };
+
   // Store the initialization config
   const config = {
-    workspaceId: WIDGET_SCRIPT.getAttribute('data-workspace-id') || undefined,
+    workspaceId: getDataAttribute('workspace-id', undefined),
     branding: {
-      primaryColor: WIDGET_SCRIPT.getAttribute('data-primary-color') || undefined,
-      showBrandingBar: WIDGET_SCRIPT.getAttribute('data-show-branding') !== 'false'
+      primaryColor: getDataAttribute('primary-color', undefined),
+      showBrandingBar: getDataAttribute('show-branding', 'true') !== 'false',
+      
+      // Enhanced styling options
+      borderRadius: getDataAttribute('border-radius', undefined),
+      buttonStyle: getDataAttribute('button-style', undefined),
+      messageStyle: getDataAttribute('message-style', undefined),
+      theme: getDataAttribute('theme', undefined),
+      fontFamily: getDataAttribute('font-family', undefined),
+      
+      // Advanced color customization
+      widgetHeader: {
+        backgroundColor: getDataAttribute('header-bg-color', undefined),
+        textColor: getDataAttribute('header-text-color', undefined),
+      },
+      userBubble: {
+        backgroundColor: getDataAttribute('user-bubble-color', undefined),
+        textColor: getDataAttribute('user-text-color', undefined),
+      },
+      systemBubble: {
+        backgroundColor: getDataAttribute('system-bubble-color', undefined),
+        textColor: getDataAttribute('system-text-color', undefined),
+      },
+      inputBox: {
+        backgroundColor: getDataAttribute('input-bg-color', undefined),
+        textColor: getDataAttribute('input-text-color', undefined),
+        borderColor: getDataAttribute('input-border-color', undefined),
+      }
+    },
+    // Position configuration
+    position: getDataAttribute('position', 'bottom-right'),
+    
+    // Feature flags
+    features: {
+      fileUpload: getDataAttribute('file-upload', 'true') !== 'false',
+      messageRating: getDataAttribute('message-rating', 'false') === 'true',
+      readReceipts: getDataAttribute('read-receipts', 'true') !== 'false',
+      typingIndicators: getDataAttribute('typing-indicators', 'true') !== 'false'
     }
   };
   
   // Create global namespace for the widget
   window.ChatWidget = {
-    init: () => console.warn('Chat widget is still loading...'),
+    init: (customConfig = {}) => {
+      // Merge custom config with the one from data attributes
+      const mergedConfig = {
+        ...config,
+        ...customConfig,
+        branding: {
+          ...config.branding,
+          ...(customConfig.branding || {}),
+          widgetHeader: {
+            ...config.branding.widgetHeader,
+            ...(customConfig.branding?.widgetHeader || {})
+          },
+          userBubble: {
+            ...config.branding.userBubble,
+            ...(customConfig.branding?.userBubble || {})
+          },
+          systemBubble: {
+            ...config.branding.systemBubble,
+            ...(customConfig.branding?.systemBubble || {})
+          },
+          inputBox: {
+            ...config.branding.inputBox,
+            ...(customConfig.branding?.inputBox || {})
+          }
+        },
+        features: {
+          ...config.features,
+          ...(customConfig.features || {})
+        }
+      };
+      
+      loadWidgetResources();
+      return mergedConfig;
+    },
     open: () => console.warn('Chat widget is still loading...'),
     close: () => console.warn('Chat widget is still loading...'),
-    toggle: () => console.warn('Chat widget is still loading...')
+    toggle: () => console.warn('Chat widget is still loading...'),
+    
+    // Event handling
+    on: (eventName, callback) => {
+      const eventPrefix = eventName.startsWith('pullse:') ? '' : 'pullse:';
+      const fullEventName = `${eventPrefix}${eventName}`;
+      
+      const handler = (event) => {
+        callback(event.detail);
+      };
+      
+      window.addEventListener(fullEventName, handler);
+      
+      // Return unsubscribe function
+      return () => window.removeEventListener(fullEventName, handler);
+    },
+    off: (eventName, handler) => {
+      const eventPrefix = eventName.startsWith('pullse:') ? '' : 'pullse:';
+      const fullEventName = `${eventPrefix}${eventName}`;
+      window.removeEventListener(fullEventName, handler);
+    }
   };
 
   // Only load the widget when needed (on button click or immediately if auto-open is set)
-  const shouldLoadImmediately = WIDGET_SCRIPT.getAttribute('data-auto-load') === 'true';
+  const shouldLoadImmediately = getDataAttribute('auto-load', 'false') === 'true';
   
   const loadWidgetResources = () => {
     // Create a script tag to load the widget bundle
@@ -59,8 +154,8 @@
     // Fix: Use setAttribute for style instead of direct assignment
     const buttonStyle = `
       position: fixed;
-      bottom: 20px;
-      right: 20px;
+      ${config.position === 'bottom-left' || config.position === 'top-left' ? 'left: 20px;' : 'right: 20px;'}
+      ${config.position === 'top-left' || config.position === 'top-right' ? 'top: 20px;' : 'bottom: 20px;'}
       width: 60px;
       height: 60px;
       border-radius: 50%;
@@ -96,11 +191,43 @@
     document.body.appendChild(launcherButton);
     
     // Replace the init function to remove the launcher
-    window.ChatWidget.init = (config) => {
+    window.ChatWidget.init = (customConfig = {}) => {
       if (document.body.contains(launcherButton)) {
         document.body.removeChild(launcherButton);
       }
+      
+      // Merge custom config with the one from data attributes
+      const mergedConfig = {
+        ...config,
+        ...customConfig,
+        branding: {
+          ...config.branding,
+          ...(customConfig.branding || {}),
+          widgetHeader: {
+            ...config.branding.widgetHeader,
+            ...(customConfig.branding?.widgetHeader || {})
+          },
+          userBubble: {
+            ...config.branding.userBubble,
+            ...(customConfig.branding?.userBubble || {})
+          },
+          systemBubble: {
+            ...config.branding.systemBubble,
+            ...(customConfig.branding?.systemBubble || {})
+          },
+          inputBox: {
+            ...config.branding.inputBox,
+            ...(customConfig.branding?.inputBox || {})
+          }
+        },
+        features: {
+          ...config.features,
+          ...(customConfig.features || {})
+        }
+      };
+      
       loadWidgetResources();
+      return mergedConfig;
     };
   }
 })();
