@@ -55,6 +55,7 @@ const ChatView = ({
   // Add message search
   const {
     searchTerm,
+    setSearchTerm,
     searchMessages,
     clearSearch,
     highlightText,
