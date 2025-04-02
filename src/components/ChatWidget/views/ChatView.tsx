@@ -154,8 +154,8 @@ const ChatView = ({
   const agentAvatar = conversation.agentInfo?.avatar || config?.branding?.avatarUrl;
   const userAvatar = undefined; // Could be set from user profile if available
 
-  // Determine if there could be more messages to load
-  const hasMoreMessages = messages.length >= 20 || page > 1; // Assuming we load 20 messages at a time
+  // Determine if there could be more messages to load - fixed by removing page reference
+  const hasMoreMessages = messages.length >= 20; // Simplified check for more messages
 
   return (
     <div 
