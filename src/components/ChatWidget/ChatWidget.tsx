@@ -17,20 +17,22 @@ interface Conversation {
 export const ChatWidget = () => {
   const [viewState, setViewState] = useState<ViewState>('home');
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(undefined);
   
-  const handleStartChat = (conversation?: Conversation) => {
-    if (conversation) {
-      setActiveConversation(conversation);
-    } else {
-      // Create a new conversation
-      const newConversation = {
-        id: `conv-${Date.now()}`,
-        title: 'New Conversation',
-        lastMessage: '',
-        timestamp: new Date()
-      };
-      setActiveConversation(newConversation);
+  const handleStartChat = (formData?: Record<string, string>) => {
+    // Store form data when provided
+    if (formData) {
+      setUserFormData(formData);
     }
+    
+    // Create a new conversation
+    const newConversation = {
+      id: `conv-${Date.now()}`,
+      title: formData?.name ? `Chat with ${formData.name}` : 'New Conversation',
+      lastMessage: '',
+      timestamp: new Date()
+    };
+    setActiveConversation(newConversation);
     setViewState('chat');
   };
 
