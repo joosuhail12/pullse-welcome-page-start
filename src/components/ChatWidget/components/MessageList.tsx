@@ -24,9 +24,9 @@ const MessageList = ({ messages, isTyping, setMessageText }: MessageListProps) =
   }, [messages, isTyping]);
 
   return (
-    <ScrollArea className="flex-grow p-3" ref={scrollAreaRef}>
-      <div className="space-y-4">
-        {messages.map(message => (
+    <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
+      <div className="space-y-5">
+        {messages.map((message, index) => (
           <div 
             key={message.id} 
             className={`flex ${
@@ -35,7 +35,12 @@ const MessageList = ({ messages, isTyping, setMessageText }: MessageListProps) =
                 : message.sender === 'status' 
                   ? 'justify-center' 
                   : 'justify-start'
-            }`}
+            } animate-fade-in`}
+            style={{ 
+              animationDelay: `${index * 50}ms`,
+              animationDuration: '300ms',
+              opacity: 0 // Start with opacity 0, animation will bring to 1
+            }}
           >
             {message.sender !== 'status' && (
               <MessageBubble message={message} setMessageText={setMessageText} />
@@ -50,7 +55,9 @@ const MessageList = ({ messages, isTyping, setMessageText }: MessageListProps) =
         ))}
         
         {isTyping && (
-          <TypingIndicator />
+          <div className="animate-fade-in" style={{ animationDuration: '200ms' }}>
+            <TypingIndicator />
+          </div>
         )}
         
         <div ref={messagesEndRef} />
