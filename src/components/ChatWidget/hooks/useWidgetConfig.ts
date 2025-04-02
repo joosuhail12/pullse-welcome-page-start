@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { fetchChatWidgetConfig } from '../services/api';
+import { fetchChatWidgetConfig, invalidateConfigCache } from '../services/api';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 
 export function useWidgetConfig(workspaceId?: string) {
@@ -32,8 +32,30 @@ export function useWidgetConfig(workspaceId?: string) {
 
     loadConfig();
   }, [workspaceId]);
+  
+  // Function to refresh config by invalidating cache
+  const refreshConfig = async () => {
+    if (!workspaceId) return;
+    
+    // Invalidate the config cache
+    invalidateConfigCache(workspaceId);
+    
+    // Set loading state
+    setLoading(true);
+    
+    try {
+      // Fetch fresh config
+      const freshConfig = await fetchChatWidgetConfig(workspaceId);
+      setConfig(freshConfig);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to refresh config'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  return { config, loading, error };
+  return { config, loading, error, refreshConfig };
 }
 
 export default useWidgetConfig;
