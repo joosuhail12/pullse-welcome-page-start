@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Message, Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from '../utils/events';
@@ -27,7 +27,7 @@ export function useChatView({
 }: UseChatViewProps) {
   const [showSearch, setShowSearch] = useState(false);
   
-  // Use the pre-chat form hook
+  // Use the pre-chat form hook with stable references
   const { showPreChatForm } = usePreChatForm({ 
     conversation, 
     config, 
@@ -119,8 +119,10 @@ export function useChatView({
     }
   }, [loadPreviousMessages]);
 
-  // Handle form submission
+  // Handle form submission - memoized to prevent re-renders
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
+    console.log("Form submission in useChatView with data:", formData);
+    
     // Update the parent form data if callback exists
     if (setUserFormData) {
       setUserFormData(formData);
@@ -145,7 +147,10 @@ export function useChatView({
   const userAvatar = undefined; // Could be set from user profile if available
 
   // Determine if there could be more messages to load
-  const hasMoreMessages = memoizedMessages.length >= 20; // Simplified check for more messages
+  const hasMoreMessages = useMemo(() => 
+    memoizedMessages.length >= 20, 
+    [memoizedMessages.length]
+  ); // Simplified check for more messages
 
   return {
     showSearch,

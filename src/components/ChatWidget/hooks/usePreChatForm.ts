@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 
@@ -14,30 +14,29 @@ export function usePreChatForm({
   config = defaultConfig, 
   userFormData 
 }: UsePreChatFormOptions) {
-  // Check if pre-chat form should be shown based on config and conversation state
-  const [showPreChatForm, setShowPreChatForm] = useState(
-    config?.preChatForm?.enabled && !conversation.contactIdentified && !userFormData
-  );
+  // Initial state depends on whether form is enabled and contact isn't identified yet
+  const [showPreChatForm, setShowPreChatForm] = useState(() => {
+    return config?.preChatForm?.enabled && 
+           !conversation.contactIdentified && 
+           !userFormData;
+  });
 
-  // Effect to update the showPreChatForm state when userFormData changes
+  // Effect to update the showPreChatForm state when dependencies change
   useEffect(() => {
-    if (userFormData || conversation.contactIdentified) {
-      setShowPreChatForm(false);
-    } else if (config?.preChatForm?.enabled && !conversation.contactIdentified) {
-      // Ensure form shows when conditions are met
-      setShowPreChatForm(true);
-    }
-  }, [userFormData, conversation.contactIdentified, config?.preChatForm?.enabled]);
-
-  // Debug log for form visibility state
-  useEffect(() => {
-    console.log('Pre-chat form visibility:', { 
-      showPreChatForm,
+    const shouldShowForm = config?.preChatForm?.enabled && 
+                         !conversation.contactIdentified && 
+                         !userFormData;
+                         
+    setShowPreChatForm(shouldShowForm);
+    
+    // Debug log for form visibility state
+    console.log('Pre-chat form visibility updated:', { 
+      showPreChatForm: shouldShowForm,
       formEnabled: config?.preChatForm?.enabled,
       contactIdentified: conversation.contactIdentified,
       hasUserFormData: !!userFormData
     });
-  }, [showPreChatForm, config?.preChatForm?.enabled, conversation.contactIdentified, userFormData]);
+  }, [userFormData, conversation.contactIdentified, config?.preChatForm?.enabled]);
 
   return { showPreChatForm };
 }

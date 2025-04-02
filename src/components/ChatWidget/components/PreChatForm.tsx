@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -16,9 +16,10 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formValid, setFormValid] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Handle input change for form
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const field = config.preChatForm.fields.find(f => f.name === name);
     
@@ -33,43 +34,49 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
     
     // Sanitize input before storing
     const sanitized = sanitizeInput(value);
-    const newFormData = { ...formData, [name]: sanitized };
-    setFormData(newFormData);
-    
-    // Check if all required fields are valid
-    validateFormCompletion(newFormData);
-  };
+    setFormData(prev => ({ ...prev, [name]: sanitized }));
+  }, [config.preChatForm.fields]);
 
   // Validate if the form is complete and valid
-  const validateFormCompletion = (data: Record<string, string>) => {
+  useEffect(() => {
     const requiredFields = config.preChatForm.fields.filter(field => field.required);
     const allRequiredFilled = requiredFields.every(field => {
-      const fieldValue = data[field.name];
+      const fieldValue = formData[field.name];
       return fieldValue && fieldValue.trim() !== '' && !validateField(field.name, fieldValue, true);
     });
     
     setFormValid(allRequiredFilled);
-  };
+  }, [formData, config.preChatForm.fields]);
 
-  // Submit form
-  const submitForm = () => {
-    if (!formValid) return;
+  // Submit form - using useCallback to prevent recreating this function
+  const submitForm = useCallback(() => {
+    if (!formValid || isSubmitting) return;
     
-    const sanitizedData = validateFormData(formData);
-    
-    // Dispatch form completion event
-    dispatchChatEvent('contact:formCompleted', { formData: sanitizedData }, config);
-    
-    // Pass data back to parent
-    onFormComplete(sanitizedData);
-  };
+    try {
+      setIsSubmitting(true);
+      const sanitizedData = validateFormData(formData);
+      
+      // Dispatch form completion event
+      dispatchChatEvent('contact:formCompleted', { formData: sanitizedData }, config);
+      
+      console.log("Form submission with data:", sanitizedData);
+      
+      // Pass data back to parent with a small delay to prevent race conditions
+      setTimeout(() => {
+        onFormComplete(sanitizedData);
+      }, 0);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      setIsSubmitting(false);
+    }
+  }, [formValid, isSubmitting, formData, config, onFormComplete]);
 
   // Handle keyboard submission
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && formValid) {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && formValid && !isSubmitting) {
       submitForm();
     }
-  };
+  }, [formValid, isSubmitting, submitForm]);
 
   return (
     <div 
@@ -99,6 +106,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
             className={`h-8 text-sm ${formErrors[field.name] ? 'border-red-500' : ''}`}
             aria-describedby={formErrors[field.name] ? `${field.id}-error` : undefined}
             aria-invalid={!!formErrors[field.name]}
+            disabled={isSubmitting}
           />
           {formErrors[field.name] && (
             <p 
@@ -113,7 +121,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
       ))}
       <Button 
         onClick={submitForm} 
-        disabled={!formValid}
+        disabled={!formValid || isSubmitting}
         className="w-full h-8 text-sm mt-2"
         style={{
           backgroundColor: config.branding?.primaryColor || '#8B5CF6',
@@ -121,7 +129,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
         }}
         aria-label="Start Chat"
       >
-        Start Chat
+        {isSubmitting ? 'Starting chat...' : 'Start Chat'}
       </Button>
     </div>
   );

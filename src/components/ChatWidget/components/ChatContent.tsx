@@ -63,12 +63,18 @@ const ChatContent = memo<ChatContentProps>(({
     showPreChatForm
   });
   
+  // Memoize the form completion handler
+  const memoizedHandleFormComplete = useCallback((formData: Record<string, string>) => {
+    console.log("Form complete called with data:", formData);
+    handleFormComplete(formData);
+  }, [handleFormComplete]);
+  
   return (
     <>
       {showPreChatForm ? (
         <PreChatFormSection 
           config={config} 
-          onFormComplete={handleFormComplete} 
+          onFormComplete={memoizedHandleFormComplete} 
         />
       ) : (
         <MessagesSection 
