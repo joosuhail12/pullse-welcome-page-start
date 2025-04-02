@@ -4,12 +4,10 @@ import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageInputSection from '../components/MessageInputSection';
 import ChatViewHeader from '../components/ChatViewHeader';
-import PreChatFormSection from '../components/PreChatFormSection';
 import MessagesSection from '../components/MessagesSection';
 import { useChatMessages } from '../hooks/useChatMessages';
 import { useMessageReactions } from '../hooks/useMessageReactions';
 import { useMessageSearch } from '../hooks/useMessageSearch';
-import { usePreChatForm } from '../hooks/usePreChatForm';
 import { dispatchChatEvent } from '../utils/events';
 
 interface ChatViewProps {
@@ -32,13 +30,6 @@ const ChatView = ({
   setUserFormData
 }: ChatViewProps) => {
   const [showSearch, setShowSearch] = React.useState(false);
-  
-  // Use the pre-chat form hook
-  const { showPreChatForm } = usePreChatForm({ 
-    conversation, 
-    config, 
-    userFormData 
-  });
 
   // Chat messages hook
   const {
@@ -114,23 +105,6 @@ const ChatView = ({
     }
   }, [loadPreviousMessages]);
 
-  // Handle form submission
-  const handleFormComplete = (formData: Record<string, string>) => {
-    // Update the parent form data if callback exists
-    if (setUserFormData) {
-      setUserFormData(formData);
-    }
-    
-    // Flag the conversation as having identified the contact
-    onUpdateConversation({
-      ...conversation,
-      contactIdentified: true
-    });
-    
-    // Dispatch form completed event
-    dispatchChatEvent('contact:formCompleted', { formData }, config);
-  };
-
   // Get avatar URLs from config
   const agentAvatar = conversation.agentInfo?.avatar || config?.branding?.avatarUrl;
   const userAvatar = undefined; // Could be set from user profile if available
@@ -166,29 +140,22 @@ const ChatView = ({
         showSearchFeature={!!config?.features?.searchMessages}
       />
       
-      {showPreChatForm ? (
-        <PreChatFormSection 
-          config={config} 
-          onFormComplete={handleFormComplete} 
-        />
-      ) : (
-        <MessagesSection 
-          messages={messages}
-          isTyping={isTyping}
-          remoteIsTyping={remoteIsTyping}
-          setMessageText={setMessageText}
-          readReceipts={readReceipts}
-          onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
-          searchResults={messageIds}
-          highlightMessage={highlightText}
-          searchTerm={searchTerm}
-          agentAvatar={agentAvatar}
-          userAvatar={userAvatar}
-          onScrollTop={handleLoadMoreMessages}
-          hasMoreMessages={hasMoreMessages}
-          isLoadingMore={isLoadingMore}
-        />
-      )}
+      <MessagesSection 
+        messages={messages}
+        isTyping={isTyping}
+        remoteIsTyping={remoteIsTyping}
+        setMessageText={setMessageText}
+        readReceipts={readReceipts}
+        onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
+        searchResults={messageIds}
+        highlightMessage={highlightText}
+        searchTerm={searchTerm}
+        agentAvatar={agentAvatar}
+        userAvatar={userAvatar}
+        onScrollTop={handleLoadMoreMessages}
+        hasMoreMessages={hasMoreMessages}
+        isLoadingMore={isLoadingMore}
+      />
       
       <MessageInputSection
         messageText={messageText}
@@ -198,7 +165,7 @@ const ChatView = ({
         handleEndChat={handleEndChat}
         hasUserSentMessage={hasUserSentMessage}
         onTyping={handleUserTyping}
-        disabled={showPreChatForm}
+        disabled={false}
       />
     </div>
   );

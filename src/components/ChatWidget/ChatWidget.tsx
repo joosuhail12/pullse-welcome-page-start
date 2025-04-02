@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -121,17 +122,8 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     }
   };
 
-  const wrappedHandleStartChat = (formData?: Record<string, string>) => {
-    if (formData) {
-      setUserFormData(formData);
-    }
-    
-    handleStartChat(formData);
-    
-    if (formData && Object.keys(formData).length > 0) {
-      dispatchChatEvent('contact:formCompleted', { formData }, config);
-    }
-    
+  const wrappedHandleStartChat = () => {
+    handleStartChat();
     dispatchChatEvent('contact:initiatedChat', undefined, config);
   };
 
