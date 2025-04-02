@@ -46,6 +46,12 @@ export const ChatWidget = () => {
     }
   };
 
+  // Handler for when a conversation is selected from the messages view
+  const handleSelectConversation = (conversation: Conversation) => {
+    setActiveConversation(conversation);
+    setViewState('chat');
+  };
+
   return (
     <div className="fixed bottom-4 right-4 w-80 sm:w-96 rounded-lg shadow-lg overflow-hidden flex flex-col bg-white border border-gray-200 max-h-[600px]">
       <div className="w-full max-h-[600px] flex flex-col">
@@ -58,7 +64,7 @@ export const ChatWidget = () => {
           <div className="flex flex-col h-96">
             <div className="flex-grow overflow-y-auto">
               {viewState === 'home' && <HomeView onStartChat={handleStartChat} />}
-              {viewState === 'messages' && <MessagesView onSelectConversation={handleStartChat} />}
+              {viewState === 'messages' && <MessagesView onSelectConversation={handleSelectConversation} />}
             </div>
             
             {/* Tab Bar */}
