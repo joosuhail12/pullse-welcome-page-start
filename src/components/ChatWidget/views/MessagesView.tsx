@@ -1,4 +1,31 @@
 
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { MessageSquare } from 'lucide-react';
+import { Conversation } from '../types';
+
+interface MessagesViewProps {
+  onSelectConversation: (conversation: Conversation) => void;
+}
+
+const MessagesView: React.FC<MessagesViewProps> = ({ onSelectConversation }) => {
+  // Function to handle starting a new chat
+  const handleStartNewChat = () => {
+    // Create a new conversation and select it
+    const newConversation: Conversation = {
+      id: `new-chat-${Date.now()}`,
+      title: 'New Conversation',
+      lastMessage: { text: '', timestamp: new Date().toISOString() },
+      unreadCount: 0
+    };
+    
+    onSelectConversation(newConversation);
+  };
+  
+  return (
+    <div className="p-4">
+      <h2 className="text-lg font-medium mb-4">Your Conversations</h2>
+      
       <Button 
         variant="outline" 
         size="sm" 
@@ -27,4 +54,14 @@
         />
         Start a new conversation
       </Button>
+      
+      <div className="mt-4 space-y-2">
+        {/* Placeholder for conversation list */}
+        <p className="text-gray-500 text-sm">No conversations yet.</p>
+      </div>
+    </div>
+  );
+};
 
+// Make sure to export the component as default
+export default MessagesView;
