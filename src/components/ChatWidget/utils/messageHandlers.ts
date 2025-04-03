@@ -1,163 +1,129 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { Message, MessageSender, MessageType } from '../types';
+import { Message, MessageType, MessageSender, ChatWidgetConfig } from '../types';
 import { publishToChannel } from './ably';
-import { logger } from '@/lib/logger';
-import { SecurityEventType } from './security/types';
-import { securityLogger } from './security';
+import { dispatchChatEvent } from './events';
 
 /**
- * Create a message with the given parameters
+ * Create a message with standard properties
  */
-export const createMessage = (
-  text: string, 
-  sender: MessageSender,
-  type: MessageType = 'text',
-  metadata?: any
-): Message => {
+export const createMessage = (messageProps: Partial<Message> & { text: string; sender: MessageSender }): Message => {
+  const now = new Date();
+  
   return {
-    id: uuidv4(),
-    text,
-    sender,
-    timestamp: new Date(),
-    type,
-    metadata,
-    reactions: []
+    id: messageProps.id || `msg-${uuidv4()}`,
+    text: messageProps.text,
+    sender: messageProps.sender,
+    timestamp: messageProps.timestamp || now,
+    type: messageProps.type || 'text',
+    status: messageProps.status || 'sent',
+    reactions: messageProps.reactions || [],
+    metadata: messageProps.metadata || {},
+    // Optional fields
+    fileName: messageProps.fileName,
+    fileUrl: messageProps.fileUrl,
+    cardData: messageProps.cardData,
+    quickReplies: messageProps.quickReplies
   };
 };
 
 /**
  * Create a user message
  */
-export const createUserMessage = (text: string, metadata?: any): Message => {
-  return createMessage(text, 'user', 'text', metadata);
+export const createUserMessage = (text: string, type: MessageType = 'text', fileDetails?: { fileName: string; fileUrl: string }): Message => {
+  return createMessage({
+    text,
+    sender: 'user',
+    type,
+    ...(fileDetails && { fileName: fileDetails.fileName, fileUrl: fileDetails.fileUrl })
+  });
 };
 
 /**
  * Create a system message
  */
-export const createSystemMessage = (text: string, metadata?: any): Message => {
-  return createMessage(text, 'system', 'status', metadata);
+export const createSystemMessage = (text: string, type: MessageType = 'text'): Message => {
+  return createMessage({
+    text,
+    sender: 'system',
+    type
+  });
 };
 
 /**
- * Process a system message
+ * Process system message (handle notifications, etc)
  */
 export const processSystemMessage = (
   message: Message, 
   channelName: string, 
   sessionId: string,
-  config?: any,
-  playMessageSound?: () => void
-) => {
-  // Play sound for system messages if enabled
-  if (config?.sounds?.enabled !== false && playMessageSound) {
-    playMessageSound();
+  config?: ChatWidgetConfig
+): void => {
+  // Play sound notification if enabled
+  if (config?.features?.soundNotifications) {
+    const audio = new Audio('/message-notification.mp3');
+    audio.volume = 0.5;
+    audio.play().catch(e => console.warn('Could not play notification sound', e));
   }
-
-  // Send read receipt for system messages
-  sendReadReceipt(message.id, channelName, sessionId);
-
-  // Log system messages
-  logger.info(`System message received: ${message.text}`, 'MessageHandler');
-
-  // Track security-related messages
-  if (message.text.toLowerCase().includes('security') || 
-      message.text.toLowerCase().includes('blocked') ||
-      message.text.toLowerCase().includes('suspicious')) {
-    securityLogger.logSecurityEvent(
-      SecurityEventType.SECURITY_NOTIFICATION,
-      'SUCCESS',
-      { messageId: message.id, text: message.text },
-      'MEDIUM'
-    );
-  }
+  
+  // Dispatch message received event
+  dispatchChatEvent('chat:messageReceived', { message }, config);
 };
 
 /**
- * Send a typing indicator
+ * Send typing indicator to the channel
  */
 export const sendTypingIndicator = (
-  isTyping: boolean, 
   channelName: string, 
-  sessionId: string
-) => {
+  userId: string, 
+  action: 'start' | 'stop'
+): void => {
   publishToChannel(channelName, 'typing', {
-    status: isTyping ? 'start' : 'stop',
-    userId: sessionId,
+    userId,
+    action,
     timestamp: new Date()
   });
-
-  logger.debug(
-    `Typing indicator sent: ${isTyping ? 'start' : 'stop'}`, 
-    'MessageHandler',
-    { channelName, sessionId }
-  );
 };
 
 /**
- * Send a delivery receipt
+ * Send delivery receipt
  */
 export const sendDeliveryReceipt = (
-  messageId: string, 
-  channelName: string, 
-  sessionId: string
-) => {
-  publishToChannel(channelName, 'delivered', {
+  channelName: string,
+  messageId: string,
+  userId: string
+): void => {
+  publishToChannel(channelName, 'receipt', {
     messageId,
-    userId: sessionId,
+    userId,
+    status: 'delivered',
     timestamp: new Date()
   });
-
-  logger.debug(
-    `Delivery receipt sent for message: ${messageId}`, 
-    'MessageHandler',
-    { channelName, sessionId }
-  );
 };
 
 /**
- * Send a read receipt
- */
-export const sendReadReceipt = (
-  messageId: string, 
-  channelName: string, 
-  sessionId: string
-) => {
-  publishToChannel(channelName, 'read', {
-    messageId,
-    userId: sessionId,
-    timestamp: new Date()
-  });
-
-  logger.debug(
-    `Read receipt sent for message: ${messageId}`, 
-    'MessageHandler',
-    { channelName, sessionId }
-  );
-};
-
-/**
- * Get a random response for simulation purposes
+ * Get a random agent response (for simulating conversations)
  */
 export const getRandomResponse = (): string => {
   const responses = [
-    "Thank you for your message. How else can I help you today?",
-    "I understand. Let me check that for you.",
-    "That's a good question. Let me find the answer for you.",
-    "I appreciate your patience. I'm working on resolving that issue.",
+    "How can I assist you further with that?",
     "Is there anything else you'd like to know about this topic?",
-    "Thank you for providing that information. Let me process this for you.",
-    "I'll need a bit more information to help you with this request.",
-    "I'm happy to assist with that. Let me guide you through the process."
+    "I'm here to help if you have more questions.",
+    "Would you like me to elaborate on any specific aspect?",
+    "Let me know if you need additional information on this.",
+    "Is there something else I can help you with today?",
+    "Please feel free to ask if you have any other questions.",
+    "Is there another topic you'd like to discuss?",
+    "How else can I be of assistance today?",
+    "Do you need help with anything else?"
   ];
   
   return responses[Math.floor(Math.random() * responses.length)];
 };
 
 /**
- * Get a message by ID from an array of messages
+ * Get message by ID from a conversation
  */
-export const getMessage = (messageId: string, messages: Message[]): Message | undefined => {
-  return messages.find(msg => msg.id === messageId);
+export const getMessage = (messages: Message[], messageId: string): Message | undefined => {
+  return messages.find(message => message.id === messageId);
 };

@@ -1,135 +1,125 @@
 
-import { useState, useEffect, useMemo } from 'react';
-import { Conversation, Message, MessageReadStatus } from '../types';
-import { useInlineForm } from './useInlineForm';
-import { useMessageReactions } from './useMessageReactions';
-
-interface ConversationDataReturn {
-  messages: Message[];
-  hasMoreMessages: boolean;
-  isLoadingMore: boolean;
-  loadMoreMessages: () => Promise<void>;
-  showInlineForm: boolean;
-  inlineFormComponent: JSX.Element | null;
-  messageReactions: {
-    onMessageReaction: (messageId: string, reaction: string) => void;
-  };
-  readReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }>;
-}
+import { useState, useCallback, useEffect } from 'react';
+import { Message, Conversation } from '../types';
+import { useWidgetConfig } from './useWidgetConfig';
+import { dispatchChatEvent } from '../utils/events';
+import { createMessage } from '../utils/messageHandlers';
 
 export const useConversationData = (
   conversation: Conversation,
-  config: any,
-  userFormData?: Record<string, any>,
-  setUserFormData?: (data: Record<string, any>) => void
-): ConversationDataReturn => {
-  const [messages, setMessages] = useState<Message[]>(conversation.messages || []);
-  const [hasMoreMessages, setHasMoreMessages] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [readReceipts, setReadReceipts] = useState<Record<string, { status: MessageReadStatus; timestamp?: Date }>>({});
+  setConversation: React.Dispatch<React.SetStateAction<Conversation>>,
+  workspaceId: string
+) => {
+  const { config } = useWidgetConfig(workspaceId);
+  const [inlineFormState, setInlineFormState] = useState<{
+    showInlineForm: boolean;
+    formType?: string;
+    formConfig?: Record<string, any>;
+  }>({
+    showInlineForm: false
+  });
   
-  // Initialize inline form handling
-  const { 
-    showInlineForm, 
-    setShowInlineForm, 
-    handleFormComplete 
-  } = useInlineForm(
-    conversation, 
-    config, 
-    userFormData, 
-    setUserFormData
-  );
-  
-  // Create inline form component
-  const inlineFormComponent = useMemo(() => {
-    if (!showInlineForm) return null;
-    
-    // Return a placeholder component - in a real implementation, 
-    // this would be a proper form component based on the configuration
-    return (
-      <div className="p-4 bg-gray-50 border-t">
-        <p className="text-sm mb-2">Please provide your information to start chatting.</p>
-        <div className="space-y-2">
-          <button 
-            className="w-full bg-vivid-purple text-white py-2 rounded"
-            onClick={() => {
-              handleFormComplete({ name: "Test User", email: "test@example.com" });
-              setShowInlineForm(false);
-            }}
-          >
-            Submit Demo Information
-          </button>
-        </div>
-      </div>
-    );
-  }, [showInlineForm, handleFormComplete, setShowInlineForm]);
-  
-  // Initialize message reactions
-  const { reactionsMap, handleMessageReaction } = useMessageReactions(
-    conversation, 
-    messages, 
-    setMessages
-  );
-  
-  // Message reactions wrapper with the correct interface
-  const messageReactions = useMemo(() => ({
-    onMessageReaction: handleMessageReaction
-  }), [handleMessageReaction]);
-  
-  // Update messages when conversation changes
-  useEffect(() => {
-    if (conversation?.messages) {
-      setMessages(conversation.messages);
-    }
-  }, [conversation]);
-  
-  // Mock function to load more messages
-  const loadMoreMessages = async (): Promise<void> => {
-    if (isLoadingMore || !hasMoreMessages) return;
-    
-    try {
-      setIsLoadingMore(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real implementation, you would fetch older messages
-      // For now, we'll just pretend we tried but there are no more
-      setHasMoreMessages(false);
-    } catch (error) {
-      console.error('Error loading more messages:', error);
-    } finally {
-      setIsLoadingMore(false);
-    }
-  };
-  
-  // Generate read receipts for messages
-  useEffect(() => {
-    const receipts: Record<string, { status: MessageReadStatus; timestamp?: Date }> = {};
-    
-    // In a real implementation, this would come from the backend
-    // For now, we'll generate random statuses for demo purposes
-    messages.forEach(message => {
-      if (message.sender === 'user') {
-        const randomStatus = Math.random() > 0.5 ? 'read' : 'delivered';
-        receipts[message.id] = {
-          status: randomStatus as MessageReadStatus,
-          timestamp: randomStatus === 'read' ? new Date(Date.now() - 60000) : undefined
-        };
-      }
+  // Message reactions state
+  const [reactionsMap, setReactionsMap] = useState<Record<string, "thumbsUp" | "thumbsDown">>({});
+
+  // Handle inline form display
+  const handleShowInlineForm = useCallback((formType: string, formConfig?: Record<string, any>) => {
+    setInlineFormState({
+      showInlineForm: true,
+      formType,
+      formConfig
     });
     
-    setReadReceipts(receipts);
-  }, [messages]);
+    // Dispatch event for inline form display
+    dispatchChatEvent('chat:inlineFormDisplayed', { 
+      formType, 
+      formConfig 
+    }, config);
+  }, [config]);
+  
+  // Handle form completion
+  const handleFormComplete = useCallback((formData: Record<string, string>) => {
+    setInlineFormState({ showInlineForm: false });
+    
+    // Update conversation with form data
+    setConversation(prev => ({
+      ...prev,
+      contactIdentified: true,
+      formData: {
+        ...(prev.formData || {}),
+        ...formData
+      }
+    }));
+    
+    // Add system message acknowledging form completion
+    const message = createMessage({
+      id: `msg-${Date.now()}`,
+      text: 'Thank you for providing your information.',
+      sender: 'system',
+      timestamp: new Date(),
+      type: 'status'
+    });
+    
+    addMessage(message);
+    
+    // Dispatch event for form submission
+    dispatchChatEvent('chat:formSubmitted', { 
+      formData,
+      conversationId: conversation.id
+    }, config);
+  }, [conversation.id, config, setConversation]);
+  
+  // Add a message to the conversation
+  const addMessage = useCallback((message: Message) => {
+    setConversation(prev => ({
+      ...prev,
+      messages: [...prev.messages, message],
+      lastMessage: message.text,
+      lastMessageTimestamp: message.timestamp
+    }));
+    
+    // Dispatch message event
+    dispatchChatEvent(
+      message.sender === 'user' ? 'chat:messageSent' : 'chat:messageReceived',
+      { message }, 
+      config
+    );
+  }, [config, setConversation]);
+  
+  // Handle message reaction
+  const handleMessageReaction = useCallback((messageId: string, reaction: "thumbsUp" | "thumbsDown") => {
+    setReactionsMap(prev => ({
+      ...prev,
+      [messageId]: reaction
+    }));
+    
+    // Dispatch event for message reaction
+    dispatchChatEvent('chat:messageReaction', { 
+      messageId, 
+      reaction,
+      conversationId: conversation.id
+    }, config);
+  }, [conversation.id, config]);
   
   return {
-    messages,
-    hasMoreMessages,
-    isLoadingMore,
-    loadMoreMessages,
-    showInlineForm,
-    inlineFormComponent,
-    messageReactions,
-    readReceipts
+    // Inline form state and handlers
+    inlineForm: {
+      showInlineForm: inlineFormState.showInlineForm,
+      setShowInlineForm: (show: boolean) => setInlineFormState(prev => ({ ...prev, showInlineForm: show })),
+      handleFormComplete,
+      formType: inlineFormState.formType,
+      formConfig: inlineFormState.formConfig,
+    },
+    
+    // Message handling
+    addMessage,
+    
+    // Message reactions
+    reactionsMap,
+    handleMessageReaction,
+    
+    // Additional handlers that might be needed
+    onMessageReaction: handleMessageReaction
   };
 };
 
