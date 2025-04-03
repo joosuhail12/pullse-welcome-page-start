@@ -107,10 +107,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     }
   };
 
+  // Additional classes for consecutive messages (grouped)
+  const getConsecutiveClasses = () => {
+    if (!isConsecutive) return '';
+    
+    if (isUserMessage) {
+      return 'rounded-t-md rounded-bl-md rounded-br-sm mt-1';
+    } else if (isBotMessage) {
+      return 'rounded-t-md rounded-br-md rounded-bl-sm mt-1';
+    }
+    
+    return '';
+  };
+
   const messageTypeClass = isUserMessage
-    ? 'bg-vivid-purple text-white rounded-t-2xl rounded-bl-2xl rounded-br-sm'
+    ? `bg-vivid-purple text-white ${isConsecutive ? getConsecutiveClasses() : 'rounded-t-2xl rounded-bl-2xl rounded-br-sm'}`
     : isBotMessage
-    ? `bg-system-bubble-bg text-system-bubble-text rounded-t-2xl rounded-br-2xl rounded-bl-sm border border-gray-100 ${getStatusBasedClasses()}`
+    ? `bg-system-bubble-bg text-system-bubble-text ${isConsecutive ? getConsecutiveClasses() : 'rounded-t-2xl rounded-br-2xl rounded-bl-sm'} border border-gray-100 ${getStatusBasedClasses()}`
     : 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200';
 
   const messageContainerClass = isUserMessage
@@ -242,15 +255,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     );
   }
 
+  const avatarSpacing = showAvatar ? '' : isUserMessage ? 'mr-8' : 'ml-8';
+
   return (
     <div
       className={cn(
-        'group flex items-end mb-4 relative animate-fade-in',
-        messageContainerClass
+        'group flex items-end relative animate-fade-in',
+        messageContainerClass,
+        isConsecutive ? 'mb-1' : 'mb-4' // Less margin between consecutive messages
       )}
       onContextMenu={handleLongPress}
     >
-      {!isSystemMessage && showAvatar && !isConsecutive && (
+      {!isSystemMessage && showAvatar && (
         <MessageAvatar
           isUserMessage={isUserMessage}
           userAvatar={userAvatar}
@@ -261,19 +277,27 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         />
       )}
 
+      {/* Add an empty space for avatar alignment when not showing avatar */}
+      {!isSystemMessage && !showAvatar && (
+        <div className="w-8 flex-shrink-0"></div>
+      )}
+
       <div
         className={cn(
           'relative max-w-[80%] sm:max-w-md px-4 py-3',
           messageTypeClass,
           isHighlighted && 'bg-yellow-100 border-yellow-300',
-          isSystemMessage && 'py-2 px-3'
+          isSystemMessage && 'py-2 px-3',
+          avatarSpacing
         )}
         onClick={onToggleHighlight}
       >
         {renderMessageContent()}
-        <MessageStatus timestamp={message.timestamp} />
         
-        {isUserMessage && (
+        {/* Only show timestamp for the last message in a group or non-consecutive messages */}
+        {!isConsecutive && <MessageStatus timestamp={message.timestamp} />}
+        
+        {isUserMessage && !isConsecutive && (
           <div className="absolute -bottom-4 right-1">
             <MessageReadReceipt 
               status={readStatus} 

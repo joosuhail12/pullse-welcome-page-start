@@ -1,13 +1,15 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import MessageBubble from './MessageBubble'; // Ensure this points to the right file
+import MessageBubble from './MessageBubble'; 
 import TypingIndicator from './TypingIndicator';
 import { Button } from '@/components/ui/button';
 import { ArrowDown, Loader2 } from 'lucide-react';
 import { MessageReadStatus } from './MessageReadReceipt';
 import MessageAvatar from './MessageBubble/MessageAvatar';
 import { AgentStatus } from '../types';
+import DateSeparator from './DateSeparator';
+import { isSameDay } from 'date-fns';
 
 interface MessageListProps {
   messages: any[];
@@ -26,7 +28,7 @@ interface MessageListProps {
   conversationId?: string;
   agentStatus?: AgentStatus;
   onToggleHighlight?: (messageId: string) => void;
-  typingDuration?: number; // Added typingDuration property
+  typingDuration?: number;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -46,7 +48,7 @@ const MessageList: React.FC<MessageListProps> = ({
   conversationId,
   agentStatus = 'online',
   onToggleHighlight,
-  typingDuration = 0 // Add default value of 0
+  typingDuration = 0
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -130,6 +132,55 @@ const MessageList: React.FC<MessageListProps> = ({
     return readReceipts[messageId] || { status: 'sent' as MessageReadStatus };
   };
 
+  // Process messages to add date separators and identify consecutive messages
+  const processedMessages = React.useMemo(() => {
+    if (!messages.length) return [];
+    
+    const result: Array<{
+      type: 'message' | 'date';
+      message?: any;
+      date?: Date;
+      isConsecutive: boolean;
+      showAvatar: boolean;
+    }> = [];
+    
+    let lastDate: Date | null = null;
+    let lastSender: string | null = null;
+    
+    messages.forEach((message, index) => {
+      const messageDate = new Date(message.timestamp);
+      
+      // Add date separator if it's a different day
+      if (!lastDate || !isSameDay(messageDate, lastDate)) {
+        result.push({
+          type: 'date',
+          date: messageDate,
+          isConsecutive: false,
+          showAvatar: true
+        });
+        lastDate = messageDate;
+        lastSender = null; // Reset sender after date change
+      }
+      
+      // Check if this is a consecutive message from the same sender
+      const isConsecutiveMessage = message.sender === lastSender && message.sender !== 'system';
+      
+      // Always show avatar for the first message of a group and for system messages
+      const showAvatar = !isConsecutiveMessage || message.sender === 'system';
+      
+      result.push({
+        type: 'message',
+        message,
+        isConsecutive: isConsecutiveMessage,
+        showAvatar
+      });
+      
+      lastSender = message.sender;
+    });
+    
+    return result;
+  }, [messages]);
+
   return (
     <div className="relative h-full">
       <ScrollArea className="h-full px-4 pt-2 pb-4" ref={scrollAreaRef}>
@@ -152,8 +203,18 @@ const MessageList: React.FC<MessageListProps> = ({
           </div>
         )}
         
-        {messages.map((message, index) => {
-          const isLastMessage = index === messages.length - 1;
+        {processedMessages.map((item, index) => {
+          if (item.type === 'date') {
+            return (
+              <DateSeparator 
+                key={`date-${index}`} 
+                date={item.date!} 
+              />
+            );
+          }
+          
+          const message = item.message!;
+          const isLastMessage = index === processedMessages.length - 1;
           const isHighlighted = searchResults.includes(message.id);
           const readReceipt = getReadReceipt(message.id);
           
@@ -162,6 +223,7 @@ const MessageList: React.FC<MessageListProps> = ({
               key={message.id} 
               ref={isLastMessage ? lastMessageRef : undefined}
               id={`message-${message.id}`}
+              className={item.isConsecutive ? 'mt-1' : 'mt-4'} // Less margin for consecutive messages
             >
               <MessageBubble
                 message={message}
@@ -175,6 +237,8 @@ const MessageList: React.FC<MessageListProps> = ({
                 readStatus={readReceipt.status}
                 readTimestamp={readReceipt.timestamp}
                 onToggleHighlight={onToggleHighlight ? () => onToggleHighlight(message.id) : undefined}
+                showAvatar={item.showAvatar}
+                isConsecutive={item.isConsecutive}
               />
             </div>
           );

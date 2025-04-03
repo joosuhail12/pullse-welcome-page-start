@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { AgentStatus } from '../types';
-import { Clock, ClockIcon } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface EstimatedResponseTimeProps {
@@ -49,17 +49,36 @@ const EstimatedResponseTime: React.FC<EstimatedResponseTimeProps> = ({
     }
   };
 
+  const getTooltipMessage = () => {
+    switch (agentStatus) {
+      case 'online':
+        return 'Agent is online and ready to respond quickly';
+      case 'busy':
+        return 'Agent is currently busy with other conversations';
+      case 'away':
+        return 'Agent is away from their desk';
+      case 'offline':
+        return 'No agents are currently online';
+      default:
+        return 'Estimated response time based on agent availability';
+    }
+  };
+
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={`inline-flex items-center text-xs px-2 py-1 rounded ${getStatusColor()} ${className}`}>
-            <Clock size={12} className="mr-1.5" />
+          <div 
+            className={`inline-flex items-center text-xs px-2 py-1 rounded ${getStatusColor()} ${className} transition-all duration-300 hover:shadow-sm`}
+            role="status"
+            aria-label={`Estimated response time: ${getEstimatedTime()}`}
+          >
+            <Clock size={12} className="mr-1.5 animate-pulse" />
             <span>Est. Response: {getEstimatedTime()}</span>
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          <p>Estimated response time based on agent availability</p>
+          <p>{getTooltipMessage()}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
