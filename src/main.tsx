@@ -4,6 +4,7 @@ import App from './App.tsx';
 import './index.css';
 import PullseChatWidgetLoader from './components/ChatWidget/embed';
 import { initializeEmbedSecurity } from './components/ChatWidget/utils/embedSecurity';
+import { errorHandler } from '@/lib/error-handler';
 
 // Create PullseNamespace to contain all global functions and variables
 const PullseNamespace = {
@@ -12,40 +13,64 @@ const PullseNamespace = {
   
   // Initialize the chat widget if config exists
   initChatWidget: () => {
-    const config = (window as any).__PULLSE_CHAT_CONFIG__;
-    
-    if (config && document.getElementById('pullse-chat-widget-container')) {
-      // Initialize with enhanced security features
-      const { container, shadowRoot } = initializeEmbedSecurity('pullse-chat-widget-container');
+    try {
+      const config = (window as any).__PULLSE_CHAT_CONFIG__;
       
-      // Find the inner container in the shadow DOM
-      const innerContainer = shadowRoot instanceof ShadowRoot ? 
-        shadowRoot.querySelector('.pullse-chat-widget-inner') : 
-        container;
+      if (config && document.getElementById('pullse-chat-widget-container')) {
+        // Initialize with enhanced security features
+        const { container, shadowRoot } = initializeEmbedSecurity('pullse-chat-widget-container');
         
-      if (!innerContainer) {
-        console.error('Failed to find inner container for chat widget');
-        return;
+        // Find the inner container in the shadow DOM
+        const innerContainer = shadowRoot instanceof ShadowRoot ? 
+          shadowRoot.querySelector('.pullse-chat-widget-inner') : 
+          container;
+          
+        if (!innerContainer) {
+          console.error('Failed to find inner container for chat widget');
+          return;
+        }
+        
+        // Create a root in the shadow DOM for isolation
+        const root = createRoot(innerContainer as HTMLElement);
+        
+        // Use Suspense to handle the loading state
+        root.render(
+          <React.Suspense fallback={
+            <div className="loading-widget">
+              <div className="w-10 h-10 border-4 border-vivid-purple border-t-transparent rounded-full animate-spin m-auto"></div>
+            </div>
+          }>
+            <PullseNamespace.ChatWidget 
+              workspaceId={config.workspaceId}
+            />
+          </React.Suspense>
+        );
+        
+        console.log('Pullse Chat Widget initialized with config:', config);
       }
+    } catch (error) {
+      errorHandler.handle(error instanceof Error ? error : new Error('Failed to initialize chat widget'));
       
-      // Create a root in the shadow DOM for isolation
-      const root = createRoot(innerContainer as HTMLElement);
-      
-      // Use Suspense to handle the loading state
-      root.render(
-        <React.Suspense fallback={<div className="loading-widget">Loading...</div>}>
-          <PullseNamespace.ChatWidget 
-            workspaceId={config.workspaceId}
-          />
-        </React.Suspense>
-      );
-      
-      console.log('Pullse Chat Widget initialized with config:', config);
+      // Attempt to render a minimal error state
+      const container = document.getElementById('pullse-chat-widget-container');
+      if (container) {
+        container.innerHTML = `
+          <div style="padding: 20px; text-align: center; color: #e11d48;">
+            <div style="margin-bottom: 10px;">⚠️</div>
+            <div>Failed to initialize chat widget</div>
+          </div>
+        `;
+      }
     }
   },
   
   // Other namespace functions can be added here
-  version: '1.0.0'
+  version: '1.0.0',
+  
+  // Error handling
+  handleError: (error: unknown, componentName?: string) => {
+    errorHandler.handle(error instanceof Error ? error : new Error(`Error in ${componentName || 'chat widget'}`));
+  }
 };
 
 // Check if this is being loaded as the chat widget bundle
@@ -55,12 +80,16 @@ if (document.currentScript &&
   PullseNamespace.initChatWidget();
 } else {
   // Normal app initialization
-  const rootElement = document.getElementById('root');
-  if (!rootElement) throw new Error('Failed to find the root element');
+  try {
+    const rootElement = document.getElementById('root');
+    if (!rootElement) throw new Error('Failed to find the root element');
 
-  createRoot(rootElement).render(
-    <App />
-  );
+    createRoot(rootElement).render(
+      <App />
+    );
+  } catch (error) {
+    errorHandler.handle(error instanceof Error ? error : new Error('Failed to initialize application'));
+  }
 }
 
 // Export the widget loader for direct imports

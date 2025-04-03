@@ -11,13 +11,65 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useWidgetPosition } from './hooks/useWidgetPosition';
 import LauncherButton from './components/LauncherButton';
 import WidgetContainer from './components/WidgetContainer';
-import LoadingIndicator from './components/LoadingIndicator';
+import EnhancedLoadingIndicator from './components/EnhancedLoadingIndicator';
+import ErrorFallback from './components/ErrorFallback';
+import ErrorBoundary from '@/components/ui/error-boundary';
+import { errorHandler } from '@/lib/error-handler';
 
 export interface ChatWidgetProps {
   workspaceId: string;
 }
 
-export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
+// Wrap the main component with error boundary
+const ChatWidgetWithErrorBoundary = React.memo(({ workspaceId }: ChatWidgetProps) => {
+  const [error, setError] = useState<Error | null>(null);
+  
+  const handleError = (err: Error) => {
+    errorHandler.handle(err);
+    setError(err);
+    dispatchChatEvent('error', { error: err.message }, undefined);
+  };
+  
+  return (
+    <ErrorBoundary 
+      onError={handleError}
+      fallback={
+        <ChatWidgetErrorFallback 
+          error={error} 
+          workspaceId={workspaceId} 
+        />
+      }
+    >
+      <ChatWidgetContent workspaceId={workspaceId} />
+    </ErrorBoundary>
+  );
+});
+
+// Error fallback component with positioning
+const ChatWidgetErrorFallback = ({ 
+  error, 
+  workspaceId 
+}: { 
+  error: Error | null;
+  workspaceId: string;
+}) => {
+  // Get widget config even if there was an error to apply branding
+  const { config } = useWidgetConfig(workspaceId);
+  const isMobile = useIsMobile();
+  const { getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
+  
+  return (
+    <ErrorFallback 
+      error={error} 
+      positionStyles={getWidgetContainerPositionStyles} 
+      config={config}
+      resetErrorBoundary={() => window.location.reload()} 
+    />
+  );
+};
+
+// Main content component
+const ChatWidgetContent = React.memo(({ workspaceId }: ChatWidgetProps) => {
   const {
     viewState,
     activeConversation,
@@ -30,12 +82,20 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     setUserFormData
   } = useChatState();
   
-  const { config, loading } = useWidgetConfig(workspaceId);
+  const { config, loading, error } = useWidgetConfig(workspaceId);
   const [isOpen, setIsOpen] = useState(false);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
   const isMobile = useIsMobile();
   const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
+  
+  // Handle errors from useWidgetConfig
+  useEffect(() => {
+    if (error) {
+      errorHandler.handle(error);
+      dispatchChatEvent('error', { error: error.message }, config);
+    }
+  }, [error, config]);
   
   useEffect(() => {
     let ablyCleanup: (() => void) | null = null;
@@ -47,7 +107,10 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
         .then(() => {
           ablyCleanup = cleanupAbly;
         })
-        .catch(err => console.error('Failed to initialize Ably:', err));
+        .catch(err => {
+          console.error('Failed to initialize Ably:', err);
+          errorHandler.handle(new Error('Failed to initialize real-time communication'));
+        });
     }
     
     return () => {
@@ -103,7 +166,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
   }, [handleStartChat, setUserFormData, config]);
 
   if (loading) {
-    return <LoadingIndicator positionStyles={getWidgetContainerPositionStyles} />;
+    return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles} config={config} />;
   }
 
   return (
@@ -136,6 +199,8 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
   );
 });
 
-ChatWidget.displayName = 'ChatWidget';
+ChatWidgetContent.displayName = 'ChatWidgetContent';
+ChatWidgetWithErrorBoundary.displayName = 'ChatWidgetWithErrorBoundary';
 
-export default ChatWidget;
+// Export the error-wrapped component as default
+export default ChatWidgetWithErrorBoundary;
