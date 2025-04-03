@@ -1,686 +1,158 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { MessageSquare, Plus, ArrowUp, ArrowDown, Info, Calendar } from 'lucide-react';
-import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+
+// Update MessagesView to show connection status
+import React, { useEffect, useState } from 'react';
+import { getMockConversations } from '../utils/messageHandlers';
+import { ChatWidgetConfig, defaultConfig, ChatWidgetViews } from '../config';
+import { ChatEventType } from '../config';
+import TabBar from '../components/TabBar';
 import { Conversation } from '../types';
-import SearchBar from '../components/SearchBar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { loadConversationsFromStorage } from '../utils/storage';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { useUnreadMessages } from '../hooks/useUnreadMessages';
-import { format } from 'date-fns';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Skeleton } from '@/components/ui/skeleton';
+import { getSessionConversations } from '../utils/storage';
+import { dispatchChatEvent } from '../utils/events';
+import { ConnectionStatus } from '../utils/reconnectionManager';
+import ConnectionStatusIndicator from '../components/ConnectionStatusIndicator';
 
 interface MessagesViewProps {
-  onSelectConversation: (conversation: Conversation) => void;
+  onSelect: (conversation: Conversation) => void;
+  onChangeView: (view: ChatWidgetViews) => void;
+  onStartChat: () => void;
+  config?: ChatWidgetConfig;
+  connectionStatus?: ConnectionStatus;
 }
 
-type SortOrder = 'newest' | 'oldest';
-type StatusFilter = 'all' | 'active' | 'ended';
-type GroupBy = 'none' | 'date';
-
-const ITEMS_PER_PAGE = 10;
-
-const MOCK_CONVERSATIONS: Conversation[] = [
-  {
-    id: 'mock-1',
-    title: 'Support Chat',
-    lastMessage: 'Thank you for contacting us. How can we help you today?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 10), // 10 minutes ago
-    status: 'active',
-    agentInfo: {
-      name: 'Support Agent',
-      avatar: undefined
-    }
-  },
-  {
-    id: 'mock-2',
-    title: 'Technical Support',
-    lastMessage: 'Have you tried restarting the application?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
-    status: 'ended',
-    agentInfo: {
-      name: 'Tech Support',
-      avatar: undefined
-    }
-  },
-  {
-    id: 'mock-3',
-    title: 'Billing Inquiry',
-    lastMessage: 'Your subscription will renew on the 15th of next month.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    status: 'ended',
-    agentInfo: {
-      name: 'Billing Department',
-      avatar: undefined
-    }
-  }
-];
-
-const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
+const MessagesView: React.FC<MessagesViewProps> = ({
+  onSelect,
+  onChangeView,
+  onStartChat,
+  config = defaultConfig,
+  connectionStatus = ConnectionStatus.CONNECTED
+}) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadingError, setLoadingError] = useState<string | null>(null);
-  const [useMockData, setUseMockData] = useState(false);
-  const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [groupBy, setGroupBy] = useState<GroupBy>('date');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<Conversation[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [animateOut, setAnimateOut] = useState<string | null>(null);
-  const { unreadCount, clearUnreadMessages } = useUnreadMessages();
-
+  
+  // Load conversations on component mount
   useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'chat_widget_conversations') {
-        loadConversationsData();
+    const loadConversations = () => {
+      setIsLoading(true);
+      
+      try {
+        const loadedConversations = getSessionConversations();
+        
+        // If no conversations found, use mock data for demo purposes
+        if (loadedConversations.length === 0) {
+          setConversations(getMockConversations());
+        } else {
+          setConversations(loadedConversations);
+        }
+      } catch (error) {
+        console.error('Error loading conversations:', error);
+        setConversations(getMockConversations());
+      } finally {
+        setIsLoading(false);
       }
     };
-
-    const handleCustomStorageChange = (event: CustomEvent) => {
-      if (event.detail?.key === 'chat_widget_conversations') {
-        loadConversationsData();
-      }
+    
+    loadConversations();
+    
+    // Listen for storage changes in other tabs
+    const handleStorageChange = () => {
+      loadConversations();
     };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('storage-updated', handleCustomStorageChange as EventListener);
+    
+    window.addEventListener('storage-updated', handleStorageChange);
     
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('storage-updated', handleCustomStorageChange as EventListener);
+      window.removeEventListener('storage-updated', handleStorageChange);
     };
   }, []);
 
-  const loadConversationsData = useCallback(async () => {
-    setIsLoading(true);
-    setLoadingError(null);
-
-    try {
-      let retries = 3;
-      let conversationsData: Conversation[] = [];
-      
-      while (retries > 0) {
-        try {
-          conversationsData = loadConversationsFromStorage();
-          setUseMockData(false);
-          break;
-        } catch (error) {
-          retries--;
-          if (retries === 0) {
-            console.error('Error loading conversations after retries:', error);
-            setUseMockData(true);
-            conversationsData = [...MOCK_CONVERSATIONS];
-            setLoadingError('Using demo data. Some features may be limited.');
-            toast.warning('Using demo data. Real conversations could not be loaded.');
-          } else {
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
-      }
-
-      setConversations(conversationsData);
-    } catch (error) {
-      console.error('Error loading conversations:', error);
-      setUseMockData(true);
-      setConversations([...MOCK_CONVERSATIONS]);
-      setLoadingError('Using demo data. Some features may be limited.');
-      toast.warning('Using demo data. Real conversations could not be loaded.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadConversationsData();
-  }, [loadConversationsData]);
-
-  const formatDateDisplay = useCallback((date: Date): string => {
-    return format(date, 'MMM d, yyyy');
-  }, []);
-
-  const formatTime = useCallback((date: Date): string => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    
-    if (diff < 1000 * 60 * 60) {
-      return `${Math.floor(diff / (1000 * 60))}m ago`;
-    } else if (diff < 1000 * 60 * 60 * 24) {
-      return `${Math.floor(diff / (1000 * 60 * 60))}h ago`;
-    } else {
-      return format(date, 'h:mm a');
-    }
-  }, []);
-
-  const handleStartNewChat = useCallback(() => {
-    onSelectConversation({
-      id: `conv-${Date.now()}`,
-      title: 'New Conversation',
-      lastMessage: '',
-      timestamp: new Date(),
-      status: 'active'
-    });
-    clearUnreadMessages();
-  }, [onSelectConversation, clearUnreadMessages]);
-
-  const handleSearch = useCallback((term: string) => {
-    setSearchTerm(term);
-    setIsSearching(true);
-    
-    const results = conversations.filter(conv => 
-      conv.title.toLowerCase().includes(term.toLowerCase()) || 
-      (conv.lastMessage && conv.lastMessage.toLowerCase().includes(term.toLowerCase()))
-    );
-    
-    setSearchResults(results);
-    setIsSearching(false);
-  }, [conversations]);
-
-  useEffect(() => {
-    const debouncedSearch = setTimeout(() => {
-      if (searchTerm) {
-        handleSearch(searchTerm);
-      }
-    }, 300);
-
-    return () => clearTimeout(debouncedSearch);
-  }, [searchTerm, handleSearch]);
-
-  const clearSearch = useCallback(() => {
-    setSearchTerm('');
-    setSearchResults([]);
-  }, []);
-
-  const groupConversations = useCallback((conversations: Conversation[]) => {
-    if (groupBy === 'none') {
-      return { 'All Conversations': conversations };
-    }
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    const lastWeek = new Date(today);
-    lastWeek.setDate(lastWeek.getDate() - 7);
-    
-    const lastMonth = new Date(today);
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
-    
-    return conversations.reduce((groups: Record<string, Conversation[]>, conversation) => {
-      const convoDate = new Date(conversation.timestamp);
-      convoDate.setHours(0, 0, 0, 0);
-      
-      let groupName = 'Older';
-      
-      if (convoDate.getTime() === today.getTime()) {
-        groupName = 'Today';
-      } else if (convoDate.getTime() === yesterday.getTime()) {
-        groupName = 'Yesterday';
-      } else if (convoDate > lastWeek) {
-        groupName = 'This Week';
-      } else if (convoDate > lastMonth) {
-        groupName = 'This Month';
-      }
-      
-      if (!groups[groupName]) {
-        groups[groupName] = [];
-      }
-      
-      groups[groupName].push(conversation);
-      return groups;
-    }, {});
-  }, [groupBy]);
-
-  const filteredAndSortedConversations = useMemo(() => {
-    let filtered = searchTerm ? searchResults : [...conversations];
-    
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(conv => conv.status === statusFilter);
-    }
-    
-    return filtered.sort((a, b) => {
-      if (sortOrder === 'newest') {
-        return b.timestamp.getTime() - a.timestamp.getTime();
-      } else {
-        return a.timestamp.getTime() - b.timestamp.getTime();
-      }
-    });
-  }, [conversations, sortOrder, statusFilter, searchTerm, searchResults]);
-
-  const groupedConversations = useMemo(() => {
-    return groupConversations(filteredAndSortedConversations);
-  }, [filteredAndSortedConversations, groupConversations]);
-
-  const orderedGroups = useMemo(() => {
-    if (groupBy === 'none') return ['All Conversations'];
-    
-    const priorityOrder = ['Today', 'Yesterday', 'This Week', 'This Month', 'Older'];
-    return priorityOrder.filter(group => groupedConversations[group] && groupedConversations[group].length > 0);
-  }, [groupedConversations, groupBy]);
-
-  const totalItems = useMemo(() => {
-    return filteredAndSortedConversations.length;
-  }, [filteredAndSortedConversations]);
-
-  const paginationData = useMemo(() => {
-    const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
-    
-    const validCurrentPage = Math.min(currentPage, totalPages);
-    if (validCurrentPage !== currentPage) {
-      setCurrentPage(validCurrentPage);
-    }
-    
-    const startIndex = (validCurrentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
-    
-    const pagedGroupedConversations: Record<string, Conversation[]> = {};
-    
-    if (groupBy === 'none') {
-      pagedGroupedConversations['All Conversations'] = filteredAndSortedConversations.slice(startIndex, endIndex);
-    } else {
-      let currentIdx = 0;
-      
-      for (const group of orderedGroups) {
-        const groupConversations = groupedConversations[group];
-        
-        if (currentIdx + groupConversations.length > startIndex) {
-          const groupStartIdx = Math.max(0, startIndex - currentIdx);
-          const groupEndIdx = Math.min(groupConversations.length, endIndex - currentIdx);
-          
-          if (groupStartIdx < groupEndIdx) {
-            pagedGroupedConversations[group] = groupConversations.slice(groupStartIdx, groupEndIdx);
-          }
-        }
-        
-        currentIdx += groupConversations.length;
-        
-        if (currentIdx >= endIndex) break;
-      }
-    }
-    
-    return {
-      totalItems,
-      totalPages,
-      startIndex,
-      endIndex,
-      currentPage: validCurrentPage,
-      pagedGroupedConversations
-    };
-  }, [filteredAndSortedConversations, currentPage, groupBy, groupedConversations, orderedGroups, totalItems]);
-
-  const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
-  }, []);
-
-  const handleRetryLoading = useCallback(() => {
-    setUseMockData(false);
-    loadConversationsData();
-  }, [loadConversationsData]);
-
-  const handleSelectConversation = useCallback((conversation: Conversation) => {
-    clearUnreadMessages();
-    onSelectConversation(conversation);
-  }, [clearUnreadMessages, onSelectConversation]);
-
-  const toggleGrouping = useCallback(() => {
-    setGroupBy(prev => prev === 'none' ? 'date' : 'none');
-  }, []);
-
-  const renderSkeletons = () => (
-    <div className="space-y-3">
-      {Array(3).fill(0).map((_, i) => (
-        <div key={i} className="flex items-start space-x-2 p-3 border rounded-md">
-          <Skeleton className="h-6 w-6 rounded-full" />
-          <div className="space-y-2 flex-1">
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-4 w-5/6" />
-          </div>
-          <Skeleton className="h-4 w-10" />
-        </div>
-      ))}
-    </div>
-  );
-
-  const EmptyState = () => (
-    <div className="text-center py-8 text-gray-500 animate-fade-in">
-      <div className="bg-white/70 backdrop-blur-sm p-6 rounded-lg max-w-xs mx-auto shadow-sm">
-        <div className="flex justify-center mb-4">
-          <div className="relative">
-            <MessageSquare className="mx-auto text-gray-300" size={40} strokeWidth={1.5} />
-            <div className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm">
-              <Plus className="text-vivid-purple" size={18} />
-            </div>
-          </div>
-        </div>
-        <h3 className="font-medium text-gray-700 mb-2">No conversations found</h3>
-        {searchTerm ? (
-          <p className="text-sm mb-4">Try adjusting your search or filters to find what you're looking for.</p>
-        ) : statusFilter !== 'all' ? (
-          <p className="text-sm mb-4">No {statusFilter} conversations found. Try changing your filter.</p>
-        ) : (
-          <>
-            <p className="text-sm mb-4">Start your first conversation to receive support or information.</p>
-            <div className="flex flex-col gap-2 text-sm text-gray-600 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">1</div>
-                <span>Click the "+" button to start chatting</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">2</div>
-                <span>Ask questions or request assistance</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">3</div>
-                <span>Get answers from our support team</span>
-              </div>
-            </div>
-          </>
-        )}
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="mt-2 mx-auto text-vivid-purple border-vivid-purple hover:text-vivid-purple/90 hover:bg-vivid-purple/5"
-          onClick={handleStartNewChat}
-          aria-label="Start a new conversation"
-        >
-          <Plus size={16} className="mr-1" />
-          Start a new conversation
-        </Button>
-      </div>
-    </div>
-  );
+  // Handle selecting a conversation
+  const handleSelectConversation = (conversation: Conversation) => {
+    onSelect(conversation);
+    dispatchChatEvent('chat:conversationSelected' as ChatEventType, { conversationId: conversation.id }, config);
+  };
 
   return (
-    <div className="flex flex-col p-2 h-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100">
-      <div className="mb-3 flex justify-between items-center px-2">
-        <h2 className="font-semibold text-gray-700" id="messagesViewTitle">Recent Conversations</h2>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="sm"
-              className="text-vivid-purple hover:text-vivid-purple/90 relative"
-              onClick={handleStartNewChat}
-              aria-label={`Start new conversation${unreadCount > 0 ? `. ${unreadCount} unread messages` : ''}`}
-            >
-              <Plus size={18} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center" aria-hidden="true">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            Start a new conversation
-          </TooltipContent>
-        </Tooltip>
-      </div>
-
-      <SearchBar 
-        onSearch={handleSearch}
-        onClear={clearSearch}
-        resultCount={searchTerm ? filteredAndSortedConversations.length : 0}
-        isSearching={isSearching}
-      />
-      
-      {loadingError && (
-        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs p-2 rounded-md mb-2 flex items-center">
-          <Info size={14} className="mr-1.5 flex-shrink-0" />
-          <span className="flex-1">{loadingError}</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="ml-2 h-6 px-2 py-0 text-xs hover:bg-yellow-100"
-            onClick={handleRetryLoading}
-          >
-            Retry
-          </Button>
-        </div>
-      )}
-      
-      <div className="flex items-center justify-between px-2 py-2 bg-white/60 backdrop-blur-sm rounded-md mb-2 shadow-sm" role="toolbar" aria-label="Conversation sorting and filtering options">
-        <div className="flex items-center gap-2">
-          <Select 
-            value={statusFilter} 
-            onValueChange={(value: StatusFilter) => setStatusFilter(value)}
-            aria-label="Filter by status"
-          >
-            <SelectTrigger className="w-[110px] h-8 text-xs">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="ended">Ended</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8 gap-1 text-xs text-vivid-purple hover:bg-vivid-purple/10"
-            onClick={toggleGrouping}
-            aria-pressed={groupBy !== 'none'}
-            aria-label={`${groupBy === 'none' ? 'Group by date' : 'Remove grouping'}`}
-          >
-            {groupBy === 'none' ? 'Group by Date' : 'No Grouping'}
-          </Button>
-        </div>
+    <div className="h-full flex flex-col">
+      <div className="px-4 py-4 bg-white border-b border-gray-200 flex justify-between items-center">
+        <h2 className="text-lg font-medium">{config.messages?.title || 'Messages'}</h2>
         
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="h-8 gap-1 text-xs text-vivid-purple hover:bg-vivid-purple/10"
-          onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
-          aria-label={`Sort by ${sortOrder === 'newest' ? 'oldest first' : 'newest first'}`}
-        >
-          {sortOrder === 'newest' ? (
-            <>Newest <ArrowDown size={14} /></>
-          ) : (
-            <>Oldest <ArrowUp size={14} /></>
-          )}
-        </Button>
-      </div>
-      
-      <ScrollArea className="flex-1" role="region" aria-label="Conversations list">
-        {isLoading ? (
-          <div className="p-4 space-y-4">
-            {renderSkeletons()}
-          </div>
-        ) : filteredAndSortedConversations.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="space-y-4 px-1">
-            {Object.keys(paginationData.pagedGroupedConversations).length === 0 ? (
-              <div className="text-center py-8 text-gray-500 animate-fade-in">
-                <div className="bg-white/70 backdrop-blur-sm p-6 rounded-lg max-w-xs mx-auto shadow-sm">
-                  <div className="flex justify-center mb-4">
-                    <div className="relative">
-                      <MessageSquare className="mx-auto text-gray-300" size={40} strokeWidth={1.5} />
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm">
-                        <Plus className="text-vivid-purple" size={18} />
-                      </div>
-                    </div>
-                  </div>
-                  <h3 className="font-medium text-gray-700 mb-2">No conversations found</h3>
-                  {searchTerm ? (
-                    <p className="text-sm mb-4">Try adjusting your search or filters to find what you're looking for.</p>
-                  ) : statusFilter !== 'all' ? (
-                    <p className="text-sm mb-4">No {statusFilter} conversations found. Try changing your filter.</p>
-                  ) : (
-                    <>
-                      <p className="text-sm mb-4">Start your first conversation to receive support or information.</p>
-                      <div className="flex flex-col gap-2 text-sm text-gray-600 mb-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">1</div>
-                          <span>Click the "+" button to start chatting</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">2</div>
-                          <span>Ask questions or request assistance</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">3</div>
-                          <span>Get answers from our support team</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-2 mx-auto text-vivid-purple border-vivid-purple hover:text-vivid-purple/90 hover:bg-vivid-purple/5"
-                    onClick={handleStartNewChat}
-                    aria-label="Start a new conversation"
-                  >
-                    <Plus size={16} className="mr-1" />
-                    Start a new conversation
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              Object.entries(paginationData.pagedGroupedConversations).map(([group, groupConversations]) => (
-                <div key={group} className="mb-4">
-                  {groupBy !== 'none' && (
-                    <div className="text-xs font-medium text-vivid-purple mb-2 px-2" 
-                      role="heading" aria-level={2}>
-                      {group}
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    {groupConversations.map((conversation) => (
-                      <Card
-                        key={conversation.id}
-                        onClick={() => handleSelectConversation(conversation)}
-                        className={`p-3 hover:bg-soft-purple-50 cursor-pointer border bg-white/60 backdrop-blur-sm ${
-                          conversation.unread ? 'border-l-4 border-l-vivid-purple' : 'border-white/30'
-                        } transition-colors group relative ${
-                          animateOut === conversation.id ? 'animate-fade-out' : 'animate-fade-in'
-                        } shadow-sm`}
-                        tabIndex={0}
-                        role="button"
-                        aria-label={`Conversation: ${conversation.title}${conversation.unread ? ', unread' : ''}`}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            handleSelectConversation(conversation);
-                          }
-                        }}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center">
-                            <div className="relative">
-                              <MessageSquare size={16} className="text-vivid-purple mr-2 flex-shrink-0" aria-hidden="true" />
-                              {conversation.status && (
-                                <div 
-                                  className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-white" 
-                                  style={{
-                                    backgroundColor: conversation.status === 'active' ? '#10b981' : '#9ca3af'  
-                                  }}
-                                  aria-hidden="true"
-                                />
-                              )}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className={`font-semibold text-gray-800 truncate ${conversation.unread ? 'font-bold' : ''}`}>
-                                  {conversation.title}
-                                </span>
-                                {conversation.status && (
-                                  <Badge 
-                                    variant={conversation.status === 'active' ? 'default' : 'secondary'}
-                                    className={`text-[10px] px-1.5 py-0 ${
-                                      conversation.status === 'active' 
-                                        ? 'bg-green-100 text-green-800 hover:bg-green-100' 
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
-                                    }`}
-                                  >
-                                    {conversation.status === 'active' ? 'Active' : 'Ended'}
-                                  </Badge>
-                                )}
-                                {conversation.unread && (
-                                  <span className="w-2 h-2 bg-vivid-purple rounded-full" aria-label="Unread conversation"></span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <span className="text-xs text-gray-500">{formatTime(conversation.timestamp)}</span>
-                        </div>
-                        
-                        <p className={`text-sm ${conversation.unread ? 'text-gray-700' : 'text-gray-500'} mt-1.5 ml-6 line-clamp-1 font-normal`}>
-                          {conversation.lastMessage || 'No messages yet'}
-                        </p>
-
-                        <div className="flex items-center gap-1 ml-6 mt-2 text-xs text-gray-400">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center">
-                                <Calendar size={12} className="mr-1" />
-                                <span>Started {formatDateDisplay(conversation.timestamp)}</span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Created on {format(conversation.timestamp, 'MMMM d, yyyy')} at {format(conversation.timestamp, 'h:mm a')}
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+        {connectionStatus !== ConnectionStatus.CONNECTED && (
+          <ConnectionStatusIndicator 
+            status={connectionStatus}
+            variant="icon-only"
+          />
         )}
-      </ScrollArea>
+      </div>
 
-      {paginationData?.totalPages > 1 && (
-        <Pagination className="mt-4">
-          <PaginationContent role="navigation" aria-label="Conversation pagination">
-            <PaginationItem>
-              <PaginationPrevious 
-                onClick={() => handlePageChange(Math.max(1, paginationData.currentPage - 1))}
-                aria-disabled={paginationData.currentPage === 1}
-                className={`${paginationData.currentPage === 1 ? "pointer-events-none opacity-50" : ""} text-vivid-purple hover:bg-vivid-purple/10`}
-                aria-label="Previous page"
-              />
-            </PaginationItem>
-            
-            {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1).map(page => (
-              <PaginationItem key={page}>
-                <PaginationLink 
-                  isActive={page === paginationData.currentPage}
-                  onClick={() => handlePageChange(page)}
-                  aria-current={page === paginationData.currentPage ? "page" : undefined}
-                  aria-label={`Page ${page}`}
-                  className={page === paginationData.currentPage ? "bg-vivid-purple text-white hover:bg-vivid-purple/90" : "hover:bg-vivid-purple/10 text-vivid-purple"}
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            
-            <PaginationItem>
-              <PaginationNext 
-                onClick={() => handlePageChange(Math.min(paginationData.totalPages, paginationData.currentPage + 1))}
-                aria-disabled={paginationData.currentPage === paginationData.totalPages}
-                className={`${paginationData.currentPage === paginationData.totalPages ? "pointer-events-none opacity-50" : ""} text-vivid-purple hover:bg-vivid-purple/10`}
-                aria-label="Next page"
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
+      <TabBar activeTab="conversations" onChangeTab={(tab) => onChangeView(tab as ChatWidgetViews)} />
+      
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-32">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-r-2 border-vivid-purple"></div>
+          </div>
+        ) : conversations.length === 0 ? (
+          <div className="text-center p-8">
+            <p className="text-gray-500 mb-4">{config.messages?.emptyStateMessage || 'No conversations yet'}</p>
+            <button
+              onClick={onStartChat}
+              className="px-4 py-2 rounded bg-vivid-purple hover:bg-vivid-purple-dark text-white transition-colors"
+            >
+              Start a new chat
+            </button>
+          </div>
+        ) : (
+          conversations.map((conversation) => (
+            <div
+              key={conversation.id}
+              className={`p-4 rounded-md border cursor-pointer transition-colors ${
+                conversation.unread
+                  ? 'bg-violet-50 border-violet-200'
+                  : 'bg-white border-gray-200 hover:border-violet-200'
+              }`}
+              onClick={() => handleSelectConversation(conversation)}
+            >
+              <div className="flex justify-between items-start">
+                <h3 className="font-medium">{conversation.title || 'Chat'}</h3>
+                <span className="text-xs text-gray-500">
+                  {conversation.timestamp instanceof Date
+                    ? conversation.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : new Date(conversation.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+              <p className="text-sm text-gray-600 truncate mt-1">{conversation.lastMessage}</p>
+              
+              <div className="flex justify-between items-center mt-2">
+                <div className="flex items-center">
+                  {conversation.agentInfo?.status === 'online' && (
+                    <span className="w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                  )}
+                  <span className="text-xs text-gray-500">
+                    {conversation.agentInfo?.name || 'Support Agent'}
+                  </span>
+                </div>
+                
+                {conversation.unread && (
+                  <span className="inline-flex items-center justify-center w-5 h-5 text-xs bg-violet-500 text-white rounded-full">
+                    !
+                  </span>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="p-4 border-t border-gray-200">
+        <button
+          onClick={onStartChat}
+          className="w-full py-2 rounded bg-vivid-purple hover:bg-vivid-purple-dark text-white transition-colors"
+        >
+          Start new conversation
+        </button>
+      </div>
     </div>
   );
 };
 
-export default React.memo(MessagesView);
+export default MessagesView;

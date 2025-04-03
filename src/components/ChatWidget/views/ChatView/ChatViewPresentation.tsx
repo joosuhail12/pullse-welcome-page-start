@@ -1,6 +1,8 @@
 
-import React, { useMemo } from 'react';
+// Update ChatViewPresentation to pass down offline-related props
+import React, { useEffect, useMemo } from 'react';
 import { Conversation, Message } from '../../types';
+import { ConnectionStatus } from '../../utils/reconnectionManager';
 import { ChatWidgetConfig } from '../../config';
 import ChatViewHeader from '../../components/ChatViewHeader';
 import PreChatForm from '../../components/PreChatForm';
@@ -8,9 +10,8 @@ import KeyboardShortcutsInfo, { KeyboardShortcutProps } from '../../components/K
 import ChatKeyboardHandler from '../../components/ChatKeyboardHandler';
 import ChatBody from '../../components/ChatBody';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { MessageReadStatus } from '../../components/MessageReadReceipt';
-import MessageInput from '../../components/MessageInput';
-import PoweredByBar from '../../components/PoweredByBar';
+import { Button } from '@/components/ui/button';
+import { CloudSyncIcon } from 'lucide-react';
 
 interface ChatViewPresentationProps {
   conversation: Conversation;
@@ -24,7 +25,7 @@ interface ChatViewPresentationProps {
   handleUserTyping: () => void;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
-  readReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }>;
+  readReceipts: Record<string, { status: any; timestamp?: Date }>;
   onBack: () => void;
   showSearch: boolean;
   toggleSearch: () => void;
@@ -32,8 +33,8 @@ interface ChatViewPresentationProps {
   clearSearch: () => void;
   searchResultCount: number;
   isSearching: boolean;
-  showSearchFeature: boolean;
-  highlightText: (text: string, term: string) => { text: string; highlighted: boolean }[];
+  showSearchFeature?: boolean;
+  highlightText: (text: string) => { text: string; highlighted: boolean }[];
   messageIds: string[];
   searchTerm: string;
   agentAvatar?: string;
@@ -45,8 +46,17 @@ interface ChatViewPresentationProps {
   showInlineForm: boolean;
   handleFormComplete: (formData: Record<string, string>) => void;
   config: ChatWidgetConfig;
-  onToggleMessageImportance: (messageId: string) => void;
-  ticketProgress: number;
+  onToggleMessageImportance?: (messageId: string) => void;
+  ticketProgress?: number;
+  connectionStatus?: ConnectionStatus;
+  hasDraft?: boolean;
+  pendingCount?: number;
+  onSaveDraft?: (text: string) => void;
+  onLoadDraft?: () => string;
+  onSyncPendingMessages?: () => Promise<void>;
+  isSyncing?: boolean;
+  isOffline?: boolean;
+  customKeyboardShortcuts?: KeyboardShortcutProps[];
 }
 
 const ChatViewPresentation = ({
@@ -84,71 +94,95 @@ const ChatViewPresentation = ({
   config,
   onToggleMessageImportance,
   ticketProgress,
+  connectionStatus = ConnectionStatus.CONNECTED,
+  hasDraft = false,
+  pendingCount = 0,
+  onSaveDraft,
+  onLoadDraft,
+  onSyncPendingMessages,
+  isSyncing = false,
+  isOffline = false,
+  customKeyboardShortcuts = []
 }: ChatViewPresentationProps) => {
   const isMobile = useIsMobile();
-
-  // Function to scroll to bottom - will be passed to keyboard handler
-  const scrollToBottom = () => {
-    const lastMessage = document.getElementById(`message-${messages[messages.length - 1]?.id}`);
-    if (lastMessage) {
-      lastMessage.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  // Helper function to adapt highlightText for use in ChatBody
-  const adaptHighlightTextForChatBody = (text: string): string[] => {
-    // Just return the text as an array with one element
-    // This is a simplified version since we just need to pass this to ChatBody
-    return [text];
-  };
-
+  
+  // Prepare the inline form component if needed
   const inlineFormComponent = useMemo(() => {
-    if (showInlineForm && config?.preChatForm) {
+    if (showInlineForm) {
       return (
-        <div className="absolute inset-0 bg-white z-50">
+        <div className="flex-shrink-0">
           <PreChatForm
+            onSubmit={handleFormComplete}
+            fields={config.preChatForm?.fields}
             config={config}
-            onFormComplete={handleFormComplete}
           />
         </div>
       );
     }
     return null;
   }, [showInlineForm, config, handleFormComplete]);
-  
-  // Custom keyboard shortcuts for this view
-  const customShortcuts: KeyboardShortcutProps[] = [
-    { key: 'Alt + /', description: 'Search messages', category: 'search' },
-    { key: 'Alt + Enter', description: 'Send message', category: 'messages' },
-    { key: 'Alt + End', description: 'Go to latest messages', category: 'navigation' },
-    { key: 'Alt + Home', description: 'Load older messages', category: 'navigation' },
-    { key: 'Esc', description: 'Close search/popups', category: 'general' },
-  ];
+
+  // Check if we need to show the sync button for pending messages
+  const showSyncButton = pendingCount > 0 && 
+                         connectionStatus === ConnectionStatus.CONNECTED && 
+                         onSyncPendingMessages && 
+                         !isSyncing;
 
   return (
-    <div className="h-full flex flex-col" style={chatViewStyle}>
-      <ChatKeyboardHandler
-        handleSendMessage={handleSendMessage}
-        toggleSearch={toggleSearch}
-        messageText={messageText}
+    <div className="h-full flex flex-col overflow-hidden" style={chatViewStyle}>
+      <ChatViewHeader
+        title={conversation.title || "Chat"}
+        onBack={onBack}
         showSearch={showSearch}
+        onToggleSearch={toggleSearch}
+        searchTerm={searchTerm}
+        onSearch={searchMessages}
+        onClearSearch={clearSearch}
+        searchResultCount={searchResultCount}
+        isSearching={isSearching}
         showSearchFeature={showSearchFeature}
-        scrollToBottom={scrollToBottom}
-        loadOlderMessages={hasMoreMessages ? handleLoadMoreMessages : undefined}
-      >
-        <ChatViewHeader
-          conversation={conversation}
-          onBack={onBack}
-          showSearch={showSearch}
-          toggleSearch={toggleSearch}
-          searchMessages={searchMessages}
-          clearSearch={clearSearch}
-          searchResultCount={searchResultCount}
-          isSearching={isSearching}
-          showSearchFeature={showSearchFeature}
-          ticketProgress={ticketProgress}
-        />
+        agentStatus={conversation.agentInfo?.status}
+        agentName={conversation.agentInfo?.name}
+        agentAvatar={conversation.agentInfo?.avatar}
+        ticketProgress={ticketProgress}
+      />
 
+      {/* Sync pending messages button */}
+      {showSyncButton && (
+        <div className="px-4 py-2 bg-amber-50 border-b border-amber-100 flex justify-between items-center">
+          <span className="text-sm text-amber-800">
+            {pendingCount} unsent message{pendingCount !== 1 ? 's' : ''}
+          </span>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            className="bg-white text-amber-700 border-amber-300 hover:bg-amber-50"
+            onClick={onSyncPendingMessages}
+            disabled={isSyncing}
+          >
+            <CloudSyncIcon className="h-4 w-4 mr-2" />
+            Sync now
+          </Button>
+        </div>
+      )}
+
+      {/* Show sync in progress indicator */}
+      {isSyncing && (
+        <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 flex justify-center items-center">
+          <span className="flex items-center text-sm text-blue-800">
+            <CloudSyncIcon className="h-4 w-4 mr-2 animate-spin" />
+            Syncing messages...
+          </span>
+        </div>
+      )}
+
+      <ChatKeyboardHandler 
+        onSearch={toggleSearch} 
+        onSendMessage={handleSendMessage} 
+        showSearchFeature={showSearchFeature}
+        customShortcuts={customKeyboardShortcuts}
+        onSyncMessages={onSyncPendingMessages}
+      >
         <ChatBody
           messages={messages}
           messageText={messageText}
@@ -163,7 +197,7 @@ const ChatViewPresentation = ({
           onMessageReaction={onMessageReaction}
           searchTerm={searchTerm}
           messageIds={messageIds}
-          highlightMessage={adaptHighlightTextForChatBody}
+          highlightMessage={highlightText}
           agentAvatar={agentAvatar}
           userAvatar={userAvatar}
           handleLoadMoreMessages={handleLoadMoreMessages}
@@ -174,22 +208,14 @@ const ChatViewPresentation = ({
           conversationId={conversation.id}
           agentStatus={conversation.agentInfo?.status}
           onToggleHighlight={onToggleMessageImportance}
-          typingDuration={3000} // Add smart typing duration
+          typingDuration={3000}
+          connectionStatus={connectionStatus}
+          hasDraft={hasDraft}
+          pendingCount={pendingCount}
+          onSaveDraft={onSaveDraft}
+          onLoadDraft={onLoadDraft}
         />
       </ChatKeyboardHandler>
-
-      {/* Use simple PoweredByBar without config prop */}
-      {config?.branding?.showBrandingBar !== false && (
-        <PoweredByBar />
-      )}
-
-      {/* Enhanced keyboard shortcuts with customizable shortcuts */}
-      <div className="absolute bottom-16 right-2">
-        <KeyboardShortcutsInfo 
-          shortcuts={customShortcuts}
-          compact={true}
-        />
-      </div>
     </div>
   );
 };

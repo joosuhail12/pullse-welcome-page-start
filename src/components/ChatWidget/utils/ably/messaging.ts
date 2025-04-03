@@ -1,3 +1,4 @@
+
 import Ably from 'ably';
 import { 
   getAblyClient, isInFallbackMode, 
@@ -5,6 +6,7 @@ import {
 } from './config';
 import { dispatchValidatedEvent } from '../../embed/enhancedEvents';
 import { ChatEventType } from '../../config';
+import { addPendingMessage as addPendingMessageToStorage } from '../offlineStorage';
 
 /**
  * Subscribe to a channel and event
@@ -78,6 +80,11 @@ export const publishToChannel = (
     console.log(`Queueing message to ${channelName} (${eventName}) in fallback mode`);
     addPendingMessage(channelName, eventName, data);
     
+    // If message is user message (not typing indicator or read receipt), also store it in offline storage
+    if (eventName === 'message' && data.sender === 'user') {
+      addPendingMessageToStorage(channelName, data);
+    }
+    
     // Also dispatch local event in fallback mode for real-time-like behavior
     const localEventType = `local:${channelName}:${eventName}` as ChatEventType;
     dispatchValidatedEvent(localEventType, data);
@@ -92,6 +99,11 @@ export const publishToChannel = (
     
     // Queue message if publish fails
     addPendingMessage(channelName, eventName, data);
+    
+    // If message is user message (not typing indicator or read receipt), also store it in offline storage
+    if (eventName === 'message' && data.sender === 'user') {
+      addPendingMessageToStorage(channelName, data);
+    }
     
     // Also dispatch local event for fallback
     const localEventType = `local:${channelName}:${eventName}` as ChatEventType;

@@ -5,6 +5,8 @@ import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import PoweredByBar from './PoweredByBar';
 import { MessageReadStatus } from './MessageReadReceipt';
+import ConnectionStatusIndicator from './ConnectionStatusIndicator';
+import { ConnectionStatus } from '../utils/reconnectionManager';
 
 interface ChatBodyProps {
   messages: Message[];
@@ -31,7 +33,12 @@ interface ChatBodyProps {
   conversationId: string;
   agentStatus?: 'online' | 'offline' | 'away' | 'busy';
   onToggleHighlight?: (messageId: string) => void;
-  typingDuration?: number; // Added typingDuration prop
+  typingDuration?: number;
+  connectionStatus?: ConnectionStatus;
+  hasDraft?: boolean;
+  pendingCount?: number;
+  onSaveDraft?: (text: string) => void;
+  onLoadDraft?: () => string;
 }
 
 const ChatBody: React.FC<ChatBodyProps> = ({
@@ -59,7 +66,12 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   conversationId,
   agentStatus,
   onToggleHighlight,
-  typingDuration = 0 // Default value for typingDuration
+  typingDuration = 0,
+  connectionStatus = ConnectionStatus.CONNECTED,
+  hasDraft = false,
+  pendingCount = 0,
+  onSaveDraft,
+  onLoadDraft
 }) => {
   const [typingStartTime, setTypingStartTime] = useState<number | null>(null);
   const [calculatedTypingDuration, setCalculatedTypingDuration] = useState(typingDuration);
@@ -85,8 +97,45 @@ const ChatBody: React.FC<ChatBodyProps> = ({
     return () => clearInterval(intervalId);
   }, [typingStartTime]);
 
+  // Load draft when component mounts
+  useEffect(() => {
+    if (hasDraft && onLoadDraft && messageText === '') {
+      const draft = onLoadDraft();
+      if (draft) {
+        setMessageText(draft);
+      }
+    }
+  }, [hasDraft, onLoadDraft, messageText, setMessageText]);
+
+  // Save draft when message text changes
+  useEffect(() => {
+    if (onSaveDraft && messageText) {
+      onSaveDraft(messageText);
+    }
+  }, [messageText, onSaveDraft]);
+
+  // Handle user typing with draft support
+  const handleTyping = () => {
+    handleUserTyping();
+    if (onSaveDraft && messageText) {
+      onSaveDraft(messageText);
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-grow overflow-hidden">
+    <div className="flex flex-col flex-grow overflow-hidden relative">
+      {/* Connection status indicator */}
+      {connectionStatus !== ConnectionStatus.CONNECTED && (
+        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 z-20">
+          <ConnectionStatusIndicator 
+            status={connectionStatus} 
+            variant="compact"
+            showLabel
+            className="shadow-md" 
+          />
+        </div>
+      )}
+
       {inlineFormComponent}
       
       {(!showInlineForm || conversationId) && (
@@ -114,6 +163,18 @@ const ChatBody: React.FC<ChatBodyProps> = ({
       )}
       
       <div className="flex-shrink-0">
+        {pendingCount > 0 && (
+          <div className="text-xs text-amber-600 bg-amber-50 px-3 py-1.5 text-center">
+            {pendingCount} message{pendingCount !== 1 ? 's' : ''} pending to be sent
+          </div>
+        )}
+        
+        {hasDraft && (
+          <div className="text-xs text-blue-600 bg-blue-50 px-3 py-1.5 text-center">
+            Draft message loaded
+          </div>
+        )}
+        
         <MessageInput
           messageText={messageText}
           setMessageText={setMessageText}
@@ -121,8 +182,9 @@ const ChatBody: React.FC<ChatBodyProps> = ({
           handleFileUpload={handleFileUpload}
           handleEndChat={handleEndChat}
           hasUserSentMessage={isTyping}
-          onTyping={handleUserTyping}
+          onTyping={handleTyping}
           disabled={showInlineForm}
+          isOffline={connectionStatus !== ConnectionStatus.CONNECTED}
         />
         
         <PoweredByBar />
