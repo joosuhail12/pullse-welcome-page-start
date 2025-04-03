@@ -1,7 +1,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, MessageCircle, Clock, Users } from 'lucide-react';
+import { MessageSquare, MessageCircle, Clock } from 'lucide-react';
 import { defaultConfig, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
 import { dispatchChatEvent } from '../utils/events';
@@ -66,21 +66,13 @@ const HomeView = React.memo(({
           <div className="h-px flex-grow bg-gray-100"></div>
         </div>
         
-        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+        <div className="grid grid-cols-1 gap-2 sm:gap-3">
           <div className="bg-white/60 backdrop-blur-sm p-2 sm:p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-1 sm:gap-2 mb-1">
               <Clock size={isMobile ? 14 : 16} className="text-vivid-purple-500" />
               <span className="text-2xs sm:text-sm font-medium text-gray-700">Office Hours</span>
             </div>
             <p className="text-3xs sm:text-xs text-gray-500">Mon-Fri: 9 AM - 5 PM EST</p>
-          </div>
-          
-          <div className="bg-white/60 backdrop-blur-sm p-2 sm:p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-1 sm:gap-2 mb-1">
-              <Users size={isMobile ? 14 : 16} className="text-vivid-purple-500" />
-              <span className="text-2xs sm:text-sm font-medium text-gray-700">Team Size</span>
-            </div>
-            <p className="text-3xs sm:text-xs text-gray-500">10+ Support Agents</p>
           </div>
         </div>
       </div>
