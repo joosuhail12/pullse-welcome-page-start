@@ -29,14 +29,30 @@ export function useWidgetConfig(workspaceId?: string) {
           );
           
           // Use the default config for development mode
-          const devConfig = {
+          const devConfig = getDefaultConfig(workspaceId);
+          
+          // Ensure placement is a valid type
+          setConfig({
             ...defaultConfig,
             workspaceId,
-            // Merge with our simple default config
-            ...getDefaultConfig(workspaceId)
-          };
+            // Ensure the position has a valid placement value
+            position: {
+              ...defaultConfig.position,
+              ...(devConfig.position ? {
+                offsetX: devConfig.position.offsetX,
+                offsetY: devConfig.position.offsetY,
+                placement: devConfig.position.placement as "bottom-right" | "bottom-left" | "top-right" | "top-left"
+              } : {})
+            },
+            // Copy other safe properties
+            welcomeMessage: devConfig.welcomeMessage || defaultConfig.welcomeMessage,
+            preChatForm: devConfig.preChatForm || defaultConfig.preChatForm,
+            branding: devConfig.branding || defaultConfig.branding,
+            features: devConfig.features || defaultConfig.features,
+            realtime: devConfig.realtime || defaultConfig.realtime,
+            sessionId: devConfig.sessionId || defaultConfig.sessionId,
+          });
           
-          setConfig(devConfig);
           setError(null);
           return;
         }
@@ -49,7 +65,20 @@ export function useWidgetConfig(workspaceId?: string) {
           hasBranding: !!fetchedConfig.branding
         });
         
-        setConfig(fetchedConfig);
+        // Ensure placement is a valid type
+        setConfig({
+          ...defaultConfig,
+          ...fetchedConfig,
+          position: {
+            ...defaultConfig.position,
+            ...(fetchedConfig.position ? {
+              offsetX: fetchedConfig.position.offsetX,
+              offsetY: fetchedConfig.position.offsetY,
+              placement: fetchedConfig.position.placement as "bottom-right" | "bottom-left" | "top-right" | "top-left"
+            } : {})
+          }
+        });
+        
         setError(null);
       } catch (err) {
         const errorInstance = err instanceof Error ? err : new Error('Failed to fetch config');
@@ -57,12 +86,7 @@ export function useWidgetConfig(workspaceId?: string) {
         
         setError(errorInstance);
         // Still use default config as fallback
-        setConfig({
-          ...defaultConfig,
-          workspaceId,
-          // Merge with our simple default config
-          ...getDefaultConfig(workspaceId)
-        });
+        setConfig(defaultConfig);
       } finally {
         setLoading(false);
       }

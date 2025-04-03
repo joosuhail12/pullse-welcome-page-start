@@ -1,5 +1,6 @@
+
 import React, { useMemo } from 'react';
-import { Conversation } from '../../types';
+import { Conversation, Message, MessageReadStatus } from '../../types';
 import { ChatWidgetConfig } from '../../config';
 import ChatViewHeader from '../../components/ChatViewHeader';
 import PreChatForm from '../../components/PreChatForm';
@@ -20,7 +21,7 @@ interface ChatViewPresentationProps {
   handleUserTyping: () => void;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
-  readReceipts: Record<string, Date>;
+  readReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }>;
   onBack: () => void;
   showSearch: boolean;
   toggleSearch: () => void;

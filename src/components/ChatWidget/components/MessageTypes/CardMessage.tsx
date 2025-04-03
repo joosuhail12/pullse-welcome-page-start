@@ -1,53 +1,45 @@
 
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { sanitizeInput } from '../../utils/validation';
+import { Card, CardContent } from '@/components/ui/card';
 
-interface CardButton {
-  text: string;
-  action: string;
+export interface CardMessageProps {
+  metadata?: Record<string, any>;
 }
 
-interface CardMessageProps {
-  cardData: {
-    title: string;
-    description: string;
-    imageUrl?: string;
-    buttons?: CardButton[];
-  };
-}
-
-const CardMessage = ({ cardData }: CardMessageProps) => {
-  // Sanitize card data
-  const cardTitle = cardData.title ? sanitizeInput(cardData.title) : '';
-  const cardDesc = cardData.description ? sanitizeInput(cardData.description) : '';
+const CardMessage: React.FC<CardMessageProps> = ({ metadata }) => {
+  if (!metadata) return null;
   
+  const title = metadata.title || '';
+  const description = metadata.description || '';
+  const imageUrl = metadata.imageUrl || '';
+  const buttons = metadata.buttons || [];
+
   return (
     <Card className="w-full max-w-xs mt-2 shadow-sm">
-      {cardData.imageUrl && (
+      {imageUrl && (
         <div className="aspect-video overflow-hidden">
           <img 
-            src={cardData.imageUrl} 
-            alt={cardTitle} 
+            src={imageUrl} 
+            alt={title} 
             className="w-full h-full object-cover"
           />
         </div>
       )}
       <CardContent className="p-4">
-        <h4 className="font-semibold">{cardTitle}</h4>
-        <p className="text-sm text-gray-600 mt-1">{cardDesc}</p>
+        <h4 className="font-semibold">{title}</h4>
+        <p className="text-sm text-gray-600 mt-1">{description}</p>
         
-        {cardData.buttons && cardData.buttons.length > 0 && (
+        {buttons && buttons.length > 0 && (
           <div className="mt-3 flex flex-col gap-2">
-            {cardData.buttons.map((button, i) => (
+            {buttons.map((button: {text: string, action: string}, i: number) => (
               <Button 
                 key={i} 
                 size="sm" 
                 variant="outline" 
                 className="w-full"
               >
-                {sanitizeInput(button.text)}
+                {button.text}
               </Button>
             ))}
           </div>

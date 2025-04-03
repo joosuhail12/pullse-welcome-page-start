@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Conversation } from '../../types';
 import { ChatWidgetConfig, defaultConfig } from '../../config';
@@ -41,7 +42,7 @@ const ChatViewContainer = ({
   // Use the new inline form hook
   const {
     showInlineForm,
-    handleFormComplete
+    handleFormComplete: handleInlineFormComplete
   } = useInlineForm(
     conversation,
     config,
@@ -119,8 +120,6 @@ const ChatViewContainer = ({
   }, [loadPreviousMessages]);
 
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
-    setShowInlineForm(false);
-    
     if (setUserFormData) {
       setUserFormData(formData);
     }

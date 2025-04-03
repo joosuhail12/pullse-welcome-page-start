@@ -36,7 +36,7 @@ const ChatWidgetErrorBoundary = ({ children, workspaceId }: ChatWidgetErrorBound
     );
     
     // Dispatch event with sanitized error message
-    dispatchChatEvent('error', { error: safeErrorMessage }, undefined);
+    dispatchChatEvent('chat:error', { error: safeErrorMessage }, undefined);
   };
   
   return (

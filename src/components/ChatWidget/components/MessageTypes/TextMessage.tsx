@@ -1,20 +1,29 @@
 
 import React from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
 
-interface TextMessageProps {
+export interface TextMessageProps {
   text: string;
-  renderText: (text: string) => React.ReactNode;
+  highlightText?: string;
 }
 
-const TextMessage = ({ text, renderText }: TextMessageProps) => {
-  const isMobile = useIsMobile();
-  const textSizeClass = isMobile 
-    ? "text-xs sm:text-sm leading-tight" 
-    : "text-sm sm:text-base leading-relaxed";
+const TextMessage: React.FC<TextMessageProps> = ({ text, highlightText }) => {
+  if (!highlightText) {
+    return <p className="whitespace-pre-wrap break-words">{text}</p>;
+  }
+  
+  // Simple highlighting implementation - would be replaced with the actual implementation
+  const parts = text.split(new RegExp(`(${highlightText})`, 'gi'));
   
   return (
-    <p className={`${textSizeClass} tracking-wide break-words`}>{renderText(text)}</p>
+    <p className="whitespace-pre-wrap break-words">
+      {parts.map((part, i) =>
+        part.toLowerCase() === highlightText.toLowerCase() ? (
+          <mark key={i} className="bg-yellow-200">{part}</mark>
+        ) : (
+          <React.Fragment key={i}>{part}</React.Fragment>
+        )
+      )}
+    </p>
   );
 };
 

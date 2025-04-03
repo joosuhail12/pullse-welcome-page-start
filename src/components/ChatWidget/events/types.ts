@@ -23,4 +23,5 @@ export interface IEventManager {
   handleEvent(event: ChatEventPayload, priority?: EventPriority): void;
   createEvent(type: ChatEventType, data?: any): ChatEventPayload | null;
   dispose(): void;
+  removeAllListeners(): void;
 }

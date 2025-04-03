@@ -1,4 +1,3 @@
-
 /**
  * Chat Widget Configuration Types
  */
@@ -64,6 +63,7 @@ export type ChatEventType =
   | 'chat:typingStopped'
   | 'message:fileUploaded'
   | 'chat:ended'
+  | 'chat:error'
   | 'chat:configUpdated'; // Added new event type for configuration updates
 
 export interface ChatEventPayload {

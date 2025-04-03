@@ -1,41 +1,62 @@
 
 import React from 'react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserType } from '../../types';
 
-interface MessageAvatarProps {
-  sender: 'user' | 'system' | 'status';
+export interface MessageAvatarProps {
+  sender?: UserType;
   avatarUrl?: string;
-  isRight?: boolean;
-  status?: 'online' | 'offline' | 'away' | 'busy' | undefined;
+  status?: 'online' | 'offline' | 'away' | 'busy';
+  isUserMessage?: boolean;
+  userAvatar?: string;
+  agentAvatar?: string;
 }
 
-const MessageAvatar = ({ sender, avatarUrl, isRight = false, status }: MessageAvatarProps) => {
-  const hasAvatar = !!avatarUrl;
-  const initials = sender === 'system' ? 'AI' : 'U';
-  const avatarClass = sender === 'system' ? 'bg-vivid-purple/20 text-vivid-purple' : 'bg-gray-200 text-gray-700';
+const MessageAvatar: React.FC<MessageAvatarProps> = ({ 
+  sender = 'system',
+  avatarUrl,
+  status,
+  isUserMessage,
+  userAvatar,
+  agentAvatar
+}) => {
+  // Determine which avatar URL to use
+  const avatarSrc = isUserMessage ? userAvatar : (avatarUrl || agentAvatar);
   
-  // Status indicator colors
-  const statusColors = {
-    online: 'bg-green-500',
-    offline: 'bg-gray-400',
-    away: 'bg-yellow-500',
-    busy: 'bg-red-500'
+  // Generate initials for fallback
+  const getInitials = () => {
+    if (sender === 'user') return 'U';
+    if (sender === 'system' || sender === 'agent' || sender === 'bot') return 'A';
+    return '?';
   };
-  
-  const statusColor = status ? statusColors[status] : null;
-  
+
+  // Style for status indicator
+  const getStatusColor = () => {
+    switch (status) {
+      case 'online': return 'bg-green-500';
+      case 'away': return 'bg-yellow-500';
+      case 'busy': return 'bg-red-500';
+      case 'offline':
+      default: return 'bg-gray-400';
+    }
+  };
+
+  // Style for avatar fallback
+  const avatarFallbackClass = sender === 'user' 
+    ? 'bg-gray-200 text-gray-700' 
+    : 'bg-vivid-purple/20 text-vivid-purple';
+
   return (
-    <div className={`flex-shrink-0 relative ${isRight ? 'order-last ml-2' : 'mr-2'}`}>
-      <Avatar className="h-8 w-8 rounded-full border border-white/10">
-        {hasAvatar && <AvatarImage src={avatarUrl} alt={sender} className="rounded-full" />}
-        <AvatarFallback className={`${avatarClass} rounded-full`}>{initials}</AvatarFallback>
+    <div className="flex-shrink-0 relative">
+      <Avatar className="h-8 w-8">
+        {avatarSrc && <AvatarImage src={avatarSrc} alt={sender} />}
+        <AvatarFallback className={avatarFallbackClass}>{getInitials()}</AvatarFallback>
       </Avatar>
       
-      {/* Status indicator */}
-      {statusColor && (
+      {status && sender !== 'user' && (
         <span 
-          className={`absolute bottom-0 ${isRight ? 'left-0' : 'right-0'} w-2.5 h-2.5 ${statusColor} rounded-full ring-1 ring-white`}
-          aria-label={`Status: ${status}`}
+          className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ${getStatusColor()} ring-1 ring-white`}
+          aria-label={`Agent is ${status}`}
         />
       )}
     </div>

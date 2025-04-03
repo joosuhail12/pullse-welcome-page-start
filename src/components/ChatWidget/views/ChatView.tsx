@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Conversation } from '../types';
+import { Conversation, MessageReadStatus } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
@@ -114,6 +114,18 @@ const ChatView = React.memo(({
     }
   }, [loadPreviousMessages]);
 
+  // Convert readReceipts to the correct format
+  const formattedReadReceipts = useMemo(() => {
+    const formatted: Record<string, { status: MessageReadStatus; timestamp?: Date }> = {};
+    Object.entries(readReceipts).forEach(([messageId, timestamp]) => {
+      formatted[messageId] = {
+        status: 'read',
+        timestamp
+      };
+    });
+    return formatted;
+  }, [readReceipts]);
+
   // Prepare content for rendering
   const agentAvatar = useMemo(() => conversation.agentInfo?.avatar || config?.branding?.avatarUrl, 
     [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]);
@@ -172,7 +184,7 @@ const ChatView = React.memo(({
             messages={messages}
             isTyping={isTyping || remoteIsTyping}
             setMessageText={setMessageText}
-            readReceipts={readReceipts}
+            readReceipts={formattedReadReceipts}
             onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
             searchResults={messageIds}
             highlightMessage={highlightText}

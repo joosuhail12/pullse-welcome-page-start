@@ -1,3 +1,4 @@
+
 import { PullseChatWidgetOptions, EventCallback } from '../types';
 import { ChatEventType, ChatEventPayload } from '../../config';
 import { validateWidgetOptions } from './optionsValidator';
@@ -14,6 +15,7 @@ import {
   unsubscribeFromWidgetEvent,
   dispatchWidgetEvent
 } from '../events/widgetEvents';
+import { cleanupEventHandlers } from '../enhancedEvents';
 
 export class PullseChatWidgetLoader {
   private options: PullseChatWidgetOptions;
