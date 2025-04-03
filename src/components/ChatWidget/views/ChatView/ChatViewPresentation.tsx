@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import { Conversation, Message, AgentStatus } from '../../types';
 import { ChatWidgetConfig } from '../../config';
@@ -102,14 +101,9 @@ const ChatViewPresentation = ({
     if (!text) return [''];
     if (!searchTerm) return [text];
     
-    // Use the highlightText function if available, otherwise implement a simple version
-    if (typeof highlightText === 'function') {
-      return highlightText(text);
-    }
-    
-    // Simple fallback implementation
+    // Simple implementation that returns string array for highlighted parts
     const regex = new RegExp(`(${searchTerm})`, 'gi');
-    return text.split(regex);
+    return text.split(regex).filter(Boolean);
   };
 
   // Track agent status changes

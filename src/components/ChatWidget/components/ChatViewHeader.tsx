@@ -19,6 +19,14 @@ interface ChatViewHeaderProps {
   isSearching: boolean;
   showSearchFeature?: boolean;
   ticketProgress?: number;
+  title?: string;
+  onToggleSearch?: () => void;
+  searchTerm?: string;
+  onSearch?: (term: string) => void;
+  onClearSearch?: () => void;
+  connectionStatus?: string;
+  onSync?: () => Promise<void>;
+  syncInProgress?: boolean;
 }
 
 const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
@@ -32,7 +40,25 @@ const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
   isSearching,
   showSearchFeature = true,
   ticketProgress,
+  // Using the new props if provided, falling back to existing functionality
+  title,
+  onToggleSearch,
+  searchTerm,
+  onSearch,
+  onClearSearch,
+  connectionStatus,
+  onSync,
+  syncInProgress,
 }) => {
+  // Use the toggleSearch function provided or fall back to the existing one
+  const handleToggleSearch = onToggleSearch || toggleSearch;
+  
+  // Use the clearSearch function provided or fall back to the existing one
+  const handleClearSearch = onClearSearch || clearSearch;
+  
+  // Use the search function provided or fall back to the existing one
+  const handleSearch = onSearch || searchMessages;
+  
   // Determine ticket status from conversation.status
   const getTicketStatus = () => {
     if (!conversation.status) return 'new';
@@ -76,7 +102,7 @@ const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
             <div className="flex-1 flex flex-col justify-center overflow-hidden min-w-0">
               <div className="flex items-center">
                 <h3 className="font-semibold truncate text-md text-black">
-                  {conversation.title}
+                  {title || conversation.title}
                 </h3>
                 
                 <Tooltip>
@@ -120,7 +146,8 @@ const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
                 type="text"
                 placeholder="Search messages..."
                 className="h-8 bg-black/10 border-0 text-black placeholder:text-black/70 focus-visible:ring-black/30"
-                onChange={(e) => searchMessages(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
+                value={searchTerm}
                 autoFocus
               />
               <span className="mx-2 text-xs text-black/90 font-medium">
@@ -135,11 +162,41 @@ const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={showSearch ? clearSearch : toggleSearch}
+              onClick={showSearch ? handleClearSearch : handleToggleSearch}
               className="p-1.5 text-black hover:bg-black/20 hover:text-black rounded-full"
               aria-label={showSearch ? 'Close search' : 'Search messages'}
             >
               {showSearch ? <X size={16} /> : <Search size={16} />}
+            </Button>
+          )}
+          
+          {/* Optional sync button when onSync is provided */}
+          {onSync && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onSync()}
+              disabled={syncInProgress}
+              className="p-1.5 ml-1 text-black hover:bg-black/20 hover:text-black rounded-full"
+              aria-label="Sync messages"
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                className={syncInProgress ? "animate-spin" : ""}
+              >
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                <path d="M3 3v5h5"></path>
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+                <path d="M16 16h5v5"></path>
+              </svg>
             </Button>
           )}
         </div>
