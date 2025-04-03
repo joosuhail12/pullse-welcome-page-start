@@ -3,40 +3,7 @@ import { useState, useCallback } from 'react';
 import { Message } from '../types';
 import { publishToChannel } from '../utils/ably';
 import { dispatchChatEvent } from '../utils/events';
-
-export interface ChatWidgetConfig {
-  workspaceId: string;
-  welcomeMessage?: string;
-  branding?: {
-    primaryColor?: string;
-    showBrandingBar?: boolean;
-    logoUrl?: string;
-    avatarUrl?: string;
-    widgetTitle?: string;
-  };
-  position?: {
-    placement: "bottom-right" | "bottom-left" | "top-right" | "top-left";
-    offsetX?: number;
-    offsetY?: number;
-  };
-  realtime?: {
-    enabled?: boolean;
-    connectionTimeout?: number;
-    reconnectAttempts?: number;
-  };
-  features?: {
-    searchMessages?: boolean;
-    messageReactions?: boolean;
-    readReceipts?: boolean;
-    fileUploads?: boolean;
-    prechatForm?: boolean;
-  };
-  events?: {
-    onMessage?: (message: any) => void;
-    onError?: (error: any) => void;
-  };
-  testMode?: boolean;
-}
+import { ChatWidgetConfig } from '../config';
 
 export function useMessageReactions(
   messages: Message[],

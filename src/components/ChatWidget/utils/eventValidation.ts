@@ -86,6 +86,7 @@ export function createValidatedEvent(type: string, data?: any): ChatEventPayload
 // Define EventPriority as an enum with values
 export enum EventPriority {
   HIGH = 'high',
+  MEDIUM = 'medium',
   NORMAL = 'normal',
   LOW = 'low'
 }

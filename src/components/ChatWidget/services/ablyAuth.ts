@@ -3,7 +3,8 @@ import { getChatSessionId } from '../utils/cookies';
 import { getCsrfToken, signMessage } from '../utils/security';
 import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
-import { auditLogger, SecurityEventType } from '@/lib/audit-logger';
+import { auditLogger } from '@/lib/audit-logger';
+import { SecurityEventType } from '../utils/securityTypes';
 
 interface TokenParams {
   workspaceId: string;

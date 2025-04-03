@@ -1,6 +1,7 @@
 
 import { ChatEventType, ChatEventPayload, ChatWidgetConfig } from '../config';
 import { logger } from '@/lib/logger';
+import { EventPriority } from './eventValidation';
 
 /**
  * Dispatches a chat widget event as a CustomEvent on the window object
@@ -8,23 +9,25 @@ import { logger } from '@/lib/logger';
  * 
  * @param eventType The type of event to dispatch
  * @param data Optional data to include with the event
- * @param config The chat widget configuration
+ * @param priority Optional priority of the event
  */
 export function dispatchChatEvent(
   eventType: ChatEventType, 
   data?: any, 
-  config?: ChatWidgetConfig
+  priority?: EventPriority
 ): void {
   // Create event payload
   const payload: ChatEventPayload = {
     type: eventType,
     timestamp: new Date(),
-    data
+    data,
+    priority
   };
   
   // Debug log in development only
   logger.debug(`Dispatching event: ${eventType}`, 'events', {
-    data: import.meta.env.DEV ? data : undefined
+    data: import.meta.env.DEV ? data : undefined,
+    priority
   });
   
   // Dispatch window CustomEvent
@@ -35,6 +38,9 @@ export function dispatchChatEvent(
       cancelable: true
     })
   );
+  
+  // Get the global config if available
+  const config = (window as any).__PULLSE_CHAT_CONFIG__ as ChatWidgetConfig | undefined;
   
   // Call the onEvent callback if provided
   if (config?.onEvent) {
