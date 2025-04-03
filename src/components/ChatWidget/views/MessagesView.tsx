@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Plus, Trash2, ArrowUp, ArrowDown, Info, Calendar } from 'lucide-react';
@@ -13,7 +12,7 @@ import { loadConversationsFromStorage, deleteConversationFromStorage } from '../
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useUnreadMessages } from '../hooks/useUnreadMessages';
 import { format } from 'date-fns';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface MessagesViewProps {
@@ -26,10 +25,47 @@ type GroupBy = 'none' | 'date';
 
 const ITEMS_PER_PAGE = 10;
 
+const MOCK_CONVERSATIONS: Conversation[] = [
+  {
+    id: 'mock-1',
+    title: 'Support Chat',
+    lastMessage: 'Thank you for contacting us. How can we help you today?',
+    timestamp: new Date(Date.now() - 1000 * 60 * 10), // 10 minutes ago
+    status: 'active',
+    agentInfo: {
+      name: 'Support Agent',
+      avatar: undefined
+    }
+  },
+  {
+    id: 'mock-2',
+    title: 'Technical Support',
+    lastMessage: 'Have you tried restarting the application?',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
+    status: 'ended',
+    agentInfo: {
+      name: 'Tech Support',
+      avatar: undefined
+    }
+  },
+  {
+    id: 'mock-3',
+    title: 'Billing Inquiry',
+    lastMessage: 'Your subscription will renew on the 15th of next month.',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
+    status: 'ended',
+    agentInfo: {
+      name: 'Billing Department',
+      avatar: undefined
+    }
+  }
+];
+
 const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [useMockData, setUseMockData] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [groupBy, setGroupBy] = useState<GroupBy>('date');
@@ -40,7 +76,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   const [animateOut, setAnimateOut] = useState<string | null>(null);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
 
-  // Storage event listener for cross-tab synchronization
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'chat_widget_conversations') {
@@ -48,10 +83,18 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       }
     };
 
+    const handleCustomStorageChange = (event: CustomEvent) => {
+      if (event.detail?.key === 'chat_widget_conversations') {
+        loadConversationsData();
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('storage-updated', handleCustomStorageChange as EventListener);
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('storage-updated', handleCustomStorageChange as EventListener);
     };
   }, []);
 
@@ -60,28 +103,35 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     setLoadingError(null);
 
     try {
-      // Adding error handling with retry logic
       let retries = 3;
       let conversationsData: Conversation[] = [];
       
       while (retries > 0) {
         try {
           conversationsData = loadConversationsFromStorage();
-          break; // Success, exit the retry loop
+          setUseMockData(false);
+          break;
         } catch (error) {
           retries--;
           if (retries === 0) {
-            throw error; // No more retries, throw the error
+            console.error('Error loading conversations after retries:', error);
+            setUseMockData(true);
+            conversationsData = [...MOCK_CONVERSATIONS];
+            setLoadingError('Using demo data. Some features may be limited.');
+            toast.warning('Using demo data. Real conversations could not be loaded.');
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
-          await new Promise(resolve => setTimeout(resolve, 500)); // Wait before retrying
         }
       }
 
       setConversations(conversationsData);
     } catch (error) {
       console.error('Error loading conversations:', error);
-      setLoadingError('Failed to load conversations. Please try again.');
-      toast.error('Failed to load conversations');
+      setUseMockData(true);
+      setConversations([...MOCK_CONVERSATIONS]);
+      setLoadingError('Using demo data. Some features may be limited.');
+      toast.warning('Using demo data. Real conversations could not be loaded.');
     } finally {
       setIsLoading(false);
     }
@@ -92,28 +142,25 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   }, [loadConversationsData]);
 
   const handleDeleteConversation = useCallback(async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation(); // Prevent triggering the parent onClick
-    
-    // Set animate out class for the conversation being deleted
+    e.stopPropagation();
     setAnimateOut(id);
-    
-    // Wait for animation to complete before actually deleting
     setTimeout(async () => {
       try {
-        // Delete from storage with error handling
+        if (useMockData) {
+          setConversations(prev => prev.filter(conv => conv.id !== id));
+          toast.success('Conversation deleted');
+          return;
+        }
         await deleteConversationFromStorage(id);
-        
-        // Update local state
         setConversations(prev => prev.filter(conv => conv.id !== id));
         toast.success('Conversation deleted');
       } catch (error) {
         console.error('Error deleting conversation:', error);
         toast.error('Failed to delete conversation. Please try again.');
-        // Reset animation if deletion fails
         setAnimateOut(null);
       }
-    }, 300); // Match animation duration
-  }, []);
+    }, 300);
+  }, [useMockData]);
 
   const formatDateDisplay = useCallback((date: Date): string => {
     return format(date, 'MMM d, yyyy');
@@ -124,32 +171,25 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     const diff = now.getTime() - date.getTime();
     
     if (diff < 1000 * 60 * 60) {
-      // Less than an hour ago
       return `${Math.floor(diff / (1000 * 60))}m ago`;
     } else if (diff < 1000 * 60 * 60 * 24) {
-      // Less than a day ago
       return `${Math.floor(diff / (1000 * 60 * 60))}h ago`;
     } else {
-      // More than a day ago
       return format(date, 'h:mm a');
     }
   }, []);
 
   const handleStartNewChat = useCallback(() => {
-    // Notify the parent component to start a new chat
     onSelectConversation({
       id: `conv-${Date.now()}`,
       title: 'New Conversation',
       lastMessage: '',
       timestamp: new Date(),
-      status: 'active' // Set default status for new conversations
+      status: 'active'
     });
-    
-    // Clear unread message count
     clearUnreadMessages();
   }, [onSelectConversation, clearUnreadMessages]);
 
-  // Handle search functionality with debouncing
   const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
     setIsSearching(true);
@@ -163,13 +203,12 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     setIsSearching(false);
   }, [conversations]);
 
-  // Optimized with debounce
   useEffect(() => {
     const debouncedSearch = setTimeout(() => {
       if (searchTerm) {
         handleSearch(searchTerm);
       }
-    }, 300); // 300ms debounce delay
+    }, 300);
 
     return () => clearTimeout(debouncedSearch);
   }, [searchTerm, handleSearch]);
@@ -179,7 +218,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     setSearchResults([]);
   }, []);
 
-  // Group conversations by date
   const groupConversations = useCallback((conversations: Conversation[]) => {
     if (groupBy === 'none') {
       return { 'All Conversations': conversations };
@@ -222,17 +260,13 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     }, {});
   }, [groupBy]);
 
-  // Apply sorting and filtering - memoized to prevent unnecessary recalculations
   const filteredAndSortedConversations = useMemo(() => {
-    // First apply the search filter if there's a search term
     let filtered = searchTerm ? searchResults : [...conversations];
     
-    // Then apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(conv => conv.status === statusFilter);
     }
     
-    // Finally sort the results
     return filtered.sort((a, b) => {
       if (sortOrder === 'newest') {
         return b.timestamp.getTime() - a.timestamp.getTime();
@@ -242,29 +276,24 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     });
   }, [conversations, sortOrder, statusFilter, searchTerm, searchResults]);
 
-  // Group the conversations
   const groupedConversations = useMemo(() => {
     return groupConversations(filteredAndSortedConversations);
   }, [filteredAndSortedConversations, groupConversations]);
 
-  // Get all groups in order
   const orderedGroups = useMemo(() => {
     if (groupBy === 'none') return ['All Conversations'];
     
     const priorityOrder = ['Today', 'Yesterday', 'This Week', 'This Month', 'Older'];
     return priorityOrder.filter(group => groupedConversations[group] && groupedConversations[group].length > 0);
   }, [groupedConversations, groupBy]);
-  
-  // Calculate total items across all groups
+
   const totalItems = useMemo(() => {
     return filteredAndSortedConversations.length;
   }, [filteredAndSortedConversations]);
 
-  // Pagination calculation - memoized
   const paginationData = useMemo(() => {
     const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
     
-    // Ensure current page is valid
     const validCurrentPage = Math.min(currentPage, totalPages);
     if (validCurrentPage !== currentPage) {
       setCurrentPage(validCurrentPage);
@@ -273,7 +302,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     const startIndex = (validCurrentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
     
-    // Create paged grouped conversations
     const pagedGroupedConversations: Record<string, Conversation[]> = {};
     
     if (groupBy === 'none') {
@@ -284,7 +312,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       for (const group of orderedGroups) {
         const groupConversations = groupedConversations[group];
         
-        // If we're past our start index, start including conversations
         if (currentIdx + groupConversations.length > startIndex) {
           const groupStartIdx = Math.max(0, startIndex - currentIdx);
           const groupEndIdx = Math.min(groupConversations.length, endIndex - currentIdx);
@@ -296,7 +323,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         
         currentIdx += groupConversations.length;
         
-        // If we've reached our end index, stop
         if (currentIdx >= endIndex) break;
       }
     }
@@ -311,28 +337,24 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     };
   }, [filteredAndSortedConversations, currentPage, groupBy, groupedConversations, orderedGroups, totalItems]);
 
-  // Handle page change
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
   }, []);
 
-  // Retry loading data
   const handleRetryLoading = useCallback(() => {
+    setUseMockData(false);
     loadConversationsData();
   }, [loadConversationsData]);
 
-  // Handle selecting a conversation - also clears unread count
   const handleSelectConversation = useCallback((conversation: Conversation) => {
     clearUnreadMessages();
     onSelectConversation(conversation);
   }, [clearUnreadMessages, onSelectConversation]);
 
-  // Toggle grouping
   const toggleGrouping = useCallback(() => {
     setGroupBy(prev => prev === 'none' ? 'date' : 'none');
   }, []);
 
-  // Loading skeletons for conversation items
   const renderSkeletons = () => (
     <div className="space-y-3">
       {Array(3).fill(0).map((_, i) => (
@@ -345,6 +367,55 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
           <Skeleton className="h-4 w-10" />
         </div>
       ))}
+    </div>
+  );
+
+  const EmptyState = () => (
+    <div className="text-center py-8 text-gray-500 animate-fade-in">
+      <div className="bg-white/70 backdrop-blur-sm p-6 rounded-lg max-w-xs mx-auto shadow-sm">
+        <div className="flex justify-center mb-4">
+          <div className="relative">
+            <MessageSquare className="mx-auto text-gray-300" size={40} strokeWidth={1.5} />
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm">
+              <Plus className="text-vivid-purple" size={18} />
+            </div>
+          </div>
+        </div>
+        <h3 className="font-medium text-gray-700 mb-2">No conversations found</h3>
+        {searchTerm ? (
+          <p className="text-sm mb-4">Try adjusting your search or filters to find what you're looking for.</p>
+        ) : statusFilter !== 'all' ? (
+          <p className="text-sm mb-4">No {statusFilter} conversations found. Try changing your filter.</p>
+        ) : (
+          <>
+            <p className="text-sm mb-4">Start your first conversation to receive support or information.</p>
+            <div className="flex flex-col gap-2 text-sm text-gray-600 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">1</div>
+                <span>Click the "+" button to start chatting</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">2</div>
+                <span>Ask questions or request assistance</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">3</div>
+                <span>Get answers from our support team</span>
+              </div>
+            </div>
+          </>
+        )}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="mt-2 mx-auto text-vivid-purple border-vivid-purple hover:text-vivid-purple/90 hover:bg-vivid-purple/5"
+          onClick={handleStartNewChat}
+          aria-label="Start a new conversation"
+        >
+          <Plus size={16} className="mr-1" />
+          Start a new conversation
+        </Button>
+      </div>
     </div>
   );
 
@@ -381,6 +452,21 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         resultCount={searchTerm ? filteredAndSortedConversations.length : 0}
         isSearching={isSearching}
       />
+      
+      {loadingError && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs p-2 rounded-md mb-2 flex items-center">
+          <Info size={14} className="mr-1.5 flex-shrink-0" />
+          <span className="flex-1">{loadingError}</span>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="ml-2 h-6 px-2 py-0 text-xs hover:bg-yellow-100"
+            onClick={handleRetryLoading}
+          >
+            Retry
+          </Button>
+        </div>
+      )}
       
       <div className="flex items-center justify-between px-2 py-2 bg-white/60 backdrop-blur-sm rounded-md mb-2 shadow-sm" role="toolbar" aria-label="Conversation sorting and filtering options">
         <div className="flex items-center gap-2">
@@ -431,20 +517,8 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
           <div className="p-4 space-y-4">
             {renderSkeletons()}
           </div>
-        ) : loadingError ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="text-red-500 mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="8" x2="12" y2="12"></line>
-                <line x1="12" y1="16" x2="12.01" y2="16"></line>
-              </svg>
-            </div>
-            <p className="text-gray-700 mb-2">{loadingError}</p>
-            <Button variant="outline" size="sm" onClick={handleRetryLoading}>
-              Try Again
-            </Button>
-          </div>
+        ) : filteredAndSortedConversations.length === 0 ? (
+          <EmptyState />
         ) : (
           <div className="space-y-4 px-1">
             {Object.keys(paginationData.pagedGroupedConversations).length === 0 ? (
@@ -566,7 +640,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                           {conversation.lastMessage || 'No messages yet'}
                         </p>
 
-                        {/* Start date display with tooltip */}
                         <div className="flex items-center gap-1 ml-6 mt-2 text-xs text-gray-400">
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -607,8 +680,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         )}
       </ScrollArea>
 
-      {/* Pagination controls with updated styling */}
-      {paginationData.totalPages > 1 && (
+      {paginationData?.totalPages > 1 && (
         <Pagination className="mt-4">
           <PaginationContent role="navigation" aria-label="Conversation pagination">
             <PaginationItem>
@@ -620,7 +692,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
               />
             </PaginationItem>
             
-            {/* Generate page numbers */}
             {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1).map(page => (
               <PaginationItem key={page}>
                 <PaginationLink 

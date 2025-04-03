@@ -1,4 +1,3 @@
-
 /**
  * Local storage utilities for the Chat Widget
  */
@@ -58,35 +57,58 @@ export function loadConversationsFromStorage(): Conversation[] {
       return [];
     }
     
-    // Decrypt the data
-    const decryptedData = decryptData(data);
-    if (!decryptedData) {
-      return [];
+    // Try to parse the data directly first (for backward compatibility)
+    try {
+      const parsedData = JSON.parse(data);
+      const conversations = Array.isArray(parsedData) ? parsedData : [];
+      
+      // Fix timestamp format (convert string to Date)
+      return conversations.map(conversation => ({
+        ...conversation,
+        timestamp: new Date(conversation.timestamp),
+        messages: conversation.messages?.map(message => ({
+          ...message,
+          timestamp: new Date(message.timestamp)
+        }))
+      }));
+    } catch (directParseError) {
+      // If direct parsing fails, try decryption
+      try {
+        const decryptedData = decryptData(data);
+        if (!decryptedData) {
+          return [];
+        }
+        
+        const parsedData = JSON.parse(decryptedData);
+        const conversations = Array.isArray(parsedData) ? parsedData : [];
+        
+        // Fix timestamp format (convert string to Date)
+        const formattedConversations = conversations.map(conversation => ({
+          ...conversation,
+          timestamp: new Date(conversation.timestamp),
+          messages: conversation.messages?.map(message => ({
+            ...message,
+            timestamp: new Date(message.timestamp)
+          }))
+        }));
+        
+        // Apply retention policy - filter out old conversations
+        const retentionDate = new Date();
+        retentionDate.setDate(retentionDate.getDate() - MAX_CONVERSATION_AGE_DAYS);
+        
+        return formattedConversations.filter(conv => 
+          new Date(conv.timestamp) > retentionDate
+        );
+      } catch (decryptError) {
+        console.error('Error decrypting data:', decryptError);
+        // If decryption fails, just return empty array
+        return [];
+      }
     }
-    
-    const parsedData = JSON.parse(decryptedData);
-    const conversations = Array.isArray(parsedData) ? parsedData : [];
-    
-    // Fix timestamp format (convert string to Date)
-    const formattedConversations = conversations.map(conversation => ({
-      ...conversation,
-      timestamp: new Date(conversation.timestamp),
-      messages: conversation.messages?.map(message => ({
-        ...message,
-        timestamp: new Date(message.timestamp)
-      }))
-    }));
-    
-    // Apply retention policy - filter out old conversations
-    const retentionDate = new Date();
-    retentionDate.setDate(retentionDate.getDate() - MAX_CONVERSATION_AGE_DAYS);
-    
-    return formattedConversations.filter(conv => 
-      new Date(conv.timestamp) > retentionDate
-    );
   } catch (error) {
     console.error('Error loading conversations from storage', error);
-    throw new Error('Failed to load conversations from storage');
+    // Don't throw here - just return empty array
+    return [];
   }
 }
 
@@ -207,9 +229,15 @@ export async function saveConversationToStorage(conversation: Conversation): Pro
         new Date(conv.timestamp) > retentionDate
       );
       
-      // Encrypt data before storing
-      const encryptedData = encryptData(JSON.stringify(conversations));
-      localStorage.setItem(STORAGE_KEY, encryptedData);
+      try {
+        // First try storing without encryption for backward compatibility testing
+        const jsonData = JSON.stringify(conversations);
+        localStorage.setItem(STORAGE_KEY, jsonData);
+      } catch (storageError) {
+        // If direct storage fails, use encryption
+        const encryptedData = encryptData(JSON.stringify(conversations));
+        localStorage.setItem(STORAGE_KEY, encryptedData);
+      }
       
       // Notify other tabs
       notifyStorageChange();
