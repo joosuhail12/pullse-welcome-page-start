@@ -30,7 +30,10 @@ export interface Message {
 
 export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
 export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status';
-export type MessageReadStatus = 'sent' | 'delivered' | 'read';
+
+// Import instead of redefining
+import type { MessageReadStatus } from './components/MessageReadReceipt';
+export type { MessageReadStatus };
 
 export interface Conversation {
   id: string;
@@ -83,6 +86,7 @@ export interface PreChatForm {
 }
 
 export interface PreChatFormField {
+  id: string; // Add missing id property
   name: string;
   label: string;
   type: 'text' | 'email' | 'phone' | 'select' | 'textarea';
@@ -90,6 +94,3 @@ export interface PreChatFormField {
   options?: string[];
   placeholder?: string;
 }
-
-// Re-export the type using export type syntax for compatibility with isolatedModules
-export type { MessageReadStatus } from './components/MessageReadReceipt';

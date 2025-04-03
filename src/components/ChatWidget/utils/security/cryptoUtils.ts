@@ -32,6 +32,15 @@ export function generateSecureId(length = 16): string {
 }
 
 /**
+ * Generate a secure token (alias for generateSecureId with different default length)
+ * @param length Length of the token
+ * @returns A secure random token
+ */
+export function generateSecureToken(length = 32): string {
+  return generateSecureId(length);
+}
+
+/**
  * Safely compare two strings in constant time to prevent timing attacks
  * @param a First string
  * @param b Second string

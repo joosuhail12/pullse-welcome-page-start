@@ -38,6 +38,7 @@ const PreChatForm: React.FC<PreChatFormProps> = ({
     
     if (config.preChatForm?.fields) {
       config.preChatForm.fields.forEach(field => {
+        // Use field.id for form data keys
         if (field.required && !formData[field.id]) {
           newErrors[field.id] = `${field.label} is required`;
           isValid = false;

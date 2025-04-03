@@ -5,6 +5,9 @@
  * This file defines the configuration types and default values for the Chat Widget
  */
 
+// Import types to avoid circular dependencies
+import type { MessageReadStatus } from './components/MessageReadReceipt';
+
 // Chat Widget Configuration Interface
 export interface ChatWidgetConfig {
   workspaceId: string;
@@ -25,6 +28,15 @@ export interface ChatWidgetConfig {
     connectionTimeout?: number;
     reconnectAttempts?: number;
   };
+  features?: {
+    searchMessages?: boolean;
+    messageReactions?: boolean;
+    fileUploads?: boolean;
+    readReceipts?: boolean;
+    typing?: boolean;
+    cardMessages?: boolean;
+    quickReplies?: boolean;
+  };
   onEvent?: (event: ChatEventPayload) => void;
   autoOpen?: boolean;
   welcomeMessage?: string;
@@ -34,6 +46,7 @@ export interface ChatWidgetConfig {
     title: string;
     description?: string;
     fields: Array<{
+      id: string;
       name: string;
       label: string;
       type: 'text' | 'email' | 'phone' | 'select' | 'textarea';
@@ -63,6 +76,15 @@ export const defaultConfig: ChatWidgetConfig = {
     enabled: false,
     connectionTimeout: 30000,
     reconnectAttempts: 5
+  },
+  features: {
+    searchMessages: true,
+    messageReactions: true,
+    fileUploads: true,
+    readReceipts: true,
+    typing: true,
+    cardMessages: true,
+    quickReplies: true
   },
   welcomeMessage: 'How can we help you today?',
   preChatForm: {
@@ -99,20 +121,5 @@ export interface ChatEventPayload {
   data?: any;
 }
 
-// Security Event Types
-export enum SecurityEventType {
-  AUTHENTICATION = 'authentication',
-  AUTHORIZATION = 'authorization',
-  DATA_ACCESS = 'data_access',
-  USER_MANAGEMENT = 'user_management',
-  CONFIGURATION_CHANGE = 'configuration_change',
-  SECURITY_SETTING_CHANGE = 'security_setting_change',
-  LOGIN_ATTEMPT = 'login_attempt',
-  LOGOUT = 'logout',
-  SESSION_MANAGEMENT = 'session_management',
-  API_ACCESS = 'api_access',
-  RATE_LIMIT = 'rate_limit'
-}
-
-// Security Event Outcome
-export type SecurityEventOutcome = 'SUCCESS' | 'FAILURE' | 'ATTEMPT' | 'UNKNOWN';
+// Import and re-export security event types
+export { SecurityEventType, SecurityEventOutcome } from './utils/security/types';

@@ -1,5 +1,5 @@
 
-import { SecurityEventType, SecurityEventOutcome } from '@/components/ChatWidget/config';
+import { SecurityEventType, SecurityEventOutcome } from '@/components/ChatWidget/utils/security/types';
 
 /**
  * Audit Logger for security and system events
@@ -8,11 +8,14 @@ import { SecurityEventType, SecurityEventOutcome } from '@/components/ChatWidget
  * sanitization and optional remote logging capabilities.
  */
 
-// Re-export the SecurityEventType from config for convenience
+// Re-export the SecurityEventType and SecurityEventOutcome 
 export { SecurityEventType, SecurityEventOutcome };
 
 // Simple audit logger implementation
 const auditLogger = {
+  // Add SecurityEventType property to properly support external references
+  SecurityEventType,
+  
   logSecurityEvent: (
     eventType: SecurityEventType | string, 
     outcome: SecurityEventOutcome, 

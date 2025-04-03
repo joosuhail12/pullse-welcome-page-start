@@ -1,7 +1,7 @@
 
 import { toast } from "@/hooks/use-toast"
 import { createElement } from "react"
-import { ToastActionElement, Toast } from "@/components/ui/toast";
+import { ToastActionElement } from "@/components/ui/toast";
 
 type ToastType = 'info' | 'success' | 'warning' | 'error'
 
@@ -28,9 +28,9 @@ export const showToast = (
     dismissible = true
   } = options
   
-  // Prevent duplicate toasts by generating an ID
-  const toastId = title ? `${type}-${title.replace(/\s+/g, '-').toLowerCase()}` : undefined
-
+  // Prevent duplicate toasts by generating an ID based on title and type
+  const uniqueId = title ? `${type}-${title.replace(/\s+/g, '-').toLowerCase()}` : undefined
+  
   // Add a retry button for error toasts when provided with an action
   return toast({
     title,
@@ -63,7 +63,7 @@ export const retryableToast = (
 ) => {
   const { onRetry, ...toastOptions } = options
   
-  // Create a button element using the Button component
+  // Create a button element for retry action
   const retryAction = createElement(
     'button',
     {
@@ -76,7 +76,7 @@ export const retryableToast = (
       }
     },
     'Retry'
-  ) as unknown as ToastActionElement;
+  ) as unknown as ToastActionElement; // Type assertion to match expected type
   
   return showToast('error', {
     ...toastOptions,
