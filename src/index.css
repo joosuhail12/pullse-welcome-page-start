@@ -5,19 +5,19 @@
 
 @layer components {
   .chat-message-bubble {
-    @apply p-4 mb-3 rounded-lg shadow-sm max-w-xs md:max-w-md transition-all duration-200;
+    @apply p-4 mb-3 rounded-2xl shadow-sm max-w-xs md:max-w-md transition-all duration-200;
   }
   
   .chat-message-system {
     @apply text-system-bubble-foreground rounded-bl-none chat-message-bubble;
-    background: linear-gradient(145deg, #f0eaff 0%, #e5deff 100%);
-    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
+    background: linear-gradient(145deg, #f5f3ff 0%, #ede9fe 100%);
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08);
   }
   
   .chat-message-user {
     @apply text-white rounded-br-none chat-message-bubble;
     background: linear-gradient(145deg, #9672f7 0%, #8b5cf6 100%);
-    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
   }
 
   /* Hover effect for actionable messages (with quick replies or buttons) */
@@ -52,7 +52,7 @@
   }
   
   .date-separator .date {
-    @apply text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-500 font-medium shadow-sm;
+    @apply text-xs bg-gray-100 px-3 py-1.5 rounded-full text-gray-500 font-medium shadow-sm;
   }
   
   /* Typing indicator animation */
@@ -154,6 +154,31 @@
   
   .loading-pulse {
     animation: loading-pulse 1.5s infinite ease-in-out;
+  }
+
+  /* NEW MESSAGE BUBBLE STYLES */
+  .chat-message-user {
+    @apply text-white rounded-br-none chat-message-bubble;
+    background: linear-gradient(135deg, #9672f7 0%, #8b5cf6 100%);
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+    border-top-right-radius: 18px;
+    border-bottom-left-radius: 18px;
+    border-top-left-radius: 18px;
+  }
+  
+  .chat-message-system {
+    @apply text-system-bubble-foreground rounded-bl-none chat-message-bubble;
+    background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+    box-shadow: 0 2px 10px rgba(139, 92, 246, 0.1);
+    border-top-right-radius: 18px;
+    border-bottom-right-radius: 18px;
+    border-top-left-radius: 18px;
+  }
+  
+  /* Bubble hover effects */
+  .chat-message-bubble:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease;
   }
 }
 

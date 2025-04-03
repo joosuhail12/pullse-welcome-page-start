@@ -36,7 +36,7 @@ const MessageBubble = ({
 }: MessageBubbleProps) => {
   const sanitizedText = message.text ? sanitizeInput(message.text) : '';
   const [fileUploading, setFileUploading] = useState(
-    message.type === 'file' && !message.status
+    message.type === 'file' && message.status !== 'delivered' && message.status !== 'read'
   );
   const [animateReaction, setAnimateReaction] = useState(false);
   

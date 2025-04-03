@@ -52,7 +52,7 @@ const MessageList = ({
   const [lastScrollTop, setLastScrollTop] = useState(0);
   const [hasViewedMessages, setHasViewedMessages] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
-  const [messageStatuses, setMessageStatuses] = useState<Record<string, string>>({});
+  const [messageStatuses, setMessageStatuses] = useState<Record<string, Message['status']>>({});
 
   // Simulate message status progression for improved UX
   useEffect(() => {
@@ -207,10 +207,13 @@ const MessageList = ({
         )}
         
         {messages.map((message, index) => {
-          // Merge the message status with our animated status
+          // Get the enhanced status from our state, or fall back to the message's status
+          const messageStatus = messageStatuses[message.id] || message.status;
+          
+          // Create a new message object with the updated status
           const enrichedMessage = {
             ...message,
-            status: messageStatuses[message.id] || message.status
+            status: messageStatus
           };
           
           return (
