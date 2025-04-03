@@ -58,6 +58,11 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   agentStatus,
   onToggleHighlight
 }) => {
+  // Create a wrapper for highlightText to match MessageList's expected format
+  const highlightWrapper = (text: string) => {
+    return highlightText(text, searchTerm);
+  };
+
   return (
     <div className="flex flex-col flex-grow overflow-hidden">
       {inlineFormComponent}
@@ -71,7 +76,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
             readReceipts={readReceipts}
             onMessageReaction={onMessageReaction}
             searchResults={messageIds}
-            highlightMessage={highlightText}
+            highlightMessage={highlightWrapper}
             searchTerm={searchTerm}
             agentAvatar={agentAvatar}
             userAvatar={userAvatar}

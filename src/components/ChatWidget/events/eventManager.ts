@@ -1,4 +1,3 @@
-
 import { ChatEventType, ChatEventPayload } from '../config';
 import { EventCallback, EventPriority, IEventManager, PrioritizedEvent } from './types';
 
@@ -163,6 +162,17 @@ export class EventManager implements IEventManager {
   }
 
   /**
+   * Remove all event listeners
+   */
+  public removeAllListeners(): void {
+    if (this.disposed) {
+      return;
+    }
+    
+    this.listeners.clear();
+  }
+
+  /**
    * Clean up resources used by the EventManager
    */
   public dispose(): void {
@@ -171,7 +181,7 @@ export class EventManager implements IEventManager {
     }
 
     this.disposed = true;
-    this.listeners.clear();
+    this.removeAllListeners();
     this.eventQueue = [];
   }
 }

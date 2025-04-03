@@ -22,6 +22,7 @@ export interface Message {
 
 export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
 export type UserType = 'user' | 'system' | 'status' | 'agent' | 'bot';
+export type MessageReadStatus = 'sent' | 'delivered' | 'read' | 'failed';
 
 export interface Conversation {
   id: string;
@@ -39,6 +40,7 @@ export interface Conversation {
   sessionId?: string;
   contactIdentified?: boolean;
   unread?: boolean; // New property to track unread status
+  isResolved?: boolean; // Added for ChatViewHeader
 }
 
 export interface Agent {
@@ -59,9 +61,4 @@ export interface MessageSearchResult {
   messageId: string;
   matchText: string;
   timestamp: Date;
-}
-
-export interface MessageReadStatus {
-  status: 'sent' | 'delivered' | 'read' | 'failed';
-  timestamp?: Date;
 }

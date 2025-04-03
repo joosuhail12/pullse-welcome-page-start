@@ -1,39 +1,29 @@
 
 import React from 'react';
-import { Paperclip } from 'lucide-react';
+import { FileIcon } from 'lucide-react';
 
 export interface FileMessageProps {
-  metadata?: Record<string, any>;
+  data: Record<string, any>;
 }
 
-const FileMessage: React.FC<FileMessageProps> = ({ metadata }) => {
-  if (!metadata) return null;
-  
-  const fileName = metadata.fileName || 'File';
-  const fileUrl = metadata.fileUrl || '#';
-  const fileSize = metadata.fileSize;
-  const fileType = metadata.fileType;
+const FileMessage: React.FC<FileMessageProps> = ({ data }) => {
+  const fileName = data.fileName || "File";
+  const fileUrl = data.fileUrl || "#";
 
   return (
-    <div className="flex flex-col">
-      <div className="mt-2 p-2 bg-gray-100 rounded-md flex items-center">
-        <Paperclip size={16} className="mr-2" />
-        <a 
-          href={fileUrl} 
-          target="_blank" 
-          rel="noopener noreferrer" 
-          className="text-sm text-blue-600 underline"
-        >
-          {fileName}
-          {fileSize && <span className="text-gray-500 ml-2 text-xs">{fileSize}</span>}
-        </a>
+    <a 
+      href={fileUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center p-2 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100 transition-colors"
+    >
+      <div className="mr-2">
+        <FileIcon size={20} className="text-blue-500" />
       </div>
-      {fileType && (
-        <div className="text-xs text-gray-500 mt-1">
-          Type: {fileType}
-        </div>
-      )}
-    </div>
+      <div className="flex-grow overflow-hidden">
+        <p className="text-sm font-medium text-blue-600 truncate">{fileName}</p>
+      </div>
+    </a>
   );
 };
 

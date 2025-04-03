@@ -10,6 +10,7 @@ export interface MessageAvatarProps {
   isUserMessage?: boolean;
   userAvatar?: string;
   agentAvatar?: string;
+  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
 }
 
 const MessageAvatar: React.FC<MessageAvatarProps> = ({ 
@@ -18,21 +19,25 @@ const MessageAvatar: React.FC<MessageAvatarProps> = ({
   status,
   isUserMessage,
   userAvatar,
-  agentAvatar
+  agentAvatar,
+  agentStatus
 }) => {
+  // Use either direct status or agentStatus prop
+  const finalStatus = status || agentStatus;
+  
   // Determine which avatar URL to use
   const avatarSrc = isUserMessage ? userAvatar : (avatarUrl || agentAvatar);
   
   // Generate initials for fallback
   const getInitials = () => {
-    if (sender === 'user') return 'U';
+    if (sender === 'user' || isUserMessage) return 'U';
     if (sender === 'system' || sender === 'agent' || sender === 'bot') return 'A';
     return '?';
   };
 
   // Style for status indicator
   const getStatusColor = () => {
-    switch (status) {
+    switch (finalStatus) {
       case 'online': return 'bg-green-500';
       case 'away': return 'bg-yellow-500';
       case 'busy': return 'bg-red-500';
@@ -42,7 +47,7 @@ const MessageAvatar: React.FC<MessageAvatarProps> = ({
   };
 
   // Style for avatar fallback
-  const avatarFallbackClass = sender === 'user' 
+  const avatarFallbackClass = (sender === 'user' || isUserMessage)
     ? 'bg-gray-200 text-gray-700' 
     : 'bg-vivid-purple/20 text-vivid-purple';
 
@@ -53,10 +58,10 @@ const MessageAvatar: React.FC<MessageAvatarProps> = ({
         <AvatarFallback className={avatarFallbackClass}>{getInitials()}</AvatarFallback>
       </Avatar>
       
-      {status && sender !== 'user' && (
+      {finalStatus && !isUserMessage && (
         <span 
           className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ${getStatusColor()} ring-1 ring-white`}
-          aria-label={`Agent is ${status}`}
+          aria-label={`Agent is ${finalStatus}`}
         />
       )}
     </div>

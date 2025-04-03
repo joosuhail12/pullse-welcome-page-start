@@ -1,21 +1,10 @@
-
 import { logger } from '../logger';
+import { SecurityEventType as SecurityEventTypeEnum } from './securityTypes';
 
 /**
- * Security event types for monitoring and auditing
+ * Re-export SecurityEventType to avoid conflicts
  */
-export enum SecurityEventType {
-  AUTHENTICATION = 'authentication',
-  AUTHORIZATION = 'authorization',
-  INPUT_VALIDATION = 'input_validation',
-  RATE_LIMITING = 'rate_limiting',
-  CSRF_PROTECTION = 'csrf_protection',
-  XSS_PROTECTION = 'xss_protection',
-  INJECTION_PROTECTION = 'injection_protection',
-  SESSION_MANAGEMENT = 'session_management',
-  CONFIGURATION = 'configuration',
-  ACCESS_CONTROL = 'access_control'
-}
+export const SecurityEventType = SecurityEventTypeEnum;
 
 /**
  * Security logger for tracking security-related events
@@ -29,7 +18,7 @@ export const securityLogger = {
    * @param severity How severe the event is
    */
   logSecurityEvent: (
-    eventType: SecurityEventType,
+    eventType: SecurityEventTypeEnum,
     outcome: 'SUCCESS' | 'FAILURE' | 'ATTEMPT' | 'UNKNOWN',
     details?: any,
     severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'MEDIUM'
@@ -67,7 +56,7 @@ export const securityLogger = {
    */
   logAuthEvent: (userId: string, success: boolean, details?: any) => {
     securityLogger.logSecurityEvent(
-      SecurityEventType.AUTHENTICATION,
+      SecurityEventTypeEnum.AUTHENTICATION,
       success ? 'SUCCESS' : 'FAILURE',
       { userId, ...details },
       success ? 'LOW' : 'HIGH'
@@ -79,7 +68,7 @@ export const securityLogger = {
    */
   logAuthzEvent: (userId: string, resource: string, action: string, success: boolean) => {
     securityLogger.logSecurityEvent(
-      SecurityEventType.AUTHORIZATION,
+      SecurityEventTypeEnum.AUTHORIZATION,
       success ? 'SUCCESS' : 'FAILURE',
       { userId, resource, action },
       success ? 'LOW' : 'MEDIUM'
@@ -91,7 +80,7 @@ export const securityLogger = {
    */
   logValidationEvent: (input: string, valid: boolean, source: string) => {
     securityLogger.logSecurityEvent(
-      SecurityEventType.INPUT_VALIDATION,
+      SecurityEventTypeEnum.INPUT_VALIDATION,
       valid ? 'SUCCESS' : 'FAILURE',
       { source, inputLength: input.length },
       valid ? 'LOW' : 'MEDIUM'
@@ -103,7 +92,7 @@ export const securityLogger = {
    */
   logCsrfEvent: (valid: boolean, source: string) => {
     securityLogger.logSecurityEvent(
-      SecurityEventType.CSRF_PROTECTION,
+      SecurityEventTypeEnum.CSRF_PROTECTION,
       valid ? 'SUCCESS' : 'FAILURE',
       { source },
       valid ? 'LOW' : 'HIGH'
@@ -115,7 +104,7 @@ export const securityLogger = {
    */
   logRateLimitEvent: (userId: string, endpoint: string, limited: boolean) => {
     securityLogger.logSecurityEvent(
-      SecurityEventType.RATE_LIMITING,
+      SecurityEventTypeEnum.RATE_LIMITING,
       limited ? 'FAILURE' : 'SUCCESS',
       { userId, endpoint },
       limited ? 'MEDIUM' : 'LOW'
@@ -127,7 +116,7 @@ export const securityLogger = {
    */
   logSessionEvent: (userId: string, action: string, success: boolean) => {
     securityLogger.logSecurityEvent(
-      SecurityEventType.SESSION_MANAGEMENT,
+      SecurityEventTypeEnum.SESSION_MANAGEMENT,
       success ? 'SUCCESS' : 'FAILURE',
       { userId, action },
       success ? 'LOW' : 'MEDIUM'
@@ -139,7 +128,7 @@ export const securityLogger = {
    */
   logAdminAction: (userId: string, action: string, details?: any) => {
     securityLogger.logSecurityEvent(
-      SecurityEventType.ACCESS_CONTROL,
+      SecurityEventTypeEnum.ACCESS_CONTROL,
       'SUCCESS',
       { userId, action, details },
       'MEDIUM'
@@ -148,4 +137,4 @@ export const securityLogger = {
 };
 
 // Export the SecurityEventType for use elsewhere
-export { SecurityEventType };
+export { SecurityEventTypeEnum };

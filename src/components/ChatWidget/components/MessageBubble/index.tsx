@@ -23,7 +23,7 @@ interface MessageBubbleProps {
   message: {
     id: string;
     text: string;
-    type: MessageType;
+    type?: MessageType;
     sender: UserType;
     timestamp: Date;
     metadata?: Record<string, any>;
@@ -35,7 +35,7 @@ interface MessageBubbleProps {
   agentAvatar?: string;
   onReply?: (text: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
-  agentStatus?: 'online' | 'away' | 'offline';
+  agentStatus?: 'online' | 'away' | 'offline' | 'busy';
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
 }
@@ -96,17 +96,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   const renderMessageContent = () => {
     switch (message.type) {
       case 'text':
-        return <TextMessage text={message.text} highlightText={highlightText} />;
+        return <TextMessage text={message.text} />;
       case 'card':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata && <CardMessage metadata={message.metadata} />}
+            {message.metadata && <CardMessage data={message.metadata} />}
           </Suspense>
         );
       case 'file':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata && <FileMessage metadata={message.metadata} />}
+            {message.metadata && <FileMessage data={message.metadata} />}
           </Suspense>
         );
       case 'quick_reply':
@@ -114,16 +114,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
           <Suspense fallback={<LazyLoadFallback />}>
             {message.metadata && (
               <QuickReplyMessage
-                metadata={message.metadata}
-                onReply={(text) => onReply && onReply(text)}
+                data={message.metadata}
+                onSelect={(text) => onReply && onReply(text)}
               />
             )}
           </Suspense>
         );
       case 'status':
-        return <StatusMessage text={message.text} />;
+        return <StatusMessage text={message.text} renderText={(text) => <span>{text}</span>} />;
       default:
-        return <TextMessage text={message.text} highlightText={highlightText} />;
+        return <TextMessage text={message.text} />;
     }
   };
 
@@ -137,10 +137,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     >
       {!isSystemMessage && (
         <MessageAvatar
-          isUserMessage={isUserMessage}
-          userAvatar={userAvatar}
-          agentAvatar={agentAvatar}
-          agentStatus={agentStatus}
+          sender={message.sender}
+          avatarUrl={isUserMessage ? userAvatar : agentAvatar}
+          status={agentStatus}
         />
       )}
 
@@ -168,7 +167,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
 
       {showReactions && onReaction && (
         <MessageReactionButtons
-          onReaction={handleReaction}
+          onReact={handleReaction}
           onClose={() => setShowReactions(false)}
         />
       )}
