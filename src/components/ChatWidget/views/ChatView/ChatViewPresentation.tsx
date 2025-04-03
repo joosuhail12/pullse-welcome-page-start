@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Conversation } from '../../types';
 import { ChatWidgetConfig } from '../../config';
@@ -43,7 +42,7 @@ interface ChatViewPresentationProps {
   handleFormComplete: (formData: Record<string, string>) => void;
   config: ChatWidgetConfig;
   onToggleMessageImportance?: (messageId: string) => void;
-  ticketProgress?: number; // New prop for ticket progress
+  ticketProgress?: number;
 }
 
 /**
@@ -85,7 +84,7 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
   handleFormComplete,
   config,
   onToggleMessageImportance,
-  ticketProgress = 50 // Default to 50% if not provided
+  ticketProgress = 50
 }) => {
   const isMobile = useIsMobile();
   
