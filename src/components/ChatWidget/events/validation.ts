@@ -16,7 +16,8 @@ const VALID_EVENT_TYPES: Set<ChatEventType> = new Set([
   'chat:typingStarted',
   'chat:typingStopped',
   'message:fileUploaded',
-  'chat:ended'
+  'chat:ended',
+  'chat:configUpdated' // Add new event type for configuration updates
 ]);
 
 /**

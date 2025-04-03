@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -7,9 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import WidgetPreview from './pages/WidgetPreview';
 import ErrorBoundary from './components/ui/error-boundary';
 
-// Create the query client instance outside of the component
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -20,7 +19,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const App: React.FC = () => {
+function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
@@ -30,7 +29,7 @@ const App: React.FC = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="/widget-preview" element={<WidgetPreview />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
@@ -38,6 +37,6 @@ const App: React.FC = () => {
       </QueryClientProvider>
     </ErrorBoundary>
   );
-};
+}
 
 export default App;
