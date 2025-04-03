@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
-import PoweredByBar from './components/PoweredByBar'; // Import PoweredByBar
+import PoweredByBar from './components/PoweredByBar';
 
 export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
   const {
@@ -152,7 +152,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     <>
       {isOpen && (
         <div 
-          className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col" // Added flex-col to ensure footer is at bottom
+          className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-2xl overflow-hidden" 
           style={widgetStyle}
         >
           <div className="relative w-full h-full flex flex-col flex-grow">
