@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
@@ -92,8 +93,13 @@ if (document.currentScript &&
     const rootElement = document.getElementById('root');
     if (!rootElement) throw new Error('Failed to find the root element');
 
-    createRoot(rootElement).render(
-      <App />
+    const root = createRoot(rootElement);
+    
+    // Wrap App with Strict Mode to catch potential issues
+    root.render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>
     );
   } catch (error) {
     errorHandler.handle(error instanceof Error ? error : new Error('Failed to initialize application'));

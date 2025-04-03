@@ -1,14 +1,17 @@
 
 import React from 'react';
 
-interface StatusMessageProps {
+export interface StatusMessageProps {
   text: string;
+  renderText?: (text: string) => React.ReactNode;
 }
 
-const StatusMessage = ({ text }: StatusMessageProps) => {
+const StatusMessage: React.FC<StatusMessageProps> = ({ text, renderText }) => {
+  const content = renderText ? renderText(text) : text;
+  
   return (
-    <div className="bg-gray-100 py-1 px-3 rounded-full text-xs text-gray-500 text-center">
-      {text}
+    <div className="bg-gray-100 py-1.5 px-4 rounded-full text-xs text-gray-500 text-center shadow-sm">
+      {content}
     </div>
   );
 };
