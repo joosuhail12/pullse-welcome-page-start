@@ -91,5 +91,5 @@ export interface PreChatFormField {
   placeholder?: string;
 }
 
-// Export this explicitly to make TypeScript happy with imports
-export { MessageReadStatus } from './components/MessageReadReceipt';
+// Re-export the type using export type syntax for compatibility with isolatedModules
+export type { MessageReadStatus } from './components/MessageReadReceipt';
