@@ -7,7 +7,7 @@ export interface Message {
   type?: MessageType;
   fileUrl?: string;
   fileName?: string;
-  status?: 'sending' | 'sent' | 'delivered' | 'read';
+  status?: MessageReadStatus;
   reaction?: 'thumbsUp' | 'thumbsDown' | null;
   cardData?: {
     title: string;
@@ -38,7 +38,7 @@ export interface Conversation {
   messages?: Message[];
   timestamp: Date;
   lastMessage?: string;
-  status?: 'active' | 'ended' | string;
+  status: 'active' | 'ended' | string;
   agentInfo?: {
     id?: string;
     name?: string;
@@ -73,3 +73,23 @@ export interface MessageSearchResult {
   matchText: string;
   timestamp: Date;
 }
+
+export interface PreChatForm {
+  enabled: boolean;
+  title: string;
+  description?: string; // Added missing field
+  fields: PreChatFormField[];
+  submitButtonText?: string; // Added missing field
+}
+
+export interface PreChatFormField {
+  name: string;
+  label: string;
+  type: 'text' | 'email' | 'phone' | 'select' | 'textarea';
+  required: boolean;
+  options?: string[];
+  placeholder?: string;
+}
+
+// Export this explicitly to make TypeScript happy with imports
+export { MessageReadStatus } from './components/MessageReadReceipt';

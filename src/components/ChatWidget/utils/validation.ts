@@ -55,6 +55,83 @@ export function escapeHtml(text: string): string {
 }
 
 /**
+ * Sanitize input for safe display
+ * @param input Text to sanitize
+ * @returns Sanitized string
+ */
+export function sanitizeInput(input: string): string {
+  if (!input) return '';
+  return escapeHtml(input.trim());
+}
+
+/**
+ * Validate a message before sending
+ * @param message The message text to validate
+ * @returns The sanitized message or empty string if invalid
+ */
+export function validateMessage(message: string): string {
+  if (!message || typeof message !== 'string') return '';
+  
+  // Remove excessive whitespace
+  const trimmed = message.trim().replace(/\s+/g, ' ');
+  if (trimmed.length === 0) return '';
+  
+  // Check for potentially malicious content
+  if (isMaliciousContent(trimmed)) {
+    console.warn('Potentially malicious message content blocked');
+    return '';
+  }
+  
+  return sanitizeInput(trimmed);
+}
+
+/**
+ * Validate a file before upload
+ * @param file The file to validate
+ * @returns True if file is valid, false otherwise
+ */
+export function validateFile(file: File): boolean {
+  // Check file size (max 5MB)
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  if (file.size > maxSize) {
+    return false;
+  }
+  
+  // Check file type (allow images, PDFs, and common document formats)
+  const allowedTypes = [
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'application/pdf',
+    'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // Word
+    'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // Excel
+    'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', // PowerPoint
+    'text/plain', 'text/csv'
+  ];
+  
+  if (!allowedTypes.includes(file.type)) {
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Sanitize a filename to prevent path traversal and other attacks
+ * @param fileName Original filename
+ * @returns Sanitized filename
+ */
+export function sanitizeFileName(fileName: string): string {
+  if (!fileName) return 'file';
+  
+  // Replace potentially dangerous characters
+  const sanitized = fileName
+    .replace(/[/\\?%*:|"<>]/g, '_') // Replace filesystem special chars with underscore
+    .replace(/\.\./g, '_'); // Prevent directory traversal
+  
+  // Limit length
+  return sanitized.length > 255 ? sanitized.substring(0, 255) : sanitized;
+}
+
+/**
  * Check if a string might contain malicious content
  * @param input Input string to check
  * @returns True if input is potentially dangerous
@@ -69,4 +146,38 @@ export function isMaliciousContent(input: string): boolean {
   ];
   
   return dangerousPatterns.some(pattern => pattern.test(input));
+}
+
+/**
+ * Validate form data submission
+ * @param formData The form data to validate
+ * @param requiredFields Fields that must be present and non-empty
+ * @returns Object with isValid and errors properties
+ */
+export function validateFormData(
+  formData: Record<string, string>,
+  requiredFields: string[] = []
+): { isValid: boolean; errors: Record<string, string> } {
+  const errors: Record<string, string> = {};
+  
+  // Validate required fields
+  for (const field of requiredFields) {
+    if (!formData[field] || formData[field].trim() === '') {
+      errors[field] = 'This field is required';
+    }
+  }
+  
+  // Additional validations for specific fields if they exist
+  if (formData.email && !validateInput(formData.email, 'email')) {
+    errors.email = 'Please enter a valid email address';
+  }
+  
+  if (formData.phone && !/^\+?[0-9\s\-()]{6,20}$/.test(formData.phone)) {
+    errors.phone = 'Please enter a valid phone number';
+  }
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
 }

@@ -28,4 +28,6 @@ const MessageReadReceipt: React.FC<MessageReadReceiptProps> = ({ status, timesta
   );
 };
 
+// Export the MessageReadStatus type so it can be imported elsewhere
+export { MessageReadStatus };
 export default MessageReadReceipt;

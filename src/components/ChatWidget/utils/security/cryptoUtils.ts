@@ -1,70 +1,51 @@
 
 /**
- * Utility functions for cryptographic operations in the chat widget
+ * Crypto utilities for security features
  */
 
 /**
- * Generate a cryptographically secure random token
- * @param length Length of the token in bytes
- * @returns Base64 encoded random string
+ * Hash data using SHA-256
+ * @param data Data to hash
+ * @returns Promise resolving to the hashed string
  */
-export function generateSecureToken(length = 32): string {
-  if (typeof window === 'undefined' || !window.crypto) {
-    // Fallback for non-browser environments
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  }
-
-  // Use Web Crypto API for secure random generation
-  const randomBytes = new Uint8Array(length);
-  window.crypto.getRandomValues(randomBytes);
-  return btoa(String.fromCharCode(...randomBytes));
-}
-
-/**
- * Create SHA-256 hash of input
- * @param input String to hash
- * @returns Promise resolving to hex string of hash
- */
-export async function sha256Hash(input: string): Promise<string> {
-  if (typeof window === 'undefined' || !window.crypto) {
-    // Simple fallback (not for production)
-    return Promise.resolve(Array.from(input)
-      .reduce((acc, char) => acc + char.charCodeAt(0).toString(16), ''));
-  }
-
-  // Convert the input string to an ArrayBuffer
+export async function hashData(data: string): Promise<string> {
+  // Use the Web Crypto API for secure hashing
   const encoder = new TextEncoder();
-  const data = encoder.encode(input);
-  
-  // Generate the hash
-  const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+  const dataBuffer = encoder.encode(data);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
   
   // Convert the hash to a hex string
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-/**
- * Simple encrypt function for non-sensitive data
- * Note: This is NOT secure encryption, just basic obfuscation
- * @param text Text to encrypt
- * @param key Encryption key
- * @returns Encrypted text
- */
-export function simpleEncrypt(text: string, key: string): string {
-  const keyHash = Array.from(key).map(char => char.charCodeAt(0)).reduce((a, b) => a + b, 0);
-  return Array.from(text)
-    .map(char => String.fromCharCode(char.charCodeAt(0) ^ keyHash & 0xF))
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
     .join('');
 }
 
 /**
- * Simple decrypt function for non-sensitive data
- * Note: This is NOT secure decryption, just basic deobfuscation
- * @param encrypted Encrypted text
- * @param key Encryption key
- * @returns Decrypted text
+ * Generate a secure random ID
+ * @param length Length of the generated ID
+ * @returns A secure random ID string
  */
-export function simpleDecrypt(encrypted: string, key: string): string {
-  return simpleEncrypt(encrypted, key); // XOR is reversible
+export function generateSecureId(length = 16): string {
+  const array = new Uint8Array(length);
+  crypto.getRandomValues(array);
+  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('').slice(0, length);
+}
+
+/**
+ * Safely compare two strings in constant time to prevent timing attacks
+ * @param a First string
+ * @param b Second string
+ * @returns True if strings are equal, false otherwise
+ */
+export function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  
+  return result === 0;
 }

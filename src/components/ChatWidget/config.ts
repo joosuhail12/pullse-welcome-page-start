@@ -1,165 +1,20 @@
 
-/**
- * Chat Widget Configuration Types
- */
-
-export interface PreChatFormField {
-  id: string;
-  name: string;
-  type: 'text' | 'email' | 'tel' | 'select';
-  label: string;
-  placeholder?: string;
-  required: boolean;
-  options?: { value: string; label: string }[];
-}
-
-export interface PreChatForm {
-  enabled: boolean;
-  title: string;
-  fields: PreChatFormField[];
-}
-
-export type ChatEventType = 
-  | 'typing'
-  | 'message:sent'
-  | 'message:delivered'
-  | 'message:read'
-  | 'message:received'
-  | 'message:fileUploaded'
-  | 'message:reacted'
-  | 'chat:started'
-  | 'chat:ended'
-  | 'chat:agentJoined'
-  | 'chat:agentLeft'
-  | 'chat:messageReceived'
-  | 'chat:messageSent'
-  | 'chat:connectionChange'
+// Add this export to your existing config.ts file to extend ChatEventType
+export type ChatEventType =
   | 'chat:open'
   | 'chat:close'
-  | 'chat:error'
+  | 'chat:messageSent'
+  | 'chat:messageReceived'
   | 'chat:typingStarted'
   | 'chat:typingStopped'
   | 'contact:initiatedChat'
-  | 'contact:formCompleted'
+  | 'contact:identified'
+  | 'chat:ended'
+  | 'message:sent'
+  | 'message:delivered'
+  | 'message:read'
+  | 'message:reacted'
+  | 'message:fileUploaded'
   | 'error'
-  | 'versionUpdate';
-
-export type SecurityEventType =
-  | 'authentication'
-  | 'authorization'
-  | 'rateLimit'
-  | 'validation'
-  | 'session'
-  | 'csrf'
-  | 'xss'
-  | 'dataAccess'
-  | 'apiAccess'
-  | 'embedding'
-  | 'userAction';
-
-export interface ChatEventPayload {
-  type: ChatEventType;
-  timestamp: Date;
-  [key: string]: any;
-}
-
-export interface ChatBranding {
-  primaryColor?: string;
-  fontFamily?: string;
-  avatarUrl?: string;
-  logoUrl?: string;
-  showBrandingBar?: boolean;
-  widgetTitle?: string;
-}
-
-export interface ChatPosition {
-  placement?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
-  offsetX?: number;
-  offsetY?: number;
-}
-
-export interface ChatFeatures {
-  fileUpload?: boolean;
-  messageRating?: boolean;
-  readReceipts?: boolean;
-  quickReplies?: boolean;
-  cards?: boolean;
-  chatSuggestions?: boolean;
-  messageReactions?: boolean;
-  typingIndicators?: boolean;
-  searchMessages?: boolean;
-}
-
-export interface ChatRealtime {
-  enabled: boolean;
-  // No longer storing API key directly here
-  authEndpoint?: string;
-}
-
-export interface ChatWidgetConfig {
-  workspaceId: string;
-  welcomeMessage: string;
-  preChatForm: PreChatForm;
-  branding?: ChatBranding;
-  position?: ChatPosition;
-  features?: ChatFeatures;
-  realtime?: ChatRealtime;
-  sessionId?: string;
-  onEvent?: (event: ChatEventPayload) => void;
-  // Added to support advanced event subscription
-  eventHandlers?: {
-    [key in ChatEventType]?: (payload: ChatEventPayload) => void;
-  };
-}
-
-export const defaultConfig: ChatWidgetConfig = {
-  workspaceId: 'default',
-  welcomeMessage: 'Welcome! How can we help you today?',
-  preChatForm: {
-    enabled: true,
-    title: 'Start a Conversation',
-    fields: [
-      {
-        id: 'name-field',
-        name: 'name',
-        type: 'text',
-        label: 'Name',
-        placeholder: 'Enter your name',
-        required: true
-      },
-      {
-        id: 'email-field',
-        name: 'email',
-        type: 'email',
-        label: 'Email',
-        placeholder: 'Enter your email',
-        required: true
-      }
-    ]
-  },
-  branding: {
-    primaryColor: '#8B5CF6',
-    showBrandingBar: true
-  },
-  position: {
-    placement: 'bottom-right',
-    offsetX: 4,
-    offsetY: 4
-  },
-  features: {
-    fileUpload: true,
-    messageRating: false,
-    readReceipts: true,
-    quickReplies: true,
-    cards: true,
-    chatSuggestions: false,
-    messageReactions: true,
-    typingIndicators: true,
-    searchMessages: true
-  },
-  realtime: {
-    enabled: false,
-    // Using auth endpoint instead of direct API key
-    authEndpoint: '/api/chat-widget/token'
-  }
-};
+  | 'chat:connectionChange'
+  | string; // Allow string extension for dynamic events

@@ -1,159 +1,181 @@
 
-/**
- * Utility for test mode in the chat widget
- */
 import { v4 as uuidv4 } from 'uuid';
-import { Message } from '../types';
+import { Message, Conversation } from '../types';
 
 /**
  * Check if test mode is enabled
+ * @returns True if test mode is enabled
  */
 export function isTestMode(): boolean {
   try {
     return sessionStorage.getItem('pullse_test_mode') === 'enabled';
   } catch (e) {
+    // If sessionStorage is not available, fallback to false
     return false;
   }
 }
 
 /**
  * Enable or disable test mode
+ * @param enabled Whether to enable or disable test mode
  */
 export function setTestMode(enabled: boolean): void {
   try {
     if (enabled) {
       sessionStorage.setItem('pullse_test_mode', 'enabled');
-      console.info('[Pullse] Test mode enabled');
+      console.info('[TEST MODE] Test mode enabled');
     } else {
       sessionStorage.removeItem('pullse_test_mode');
-      console.info('[Pullse] Test mode disabled');
+      console.info('[TEST MODE] Test mode disabled');
     }
   } catch (e) {
-    console.warn('[Pullse] Could not access sessionStorage for test mode');
+    console.warn('[TEST MODE] Could not access sessionStorage to set test mode', e);
   }
 }
 
 /**
- * Simulate typing with a delay then execute callback
+ * Get sample test data for conversations
+ * @returns Array of sample conversations
  */
-export function simulateAgentTypingInTestMode(callback: () => void, typingDuration = 1500): { cancel: () => void } {
-  let timeoutId = setTimeout(callback, typingDuration);
-  let isCancelled = false;
-  
-  return {
-    cancel: () => {
-      if (!isCancelled) {
-        clearTimeout(timeoutId);
-        isCancelled = true;
+export function getSampleConversations(): Conversation[] {
+  return [
+    {
+      id: '1',
+      title: 'Test Conversation 1',
+      timestamp: new Date(),
+      status: 'active',
+      preview: 'This is a test conversation',
+      unreadCount: 2,
+      messages: [
+        {
+          id: `msg-${Date.now()}-1`,
+          text: 'Hello! How can I help you today?',
+          sender: 'system',
+          timestamp: new Date(Date.now() - 3600000),
+          status: 'read'
+        },
+        {
+          id: `msg-${Date.now()}-2`,
+          text: 'I have a question about your services.',
+          sender: 'user',
+          timestamp: new Date(Date.now() - 3500000),
+          status: 'read'
+        },
+        {
+          id: `msg-${Date.now()}-3`,
+          text: 'Of course! I\'d be happy to help with that. What would you like to know?',
+          sender: 'system',
+          timestamp: new Date(Date.now() - 3400000),
+          status: 'sent'
+        }
+      ],
+      agentInfo: {
+        id: 'agent-1',
+        name: 'Test Agent',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=test-agent',
+        status: 'online'
+      }
+    },
+    {
+      id: '2',
+      title: 'Test Conversation 2',
+      timestamp: new Date(Date.now() - 86400000), // 1 day ago
+      status: 'ended',
+      preview: 'Thank you for your help',
+      unreadCount: 0,
+      messages: [
+        {
+          id: `msg-${Date.now()}-4`,
+          text: 'Hi there! What can I do for you?',
+          sender: 'system',
+          timestamp: new Date(Date.now() - 90000000),
+          status: 'read'
+        },
+        {
+          id: `msg-${Date.now()}-5`,
+          text: 'I need technical support.',
+          sender: 'user',
+          timestamp: new Date(Date.now() - 89900000),
+          status: 'read'
+        },
+        {
+          id: `msg-${Date.now()}-6`,
+          text: 'I\'ll connect you with our technical team.',
+          sender: 'system',
+          timestamp: new Date(Date.now() - 89800000),
+          status: 'read'
+        },
+        {
+          id: `msg-${Date.now()}-7`,
+          text: 'Thank you for your help.',
+          sender: 'user',
+          timestamp: new Date(Date.now() - 89700000),
+          status: 'read'
+        }
+      ],
+      agentInfo: {
+        id: 'agent-2',
+        name: 'Support Team',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=support-team',
+        status: 'offline'
       }
     }
+  ];
+}
+
+/**
+ * Get a test message response based on user input
+ * @param userMessage The user's message
+ * @returns A generated test response message
+ */
+export function getTestResponse(userMessage: string): Message {
+  const responses = [
+    "This is a test response from the system. In test mode, all responses are simulated.",
+    "I'm a test bot. Your real messages will be sent to actual agents in production.",
+    "Test mode enabled. This message is automatically generated.",
+    "Your message has been received in test mode. No actual processing is happening.",
+    "In production, this would be handled by a real agent or AI system."
+  ];
+  
+  // Pick a random response
+  const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+  
+  return {
+    id: uuidv4(),
+    text: randomResponse,
+    sender: 'system',
+    timestamp: new Date(),
+    type: 'text',
+    status: 'sent'
   };
 }
 
 /**
- * Generate a simulated agent response message
+ * Generate a test system message
+ * @param text Message text
+ * @returns A system message
  */
-export function simulateAgentResponseInTestMode(text: string): Message {
+export function createTestSystemMessage(text: string): Message {
   return {
     id: uuidv4(),
     text,
-    // Using 'system' as the sender type since 'agent' is not part of the allowed values
     sender: 'system',
     timestamp: new Date(),
-    status: 'delivered'
+    type: 'text',
+    status: 'sent'
   };
 }
 
 /**
- * Get a simulated agent for test mode
+ * Create a test tag for UI components in test mode
+ * @returns A React element for the test tag or null
  */
-export function getTestAgent() {
-  return {
-    id: 'test-agent',
-    name: 'Test Agent',
-    status: 'online' as const,
-    avatar: 'https://api.dicebear.com/6.x/micah/svg?seed=TestAgent'
-  };
-}
-
-/**
- * Generate simulated test conversations
- */
-export function generateTestConversations(count = 3): any[] {
-  const conversations = [];
-  const now = new Date();
+export function createTestBadge(): JSX.Element | null {
+  if (!isTestMode()) return null;
   
-  const templates = [
-    {
-      title: 'Product Information Request',
-      messageCount: 4,
-      firstMessage: 'Hi, I need information about your product.',
-      responses: [
-        'Hello! I\'d be happy to help. What would you like to know about our products?',
-        'We offer different packages with various features.',
-        'Is there anything specific you\'re interested in?'
-      ]
-    },
-    {
-      title: 'Technical Support Inquiry',
-      messageCount: 5,
-      firstMessage: 'I\'m having trouble setting up my account.',
-      responses: [
-        'I\'m sorry to hear that. I\'d be happy to help you with the account setup.',
-        'Could you tell me what step you\'re stuck on?',
-        'Have you already confirmed your email address?',
-        'Let me check your account status.'
-      ]
-    },
-    {
-      title: 'Pricing Question',
-      messageCount: 3,
-      firstMessage: 'What are your pricing plans?',
-      responses: [
-        'We have several pricing plans available depending on your needs.',
-        'Our basic plan starts at $9.99/month, while our premium plan is $29.99/month.'
-      ]
-    }
-  ];
-  
-  for (let i = 0; i < count; i++) {
-    const template = templates[i % templates.length];
-    const messages: Message[] = [];
-    
-    // Add user's first message
-    messages.push({
-      id: uuidv4(),
-      text: template.firstMessage,
-      sender: 'user',
-      timestamp: new Date(now.getTime() - (count - i) * 24 * 60 * 60 * 1000 - 30 * 60 * 1000),
-      status: 'read'
-    });
-    
-    // Add agent responses
-    for (let j = 0; j < template.responses.length; j++) {
-      messages.push({
-        id: uuidv4(),
-        text: template.responses[j],
-        // Using 'system' since 'agent' is not allowed
-        sender: 'system',
-        timestamp: new Date(now.getTime() - (count - i) * 24 * 60 * 60 * 1000 - (30 - j * 5) * 60 * 1000),
-        status: 'delivered'
-      });
-    }
-    
-    const conversation = {
-      id: uuidv4(),
-      title: template.title,
-      preview: template.responses[template.responses.length - 1],
-      timestamp: new Date(now.getTime() - (count - i) * 24 * 60 * 60 * 1000),
-      unreadCount: 0,
-      status: 'active',
-      messages,
-      agentInfo: getTestAgent()
-    };
-    
-    conversations.push(conversation);
-  }
-  
-  return conversations;
+  return (
+    <div className="absolute top-1 right-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full font-semibold">
+      TEST
+    </div>
+  );
 }

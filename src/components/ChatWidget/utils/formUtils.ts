@@ -1,5 +1,5 @@
 
-import { validateFormData, validateMessage, validateFile, sanitizeFileName } from './validation';
+import { validateInput } from './validation';
 
 // Validate a specific field based on its type and requirements
 export function validateField(name: string, value: string, isRequired: boolean): string | null {
@@ -28,4 +28,11 @@ export function validateField(name: string, value: string, isRequired: boolean):
   return null;
 }
 
-export { validateFormData, validateMessage, validateFile, sanitizeFileName };
+// Re-export specific validation functions from validation.ts
+export { 
+  validateInput, 
+  validateMessage, 
+  validateFile, 
+  sanitizeFileName, 
+  validateFormData 
+} from './validation';
