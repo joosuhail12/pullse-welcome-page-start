@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { X, MessageSquare, WifiOff } from 'lucide-react';
 import { ChatWidgetConfig } from '../config';

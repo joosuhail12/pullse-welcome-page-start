@@ -1,5 +1,4 @@
 
-// Update the WidgetContainer to pass connectionStatus to children components
 import React from 'react';
 import { ChatWidgetViews, ChatWidgetConfig, defaultConfig } from '../config';
 import { Conversation } from '../types';
@@ -78,7 +77,6 @@ const WidgetContainer = ({
       {viewState === 'home' && (
         <HomeView 
           onStartChat={handleStartChat}
-          onChangeView={handleChangeView}
           config={config}
         />
       )}
@@ -86,7 +84,7 @@ const WidgetContainer = ({
       {viewState === 'messages' && (
         <MessagesView 
           onSelect={handleSelectConversation}
-          onChangeView={handleChangeView}
+          onViewChange={handleChangeView}
           onStartChat={handleStartChat}
           config={config}
           connectionStatus={connectionStatus}

@@ -11,7 +11,7 @@ import ChatKeyboardHandler from '../../components/ChatKeyboardHandler';
 import ChatBody from '../../components/ChatBody';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
-import { CloudSyncIcon } from 'lucide-react';
+import { CloudSunIcon, NetworkIcon } from 'lucide-react';
 
 interface ChatViewPresentationProps {
   conversation: Conversation;
@@ -112,7 +112,7 @@ const ChatViewPresentation = ({
       return (
         <div className="flex-shrink-0">
           <PreChatForm
-            onSubmit={handleFormComplete}
+            onFormComplete={handleFormComplete}
             fields={config.preChatForm?.fields}
             config={config}
           />
@@ -131,7 +131,7 @@ const ChatViewPresentation = ({
   return (
     <div className="h-full flex flex-col overflow-hidden" style={chatViewStyle}>
       <ChatViewHeader
-        title={conversation.title || "Chat"}
+        conversation={conversation}
         onBack={onBack}
         showSearch={showSearch}
         onToggleSearch={toggleSearch}
@@ -160,7 +160,7 @@ const ChatViewPresentation = ({
             onClick={onSyncPendingMessages}
             disabled={isSyncing}
           >
-            <CloudSyncIcon className="h-4 w-4 mr-2" />
+            <NetworkIcon className="h-4 w-4 mr-2" />
             Sync now
           </Button>
         </div>
@@ -170,17 +170,17 @@ const ChatViewPresentation = ({
       {isSyncing && (
         <div className="px-4 py-2 bg-blue-50 border-b border-blue-100 flex justify-center items-center">
           <span className="flex items-center text-sm text-blue-800">
-            <CloudSyncIcon className="h-4 w-4 mr-2 animate-spin" />
+            <CloudSunIcon className="h-4 w-4 mr-2 animate-spin" />
             Syncing messages...
           </span>
         </div>
       )}
 
       <ChatKeyboardHandler 
-        onSearch={toggleSearch} 
-        onSendMessage={handleSendMessage} 
+        onSendMessage={handleSendMessage}
+        toggleSearch={toggleSearch}
         showSearchFeature={showSearchFeature}
-        customShortcuts={customKeyboardShortcuts}
+        customShortcuts={customKeyboardShortcuts as any}
         onSyncMessages={onSyncPendingMessages}
       >
         <ChatBody
@@ -197,7 +197,7 @@ const ChatViewPresentation = ({
           onMessageReaction={onMessageReaction}
           searchTerm={searchTerm}
           messageIds={messageIds}
-          highlightMessage={highlightText}
+          highlightMessage={(text) => highlightText(text).map(part => part.text)}
           agentAvatar={agentAvatar}
           userAvatar={userAvatar}
           handleLoadMoreMessages={handleLoadMoreMessages}

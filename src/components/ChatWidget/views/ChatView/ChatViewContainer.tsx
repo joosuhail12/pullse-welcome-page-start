@@ -12,6 +12,7 @@ import { dispatchChatEvent } from '../../utils/events';
 import ChatViewPresentation from './ChatViewPresentation';
 import { MessageReadStatus } from '../../components/MessageReadReceipt';
 import { ConnectionStatus } from '../../utils/reconnectionManager';
+import { KeyboardShortcutProps } from '../../components/KeyboardShortcutsInfo';
 
 interface ChatViewContainerProps {
   conversation: Conversation;
@@ -200,7 +201,7 @@ const ChatViewContainer = ({
   const hasMoreMessages = messages.length >= 20;
 
   // Enhanced keyboard shortcuts for this view
-  const customShortcuts = useMemo(() => [
+  const customShortcuts: KeyboardShortcutProps[] = useMemo(() => [
     { key: 'Alt + /', description: 'Search messages', category: 'search' },
     { key: 'Alt + Enter', description: 'Send message', category: 'messages' },
     { key: 'Alt + End', description: 'Go to latest messages', category: 'navigation' },

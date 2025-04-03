@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { PaperclipIcon, SendIcon, XCircleIcon, NetworkOffIcon } from 'lucide-react';
+import { PaperclipIcon, SendIcon, XCircleIcon, NetworkIcon } from 'lucide-react';
 
 interface MessageInputProps {
   messageText: string;
@@ -129,7 +129,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           onClick={handleSend}
           disabled={!messageText.trim() || disabled || isSending}
         >
-          {isOffline ? <NetworkOffIcon className="h-4 w-4" /> : <SendIcon className="h-4 w-4" />}
+          {isOffline ? <NetworkIcon className="h-4 w-4" /> : <SendIcon className="h-4 w-4" />}
         </Button>
       </div>
       
