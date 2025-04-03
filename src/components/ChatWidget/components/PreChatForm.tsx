@@ -21,6 +21,9 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const isMobile = useIsMobile();
 
+  // Safely get the field ID, falling back to name if not provided
+  const getFieldId = (field: { id?: string, name: string }) => field.id || field.name;
+
   // Handle input change for form
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -105,51 +108,54 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
       </h3>
       
       <div className="space-y-3 sm:space-y-4">
-        {config.preChatForm.fields.map((field) => (
-          <div key={field.id || field.name} className="space-y-1">
-            <Label 
-              htmlFor={field.id || field.name} 
-              className="text-xs sm:text-sm font-medium flex items-center gap-1"
-            >
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </Label>
-            
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                {getFieldIcon(field.name)}
+        {config.preChatForm.fields.map((field) => {
+          const fieldId = getFieldId(field);
+          return (
+            <div key={fieldId} className="space-y-1">
+              <Label 
+                htmlFor={fieldId} 
+                className="text-xs sm:text-sm font-medium flex items-center gap-1"
+              >
+                {field.label}
+                {field.required && <span className="text-red-500 ml-1">*</span>}
+              </Label>
+              
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                  {getFieldIcon(field.name)}
+                </div>
+                
+                <Input
+                  id={fieldId}
+                  name={field.name}
+                  type={field.type}
+                  required={field.required}
+                  placeholder={field.placeholder}
+                  value={formData[field.name] || ''}
+                  onChange={handleInputChange}
+                  onBlur={() => handleBlur(field.name)}
+                  className={`pl-10 h-9 sm:h-10 transition-all text-xs sm:text-sm ${
+                    touched[field.name] && formErrors[field.name] 
+                      ? 'border-red-500 bg-red-50' 
+                      : touched[field.name] && !formErrors[field.name]
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200'
+                  }`}
+                  aria-describedby={formErrors[field.name] ? `${fieldId}-error` : undefined}
+                />
               </div>
               
-              <Input
-                id={field.id || field.name}
-                name={field.name}
-                type={field.type}
-                required={field.required}
-                placeholder={field.placeholder}
-                value={formData[field.name] || ''}
-                onChange={handleInputChange}
-                onBlur={() => handleBlur(field.name)}
-                className={`pl-10 h-9 sm:h-10 transition-all text-xs sm:text-sm ${
-                  touched[field.name] && formErrors[field.name] 
-                    ? 'border-red-500 bg-red-50' 
-                    : touched[field.name] && !formErrors[field.name]
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-200'
-                }`}
-                aria-describedby={formErrors[field.name] ? `${field.id || field.name}-error` : undefined}
-              />
+              {touched[field.name] && formErrors[field.name] && (
+                <p 
+                  id={`${fieldId}-error`} 
+                  className="text-2xs sm:text-xs text-red-500 mt-1 animate-fade-in"
+                >
+                  {formErrors[field.name]}
+                </p>
+              )}
             </div>
-            
-            {touched[field.name] && formErrors[field.name] && (
-              <p 
-                id={`${field.id || field.name}-error`} 
-                className="text-2xs sm:text-xs text-red-500 mt-1 animate-fade-in"
-              >
-                {formErrors[field.name]}
-              </p>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
       
       <div className="mt-4 sm:mt-6">

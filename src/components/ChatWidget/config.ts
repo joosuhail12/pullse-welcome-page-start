@@ -1,4 +1,3 @@
-
 /**
  * Shared configuration and types for the Chat Widget
  */
@@ -47,7 +46,7 @@ export interface ChatBranding {
 export interface PreChatForm {
   enabled: boolean;
   fields?: Array<{
-    id: string;
+    id?: string;  // Make id optional
     name: string;
     label: string;
     type: 'text' | 'email' | 'phone' | 'select';
@@ -124,7 +123,7 @@ export const defaultConfig: ChatWidgetConfig = {
     enabled: false,
     fields: [
       {
-        id: 'name',
+        id: 'user-name',  // Add explicit ID
         name: 'name',
         label: 'Name',
         type: 'text',
@@ -132,7 +131,7 @@ export const defaultConfig: ChatWidgetConfig = {
         placeholder: 'Enter your name'
       },
       {
-        id: 'email',
+        id: 'user-email',  // Add explicit ID
         name: 'email',
         label: 'Email',
         type: 'email',
