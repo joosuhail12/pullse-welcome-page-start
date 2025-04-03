@@ -25,3 +25,33 @@ export interface PullseChatWidgetOptions {
 }
 
 export type EventCallback = (payload: ChatEventPayload) => void;
+
+/**
+ * Extended options for advanced widget configuration
+ */
+export interface AdvancedWidgetOptions extends PullseChatWidgetOptions {
+  // Advanced accessibility options
+  accessibilityLabels?: {
+    openChat?: string;
+    closeChat?: string;
+    sendMessage?: string;
+    attachFile?: string;
+  };
+  
+  // Custom styling options
+  customCSS?: string;
+  
+  // Analytics config
+  analyticsEnabled?: boolean;
+  analyticsProvider?: 'google' | 'segment' | 'mixpanel' | 'custom';
+  analyticsConfig?: Record<string, any>;
+  
+  // User identification
+  user?: {
+    id?: string;
+    name?: string;
+    email?: string;
+    avatarUrl?: string;
+    metadata?: Record<string, any>;
+  };
+}

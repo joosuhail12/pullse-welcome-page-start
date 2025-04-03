@@ -65,6 +65,7 @@ export type ChatEventType =
   | 'message:fileUploaded'
   | 'chat:ended';
 
+// Add the missing ChatEventPayload interface
 export interface ChatEventPayload {
   type: ChatEventType;
   timestamp: Date;
@@ -138,4 +139,3 @@ export const defaultConfig: ChatWidgetConfig = {
     authEndpoint: '/api/chat-widget/token'
   }
 };
-
