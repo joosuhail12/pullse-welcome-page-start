@@ -1,3 +1,4 @@
+
 import { getChatSessionId } from '../utils/cookies';
 import { generateCsrfToken, signMessage } from '../utils/security';
 import { logger } from '@/lib/logger';

@@ -1,9 +1,10 @@
+
 /**
  * Local storage utilities for the Chat Widget
  */
 import { Conversation } from '../types';
 import { getChatSessionId } from './cookies';
-import { encryptData, decryptData } from './security';
+import { encryptData, decryptData } from './security/encryption';
 
 const STORAGE_KEY = 'chat_widget_conversations';
 const MAX_STORED_CONVERSATIONS = 30;

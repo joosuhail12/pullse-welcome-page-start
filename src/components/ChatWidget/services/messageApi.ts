@@ -12,7 +12,7 @@
 import { getMessage } from '../utils/messageHandlers';
 import { MESSAGE_CIRCUIT, createSecureHeaders, enforceSecureConnection, checkCircuitStatus, sanitizeApiInputs, verifyResponseIntegrity, validateJsonResponse } from './apiCore';
 import { getChatSessionId, setChatSessionId } from '../utils/cookies';
-import { isRateLimited } from '../utils/security';
+import { isRateLimited } from '../utils/security/rateLimit';
 import { validateMessage } from '../utils/validation';
 import { withResilience } from '../utils/resilience';
 import { toast } from '@/components/ui/use-toast';

@@ -9,6 +9,7 @@
  */
 
 import { RESOURCE_INTEGRITY } from '../embed/api';
+import { generateCSPDirectives } from './security/contentSecurity';
 
 /**
  * Creates a meta tag with CSP directives for widget embedding
@@ -24,18 +25,7 @@ export function injectCSP(hostElement: Element | Document = document): void {
   meta.httpEquiv = 'Content-Security-Policy';
   
   // Define CSP directives with improved mobile support
-  meta.content = [
-    "default-src 'self' https://cdn.pullse.io",
-    "script-src 'self' https://cdn.pullse.io https://unpkg.com 'sha256-CALCULATED_HASH_HERE'",
-    "style-src 'self' 'unsafe-inline' https://cdn.pullse.io https://unpkg.com",
-    "img-src 'self' data: https://cdn.pullse.io https://*.githubusercontent.com",
-    "connect-src 'self' https://*.pullse.io https://api.pullse.io",
-    "font-src 'self' https://cdn.pullse.io",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'self' https://*.lovableproject.com https://*.pullse.io"
-  ].join('; ');
+  meta.content = generateCSPDirectives();
   
   // Add the meta tag to the document head or host element
   const targetElement = hostElement === document ? document.head : hostElement;

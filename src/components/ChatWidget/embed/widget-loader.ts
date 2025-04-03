@@ -15,7 +15,7 @@ import { ChatEventType } from '../config';
 import { validateEventPayload } from '../utils/eventValidation';
 import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
-import { enforceHttps } from '../utils/security';
+import { enforceHttps } from '../utils/security/sessionManagement';
 import { auditLogger } from '@/lib/audit-logger';
 
 // Export the main class for direct usage
