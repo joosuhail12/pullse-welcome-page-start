@@ -1,8 +1,7 @@
 
 import React from 'react';
 import { Check } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { TooltipProvider } from '@radix-ui/react-tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export type MessageReadStatus = 'unread' | 'delivered' | 'read' | 'sent';
 
