@@ -28,6 +28,7 @@ export interface Conversation {
   agentInfo?: {
     name?: string;
     avatar?: string;
+    status?: 'online' | 'offline' | 'away' | 'busy';
   };
   metadata?: any;
   sessionId?: string;
