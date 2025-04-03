@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -277,7 +276,8 @@
   }
   
   .pre-chat-input:focus {
-    @apply ring-2 ring-vivid-purple/30 border-vivid-purple;
+    @apply ring-2 border-vivid-purple;
+    --tw-ring-color: rgba(139, 92, 246, 0.3);  /* vivid-purple with 30% opacity */
   }
   
   .pre-chat-btn {
@@ -296,14 +296,16 @@
   
   /* Improved focus states for better accessibility */
   .chat-input:focus-visible {
-    @apply ring-2 ring-vivid-purple/50 border-vivid-purple;
+    @apply ring-2 border-vivid-purple;
+    --tw-ring-color: rgba(139, 92, 246, 0.5);  /* vivid-purple with 50% opacity */
     outline: none;
   }
 }
 
 /* Enhanced keyboard navigation indicators for chat components */
 .chat-widget-container:focus-within {
-  @apply ring-1 ring-vivid-purple/30;
+  @apply ring-1;
+  --tw-ring-color: rgba(139, 92, 246, 0.3);  /* vivid-purple with 30% opacity */
 }
 
 /* Keyboard accessible elements */

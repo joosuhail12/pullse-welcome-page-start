@@ -229,5 +229,36 @@ export default {
       }
     }
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    // Add plugin to enable opacity modifiers for custom colors
+    function({ addBase, addUtilities, theme }) {
+      const customUtilities = {};
+      const colors = theme('colors');
+      
+      // Generate utilities for "ring-{color}/{opacity}" format
+      Object.entries(colors).forEach(([colorName, colorValue]) => {
+        if (typeof colorValue === 'object' && colorValue !== null) {
+          Object.entries(colorValue).forEach(([shade, value]) => {
+            if (shade !== 'DEFAULT') return;
+            // Create utilities for each opacity value from 10 to 90
+            [10, 20, 30, 40, 50, 60, 70, 80, 90].forEach(opacity => {
+              customUtilities[`.ring-${colorName}\\/${opacity}`] = {
+                '--tw-ring-color': `rgb(var(--${colorName}-rgb) / ${opacity}%)`,
+              };
+            });
+          });
+        }
+      });
+
+      addUtilities(customUtilities);
+
+      // Add CSS variable for vivid-purple RGB values to be used with opacity
+      addBase({
+        ':root': {
+          '--vivid-purple-rgb': '139, 92, 246',  // RGB for #8B5CF6
+        },
+      });
+    }
+  ],
 } satisfies Config;
