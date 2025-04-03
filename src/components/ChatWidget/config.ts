@@ -79,21 +79,6 @@ export interface ChatEventPayload {
   data?: any;
 }
 
-// Add widget appearance configuration
-export interface ChatAppearance {
-  launcher?: {
-    size?: 'small' | 'medium' | 'large';
-  };
-  dimensions?: {
-    width?: number;
-    height?: number;
-  };
-  shape?: 'rounded' | 'square' | 'pill' | 'soft';
-}
-
-// Add ChatWidgetViews type
-export type ChatWidgetViews = 'home' | 'messages' | 'chat' | 'settings';
-
 export interface ChatWidgetConfig {
   workspaceId: string;
   welcomeMessage: string;
@@ -103,8 +88,6 @@ export interface ChatWidgetConfig {
   features?: ChatFeatures;
   realtime?: ChatRealtime;
   sessionId?: string;
-  appearance?: ChatAppearance; // Add appearance property
-  messages?: any[]; // Add messages property
   onEvent?: (event: ChatEventPayload) => void;
   // Added to support advanced event subscription
   eventHandlers?: {
@@ -153,20 +136,9 @@ export const defaultConfig: ChatWidgetConfig = {
     typingIndicators: true,
     searchMessages: true
   },
-  appearance: {
-    launcher: {
-      size: 'medium'
-    },
-    dimensions: {
-      width: 380,
-      height: 580
-    },
-    shape: 'rounded'
-  },
   realtime: {
     enabled: false,
     // Using auth endpoint instead of direct API key
     authEndpoint: '/api/chat-widget/token'
-  },
-  messages: [] // Add default empty array
+  }
 };

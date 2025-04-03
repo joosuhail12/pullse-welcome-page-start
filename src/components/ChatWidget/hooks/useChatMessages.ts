@@ -42,7 +42,7 @@ export function useChatMessages(
     remoteIsTyping,
     readReceipts,
     handleTypingTimeout
-  } = useRealTime({
+  } = useRealTime(
     messages,
     setMessages,
     conversation,
@@ -50,7 +50,7 @@ export function useChatMessages(
     setIsTyping,
     config,
     playMessageSound
-  });
+  );
   
   // Use the message actions hook
   const {
@@ -121,8 +121,6 @@ export function useChatMessages(
     handleFileUpload,
     handleEndChat,
     readReceipts,
-    loadPreviousMessages,
-    chatChannelName,
-    sessionId
+    loadPreviousMessages
   };
 }

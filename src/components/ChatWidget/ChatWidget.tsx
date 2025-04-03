@@ -13,7 +13,6 @@ import ChatWidgetErrorBoundary from './components/ChatWidgetErrorBoundary';
 import ConnectionManager from './components/ConnectionManager';
 import { ConnectionStatus } from './utils/reconnectionManager';
 import ChatKeyboardHandler from './components/ChatKeyboardHandler';
-import ConnectionStatusIndicator from './components/ConnectionStatusIndicator';
 
 export interface ChatWidgetProps {
   workspaceId: string;
@@ -70,10 +69,6 @@ const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [toggleChat]);
 
-  // Track offline status for launcher button
-  const isOffline = connectionStatus !== ConnectionStatus.CONNECTED && 
-                    connectionStatus !== ConnectionStatus.CONNECTING;
-
   if (loading) {
     return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles} config={config} />;
   }
@@ -101,28 +96,15 @@ const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         handleStartChat={handleStartChat}
         setUserFormData={setUserFormData}
         playMessageSound={playMessageSound}
-        connectionStatus={connectionStatus}
       />
 
-      <div className="relative">
-        {!isOpen && isOffline && (
-          <div className="absolute bottom-16 right-4 z-10">
-            <ConnectionStatusIndicator
-              status={connectionStatus} 
-              variant="icon-only"
-              className="shadow-md" 
-            />
-          </div>
-        )}
-        <LauncherButton 
-          isOpen={isOpen}
-          unreadCount={unreadCount}
-          onClick={toggleChat}
-          config={config}
-          positionStyles={getLauncherPositionStyles}
-          isOffline={isOffline}
-        />
-      </div>
+      <LauncherButton 
+        isOpen={isOpen}
+        unreadCount={unreadCount}
+        onClick={toggleChat}
+        config={config}
+        positionStyles={getLauncherPositionStyles}
+      />
     </ChatWidgetErrorBoundary>
   );
 };

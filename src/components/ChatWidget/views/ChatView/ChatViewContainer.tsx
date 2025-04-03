@@ -1,5 +1,3 @@
-
-// Update ChatViewContainer to incorporate offline support
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Conversation } from '../../types';
 import { ChatWidgetConfig, defaultConfig } from '../../config';
@@ -7,12 +5,9 @@ import { useChatMessages } from '../../hooks/useChatMessages';
 import { useMessageReactions } from '../../hooks/useMessageReactions';
 import { useMessageSearch } from '../../hooks/useMessageSearch';
 import { useInlineForm } from '../../hooks/useInlineForm';
-import { useOfflineSupport } from '../../hooks/useOfflineSupport';
 import { dispatchChatEvent } from '../../utils/events';
 import ChatViewPresentation from './ChatViewPresentation';
 import { MessageReadStatus } from '../../components/MessageReadReceipt';
-import { ConnectionStatus } from '../../utils/reconnectionManager';
-import { KeyboardShortcutProps } from '../../components/KeyboardShortcutsInfo';
 
 interface ChatViewContainerProps {
   conversation: Conversation;
@@ -22,7 +17,6 @@ interface ChatViewContainerProps {
   playMessageSound?: () => void;
   userFormData?: Record<string, string>;
   setUserFormData?: (data: Record<string, string>) => void;
-  connectionStatus?: ConnectionStatus;
 }
 
 /**
@@ -37,8 +31,7 @@ const ChatViewContainer = ({
   config = defaultConfig,
   playMessageSound,
   userFormData,
-  setUserFormData,
-  connectionStatus = ConnectionStatus.CONNECTED
+  setUserFormData
 }: ChatViewContainerProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -75,28 +68,8 @@ const ChatViewContainer = ({
     handleEndChat,
     remoteIsTyping,
     readReceipts,
-    loadPreviousMessages,
-    chatChannelName,
-    sessionId
+    loadPreviousMessages
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
-
-  // Use offline support hook
-  const {
-    isOnline,
-    hasDraft,
-    pendingCount,
-    isSyncing,
-    saveDraft,
-    loadDraft,
-    clearDraft,
-    queueMessageForSending,
-    syncPendingMessages
-  } = useOfflineSupport({
-    connectionStatus,
-    conversationId: conversation.id,
-    sessionId,
-    chatChannelName
-  });
 
   const {
     handleMessageReaction
@@ -166,14 +139,6 @@ const ChatViewContainer = ({
     dispatchChatEvent('contact:formCompleted', { formData }, config);
   }, [setUserFormData, onUpdateConversation, conversation, config]);
 
-  // Enhanced send message handler that includes draft handling
-  const enhancedSendMessage = useCallback(() => {
-    handleSendMessage();
-    if (hasDraft) {
-      clearDraft();
-    }
-  }, [handleSendMessage, hasDraft, clearDraft]);
-
   // Handler for toggling message importance
   const handleToggleMessageImportance = useCallback((messageId: string) => {
     setMessages(currentMessages => {
@@ -200,31 +165,6 @@ const ChatViewContainer = ({
   const userAvatar = undefined;
   const hasMoreMessages = messages.length >= 20;
 
-  // Enhanced keyboard shortcuts for this view
-  const customShortcuts: KeyboardShortcutProps[] = useMemo(() => [
-    { key: 'Alt + /', description: 'Search messages', category: 'search' },
-    { key: 'Alt + Enter', description: 'Send message', category: 'messages' },
-    { key: 'Alt + End', description: 'Go to latest messages', category: 'navigation' },
-    { key: 'Alt + O', description: 'Sync pending messages', category: 'messages' },
-    { key: 'Esc', description: 'Close search or dialog', category: 'general' },
-  ], []);
-
-  // Enhanced user typing handler with draft saving
-  const enhancedUserTyping = useCallback(() => {
-    handleUserTyping();
-    saveDraft(messageText);
-  }, [handleUserTyping, saveDraft, messageText]);
-
-  // Load draft on initial render
-  useEffect(() => {
-    if (hasDraft && messageText === '') {
-      const draft = loadDraft();
-      if (draft) {
-        setMessageText(draft);
-      }
-    }
-  }, []); // Only run once on component mount
-
   // Styling based on branding config
   const chatViewStyle = useMemo(() => {
     return {
@@ -241,13 +181,13 @@ const ChatViewContainer = ({
   }, [config?.branding?.primaryColor]);
 
   // Create proper highlightText function with the correct signature
-  const highlightText = useCallback((text: string) => {
-    if (!searchTerm) return [{text, highlighted: false}];
+  const highlightText = useCallback((text: string, term: string) => {
+    if (!term) return [{text, highlighted: false}];
     
     // Simple highlight function implementation
     const parts: {text: string; highlighted: boolean}[] = [];
     const lowerText = text.toLowerCase();
-    const lowerTerm = searchTerm.toLowerCase();
+    const lowerTerm = term.toLowerCase();
     let lastIndex = 0;
     
     let index = lowerText.indexOf(lowerTerm);
@@ -262,11 +202,11 @@ const ChatViewContainer = ({
       
       // Add matching part
       parts.push({
-        text: text.substring(index, index + searchTerm.length),
+        text: text.substring(index, index + term.length),
         highlighted: true
       });
       
-      lastIndex = index + searchTerm.length;
+      lastIndex = index + term.length;
       index = lowerText.indexOf(lowerTerm, lastIndex);
     }
     
@@ -279,7 +219,7 @@ const ChatViewContainer = ({
     }
     
     return parts;
-  }, [searchTerm]);
+  }, []);
 
   // Convert readReceipts to the format expected by ChatViewPresentation
   const formattedReadReceipts = useMemo(() => {
@@ -304,8 +244,8 @@ const ChatViewContainer = ({
       setMessageText={setMessageText}
       isTyping={isTyping}
       remoteIsTyping={remoteIsTyping}
-      handleSendMessage={enhancedSendMessage}
-      handleUserTyping={enhancedUserTyping}
+      handleSendMessage={handleSendMessage}
+      handleUserTyping={handleUserTyping}
       handleFileUpload={handleFileUpload}
       handleEndChat={handleEndChat}
       readReceipts={formattedReadReceipts}
@@ -331,15 +271,6 @@ const ChatViewContainer = ({
       config={config}
       onToggleMessageImportance={handleToggleMessageImportance}
       ticketProgress={ticketProgress}
-      connectionStatus={connectionStatus}
-      hasDraft={hasDraft}
-      pendingCount={pendingCount}
-      onSaveDraft={saveDraft}
-      onLoadDraft={loadDraft}
-      onSyncPendingMessages={isSyncing ? undefined : syncPendingMessages}
-      isSyncing={isSyncing}
-      isOffline={!isOnline || connectionStatus !== ConnectionStatus.CONNECTED}
-      customKeyboardShortcuts={customShortcuts}
     />
   );
 };
