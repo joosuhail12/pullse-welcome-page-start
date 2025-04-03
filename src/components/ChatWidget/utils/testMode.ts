@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, Conversation } from '../types';
 
@@ -170,7 +171,7 @@ export function createTestSystemMessage(text: string): Message {
  * Create a test tag for UI components in test mode
  * @returns A React element for the test tag or null
  */
-export function createTestBadge(): JSX.Element | null {
+export function createTestBadge(): React.ReactElement | null {
   if (!isTestMode()) return null;
   
   return (
