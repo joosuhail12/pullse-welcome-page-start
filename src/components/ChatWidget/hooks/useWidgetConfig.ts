@@ -15,6 +15,7 @@ function ensureValidPosition(position: unknown): ChatPositionString {
   if (typeof position === 'string' && isValidChatPosition(position)) {
     return position as ChatPositionString;
   }
+  // Default to 'bottom-right' as the fallback position
   return 'bottom-right';
 }
 
@@ -66,8 +67,8 @@ export function useWidgetConfig(workspaceId?: string) {
           
           // Get the default placement value and ensure it's valid
           const defaultPlacementValue = defaultConfig.position?.placement || 'bottom-right';
-          // Ensure we're using the ChatPositionString type
-          const validatedPlacement = ensureValidPosition(defaultPlacementValue) as ChatPositionString;
+          // Ensure we're using a validated ChatPositionString type
+          const validatedPlacement = ensureValidPosition(defaultPlacementValue);
           
           const devConfig: ChatWidgetConfig = {
             ...defaultConfig,
@@ -95,8 +96,8 @@ export function useWidgetConfig(workspaceId?: string) {
         
         // Get the fetched placement value and ensure it's valid
         const fetchedPlacementValue = fetchedConfig.position?.placement || 'bottom-right';
-        // Ensure we're using the ChatPositionString type
-        const validatedPlacement = ensureValidPosition(fetchedPlacementValue) as ChatPositionString;
+        // Ensure we're using a validated ChatPositionString type
+        const validatedPlacement = ensureValidPosition(fetchedPlacementValue);
         
         setConfig({
           ...fetchedConfig,
@@ -112,8 +113,8 @@ export function useWidgetConfig(workspaceId?: string) {
         
         // Get the default placement value for error fallback
         const defaultPlacementValue = defaultConfig.position?.placement || 'bottom-right';
-        // Ensure we're using the ChatPositionString type
-        const validatedPlacement = ensureValidPosition(defaultPlacementValue) as ChatPositionString;
+        // Ensure we're using a validated ChatPositionString type
+        const validatedPlacement = ensureValidPosition(defaultPlacementValue);
         
         setConfig({
           ...defaultConfig,
