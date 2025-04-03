@@ -23,7 +23,7 @@ interface MessageBubbleProps {
   message: {
     id: string;
     text: string;
-    type: MessageType;
+    type?: MessageType;
     sender: UserType;
     timestamp: Date;
     metadata?: Record<string, any>;
@@ -35,7 +35,7 @@ interface MessageBubbleProps {
   agentAvatar?: string;
   onReply?: (text: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
-  agentStatus?: 'online' | 'away' | 'offline';
+  agentStatus?: 'online' | 'away' | 'offline' | 'busy';
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
 }

@@ -2,7 +2,7 @@
 import { ChatWidgetConfig } from '../config';
 
 // Extended interface to handle custom properties
-interface ExtendedChatWidgetConfig extends ChatWidgetConfig {
+export interface ExtendedChatWidgetConfig extends ChatWidgetConfig {
   styles?: Record<string, string>;
   customCSS?: string;
 }
@@ -119,4 +119,23 @@ export function createShadowDOM(widgetId: string, styles: string, config: Extend
   }
 
   return shadowRoot;
+}
+
+// Function to initialize embed security
+export function initializeEmbedSecurity(containerId: string): { container: HTMLElement | null; shadowRoot: ShadowRoot | null } {
+  const container = document.getElementById(containerId);
+  if (!container) {
+    console.error(`Container with ID "${containerId}" not found.`);
+    return { container: null, shadowRoot: null };
+  }
+
+  // Create a shadow root for isolation
+  const shadowRoot = container.attachShadow({ mode: 'open' });
+  
+  // Create inner container for the chat widget
+  const innerContainer = document.createElement('div');
+  innerContainer.className = 'pullse-chat-widget-inner';
+  shadowRoot.appendChild(innerContainer);
+  
+  return { container, shadowRoot };
 }

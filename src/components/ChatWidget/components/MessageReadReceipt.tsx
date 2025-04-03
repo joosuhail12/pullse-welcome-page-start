@@ -1,88 +1,81 @@
 
-import React, { useMemo } from 'react';
-import { Check, Clock } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import React from 'react';
+import { Check } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { TooltipProvider } from '@radix-ui/react-tooltip';
 
-export type MessageReadStatus = 'unread' | 'sent' | 'delivered' | 'read' | 'failed';
+export type MessageReadStatus = 'unread' | 'delivered' | 'read' | 'sent';
 
 interface MessageReadReceiptProps {
-  status?: MessageReadStatus;
+  status: MessageReadStatus;
   timestamp?: Date;
-  className?: string;
 }
 
-const MessageReadReceipt: React.FC<MessageReadReceiptProps> = React.memo(({ 
-  status = 'sent', 
-  timestamp,
-  className
-}) => {
-  const statusInfo = useMemo(() => {
+const MessageReadReceipt: React.FC<MessageReadReceiptProps> = ({ status, timestamp }) => {
+  // Don't render anything for unread status
+  if (status === 'unread') {
+    return null;
+  }
+
+  // Determine the style based on the status
+  const getStatusStyle = () => {
     switch (status) {
       case 'read':
-        return {
-          icon: <Check className="text-green-500" size={14} />,
-          label: 'Read',
-          description: timestamp ? `Read at ${timestamp.toLocaleTimeString()}` : 'Message has been read',
-          doubleCheck: true
-        };
+        return 'text-green-500';
       case 'delivered':
-        return {
-          icon: <Check className="text-gray-400" size={14} />,
-          label: 'Delivered',
-          description: timestamp ? `Delivered at ${timestamp.toLocaleTimeString()}` : 'Message has been delivered',
-          doubleCheck: true
-        };
-      case 'failed':
-        return {
-          icon: <span className="text-red-500 text-xs">!</span>,
-          label: 'Failed',
-          description: 'Message failed to send. Tap to retry.',
-          doubleCheck: false
-        };
+        return 'text-blue-500';
       case 'sent':
       default:
-        return {
-          icon: <Check className="text-gray-400" size={14} />,
-          label: 'Sent',
-          description: timestamp ? `Sent at ${timestamp.toLocaleTimeString()}` : 'Message has been sent',
-          doubleCheck: false
-        };
+        return 'text-gray-400';
     }
-  }, [status, timestamp]);
+  };
+
+  // Get the appropriate text label
+  const getLabel = () => {
+    switch (status) {
+      case 'read':
+        return 'Read';
+      case 'delivered':
+        return 'Delivered';
+      case 'sent':
+      default:
+        return 'Sent';
+    }
+  };
+
+  // Format timestamp if available
+  const getTimeString = () => {
+    if (!timestamp) return '';
+    
+    return timestamp.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={cn("flex items-center justify-end space-x-0.5", className)}>
-            {statusInfo.doubleCheck ? (
-              <div className="relative">
-                <Check size={14} className="text-gray-400 opacity-70" />
-                <Check size={14} className={`absolute top-0 left-1 ${status === 'read' ? 'text-green-500' : 'text-gray-400'}`} />
+          <div className="flex items-center space-x-1">
+            {status === 'read' ? (
+              <div className="flex">
+                <Check className={`h-3 w-3 ${getStatusStyle()}`} />
+                <Check className={`h-3 w-3 -ml-1 ${getStatusStyle()}`} />
               </div>
-            ) : status === 'failed' ? (
-              <div className="rounded-full bg-red-100 w-3.5 h-3.5 flex items-center justify-center">
-                {statusInfo.icon}
-              </div>
-            ) : status === 'sent' ? (
-              <Clock size={14} className="text-gray-400" />
+            ) : status === 'delivered' ? (
+              <Check className={`h-3 w-3 ${getStatusStyle()}`} />
             ) : (
-              statusInfo.icon
+              <div className={`h-2 w-2 rounded-full ${getStatusStyle()}`} />
             )}
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" align="end">
-          <div className="text-xs">
-            <div className="font-medium">{statusInfo.label}</div>
-            <div className="text-gray-500">{statusInfo.description}</div>
-          </div>
+        <TooltipContent side="bottom" sideOffset={5} className="text-xs">
+          {getLabel()}{timestamp ? ` at ${getTimeString()}` : ''}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   );
-});
-
-MessageReadReceipt.displayName = 'MessageReadReceipt';
+};
 
 export default MessageReadReceipt;

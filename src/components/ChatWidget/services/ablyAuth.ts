@@ -1,178 +1,39 @@
 
 import { getChatSessionId } from '../utils/cookies';
-import { generateCsrfToken, signMessage } from '../utils/security';
-import { logger } from '@/lib/logger';
-import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
-import { auditLogger } from '@/lib/audit-logger';
-import { SecurityEventType } from '@/lib/securityTypes';
-
-interface TokenParams {
-  workspaceId: string;
-  channelName?: string;
-  clientId?: string;
-}
 
 /**
- * Ably Authentication Service
- * 
- * This module handles secure authentication with the Ably real-time messaging service,
- * including token request generation, signature validation, and circuit breaking.
- * 
- * SECURITY NOTICE: Real-time messaging authentication requires careful
- * permission management to prevent unauthorized data access.
+ * Generate the URL to use for Ably authentication
+ * @param workspaceId Workspace ID to authenticate against
+ * @returns Authentication URL
  */
+export const getAblyAuthUrl = (workspaceId: string): string => {
+  const baseUrl = '/api/chat/ably-auth';
+  const sessionId = getChatSessionId();
+  return `${baseUrl}?workspaceId=${encodeURIComponent(workspaceId)}&sessionId=${encodeURIComponent(sessionId)}`;
+};
 
 /**
- * Request Ably capability token from server
- * @param params Token request parameters
- * @returns Token response from server
- * 
- * TODO: Implement capability restrictions based on user role
- * TODO: Add token refresh mechanism before expiration
- * TODO: Implement token revocation for security incidents
+ * Get an authentication signature for Ably
+ * @param tokenRequest Token request data
+ * @returns Signature data
  */
-export const requestAblyToken = async (params: TokenParams): Promise<any> => {
+export const getAuthSignature = async (tokenRequest: any): Promise<{ signature: string }> => {
   try {
-    const sessionId = getChatSessionId();
-    const timestamp = Date.now();
-    const { token: csrfToken } = generateCsrfToken();
-    
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': csrfToken,
-      'X-Request-Timestamp': timestamp.toString(),
-      'X-Request-Signature': signMessage(params.workspaceId, timestamp)
-    };
-
-    const payload = {
-      ...params,
-      sessionId,
-      timestamp
-    };
-
-    // Log token request attempt
-    auditLogger.logSecurityEvent(
-      SecurityEventType.TOKEN_ISSUED,
-      'ATTEMPT',
-      { 
-        service: 'ably', 
-        workspaceId: params.workspaceId,
-        channelName: params.channelName
-      }
-    );
-
-    // In development mode, return mock token for testing
-    if (import.meta.env.DEV) {
-      logger.debug('Using mock Ably token in development mode', 'ablyAuth.requestToken');
-      const mockToken = mockTokenResponse(params);
-      
-      // Log successful mock token generation
-      auditLogger.logSecurityEvent(
-        SecurityEventType.TOKEN_ISSUED,
-        'SUCCESS',
-        { 
-          service: 'ably',
-          environment: 'development',
-          mock: true,
-          workspaceId: params.workspaceId
-        }
-      );
-      
-      return mockToken;
-    }
-
-    const response = await fetch('/api/chat-widget/token', {
+    const response = await fetch('/api/chat/ably-signature', {
       method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      
-      // Log token request failure
-      auditLogger.logSecurityEvent(
-        SecurityEventType.TOKEN_REJECTED,
-        'FAILURE',
-        { 
-          service: 'ably',
-          statusCode: response.status,
-          error: sanitizeErrorMessage(errorText),
-          workspaceId: params.workspaceId
-        },
-        'HIGH'
-      );
-      
-      throw new Error(`Failed to fetch Ably token: ${response.status} ${response.statusText} - ${errorText}`);
-    }
-
-    const tokenResponse = await response.json();
-    
-    // Log successful token issuance
-    auditLogger.logSecurityEvent(
-      SecurityEventType.TOKEN_ISSUED,
-      'SUCCESS',
-      { 
-        service: 'ably',
-        workspaceId: params.workspaceId,
-        issued: tokenResponse.issued,
-        expires: tokenResponse.expires
-      }
-    );
-    
-    return tokenResponse;
-  } catch (error) {
-    const safeErrorMessage = sanitizeErrorMessage(error);
-    logger.error('Error requesting Ably token', 'ablyAuth.requestToken', { error: safeErrorMessage });
-    
-    // Log token request exception
-    auditLogger.logSecurityEvent(
-      SecurityEventType.TOKEN_REJECTED,
-      'FAILURE',
-      { 
-        service: 'ably',
-        error: safeErrorMessage,
-        workspaceId: params.workspaceId
+      headers: {
+        'Content-Type': 'application/json'
       },
-      'HIGH'
-    );
+      body: JSON.stringify(tokenRequest)
+    });
     
+    if (!response.ok) {
+      throw new Error(`Auth request failed: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error getting auth signature:', error);
     throw error;
   }
 };
-
-/**
- * Get the authentication URL with capabilities
- * @param workspaceId Workspace ID for the token
- * @returns Full auth URL that can be used by Ably
- * 
- * TODO: Consider implementing short-lived authentication URLs
- */
-export const getAblyAuthUrl = (workspaceId: string): string => {
-  // In development, we'll return a mock URL that will be intercepted
-  if (import.meta.env.DEV) {
-    return '/mock-auth/ably-token';
-  }
-  
-  return `/api/chat-widget/token?workspaceId=${encodeURIComponent(workspaceId)}`;
-};
-
-/**
- * Mock token response for development
- * 
- * SECURITY NOTICE: This is only for development and must not be used in production
- */
-function mockTokenResponse(params: TokenParams): any {
-  // This is just for development - in production, tokens come from server
-  return {
-    token: "mockAblyToken_" + Date.now(),
-    issued: Date.now(),
-    expires: Date.now() + 3600000, // 1 hour
-    capability: {
-      [`conversation:*`]: ["subscribe", "presence"],
-      [`session:*`]: ["subscribe", "publish"],
-      [`workspace:${params.workspaceId}:presence`]: ["presence", "subscribe"]
-    },
-    clientId: params.clientId || getChatSessionId()
-  };
-}

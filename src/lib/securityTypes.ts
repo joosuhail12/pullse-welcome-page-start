@@ -34,7 +34,19 @@ export enum SecurityEventType {
   // Suspicious activity
   SUSPICIOUS_ACTIVITY = 'suspicious_activity',
   RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
-  BRUTE_FORCE_ATTEMPT = 'brute_force_attempt'
+  BRUTE_FORCE_ATTEMPT = 'brute_force_attempt',
+  
+  // Additional types needed for audit-logger.ts
+  UNAUTHORIZED_ACCESS = 'unauthorized_access',
+  ADMIN_ACTION = 'admin_action'
+}
+
+// Define SecurityEventOutcome enum
+export enum SecurityEventOutcome {
+  SUCCESS = 'success',
+  FAILURE = 'failure',
+  WARNING = 'warning',
+  INFO = 'info'
 }
 
 export type SecurityEventSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';

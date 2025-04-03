@@ -9,8 +9,9 @@ export const generatePresenceId = (): string => {
   return uuidv4();
 };
 
+// Update type definition to use RealtimeChannel instead of RealtimeChannelBase
 // Function to enter presence on a channel
-export const enterPresence = async (channel: Ably.Types.RealtimeChannelBase, clientId: string, data?: any): Promise<void> => {
+export const enterPresence = async (channel: Ably.Types.RealtimeChannel, clientId: string, data?: any): Promise<void> => {
   try {
     if (channel && channel.presence) {
       await channel.presence.enterClient(clientId, data);
@@ -23,7 +24,7 @@ export const enterPresence = async (channel: Ably.Types.RealtimeChannelBase, cli
 };
 
 // Function to leave presence on a channel
-export const leavePresence = async (channel: Ably.Types.RealtimeChannelBase, clientId: string): Promise<void> => {
+export const leavePresence = async (channel: Ably.Types.RealtimeChannel, clientId: string): Promise<void> => {
   try {
     if (channel && channel.presence) {
       await channel.presence.leaveClient(clientId);
@@ -36,7 +37,7 @@ export const leavePresence = async (channel: Ably.Types.RealtimeChannelBase, cli
 };
 
 // Function to get the current presence members on a channel
-export const getPresence = async (channel: Ably.Types.RealtimeChannelBase): Promise<Ably.Types.PresenceMessage[]> => {
+export const getPresence = async (channel: Ably.Types.RealtimeChannel): Promise<Ably.Types.PresenceMessage[]> => {
   try {
     if (channel && channel.presence) {
       const presence = await channel.presence.get();
@@ -52,7 +53,7 @@ export const getPresence = async (channel: Ably.Types.RealtimeChannelBase): Prom
 
 // Fix presence event registration
 export const registerPresenceHandlers = (
-  channel: Ably.Types.RealtimeChannelBase,
+  channel: Ably.Types.RealtimeChannel,
   onPresenceJoin?: (member: Ably.Types.PresenceMessage) => void,
   onPresenceLeave?: (member: Ably.Types.PresenceMessage) => void,
   onPresenceUpdate?: (member: Ably.Types.PresenceMessage) => void
@@ -71,7 +72,7 @@ export const registerPresenceHandlers = (
 };
 
 // Function to clear all presence subscriptions
-export const clearPresenceHandlers = (channel: Ably.Types.RealtimeChannelBase) => {
+export const clearPresenceHandlers = (channel: Ably.Types.RealtimeChannel) => {
   if (channel && channel.presence) {
     channel.presence.unsubscribe();
     console.log(`Cleared all presence subscriptions on channel ${channel.name}`);
@@ -98,9 +99,10 @@ export const subscribeToPresence = (
     const updatePresence = async () => {
       try {
         const members = await channel.presence.get();
-        callback(members);
+        callback(members || []);
       } catch (err) {
         console.error(`Error getting presence members for ${channelName}:`, err);
+        callback([]);
       }
     };
     
@@ -110,7 +112,9 @@ export const subscribeToPresence = (
     channel.presence.subscribe('update', updatePresence);
     
     // Get initial presence
-    updatePresence();
+    updatePresence().catch(err => {
+      console.error(`Error getting initial presence for ${channelName}:`, err);
+    });
     
     // Return cleanup function
     return () => {

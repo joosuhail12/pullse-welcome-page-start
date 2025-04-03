@@ -1,7 +1,7 @@
 
-import { toast } from "@/hooks/use-toast"
+import { toast, type Toast } from "@/hooks/use-toast"
 import { createElement } from "react"
-import { ToastActionElement } from "@/components/ui/toast"
+import { ToastActionElement, ToasterToast } from "@/components/ui/toast"
 
 type ToastType = 'info' | 'success' | 'warning' | 'error'
 
@@ -58,7 +58,7 @@ export const retryableToast = (
 ) => {
   const { onRetry, ...toastOptions } = options
   
-  // Correctly create a button using React API
+  // Create a retry action button
   const retryAction = createElement(
     'button',
     {
@@ -69,14 +69,17 @@ export const retryableToast = (
           title: "Dismissing...",
           duration: 0
         });
-        toast.dismiss(toastInstance.id);
+        
+        if (typeof toast.dismiss === 'function') {
+          toast.dismiss(toastInstance.id);
+        }
         
         // Execute the retry action
         onRetry()
       }
     },
     'Retry'
-  ) as ToastActionElement
+  ) as unknown as ToastActionElement
   
   return showToast('error', {
     ...toastOptions,
