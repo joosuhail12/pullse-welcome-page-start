@@ -1,7 +1,7 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Conversation } from '../types';
-import { saveConversationToStorage, loadConversationsFromStorage, clearConversationsFromStorage } from '../utils/storage';
+import { saveConversationToStorage, loadConversationsFromStorage } from '../utils/storage';
 import { logout, checkSessionValidity } from '../utils/security';
 
 type ViewState = 'home' | 'messages' | 'chat';
@@ -24,7 +24,7 @@ export function useChatState() {
     }
   }, []);
 
-  const handleStartChat = (formData?: Record<string, string>) => {
+  const handleStartChat = useCallback((formData?: Record<string, string>) => {
     // Store form data when provided
     if (formData) {
       setUserFormData(formData);
@@ -47,37 +47,37 @@ export function useChatState() {
     
     // Save the new conversation to localStorage
     saveConversationToStorage(newConversation);
-  };
+  }, []);
 
-  const handleBackToMessages = () => {
+  const handleBackToMessages = useCallback(() => {
     // Update the conversation in localStorage before going back
     if (activeConversation) {
       saveConversationToStorage(activeConversation);
     }
     setViewState('messages');
-  };
+  }, [activeConversation]);
 
-  const handleChangeView = (view: ViewState) => {
+  const handleChangeView = useCallback((view: ViewState) => {
     if (view !== 'chat') {
       setViewState(view);
     }
-  };
+  }, []);
 
   // Handler for when a conversation is selected from the messages view
-  const handleSelectConversation = (conversation: Conversation) => {
+  const handleSelectConversation = useCallback((conversation: Conversation) => {
     setActiveConversation(conversation);
     setViewState('chat');
-  };
+  }, []);
 
   // Update conversation with new message
-  const handleUpdateConversation = (updatedConversation: Conversation) => {
+  const handleUpdateConversation = useCallback((updatedConversation: Conversation) => {
     setActiveConversation(updatedConversation);
     // Save the updated conversation to localStorage
     saveConversationToStorage(updatedConversation);
-  };
+  }, []);
 
   // Handle logout and session invalidation
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     // Clear active conversation
     setActiveConversation(null);
     
@@ -92,7 +92,7 @@ export function useChatState() {
     
     // Optionally clear conversation history (depending on requirements)
     // clearConversationsFromStorage();
-  };
+  }, []);
 
   return {
     viewState,
@@ -104,6 +104,6 @@ export function useChatState() {
     handleUpdateConversation,
     handleLogout,
     userFormData,
-    setUserFormData, // Make sure to export this function
+    setUserFormData,
   };
 }

@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageList from '../components/MessageList';
@@ -21,7 +21,7 @@ interface ChatViewProps {
   setUserFormData?: (data: Record<string, string>) => void;
 }
 
-const ChatView = ({ 
+const ChatView = React.memo(({ 
   conversation, 
   onBack, 
   onUpdateConversation, 
@@ -81,8 +81,8 @@ const ChatView = ({
     isSearching
   } = useMessageSearch(messages);
 
-  // Function to share messages state with parent components
-  const setMessages = (updatedMessages: React.SetStateAction<typeof messages>) => {
+  // Memoize setMessages function to prevent recreation on each render
+  const setMessages = useCallback((updatedMessages: React.SetStateAction<typeof messages>) => {
     if (typeof updatedMessages === 'function') {
       const newMessages = updatedMessages(messages);
       onUpdateConversation({
@@ -95,15 +95,15 @@ const ChatView = ({
         messages: updatedMessages
       });
     }
-  };
+  }, [messages, conversation, onUpdateConversation]);
 
-  // Toggle search bar
-  const toggleSearch = () => {
+  // Toggle search bar with memoized callback
+  const toggleSearch = useCallback(() => {
     setShowSearch(prev => !prev);
     if (showSearch) {
       clearSearch();
     }
-  };
+  }, [showSearch, clearSearch]);
 
   // Handle loading previous messages for infinite scroll
   const handleLoadMoreMessages = useCallback(async () => {
@@ -118,7 +118,7 @@ const ChatView = ({
   }, [loadPreviousMessages]);
 
   // Handle form submission
-  const handleFormComplete = (formData: Record<string, string>) => {
+  const handleFormComplete = useCallback((formData: Record<string, string>) => {
     setShowInlineForm(false);
     
     // Update the parent form data if callback exists
@@ -134,17 +134,19 @@ const ChatView = ({
     
     // Dispatch form completed event
     dispatchChatEvent('contact:formCompleted', { formData }, config);
-  };
+  }, [setUserFormData, onUpdateConversation, conversation, config]);
 
-  // Get avatar URLs from config
-  const agentAvatar = conversation.agentInfo?.avatar || config?.branding?.avatarUrl;
+  // Memoize avatar URLs from config
+  const agentAvatar = useMemo(() => conversation.agentInfo?.avatar || config?.branding?.avatarUrl, 
+    [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]);
+    
   const userAvatar = undefined; // Could be set from user profile if available
 
   // Determine if there could be more messages to load
   const hasMoreMessages = messages.length >= 20; // Assuming we load 20 messages at a time
 
-  // Handle creating inline form component when needed
-  const getInlineFormComponent = () => {
+  // Memoize inline form component to prevent unnecessary renders
+  const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
       return (
         <div className="mb-4">
@@ -153,23 +155,28 @@ const ChatView = ({
       );
     }
     return null;
-  };
+  }, [showInlineForm, config, handleFormComplete]);
+
+  // Memoize style properties
+  const chatViewStyle = useMemo(() => {
+    return {
+      // Apply custom theme variables if available from config
+      ...(config?.branding?.primaryColor && {
+        '--chat-header-bg': config.branding.primaryColor,
+        '--chat-header-text': '#ffffff',
+        '--user-bubble-bg': config.branding.primaryColor,
+        '--user-bubble-text': '#ffffff',
+        '--system-bubble-bg': '#f3f4f6',
+        '--system-bubble-text': '#1f2937',
+        '--chat-bg': '#ffffff',
+      } as React.CSSProperties)
+    };
+  }, [config?.branding?.primaryColor]);
 
   return (
     <div 
       className="flex flex-col h-[600px]"
-      style={{
-        // Apply custom theme variables if available from config
-        ...(config?.branding?.primaryColor && {
-          '--chat-header-bg': config.branding.primaryColor,
-          '--chat-header-text': '#ffffff',
-          '--user-bubble-bg': config.branding.primaryColor,
-          '--user-bubble-text': '#ffffff',
-          '--system-bubble-bg': '#f3f4f6',
-          '--system-bubble-text': '#1f2937',
-          '--chat-bg': '#ffffff',
-        } as React.CSSProperties)
-      }}
+      style={chatViewStyle}
     >
       <ChatViewHeader 
         conversation={conversation} 
@@ -183,7 +190,7 @@ const ChatView = ({
         showSearchFeature={!!config?.features?.searchMessages}
       />
       
-      {getInlineFormComponent()}
+      {inlineFormComponent}
       
       <MessageList 
         messages={messages}
@@ -213,6 +220,9 @@ const ChatView = ({
       />
     </div>
   );
-};
+});
+
+// Add display name for dev tools
+ChatView.displayName = 'ChatView';
 
 export default ChatView;

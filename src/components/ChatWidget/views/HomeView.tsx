@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { defaultConfig, ChatWidgetConfig } from '../config';
@@ -11,7 +11,7 @@ interface HomeViewProps {
   config?: ChatWidgetConfig;
 }
 
-const HomeView = ({ 
+const HomeView = React.memo(({ 
   onStartChat, 
   config = defaultConfig 
 }: HomeViewProps) => {
@@ -20,14 +20,14 @@ const HomeView = ({
     ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
     : {};
   
-  // Handle direct chat start (no form)
-  const handleStartChat = () => {
+  // Handle direct chat start (no form) - memoized to prevent recreation on each render
+  const handleStartChat = useCallback(() => {
     // Always dispatch event when chat is initiated
     dispatchChatEvent('contact:initiatedChat', { showForm: config.preChatForm.enabled }, config);
     
     // Pass empty object if no form is enabled, the ChatView will handle showing the form
     onStartChat({});
-  };
+  }, [onStartChat, config]);
   
   return (
     <div className="flex flex-col p-5 h-full">
@@ -55,6 +55,9 @@ const HomeView = ({
       </div>
     </div>
   );
-};
+});
+
+// Add display name for debugging
+HomeView.displayName = 'HomeView';
 
 export default HomeView;

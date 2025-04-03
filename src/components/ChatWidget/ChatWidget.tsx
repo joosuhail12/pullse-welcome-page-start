@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
 import ChatView from './views/ChatView';
@@ -18,7 +19,7 @@ interface ChatWidgetProps {
   workspaceId?: string;
 }
 
-export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
+export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
   const {
     viewState,
     activeConversation,
@@ -36,36 +37,42 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
   
+  // Initialize Ably only when needed and with proper cleanup
   useEffect(() => {
+    let ablyCleanup: (() => void) | null = null;
+    
     if (!loading && config.realtime?.enabled && workspaceId) {
       const authUrl = getAblyAuthUrl(workspaceId);
       
       initializeAbly(authUrl)
+        .then(() => {
+          ablyCleanup = cleanupAbly;
+        })
         .catch(err => console.error('Failed to initialize Ably:', err));
-      
-      return () => {
-        cleanupAbly();
-      };
     }
+    
+    return () => {
+      if (ablyCleanup) ablyCleanup();
+    };
   }, [loading, config.realtime?.enabled, workspaceId]);
   
-  const widgetStyle = {
-    ...(config.branding?.primaryColor && {
-      '--vivid-purple': config.branding.primaryColor,
-    } as React.CSSProperties)
-  };
+  // Memoize styles to prevent recalculation
+  const widgetStyle = useMemo(() => {
+    return {
+      ...(config.branding?.primaryColor && {
+        '--vivid-purple': config.branding.primaryColor,
+      } as React.CSSProperties)
+    };
+  }, [config.branding?.primaryColor]);
 
+  // Clear unread messages when widget is opened
   useEffect(() => {
     if (isOpen) {
       clearUnreadMessages();
     }
   }, [isOpen, clearUnreadMessages]);
 
-  if (loading) {
-    return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
-  }
-
-  const toggleChat = () => {
+  const toggleChat = useCallback(() => {
     const newIsOpen = !isOpen;
     setIsOpen(newIsOpen);
     
@@ -75,9 +82,9 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     } else {
       dispatchChatEvent('chat:close', undefined, config);
     }
-  };
+  }, [isOpen, config, clearUnreadMessages]);
 
-  const wrappedHandleStartChat = (formData?: Record<string, string>) => {
+  const wrappedHandleStartChat = useCallback((formData?: Record<string, string>) => {
     if (formData) {
       setUserFormData(formData);
     }
@@ -89,9 +96,10 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     }
     
     dispatchChatEvent('contact:initiatedChat', undefined, config);
-  };
+  }, [handleStartChat, setUserFormData, config]);
 
-  const renderFooter = () => {
+  // Memoize footer component to prevent re-renders
+  const renderFooter = useCallback(() => {
     if (!config.branding?.showBrandingBar) return null;
     
     return (
@@ -105,9 +113,10 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         <span>Pullse</span>
       </div>
     );
-  };
+  }, [config.branding?.showBrandingBar]);
 
-  const renderLauncher = () => {
+  // Memoize launcher button to prevent re-renders
+  const renderLauncher = useCallback(() => {
     const buttonStyle = config.branding?.primaryColor 
       ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
       : {};
@@ -131,7 +140,11 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         </Button>
       </div>
     );
-  };
+  }, [config.branding?.primaryColor, toggleChat, isOpen, unreadCount]);
+
+  if (loading) {
+    return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
+  }
 
   return (
     <>
@@ -174,6 +187,8 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
       {renderLauncher()}
     </>
   );
-};
+});
+
+ChatWidget.displayName = 'ChatWidget';
 
 export default ChatWidget;

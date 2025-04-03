@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Message } from '../types';
 import { publishToChannel } from '../utils/ably';
 import { ChatWidgetConfig } from '../config';
@@ -22,6 +22,9 @@ export function useRealTime(
   const sessionChannelName = `session:${getChatSessionId()}`;
   const sessionId = getChatSessionId();
   
+  // Track if the component is mounted to prevent state updates after unmount
+  const isMounted = useRef(true);
+  
   // Use the realtime subscriptions hook
   const { remoteIsTyping, readReceipts } = useRealtimeSubscriptions(
     chatChannelName,
@@ -39,42 +42,51 @@ export function useRealTime(
     !!config?.realtime?.enabled
   );
 
+  // Memoize the function to send read receipts
+  const sendReadReceipts = useCallback(() => {
+    if (!config?.realtime?.enabled || messages.length === 0) return;
+    
+    messages.forEach(message => {
+      if (message.sender === 'system') {
+        // Send read receipt for existing system messages
+        publishToChannel(chatChannelName, 'read', {
+          messageId: message.id,
+          userId: sessionId,
+          timestamp: new Date()
+        });
+      }
+    });
+  }, [chatChannelName, config?.realtime?.enabled, messages, sessionId]);
+
   // Effects for specific functionality
   useEffect(() => {
     // Process existing messages when component mounts
-    if (config?.realtime?.enabled && messages.length > 0) {
-      messages.forEach(message => {
-        if (message.sender === 'system') {
-          // Send read receipt for existing system messages
-          publishToChannel(chatChannelName, 'read', {
-            messageId: message.id,
-            userId: sessionId,
-            timestamp: new Date()
-          });
-        }
-      });
-    }
-  }, [chatChannelName, config?.realtime?.enabled, messages, sessionId]);
+    sendReadReceipts();
+  }, [sendReadReceipts]);
 
-  // For non-realtime mode, simulate agent typing
+  // For non-realtime mode, simulate agent typing - with proper cleanup
   useEffect(() => {
-    if (!config?.realtime?.enabled) {
-      // Only simulate if the user has sent at least one message
-      if (!hasUserSentMessage) return;
+    if (!config?.realtime?.enabled && hasUserSentMessage) {
+      let typingTimer: ReturnType<typeof setTimeout> | null = null;
       
       const typingInterval = setInterval(() => {
-        const typingTimer = simulateAgentTyping(setIsTyping, setMessages, config, playMessageSound);
-        return () => clearTimeout(typingTimer);
+        if (!isMounted.current) return;
+        
+        typingTimer = simulateAgentTyping(setIsTyping, setMessages, config, playMessageSound);
       }, 15000);
       
       return () => {
+        isMounted.current = false;
         clearInterval(typingInterval);
+        if (typingTimer) clearTimeout(typingTimer);
         clearTypingTimeout();
       };
     }
     
     // No cleanup needed when realtime is enabled
-    return () => {};
+    return () => {
+      isMounted.current = false;
+    };
   }, [config?.realtime?.enabled, hasUserSentMessage, playMessageSound, setIsTyping, setMessages, clearTypingTimeout]);
 
   return {
