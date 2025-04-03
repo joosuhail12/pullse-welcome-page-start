@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -152,7 +151,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
           style={widgetStyle}
         >
           <div className="relative w-full h-full flex flex-col">
-            {viewState === 'chat' && userFormData ? (
+            {viewState === 'chat' ? (
               <ChatView 
                 conversation={activeConversation!} 
                 onBack={handleBackToMessages} 
@@ -172,12 +171,6 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
                     />
                   )}
                   {viewState === 'messages' && <MessagesView onSelectConversation={handleSelectConversation} />}
-                  {viewState === 'chat' && !userFormData && (
-                    <HomeView 
-                      onStartChat={wrappedHandleStartChat} 
-                      config={config}
-                    />
-                  )}
                 </div>
                 
                 <TabBar viewState={viewState} onChangeView={handleChangeView} />

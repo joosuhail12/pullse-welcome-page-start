@@ -33,7 +33,7 @@ const ChatView = React.memo(({
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showInlineForm, setShowInlineForm] = useState(
-    config?.preChatForm?.enabled && !conversation.contactIdentified && !userFormData
+    config?.preChatForm?.enabled && !userFormData && !conversation.contactIdentified
   );
 
   // Effect to update the showInlineForm state when userFormData changes
@@ -192,21 +192,24 @@ const ChatView = React.memo(({
       
       {inlineFormComponent}
       
-      <MessageList 
-        messages={messages}
-        isTyping={isTyping || remoteIsTyping}
-        setMessageText={setMessageText}
-        readReceipts={readReceipts}
-        onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
-        searchResults={messageIds}
-        highlightMessage={highlightText}
-        searchTerm={searchTerm}
-        agentAvatar={agentAvatar}
-        userAvatar={userAvatar}
-        onScrollTop={handleLoadMoreMessages}
-        hasMoreMessages={hasMoreMessages}
-        isLoadingMore={isLoadingMore}
-      />
+      {/* Only show message list if the form has been submitted */}
+      {(!showInlineForm || userFormData || conversation.contactIdentified) && (
+        <MessageList 
+          messages={messages}
+          isTyping={isTyping || remoteIsTyping}
+          setMessageText={setMessageText}
+          readReceipts={readReceipts}
+          onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
+          searchResults={messageIds}
+          highlightMessage={highlightText}
+          searchTerm={searchTerm}
+          agentAvatar={agentAvatar}
+          userAvatar={userAvatar}
+          onScrollTop={handleLoadMoreMessages}
+          hasMoreMessages={hasMoreMessages}
+          isLoadingMore={isLoadingMore}
+        />
+      )}
       
       <MessageInput
         messageText={messageText}

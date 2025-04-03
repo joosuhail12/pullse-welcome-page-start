@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Conversation } from '../types';
 import { saveConversationToStorage, loadConversationsFromStorage } from '../utils/storage';
@@ -25,12 +24,8 @@ export function useChatState() {
   }, []);
 
   const handleStartChat = useCallback((formData?: Record<string, string>) => {
-    // Store form data when provided
-    if (formData) {
-      setUserFormData(formData);
-    }
-    
-    // Create a new conversation
+    // Create a new conversation even without form data
+    // Form data will be collected in the ChatView component
     const newConversation = {
       id: `conv-${Date.now()}`,
       title: formData?.name ? `Chat with ${formData.name}` : 'New Conversation',
@@ -39,7 +34,9 @@ export function useChatState() {
       agentInfo: {
         name: 'Support Agent',
         avatar: undefined // You could set a default avatar URL here
-      }
+      },
+      // Flag to indicate whether contact has been identified yet
+      contactIdentified: !!formData
     };
     
     setActiveConversation(newConversation);

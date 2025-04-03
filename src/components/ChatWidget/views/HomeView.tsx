@@ -1,11 +1,10 @@
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, MessageCircle } from 'lucide-react';
 import { defaultConfig, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
 import { dispatchChatEvent } from '../utils/events';
-import PreChatForm from '../components/PreChatForm';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface HomeViewProps {
@@ -17,8 +16,6 @@ const HomeView = React.memo(({
   onStartChat, 
   config = defaultConfig 
 }: HomeViewProps) => {
-  const [showForm, setShowForm] = useState(false);
-  
   // Apply custom branding if available - use useMemo to prevent recalculation
   const buttonStyle = useMemo(() => {
     return config.branding?.primaryColor 
@@ -26,31 +23,18 @@ const HomeView = React.memo(({
       : {};
   }, [config.branding?.primaryColor]);
   
-  // Handle form submission
-  const handleFormComplete = useCallback((formData: Record<string, string>) => {
-    // Always dispatch event when form is completed
-    dispatchChatEvent('contact:formCompleted', { formData }, config);
-    
-    // Pass form data to start chat
-    onStartChat(formData);
-  }, [onStartChat, config]);
-  
-  // Handle direct chat start (show form if enabled)
+  // Handle direct chat start
   const handleStartChatClick = useCallback(() => {
     // Dispatch event when chat button is clicked
     dispatchChatEvent('contact:initiatedChat', { showForm: config.preChatForm.enabled }, config);
     
-    if (config.preChatForm.enabled) {
-      setShowForm(true);
-    } else {
-      // If no form is enabled, start chat directly
-      onStartChat({});
-    }
+    // Always start the chat view, the pre-chat form will be handled there
+    onStartChat();
   }, [onStartChat, config]);
   
   return (
     <div className="flex flex-col p-5 h-full">
-      {/* New welcoming header with avatar */}
+      {/* Welcoming header with avatar */}
       <div className="flex flex-col items-center mb-6 animate-fade-in">
         <Avatar className="h-20 w-20 mb-4 shadow-md">
           <AvatarImage src="https://framerusercontent.com/images/9N8Z1vTRbJsHlrIuTjm6Ajga4dI.png" />
@@ -79,22 +63,16 @@ const HomeView = React.memo(({
         </div>
       </div>
       
-      {showForm && config.preChatForm.enabled ? (
-        <div className="mt-2">
-          <PreChatForm config={config} onFormComplete={handleFormComplete} />
-        </div>
-      ) : (
-        <div className="mt-auto">
-          <Button 
-            onClick={handleStartChatClick}
-            className="chat-widget-button flex items-center gap-2 w-full py-2.5 shadow-md transition-all hover:shadow-lg hover:scale-[1.02]"
-            style={buttonStyle}
-          >
-            <MessageSquare size={18} />
-            <span className="font-medium">Ask a question</span>
-          </Button>
-        </div>
-      )}
+      <div className="mt-auto">
+        <Button 
+          onClick={handleStartChatClick}
+          className="chat-widget-button flex items-center gap-2 w-full py-2.5 shadow-md transition-all hover:shadow-lg hover:scale-[1.02]"
+          style={buttonStyle}
+        >
+          <MessageSquare size={18} />
+          <span className="font-medium">Ask a question</span>
+        </Button>
+      </div>
     </div>
   );
 });
