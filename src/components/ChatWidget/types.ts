@@ -66,7 +66,14 @@ export interface MessageSearchResult {
 
 export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status' | 'image';
 
-export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status';
+export interface UserInfo {
+  id?: string;
+  name?: string;
+  avatar?: string;
+  status?: AgentStatus;
+}
+
+export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status' | UserInfo;
 
 export type MessageReadStatus = 'unread' | 'delivered' | 'read';
 

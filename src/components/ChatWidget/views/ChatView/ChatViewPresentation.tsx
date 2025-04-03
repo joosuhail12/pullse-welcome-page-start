@@ -99,9 +99,17 @@ const ChatViewPresentation = ({
 
   // Helper function to adapt highlightText for use in ChatBody
   const adaptHighlightTextForChatBody = (text: string): string[] => {
-    // Just return the text as an array with one element
-    // This is a simplified version since we just need to pass this to ChatBody
-    return [text];
+    if (!text) return [''];
+    if (!searchTerm) return [text];
+    
+    // Use the highlightText function if available, otherwise implement a simple version
+    if (typeof highlightText === 'function') {
+      return highlightText(text);
+    }
+    
+    // Simple fallback implementation
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.split(regex);
   };
 
   // Track agent status changes

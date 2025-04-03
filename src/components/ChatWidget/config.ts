@@ -1,4 +1,3 @@
-
 import { AgentStatus } from "./types";
 
 export type ChatEventType = 
@@ -41,14 +40,7 @@ export enum ChatWidgetViews {
 
 export interface ChatWidgetConfig {
   workspaceId?: string;
-  branding?: {
-    primaryColor?: string;
-    widgetTitle?: string;
-    avatarUrl?: string;
-    logoUrl?: string;
-    welcomeMessage?: string;
-    showBrandingBar?: boolean;
-  };
+  branding?: ChatBranding;
   position?: {
     placement: ChatPosition;
     offsetX?: number;
@@ -73,6 +65,7 @@ export interface ChatWidgetConfig {
       label: string;
       required: boolean;
       placeholder?: string;
+      id?: string;
     }>;
   };
   realtime?: {
@@ -89,7 +82,7 @@ export interface ChatWidgetConfig {
   };
   welcomeMessage?: string;
   onEvent?: (event: ChatEventPayload) => void;
-  eventHandlers?: Record<ChatEventType, (payload: ChatEventPayload) => void>;
+  eventHandlers?: Record<string, (payload: ChatEventPayload) => void>;
   messages?: {
     emptyStateText?: string;
     loadMoreText?: string;

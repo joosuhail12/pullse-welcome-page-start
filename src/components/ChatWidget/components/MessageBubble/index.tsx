@@ -38,6 +38,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const hasError = message.status === 'error';
   const isImportant = message.metadata?.important === true;
   
+  // Get agent or user name safely
+  const getDisplayName = () => {
+    if (typeof message.sender === 'object' && message.sender?.name) {
+      return message.sender.name;
+    }
+    return isUserMessage ? 'You' : 'Agent';
+  };
+  
   return (
     <div 
       id={`message-${message.id}`}
@@ -54,7 +62,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           isUserMessage={false}
           agentAvatar={agentAvatar}
           agentStatus={agentStatus}
-          agentName={message.sender?.name || 'Agent'}
+          agentName={getDisplayName()}
         />
       )}
       
@@ -72,7 +80,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           highlightText={highlightText}
           searchTerm={searchTerm}
           isLast={isLast}
-          onToggleHighlight={onToggleHighlight}
+          onToggleHighlight={onToggleHighlight ? () => onToggleHighlight(message.id) : undefined}
         />
         
         {/* Show read receipt for user messages */}
@@ -89,7 +97,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         <MessageAvatar 
           isUserMessage={true}
           userAvatar={userAvatar}
-          userName={message.sender?.name || 'You'}
+          userName={getDisplayName()}
         />
       )}
     </div>
