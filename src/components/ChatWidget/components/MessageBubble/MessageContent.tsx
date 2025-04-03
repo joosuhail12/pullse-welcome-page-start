@@ -23,7 +23,7 @@ const MessageContent: React.FC<MessageContentProps> = ({
 }) => {
   const isImage = message.type === 'image';
   const isFile = message.type === 'file';
-  const isUserMessage = message.role === 'user';
+  const isUserMessage = message.role === 'user' || message.sender === 'user';
 
   // Process message text for highlighting if search is active
   const processMessageText = (text: string) => {

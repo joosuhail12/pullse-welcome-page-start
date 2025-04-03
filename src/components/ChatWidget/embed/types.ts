@@ -8,7 +8,7 @@ export interface PullseChatWidgetOptions {
   workspaceId: string;
   welcomeMessage?: string;
   primaryColor?: string;
-  position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  position?: ChatPosition;
   offsetX?: number;
   offsetY?: number;
   hideBranding?: boolean;

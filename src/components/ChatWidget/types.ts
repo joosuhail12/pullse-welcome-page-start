@@ -2,11 +2,14 @@ export interface Message {
   id: string;
   text: string;
   sender: UserType;
+  role?: 'user' | 'system' | 'bot' | 'agent' | 'status';
   timestamp: Date;
   type?: MessageType;
   fileUrl?: string;
   fileName?: string;
-  status?: 'sending' | 'sent' | 'delivered' | 'read';
+  fileSize?: number;
+  mediaUrl?: string;
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'error';
   reaction?: 'thumbsUp' | 'thumbsDown' | null;
   cardData?: {
     title: string;
@@ -15,12 +18,11 @@ export interface Message {
     buttons?: Array<{ text: string; action: string }>;
   };
   quickReplies?: Array<{ text: string; action: string }>;
-  important?: boolean; // New field to mark important messages
-  unread?: boolean;    // New field to mark unread messages
-  metadata?: Record<string, any>; // Add metadata field for flexibility
+  important?: boolean;
+  unread?: boolean;
+  metadata?: Record<string, any>;
 }
 
-// Standardized agent status type
 export type AgentStatus = 'online' | 'offline' | 'away' | 'busy';
 
 export interface Conversation {
@@ -38,8 +40,8 @@ export interface Conversation {
   metadata?: any;
   sessionId?: string;
   contactIdentified?: boolean;
-  unread?: boolean; // New property to track unread status
-  isResolved?: boolean; // Property to track if conversation is resolved
+  unread?: boolean;
+  isResolved?: boolean;
 }
 
 export interface Agent {
@@ -62,13 +64,10 @@ export interface MessageSearchResult {
   timestamp: Date;
 }
 
-// Define standard message types
-export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
+export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status' | 'image';
 
-// Define standard user types
 export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status';
 
-// Define MessageReadStatus type 
 export type MessageReadStatus = 'unread' | 'delivered' | 'read';
 
 export interface MessageReadReceipt {
@@ -76,13 +75,11 @@ export interface MessageReadReceipt {
   timestamp?: Date;
 }
 
-// Define MessageReaction types
 export interface MessageReactionButtonsProps {
   onReact: (emoji: string) => void;
   onClose: () => void;
 }
 
-// Define MessageAvatar props
 export interface MessageAvatarProps {
   isUserMessage: boolean;
   userAvatar: string;
@@ -90,7 +87,6 @@ export interface MessageAvatarProps {
   agentStatus?: AgentStatus;
 }
 
-// Update MessageBubbleProps with the missing properties
 export interface MessageBubbleProps {
   message: Message;
   highlightText?: string;
@@ -102,17 +98,15 @@ export interface MessageBubbleProps {
   agentStatus?: AgentStatus;
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
-  searchTerm?: string; // Added searchTerm property
-  onToggleHighlight?: () => void; // Added onToggleHighlight property
+  searchTerm?: string;
+  onToggleHighlight?: () => void;
 }
 
-// Define QuickReplyMessage props
 export interface QuickReplyMessageProps {
   metadata: Record<string, any>;
   onReply: (text: string) => void;
 }
 
-// Fixed ChatPosition type
 export type ChatPosition = 
   | 'bottom-right' 
   | 'bottom-left' 

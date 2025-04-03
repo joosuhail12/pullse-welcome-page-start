@@ -33,7 +33,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   agentStatus,
   onToggleHighlight
 }) => {
-  const isUserMessage = message.role === 'user';
+  const isUserMessage = message.role === 'user' || message.sender === 'user';
   const msgType = isUserMessage ? 'user' : 'system';
   const hasError = message.status === 'error';
   const isImportant = message.metadata?.important === true;
@@ -80,7 +80,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           <MessageReadReceipt 
             status={readStatus.status} 
             timestamp={readStatus.timestamp}
-            showEnhancedUI={showEnhancedUI}
           />
         )}
       </div>
