@@ -1,39 +1,58 @@
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import PullseChatWidgetLoader from './components/ChatWidget/embed';
+import { initializeEmbedSecurity } from './components/ChatWidget/utils/embedSecurity';
 
-// Lazy-load the ChatWidget component only when needed
-const ChatWidget = React.lazy(() => import('./components/ChatWidget/ChatWidget'));
-
-// Initialize the chat widget if config exists
-const initChatWidget = () => {
-  const config = (window as any).__PULLSE_CHAT_CONFIG__;
+// Create PullseNamespace to contain all global functions and variables
+const PullseNamespace = {
+  // Lazy-load the ChatWidget component only when needed
+  ChatWidget: React.lazy(() => import('./components/ChatWidget/ChatWidget')),
   
-  if (config && document.getElementById('pullse-chat-widget-container')) {
-    const container = document.getElementById('pullse-chat-widget-container');
-    const root = createRoot(container!);
+  // Initialize the chat widget if config exists
+  initChatWidget: () => {
+    const config = (window as any).__PULLSE_CHAT_CONFIG__;
     
-    // Use Suspense to handle the loading state
-    root.render(
-      <React.Suspense fallback={<div className="loading-widget">Loading...</div>}>
-        <ChatWidget 
-          workspaceId={config.workspaceId}
-        />
-      </React.Suspense>
-    );
-    
-    console.log('Pullse Chat Widget initialized with config:', config);
-  }
+    if (config && document.getElementById('pullse-chat-widget-container')) {
+      // Initialize with enhanced security features
+      const { container, shadowRoot } = initializeEmbedSecurity('pullse-chat-widget-container');
+      
+      // Find the inner container in the shadow DOM
+      const innerContainer = shadowRoot instanceof ShadowRoot ? 
+        shadowRoot.querySelector('.pullse-chat-widget-inner') : 
+        container;
+        
+      if (!innerContainer) {
+        console.error('Failed to find inner container for chat widget');
+        return;
+      }
+      
+      // Create a root in the shadow DOM for isolation
+      const root = createRoot(innerContainer as HTMLElement);
+      
+      // Use Suspense to handle the loading state
+      root.render(
+        <React.Suspense fallback={<div className="loading-widget">Loading...</div>}>
+          <PullseNamespace.ChatWidget 
+            workspaceId={config.workspaceId}
+          />
+        </React.Suspense>
+      );
+      
+      console.log('Pullse Chat Widget initialized with config:', config);
+    }
+  },
+  
+  // Other namespace functions can be added here
+  version: '1.0.0'
 };
 
 // Check if this is being loaded as the chat widget bundle
 if (document.currentScript && 
     (document.currentScript as HTMLScriptElement).src && 
     (document.currentScript as HTMLScriptElement).src.includes('chat-widget.js')) {
-  initChatWidget();
+  PullseNamespace.initChatWidget();
 } else {
   // Normal app initialization
   const rootElement = document.getElementById('root');
@@ -46,3 +65,6 @@ if (document.currentScript &&
 
 // Export the widget loader for direct imports
 export { PullseChatWidgetLoader as default };
+
+// Add the PullseNamespace to window for global access, but avoid polluting global scope
+(window as any).PullseSDK = PullseNamespace;

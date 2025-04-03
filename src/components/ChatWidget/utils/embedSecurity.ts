@@ -51,7 +51,7 @@ export function createScriptWithSRI(scriptUrl: string, integrity?: string): HTML
 }
 
 /**
- * Create a Shadow DOM container for the widget
+ * Create a Shadow DOM container for the widget with enhanced isolation
  * This provides stronger isolation from the host page
  * @param container The container element to attach the Shadow DOM to
  * @returns The Shadow DOM root element
@@ -63,12 +63,13 @@ export function createShadowContainer(container: HTMLElement): ShadowRoot {
     return container as any;
   }
   
-  // Create Shadow DOM with 'open' mode
+  // Create Shadow DOM with 'open' mode for better script access
   const shadow = container.attachShadow({ mode: 'open' });
   
-  // Add base styles for Shadow DOM encapsulation with improved mobile support
+  // Add base styles for Shadow DOM encapsulation with improved mobile support and isolation
   const style = document.createElement('style');
   style.textContent = `
+    /* Reset all inherited styles for perfect isolation */
     :host {
       all: initial;
       display: block;
@@ -76,6 +77,16 @@ export function createShadowContainer(container: HTMLElement): ShadowRoot {
       contain: content;
       font-family: system-ui, sans-serif;
       z-index: 999999;
+      color-scheme: light;
+    }
+    
+    /* Ensure all text styles are explicitly defined */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, 
+                   Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
     }
     
     /* Responsive container styles */
@@ -99,13 +110,17 @@ export function createShadowContainer(container: HTMLElement): ShadowRoot {
 }
 
 /**
- * Initialize security features for the embedded widget
+ * Initialize security features for the embedded widget with enhanced isolation
  * @param containerId ID of the container element
- * @returns Container element for the widget
+ * @returns Container and shadow root for the widget
  */
-export function initializeEmbedSecurity(containerId: string = 'pullse-chat-widget-container'): HTMLDivElement {
+export function initializeEmbedSecurity(containerId: string = 'pullse-chat-widget-container'): { 
+  container: HTMLDivElement; 
+  shadowRoot: ShadowRoot | HTMLDivElement;
+} {
   // Create container element if it doesn't exist
   let container = document.getElementById(containerId) as HTMLDivElement;
+  let shadowRoot: ShadowRoot | HTMLDivElement;
   
   if (!container) {
     container = document.createElement('div');
@@ -119,21 +134,21 @@ export function initializeEmbedSecurity(containerId: string = 'pullse-chat-widge
   
   // Try to use Shadow DOM for stronger isolation
   try {
-    const shadow = createShadowContainer(container);
+    shadowRoot = createShadowContainer(container);
     
     // Create a div inside the shadow DOM for the widget
     const innerContainer = document.createElement('div');
     innerContainer.className = 'pullse-chat-widget-inner';
-    shadow.appendChild(innerContainer);
+    shadowRoot.appendChild(innerContainer);
     
     // Add viewport meta tag for proper mobile rendering
     const viewport = document.createElement('meta');
     viewport.name = 'viewport';
     viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
-    shadow.appendChild(viewport);
+    shadowRoot.appendChild(viewport);
     
     // Inject CSP into the shadow DOM
-    injectCSP(shadow);
+    injectCSP(shadowRoot);
     
     // Add an attribute to the container to indicate Shadow DOM is being used
     container.setAttribute('data-pullse-uses-shadow', 'true');
@@ -141,9 +156,10 @@ export function initializeEmbedSecurity(containerId: string = 'pullse-chat-widge
     console.warn('Failed to initialize Shadow DOM for widget isolation', e);
     // Fallback to standard DOM if Shadow DOM fails
     container.setAttribute('data-pullse-uses-shadow', 'false');
+    shadowRoot = container;
   }
   
-  return container;
+  return { container, shadowRoot };
 }
 
 // Helper function to check if the device is mobile
