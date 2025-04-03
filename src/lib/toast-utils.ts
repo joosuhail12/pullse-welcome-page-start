@@ -1,7 +1,7 @@
 
-import { toast, type Toast } from "@/hooks/use-toast"
+import { toast } from "@/hooks/use-toast"
 import { createElement } from "react"
-import { ToastActionElement, ToasterToast } from "@/components/ui/toast"
+import { ToastActionElement } from "@/components/ui/toast"
 
 type ToastType = 'info' | 'success' | 'warning' | 'error'
 
@@ -28,18 +28,12 @@ export const showToast = (
     dismissible = true
   } = options
   
-  // Prevent duplicate toasts by using an ID
-  const toastId = title ? `${type}-${title.replace(/\s+/g, '-').toLowerCase()}` : undefined
-
-  // Add a retry button for error toasts when provided with an action
   return toast({
     title,
     description,
     variant,
     duration,
     action,
-    id: toastId,
-    // These spread through to the underlying Toast component
     className: `toast-${type}`,
   })
 }
@@ -70,7 +64,7 @@ export const retryableToast = (
       className: "bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2 py-1 rounded text-xs",
       onClick: () => {
         // Dismiss the current toast
-        toast.dismiss?.()
+        toast.dismiss()
         // Execute the retry action
         onRetry()
       }
@@ -84,3 +78,4 @@ export const retryableToast = (
     duration: 10000 // Give more time for user to decide to retry
   })
 }
+
