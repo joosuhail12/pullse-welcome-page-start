@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Conversation, Message, MessageReadStatus } from '../types';
 import { useInlineForm } from './useInlineForm';
 import { useLoadMoreMessages } from './useLoadMoreMessages';
