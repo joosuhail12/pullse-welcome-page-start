@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -179,13 +178,10 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
                 </div>
                 
                 <TabBar viewState={viewState} onChangeView={handleChangeView} />
-                
-                {/* Removed the old renderFooter method */}
               </div>
             )}
           </div>
           
-          {/* Always show PoweredByBar at the bottom of the widget */}
           {config.branding?.showBrandingBar !== false && <PoweredByBar />}
         </div>
       )}
