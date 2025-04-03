@@ -56,6 +56,9 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
       default: return 'Status unknown';
     }
   };
+
+  // Check if we have a logo URL
+  const hasLogo = config.branding?.logoUrl && config.branding.logoUrl.trim() !== '';
   
   return (
     <div className="fixed flex flex-col items-end z-40" style={positionStyles}>
@@ -71,14 +74,25 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
         <Tooltip open={showTooltip && !isOpen}>
           <TooltipTrigger asChild>
             <Button
-              className={`rounded-full ${buttonSizeClass} flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105 shadow-md`}
+              className={`rounded-full ${buttonSizeClass} flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105 shadow-md overflow-hidden`}
               style={config.branding?.primaryColor ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor } : {}}
               onClick={onClick}
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
               aria-label={isOpen ? "Close chat" : "Open chat"}
             >
-              <MessageSquare size={iconSize} className="text-white" />
+              {hasLogo ? (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <img 
+                    src={config.branding.logoUrl} 
+                    alt="Chat widget logo" 
+                    className="w-2/3 h-2/3 object-contain"
+                  />
+                </div>
+              ) : (
+                <MessageSquare size={iconSize} className="text-white" />
+              )}
+              
               {!isOpen && unreadCount > 0 && (
                 <Badge 
                   className="absolute -top-1 -right-1 bg-red-500 text-white border-white border-2 animate-pulse text-xs min-w-5 h-5 flex items-center justify-center" 

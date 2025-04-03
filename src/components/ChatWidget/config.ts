@@ -1,144 +1,52 @@
 
-/**
- * Chat Widget Configuration Types
- */
-
-export interface PreChatFormField {
-  id: string;
-  name: string;
-  type: 'text' | 'email' | 'tel' | 'select';
-  label: string;
-  placeholder?: string;
-  required: boolean;
-  options?: { value: string; label: string }[];
-}
-
-export interface PreChatForm {
-  enabled: boolean;
-  title?: string;
-  fields: PreChatFormField[];
-}
-
-export interface ChatBranding {
-  primaryColor?: string;
-  fontFamily?: string;
-  avatarUrl?: string;
-  logoUrl?: string;
-  showBrandingBar?: boolean;
-  widgetTitle?: string;
-}
-
-// Update the ChatPosition type to include both string literals and object type
-export type ChatPosition = 
-  | 'bottom-right' 
-  | 'bottom-left' 
-  | 'top-right' 
-  | 'top-left'
-  | {
-      placement: string;
-      offsetX: number;
-      offsetY: number;
-    };
-
-export interface ChatFeatures {
-  fileUpload?: boolean;
-  messageRating?: boolean;
-  readReceipts?: boolean;
-  quickReplies?: boolean;
-  cards?: boolean;
-  chatSuggestions?: boolean;
-  messageReactions?: boolean;
-  typingIndicators?: boolean;
-  searchMessages?: boolean;
-}
-
-export interface ChatRealtime {
-  enabled: boolean;
-  // No longer storing API key directly here
-  authEndpoint?: string;
-}
-
-export type ChatEventType = 
-  | 'chat:open'
-  | 'chat:close'
-  | 'chat:messageSent'
-  | 'chat:messageReceived'
-  | 'contact:initiatedChat'
-  | 'contact:formCompleted'
-  | 'message:reacted'
-  | 'chat:typingStarted'
-  | 'chat:typingStopped'
-  | 'message:fileUploaded'
-  | 'chat:ended'
-  | 'chat:connectionChange' // Add connection change event type
-  | 'chat:error';          // Add error event type
-
-export interface ChatEventPayload {
-  type: ChatEventType;
-  timestamp: Date;
-  data?: any;
-}
+import { AgentStatus } from "./types";
 
 export interface ChatWidgetConfig {
-  workspaceId: string;
-  welcomeMessage: string;
-  preChatForm: PreChatForm;
-  branding?: ChatBranding;
-  position?: ChatPosition;
-  features?: ChatFeatures;
-  realtime?: ChatRealtime;
-  sessionId?: string;
-  onEvent?: (event: ChatEventPayload) => void;
-  // Added to support advanced event subscription
-  eventHandlers?: {
-    [key in ChatEventType]?: (payload: ChatEventPayload) => void;
+  branding?: {
+    primaryColor?: string;
+    widgetTitle?: string;
+    avatarUrl?: string;
+    logoUrl?: string;
+    welcomeMessage?: string;
+    showBrandingBar?: boolean;
+  };
+  position?: {
+    placement: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+    offsetX?: number;
+    offsetY?: number;
+  };
+  features?: {
+    searchMessages?: boolean;
+    fileUploads?: boolean;
+    messageReactions?: boolean;
+    readReceipts?: boolean;
+    typing?: boolean;
+  };
+  preChatForm?: {
+    enabled: boolean;
+    requiredFields: string[];
+    optionalFields?: string[];
+    title?: string;
+    subtitle?: string;
   };
 }
 
 export const defaultConfig: ChatWidgetConfig = {
-  workspaceId: 'default',
-  welcomeMessage: 'Welcome! How can we help you today?',
-  preChatForm: {
-    enabled: true,
-    title: 'Start a Conversation',
-    fields: [
-      {
-        id: 'name-field',
-        name: 'name',
-        type: 'text',
-        label: 'Name',
-        placeholder: 'Enter your name',
-        required: true
-      },
-      {
-        id: 'email-field',
-        name: 'email',
-        type: 'email',
-        label: 'Email',
-        placeholder: 'Enter your email',
-        required: true
-      }
-    ]
-  },
   branding: {
     primaryColor: '#8B5CF6',
+    widgetTitle: 'Support Chat',
     showBrandingBar: true
   },
-  position: 'bottom-right',
-  features: {
-    fileUpload: true,
-    messageRating: false,
-    readReceipts: true,
-    quickReplies: true,
-    cards: true,
-    chatSuggestions: false,
-    messageReactions: true,
-    typingIndicators: true,
-    searchMessages: true
+  position: {
+    placement: 'bottom-right',
+    offsetX: 20,
+    offsetY: 20
   },
-  realtime: {
-    enabled: false,
-    // Using auth endpoint instead of direct API key
-    authEndpoint: '/api/chat-widget/token'
+  features: {
+    searchMessages: true,
+    fileUploads: true,
+    messageReactions: false,
+    readReceipts: true,
+    typing: true
   }
 };

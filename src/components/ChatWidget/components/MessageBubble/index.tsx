@@ -1,338 +1,100 @@
 
-import React, { useState, lazy, Suspense } from 'react';
-import { MessageType, UserType, AgentStatus } from '../../types';
-import TextMessage from '../MessageTypes/TextMessage';
-import StatusMessage from '../MessageTypes/StatusMessage';
-import MessageStatus from './MessageStatus';
+import React from 'react';
+import { Message, AgentStatus } from '../../types';
+import MessageReadReceipt from '../MessageReadReceipt';
+import MessageContent from './MessageContent';
 import MessageAvatar from './MessageAvatar';
-import MessageReactionButtons from './MessageReactionButtons';
-import MessageReadReceipt, { MessageReadStatus } from '../MessageReadReceipt';
 import { cn } from '@/lib/utils';
-import { Paperclip, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { sanitizeInput } from '../../utils/validation';
-
-const CardMessage = lazy(() => import('../MessageTypes/CardMessage'));
-const FileMessage = lazy(() => import('../MessageTypes/FileMessage'));
-const QuickReplyMessage = lazy(() => import('../MessageTypes/QuickReplyMessage'));
-
-const LazyLoadFallback = () => (
-  <div className="w-full h-16 bg-gray-100 animate-pulse rounded-md"></div>
-);
 
 interface MessageBubbleProps {
-  message: {
-    id: string;
-    text: string;
-    type?: MessageType;
-    sender: UserType;
-    timestamp: Date;
-    metadata?: Record<string, any>;
-    reactions?: string[];
-    fileName?: string;
-    cardData?: {
-      title: string;
-      description: string;
-      imageUrl?: string;
-      buttons?: Array<{ text: string; action: string }>;
-    };
-    quickReplies?: Array<{ text: string; action: string }>;
-    reaction?: 'thumbsUp' | 'thumbsDown' | null;
-  };
-  highlightText?: string;
-  isHighlighted?: boolean;
-  userAvatar?: string;
-  agentAvatar?: string;
-  onReply?: (text: string) => void;
-  onReaction?: (messageId: string, emoji: string) => void;
-  agentStatus?: AgentStatus;
-  readStatus?: MessageReadStatus;
-  readTimestamp?: Date;
+  message: Message;
+  isLast: boolean;
+  showReadReceipt?: boolean;
+  readStatus?: { status: 'sent' | 'delivered' | 'read'; timestamp?: Date };
+  highlightText?: (text: string) => string[];
   searchTerm?: string;
-  onToggleHighlight?: () => void;
-  highlightSearchTerm?: (text: string, term: string) => { text: string; highlighted: boolean }[];
-  showAvatar?: boolean;
-  isConsecutive?: boolean;
+  agentAvatar?: string;
+  userAvatar?: string;
+  showEnhancedUI?: boolean;
+  agentStatus?: AgentStatus;
+  onToggleHighlight?: (messageId: string) => void;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
-  message,
+const MessageBubble: React.FC<MessageBubbleProps> = ({ 
+  message, 
+  isLast, 
+  showReadReceipt = false,
+  readStatus,
   highlightText,
-  isHighlighted,
-  userAvatar,
-  agentAvatar,
-  onReply,
-  onReaction,
-  agentStatus,
-  readStatus = 'sent',
-  readTimestamp,
   searchTerm,
-  onToggleHighlight,
-  showAvatar = true,
-  isConsecutive = false
+  agentAvatar,
+  userAvatar,
+  showEnhancedUI = true,
+  agentStatus,
+  onToggleHighlight
 }) => {
-  const [showReactions, setShowReactions] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
-
-  const toggleReactions = () => {
-    if (onReaction) {
-      setShowReactions(!showReactions);
-    }
-  };
-
-  const handleReaction = (emoji: string) => {
-    if (onReaction) {
-      onReaction(message.id, emoji);
-      setShowReactions(false);
-    }
-  };
-
-  const isUserMessage = message.sender === 'user';
-  const isBotMessage = message.sender === 'bot' || message.sender === 'agent';
-  const isSystemMessage = message.sender === 'system';
-  const isActionableMessage = (message.type === 'quick_reply' || message.type === 'card' || message.quickReplies?.length) && isBotMessage;
-
-  // Get status-based colors for agent message bubbles
-  const getStatusBasedClasses = () => {
-    if (!isBotMessage || !agentStatus) return '';
-    
-    switch (agentStatus) {
-      case 'online':
-        return 'border-l-4 border-l-green-500';
-      case 'busy':
-        return 'border-l-4 border-l-amber-500';
-      case 'away':
-        return 'border-l-4 border-l-yellow-400';
-      case 'offline':
-        return 'border-l-4 border-l-gray-400';
-      default:
-        return '';
-    }
-  };
-
-  // Additional classes for consecutive messages (grouped)
-  const getConsecutiveClasses = () => {
-    if (!isConsecutive) return '';
-    
-    if (isUserMessage) {
-      return 'rounded-t-md rounded-bl-md rounded-br-sm mt-1';
-    } else if (isBotMessage) {
-      return 'rounded-t-md rounded-br-md rounded-bl-sm mt-1';
-    }
-    
-    return '';
-  };
-
-  const messageTypeClass = isUserMessage
-    ? `bg-vivid-purple text-white ${isConsecutive ? getConsecutiveClasses() : 'rounded-t-2xl rounded-bl-2xl rounded-br-sm'}`
-    : isBotMessage
-    ? `bg-system-bubble-bg text-system-bubble-text ${isConsecutive ? getConsecutiveClasses() : 'rounded-t-2xl rounded-br-2xl rounded-bl-sm'} border border-gray-100 ${getStatusBasedClasses()}`
-    : 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200';
-
-  const messageContainerClass = isUserMessage
-    ? 'ml-auto flex-row-reverse'
-    : isBotMessage
-    ? 'mr-auto'
-    : 'mx-auto max-w-[85%] text-center';
-
-  const handleLongPress = (e: React.MouseEvent) => {
-    if (onReaction) {
-      e.preventDefault();
-      toggleReactions();
-    }
-  };
-
-  const sanitizedText = message.text ? sanitizeInput(message.text) : '';
-
-  const renderText = (text: string) => {
-    if (searchTerm && searchTerm.length > 0) {
-      const regex = new RegExp(`(${searchTerm})`, 'gi');
-      const parts = text.split(regex);
-      return (
-        <>
-          {parts.map((part, i) => 
-            regex.test(part) 
-              ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark> 
-              : <React.Fragment key={i}>{part}</React.Fragment>
-          )}
-        </>
-      );
-    } else if (highlightText) {
-      return <TextMessage text={text} highlightText={highlightText} />;
-    }
-    return text;
-  };
-
-  const renderMessageContent = () => {
-    switch (message.type) {
-      case 'text':
-        return <p className="leading-relaxed">{renderText(sanitizedText)}</p>;
-      case 'card':
-        return (
-          <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata && <CardMessage metadata={message.metadata} />}
-          </Suspense>
-        );
-      case 'file':
-        return (
-          <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata ? 
-              <FileMessage metadata={message.metadata} /> : 
-              <div className="flex flex-col">
-                {renderText(sanitizedText)}
-                <div className="mt-2 p-2 bg-gray-100 rounded-md flex items-center">
-                  <Paperclip size={16} className="mr-2" />
-                  <span className="text-sm text-blue-600 underline">
-                    {message.fileName ? sanitizeInput(message.fileName) : 'File'}
-                  </span>
-                </div>
-              </div>
-            }
-          </Suspense>
-        );
-      case 'quick_reply':
-        return (
-          <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata ?
-              <QuickReplyMessage
-                metadata={message.metadata}
-                onReply={(text) => onReply && onReply(text)}
-              /> :
-              <div className="flex flex-col">
-                {renderText(sanitizedText)}
-                {message.quickReplies && message.quickReplies.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {message.quickReplies.map((reply, i) => (
-                      <button 
-                        key={i} 
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs py-1.5 px-3 rounded-full transition-colors duration-200"
-                        onClick={() => onReply && onReply(sanitizeInput(reply.text))}
-                      >
-                        {sanitizeInput(reply.text)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            }
-          </Suspense>
-        );
-      case 'status':
-        return <StatusMessage text={message.text} />;
-      default:
-        return <p className="leading-relaxed">{renderText(sanitizedText)}</p>;
-    }
-  };
-
-  const renderReactionButtons = () => {
-    if (message.sender === 'system' && onReaction) {
-      return (
-        <div className="flex gap-2 mt-1.5">
-          <button
-            className={`p-1.5 rounded-full transition-all duration-200 ${message.reaction === 'thumbsUp' ? 'bg-green-100' : 'hover:bg-gray-100'}`}
-            onClick={() => handleReaction('thumbsUp')}
-            aria-label="Thumbs up"
-          >
-            <ThumbsUp size={14} className={`transition-colors duration-200 ${message.reaction === 'thumbsUp' ? 'text-green-600' : 'text-gray-600'}`} />
-          </button>
-          <button
-            className={`p-1.5 rounded-full transition-all duration-200 ${message.reaction === 'thumbsDown' ? 'bg-red-100' : 'hover:bg-gray-100'}`}
-            onClick={() => handleReaction('thumbsDown')}
-            aria-label="Thumbs down"
-          >
-            <ThumbsDown size={14} className={`transition-colors duration-200 ${message.reaction === 'thumbsDown' ? 'text-red-600' : 'text-gray-600'}`} />
-          </button>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  if (message.sender === 'status') {
-    return (
-      <div className="w-full flex justify-center my-2">
-        <div className="bg-gray-100 py-1.5 px-4 rounded-full text-xs text-gray-600 text-center shadow-sm">
-          {renderText(sanitizedText)}
-        </div>
-      </div>
-    );
-  }
-
-  const avatarSpacing = showAvatar ? '' : isUserMessage ? 'mr-8' : 'ml-8';
-
+  const isUserMessage = message.role === 'user';
+  const msgType = isUserMessage ? 'user' : 'system';
+  const hasError = message.status === 'error';
+  const isImportant = message.metadata?.important === true;
+  
   return (
-    <div
+    <div 
+      id={`message-${message.id}`}
       className={cn(
-        'group flex items-end relative',
-        messageContainerClass,
-        isConsecutive ? 'mb-1' : 'mb-4', // Less margin between consecutive messages
-        isActionableMessage ? 'chat-message-actionable' : ''
+        "flex items-start my-1.5 px-2 group message-animation-enter",
+        isImportant && "important-message-container",
+        hasError && "opacity-75"
       )}
-      onContextMenu={handleLongPress}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      data-status={message.status}
     >
-      {!isSystemMessage && showAvatar && (
-        <MessageAvatar
-          isUserMessage={isUserMessage}
-          userAvatar={userAvatar}
+      {/* Show avatar for system messages on the left */}
+      {!isUserMessage && (
+        <MessageAvatar 
+          isUserMessage={false}
           agentAvatar={agentAvatar}
           agentStatus={agentStatus}
-          userName={message.metadata?.userName || ''}
-          agentName={message.metadata?.agentName || ''}
+          agentName={message.sender?.name || 'Agent'}
         />
       )}
-
-      {/* Add an empty space for avatar alignment when not showing avatar */}
-      {!isSystemMessage && !showAvatar && (
-        <div className="w-8 flex-shrink-0"></div>
-      )}
-
-      <div
+      
+      <div 
         className={cn(
-          'relative max-w-[80%] sm:max-w-md py-3 px-4',
-          messageTypeClass,
-          isHighlighted && 'bg-yellow-100 border-yellow-300',
-          isSystemMessage && 'py-2 px-3',
-          avatarSpacing,
-          'transition-all duration-200',
-          isHovered && isActionableMessage && 'transform scale-[1.01] shadow-md',
-          readStatus === 'read' ? 'delivery-animation' : '',
-          isUserMessage ? 'chat-message-user' : 'chat-message-system',
+          `chat-message-${msgType}`,
+          message.quickReplies && message.quickReplies.length > 0 && "chat-message-actionable",
+          isImportant && "important-message",
+          hasError && "border-red-300 bg-red-50 text-red-500"
         )}
-        onClick={onToggleHighlight}
       >
-        {renderMessageContent()}
+        {/* Message Content */}
+        <MessageContent 
+          message={message} 
+          highlightText={highlightText}
+          searchTerm={searchTerm}
+          isLast={isLast}
+          onToggleHighlight={onToggleHighlight}
+        />
         
-        {/* Only show timestamp for the last message in a group or non-consecutive messages */}
-        {!isConsecutive && <MessageStatus timestamp={message.timestamp} />}
-        
-        {isUserMessage && !isConsecutive && (
-          <div className={`absolute -bottom-4 right-1 ${readStatus === 'read' ? 'status-icon-animation' : ''}`}>
-            <MessageReadReceipt 
-              status={readStatus} 
-              timestamp={readTimestamp} 
-            />
-          </div>
-        )}
-        
-        {renderReactionButtons()}
-
-        {/* Subtle highlight effect for actionable messages on hover */}
-        {isActionableMessage && isHovered && (
-          <div className="absolute inset-0 bg-white/5 rounded-2xl pointer-events-none"></div>
+        {/* Show read receipt for user messages */}
+        {isUserMessage && isLast && showReadReceipt && readStatus && (
+          <MessageReadReceipt 
+            status={readStatus.status} 
+            timestamp={readStatus.timestamp}
+            showEnhancedUI={showEnhancedUI}
+          />
         )}
       </div>
-
-      {showReactions && onReaction && (
-        <MessageReactionButtons
-          onReaction={handleReaction}
-          onClose={() => setShowReactions(false)}
+      
+      {/* Show avatar for user messages on the right */}
+      {isUserMessage && (
+        <MessageAvatar 
+          isUserMessage={true}
+          userAvatar={userAvatar}
+          userName={message.sender?.name || 'You'}
         />
       )}
     </div>
   );
-});
-
-MessageBubble.displayName = 'MessageBubble';
+};
 
 export default MessageBubble;
