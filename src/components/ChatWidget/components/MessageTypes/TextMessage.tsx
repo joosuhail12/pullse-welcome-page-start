@@ -8,7 +8,7 @@ interface TextMessageProps {
 
 const TextMessage = ({ text, renderText }: TextMessageProps) => {
   return (
-    <p className="leading-relaxed">{renderText(text)}</p>
+    <p className="text-base leading-relaxed tracking-wide">{renderText(text)}</p>
   );
 };
 

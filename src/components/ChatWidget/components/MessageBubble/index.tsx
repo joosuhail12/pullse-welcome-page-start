@@ -140,7 +140,7 @@ const MessageBubble = ({
       <div className={`max-w-[80%] ${bubbleClasses} ${actionableClass}`}>
         {renderMessage()}
         <div className="flex justify-between items-center">
-          <div className={`text-xs mt-2 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-500'}`}>
+          <div className={`text-xs mt-2 ${message.sender === 'user' ? 'text-white/50' : 'text-gray-400'}`}>
             {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </div>
           {renderReactionButtons()}

@@ -5,7 +5,7 @@
 
 @layer components {
   .chat-message-bubble {
-    @apply p-3 mb-2 rounded-lg shadow-sm max-w-xs md:max-w-md transition-all duration-200;
+    @apply p-4 mb-3 rounded-lg shadow-sm max-w-xs md:max-w-md transition-all duration-200;
   }
   
   .chat-message-system {
@@ -44,5 +44,28 @@
   
   .message-animation-enter {
     animation: message-appear 0.4s ease-out forwards;
+  }
+  
+  /* Date separator for message groups */
+  .date-separator {
+    @apply w-full flex items-center justify-center my-4;
+  }
+  
+  .date-separator .date {
+    @apply text-xs bg-gray-100 px-3 py-1 rounded-full text-gray-500 font-medium shadow-sm;
+  }
+  
+  /* Typing indicator animation */
+  @keyframes typing-bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+  
+  .animate-typing-bounce {
+    animation: typing-bounce 0.8s ease-in-out infinite;
   }
 }
