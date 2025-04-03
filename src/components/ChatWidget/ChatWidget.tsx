@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -156,20 +155,20 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     const positionStyle = {...getPositionStyles};
     
     // Add extra bottom margin to position launcher below the widget
-    const widgetHeight = isMobile ? 500 : 600;
-    const extraMargin = 1; // Extra space between widget and launcher in rem
+    const widgetHeightPx = isMobile ? 500 : 600;
+    const extraMargin = 16; // 1rem in pixels
     
     // Adjust bottom position for bottom placements
     if (positionStyle.bottom !== undefined && positionStyle.bottom !== 'auto') {
       const currentBottom = parseFloat(positionStyle.bottom as string);
-      const heightInRem = (widgetHeight / 16) + extraMargin; // Convert px to rem (16px = 1rem)
-      positionStyle.bottom = `${currentBottom + heightInRem}rem`;
+      const heightInRem = (widgetHeightPx / 16) + (extraMargin / 16); // Convert px to rem
+      positionStyle.bottom = `${currentBottom - heightInRem}rem`;
     }
     
     // For top placements, we need different logic
     if (positionStyle.top !== undefined && positionStyle.top !== 'auto') {
       const currentTop = parseFloat(positionStyle.top as string);
-      const heightInRem = (widgetHeight / 16) + extraMargin;
+      const heightInRem = (widgetHeightPx / 16) + (extraMargin / 16);
       positionStyle.top = `${currentTop + heightInRem}rem`;
     }
     
