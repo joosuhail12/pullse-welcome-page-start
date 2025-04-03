@@ -1,4 +1,3 @@
-
 import React, { useState, lazy, Suspense } from 'react';
 import { MessageType, UserType } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';

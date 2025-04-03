@@ -1,4 +1,3 @@
-
 import Ably from 'ably';
 import { 
   getAblyClient, isInFallbackMode, 
@@ -6,33 +5,6 @@ import {
 } from './config';
 import { dispatchValidatedEvent } from '../../embed/enhancedEvents';
 import { ChatEventType } from '../../config';
-
-/**
- * Process queued messages that couldn't be sent while disconnected
- */
-export function processQueuedMessages(): void {
-  const client = getAblyClient();
-  const pendingMessages = getPendingMessages();
-  
-  if (!client || client.connection.state !== 'connected' || pendingMessages.length === 0) {
-    return;
-  }
-  
-  console.log(`Processing ${pendingMessages.length} queued messages`);
-  
-  // Process and remove pending messages
-  const messagesToProcess = [...pendingMessages];
-  setPendingMessages([]);
-  
-  messagesToProcess.forEach(({ channelName, eventName, data }) => {
-    try {
-      const channel = client.channels.get(channelName);
-      channel.publish(eventName, data);
-    } catch (err) {
-      console.error(`Failed to process queued message to ${channelName}:`, err);
-    }
-  });
-}
 
 /**
  * Subscribe to a channel and event
