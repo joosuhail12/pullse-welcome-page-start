@@ -70,7 +70,16 @@ const MessageBubble = ({
       
       case 'card':
         if (!message.cardData) return <TextMessage text={sanitizedText} renderText={renderText} />;
-        return <CardMessage cardData={message.cardData} />;
+        
+        return (
+          <CardMessage 
+            title={message.cardData.title || ''}
+            description={message.cardData.description || ''}
+            imageUrl={message.cardData.imageUrl}
+            buttons={message.cardData.buttons}
+            onClick={(action) => console.log('Card action:', action)}
+          />
+        );
       
       case 'quick_reply':
         return <QuickReplyMessage 

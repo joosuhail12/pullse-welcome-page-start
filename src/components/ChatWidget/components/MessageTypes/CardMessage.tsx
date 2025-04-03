@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { sanitizeInput } from '../../utils/validation';
 import LazyImage from '../LazyImage';
-import { CardMessageData } from '../../types';
 
 interface CardMessageProps {
   title: string;
