@@ -4,6 +4,7 @@ import { fetchChatWidgetConfig } from '../services/api';
 import { ChatWidgetConfig, defaultConfig, ChatPosition } from '../config';
 import { getDefaultConfig } from '../embed/api';
 import { logger } from '@/lib/logger';
+import { isValidChatPosition } from '../embed/core/optionsValidator';
 
 export function useWidgetConfig(workspaceId?: string) {
   const [config, setConfig] = useState<ChatWidgetConfig>(defaultConfig);
@@ -53,12 +54,15 @@ export function useWidgetConfig(workspaceId?: string) {
           
           // Use the default config for development mode
           const defaultPlacement = defaultConfig.position?.placement || 'bottom-right';
+          // Validate placement to ensure it's a valid ChatPosition
+          const validatedPlacement = isValidChatPosition(defaultPlacement) ? defaultPlacement : 'bottom-right' as ChatPosition;
+          
           const devConfig: ChatWidgetConfig = {
             ...defaultConfig,
             workspaceId,
             position: {
               ...defaultConfig.position,
-              placement: defaultPlacement as ChatPosition
+              placement: validatedPlacement
             },
             // Merge with our simple default config
             ...getDefaultConfig(workspaceId)
@@ -85,12 +89,15 @@ export function useWidgetConfig(workspaceId?: string) {
         
         // Still use default config as fallback
         const defaultPlacement = defaultConfig.position?.placement || 'bottom-right';
+        // Validate placement to ensure it's a valid ChatPosition
+        const validatedPlacement = isValidChatPosition(defaultPlacement) ? defaultPlacement : 'bottom-right' as ChatPosition;
+        
         setConfig({
           ...defaultConfig,
           workspaceId,
           position: {
             ...defaultConfig.position,
-            placement: defaultPlacement as ChatPosition
+            placement: validatedPlacement
           },
           // Merge with our simple default config
           ...getDefaultConfig(workspaceId)

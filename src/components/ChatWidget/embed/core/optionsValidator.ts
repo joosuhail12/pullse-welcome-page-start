@@ -27,8 +27,7 @@ export function validateWidgetOptions(options: PullseChatWidgetOptions): PullseC
   }
   
   // Validate position
-  if (validatedOptions.position && 
-      !isValidChatPosition(validatedOptions.position)) {
+  if (validatedOptions.position && !isValidChatPosition(validatedOptions.position)) {
     logger.warn(
       `Invalid position: ${validatedOptions.position}, using default`, 
       'WidgetLoader'
@@ -59,7 +58,10 @@ export function validateWidgetOptions(options: PullseChatWidgetOptions): PullseC
 /**
  * Check if a position value is valid
  */
-export function isValidChatPosition(position: string): position is ChatPosition {
+export function isValidChatPosition(position: string | unknown): position is ChatPosition {
+  if (typeof position !== 'string') {
+    return false;
+  }
   return ['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(position);
 }
 

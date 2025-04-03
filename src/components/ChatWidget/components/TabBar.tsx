@@ -2,7 +2,7 @@
 import React from 'react';
 import { Home, MessageSquare } from 'lucide-react';
 
-type ViewState = 'home' | 'messages' | 'chat';
+export type ViewState = 'home' | 'messages' | 'chat';
 
 interface TabBarProps {
   viewState: ViewState;
