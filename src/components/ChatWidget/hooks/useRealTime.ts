@@ -1,12 +1,13 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Message } from '../types';
-import { publishToChannel } from '../utils/ably';
+import { publishToChannel, isInFallbackMode } from '../utils/ably';
 import { ChatWidgetConfig } from '../config';
 import { getChatSessionId } from '../utils/cookies';
 import { useRealtimeSubscriptions } from './useRealtimeSubscriptions';
 import { useTypingIndicator } from './useTypingIndicator';
 import { simulateAgentTyping } from '../utils/simulateAgentTyping';
+import { getReconnectionManager, ConnectionStatus } from '../utils/reconnectionManager';
 
 export function useRealTime(
   messages: Message[],
@@ -26,9 +27,10 @@ export function useRealTime(
   const isMounted = useRef(true);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [reconnectionInProgress, setReconnectionInProgress] = useState(false);
   
   // Use the realtime subscriptions hook
-  const { remoteIsTyping, readReceipts } = useRealtimeSubscriptions(
+  const { remoteIsTyping, readReceipts, deliveredReceipts, connectionState } = useRealtimeSubscriptions(
     chatChannelName,
     sessionChannelName,
     sessionId,
@@ -67,6 +69,44 @@ export function useRealTime(
       }
     });
   }, [chatChannelName, config?.realtime?.enabled, messages, sessionId]);
+
+  // Connection status monitoring effect
+  useEffect(() => {
+    // Skip if realtime is disabled
+    if (!config?.realtime?.enabled) return;
+    
+    // Get the reconnection manager
+    const reconnectionManager = getReconnectionManager();
+    
+    // Listen for connection status changes
+    const unsubscribe = reconnectionManager.onStatusChange((status) => {
+      // Update UI based on connection status
+      if (status === ConnectionStatus.CONNECTING) {
+        setReconnectionInProgress(true);
+      } else {
+        setReconnectionInProgress(false);
+      }
+    });
+    
+    return () => {
+      unsubscribe();
+    };
+  }, [config?.realtime?.enabled]);
+
+  // Effect for connection fallback mode
+  useEffect(() => {
+    // Skip if realtime is disabled
+    if (!config?.realtime?.enabled) return;
+    
+    // Check if we're in fallback mode or have a poor connection
+    if (isInFallbackMode() || connectionState === 'fallback') {
+      console.log('Using fallback mode for real-time communication');
+      
+      // We can implement additional UI indicators for fallback mode here
+      // such as message delivery warnings or connection status indicators
+    }
+    
+  }, [config?.realtime?.enabled, connectionState]);
 
   // Effect for cleanup and initialization
   useEffect(() => {
@@ -142,8 +182,11 @@ export function useRealTime(
   return {
     remoteIsTyping,
     readReceipts,
+    deliveredReceipts,
     chatChannelName,
     sessionId,
-    handleTypingTimeout
+    handleTypingTimeout,
+    reconnectionInProgress,
+    connectionState
   };
 }

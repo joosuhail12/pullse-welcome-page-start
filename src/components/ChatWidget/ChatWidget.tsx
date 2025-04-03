@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useChatState } from './hooks/useChatState';
 import useWidgetConfig from './hooks/useWidgetConfig';
 import { dispatchChatEvent } from './utils/events';
-import { initializeAbly, cleanupAbly } from './utils/ably';
+import { initializeAbly, cleanupAbly, reconnectAbly } from './utils/ably';
 import { getAblyAuthUrl } from './services/ablyAuth';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
@@ -15,6 +15,8 @@ import EnhancedLoadingIndicator from './components/EnhancedLoadingIndicator';
 import ErrorFallback from './components/ErrorFallback';
 import ErrorBoundary from '@/components/ui/error-boundary';
 import { errorHandler } from '@/lib/error-handler';
+import { getReconnectionManager, ConnectionStatus } from './utils/reconnectionManager';
+import { toasts } from '@/lib/toast-utils';
 
 export interface ChatWidgetProps {
   workspaceId: string;
@@ -88,6 +90,8 @@ const ChatWidgetContent = React.memo(({ workspaceId }: ChatWidgetProps) => {
   const { playMessageSound } = useSound();
   const isMobile = useIsMobile();
   const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
+  const reconnectionAttempts = useRef(0);
   
   // Handle errors from useWidgetConfig
   useEffect(() => {
@@ -97,25 +101,111 @@ const ChatWidgetContent = React.memo(({ workspaceId }: ChatWidgetProps) => {
     }
   }, [error, config]);
   
+  // Initialize real-time communication
   useEffect(() => {
     let ablyCleanup: (() => void) | null = null;
+    let reconnectionInterval: ReturnType<typeof setInterval> | null = null;
     
     if (!loading && config.realtime?.enabled && workspaceId) {
       const authUrl = getAblyAuthUrl(workspaceId);
+      const reconnectionManager = getReconnectionManager({
+        initialDelayMs: 1000,
+        maxDelayMs: 30000,
+        maxAttempts: 20,
+        backoffFactor: 1.5
+      });
       
-      initializeAbly(authUrl)
-        .then(() => {
+      // Initialize Ably and handle failures
+      const initRealtime = async () => {
+        try {
+          await initializeAbly(authUrl);
+          setConnectionStatus(ConnectionStatus.CONNECTED);
           ablyCleanup = cleanupAbly;
-        })
-        .catch(err => {
-          console.error('Failed to initialize Ably:', err);
+        } catch (err) {
+          console.error('Failed to initialize real-time communication:', err);
           errorHandler.handle(new Error('Failed to initialize real-time communication'));
+          setConnectionStatus(ConnectionStatus.FAILED);
+          
+          // Start reconnection process
+          startReconnectionProcess(authUrl);
+        }
+      };
+      
+      // Start initial connection
+      initRealtime();
+      
+      // Function to handle reconnection
+      const startReconnectionProcess = (url: string) => {
+        // Don't start multiple reconnection processes
+        if (reconnectionInterval) {
+          return;
+        }
+        
+        // Start reconnection manager
+        reconnectionManager.start(async () => {
+          reconnectionAttempts.current += 1;
+          
+          // Show reconnection toast on first attempt
+          if (reconnectionAttempts.current === 1) {
+            toasts.warning({
+              title: 'Reconnecting',
+              description: 'Attempting to restore connection...'
+            });
+          }
+          
+          // Attempt to reconnect
+          const success = await reconnectAbly(url);
+          
+          if (success) {
+            // Connection restored
+            setConnectionStatus(ConnectionStatus.CONNECTED);
+            reconnectionAttempts.current = 0;
+            
+            // Show success notification
+            toasts.success({
+              title: 'Connected',
+              description: 'Real-time connection restored'
+            });
+            
+            return true;
+          }
+          
+          return false;
+        }).then(() => {
+          // Reconnection successful
+          console.log('Reconnection successful');
+        }).catch(error => {
+          console.error('Reconnection failed after multiple attempts:', error);
+          
+          // Show failure notification
+          toasts.error({
+            title: 'Connection Failed',
+            description: 'Unable to establish real-time connection. Some features may be limited.',
+            duration: 0 // Don't auto-hide this important message
+          });
+          
+          // Switch to fallback mechanisms
+          setConnectionStatus(ConnectionStatus.FAILED);
         });
+      };
+      
+      // Listen for connection status changes
+      const unsubscribe = reconnectionManager.onStatusChange((status) => {
+        setConnectionStatus(status);
+      });
+      
+      // Clean up function
+      return () => {
+        if (ablyCleanup) ablyCleanup();
+        if (reconnectionInterval) {
+          clearInterval(reconnectionInterval);
+        }
+        unsubscribe();
+      };
     }
     
-    return () => {
-      if (ablyCleanup) ablyCleanup();
-    };
+    // No cleanup needed when realtime is disabled
+    return () => {};
   }, [loading, config.realtime?.enabled, workspaceId]);
   
   // Apply custom branding colors to the widget
@@ -186,6 +276,7 @@ const ChatWidgetContent = React.memo(({ workspaceId }: ChatWidgetProps) => {
         handleStartChat={wrappedHandleStartChat}
         setUserFormData={setUserFormData}
         playMessageSound={playMessageSound}
+        connectionStatus={connectionStatus}
       />
 
       <LauncherButton 
