@@ -3,13 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface Conversation {
-  id: string;
-  title: string;
-  lastMessage: string;
-  timestamp: Date;
-}
+import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Conversation } from '../types';
 
 interface MessagesViewProps {
   onSelectConversation: (conversation: Conversation) => void;
@@ -83,7 +79,8 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       id: `conv-${Date.now()}`,
       title: 'New Conversation',
       lastMessage: '',
-      timestamp: new Date()
+      timestamp: new Date(),
+      status: 'active' // Set default status for new conversations
     });
   };
 
@@ -109,19 +106,45 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         ) : (
           <div className="space-y-2">
             {conversations.map(conversation => (
-              <div 
+              <Card
                 key={conversation.id}
                 onClick={() => onSelectConversation(conversation)}
-                className="p-3 rounded-md hover:bg-soft-purple-50 cursor-pointer border border-gray-100 transition-colors group relative"
+                className="p-3 hover:bg-soft-purple-50 cursor-pointer border border-gray-100 transition-colors group relative"
               >
                 <div className="flex justify-between items-start">
                   <div className="flex items-center">
-                    <MessageSquare size={16} className="text-vivid-purple mr-2 flex-shrink-0" />
-                    <span className="font-medium text-gray-800 truncate">{conversation.title}</span>
+                    <div className="relative">
+                      <MessageSquare size={16} className="text-vivid-purple mr-2 flex-shrink-0" />
+                      {conversation.status && (
+                        <div className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-white" 
+                          style={{
+                            backgroundColor: conversation.status === 'active' ? '#10b981' : '#9ca3af'  
+                          }}
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-800 truncate">{conversation.title}</span>
+                        {conversation.status && (
+                          <Badge 
+                            variant={conversation.status === 'active' ? 'default' : 'secondary'}
+                            className={`text-[10px] px-1.5 py-0 ${
+                              conversation.status === 'active' 
+                                ? 'bg-green-100 text-green-800 hover:bg-green-100' 
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
+                            }`}
+                          >
+                            {conversation.status === 'active' ? 'Active' : 'Ended'}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   </div>
                   <span className="text-xs text-gray-500">{formatTime(conversation.timestamp)}</span>
                 </div>
-                <p className="text-sm text-gray-600 mt-1 line-clamp-1">{conversation.lastMessage || 'No messages yet'}</p>
+                
+                <p className="text-sm text-gray-500 mt-1.5 ml-6 line-clamp-1 font-normal">{conversation.lastMessage || 'No messages yet'}</p>
                 
                 <Button
                   variant="ghost"
@@ -131,7 +154,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                 >
                   <Trash2 size={14} className="text-gray-400 hover:text-red-500" />
                 </Button>
-              </div>
+              </Card>
             ))}
 
             {conversations.length === 0 && (
