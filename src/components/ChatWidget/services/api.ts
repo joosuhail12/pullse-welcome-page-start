@@ -6,7 +6,7 @@ import { ChatWidgetConfig, defaultConfig } from '../config';
 import { getChatSessionId, setChatSessionId } from '../utils/cookies';
 import { sanitizeInput } from '../utils/validation';
 import { isRateLimited, generateCsrfToken, enforceHttps, signMessage, verifyMessageSignature } from '../utils/security';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { addMessageToQueue, getMessageQueue } from '../utils/offlineQueue';
 import { cacheItem, getCachedItem, isCached, removeCachedItem } from '../utils/cacheManager';
 
@@ -143,21 +143,13 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
   try {
     // Enforce HTTPS for security
     if (!enforceHttps()) {
-      toast({
-        title: "Security Error",
-        description: "Redirecting to secure connection",
-        variant: "destructive"
-      });
+      toast.error("Security Error", "Redirecting to secure connection");
       throw new Error('Redirecting to HTTPS');
     }
     
     // Check rate limiting first
     if (isRateLimited()) {
-      toast({
-        title: "Rate limit exceeded",
-        description: "Please wait before sending more messages",
-        variant: "destructive"
-      });
+      toast.error("Rate limit exceeded", "Please wait before sending more messages");
       throw new Error('Rate limit exceeded');
     }
     
@@ -182,10 +174,7 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
       // Add to offline queue for processing when back online
       addMessageToQueue(offlinePayload as any, 'api-messages', 'api');
       
-      toast({
-        title: "Offline mode",
-        description: "Message saved and will be sent when you're back online",
-      });
+      toast.info("Offline mode", "Message saved and will be sent when you're back online");
       
       throw new Error('Offline mode - message queued');
     }

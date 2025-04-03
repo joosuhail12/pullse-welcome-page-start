@@ -3,7 +3,7 @@
  */
 import { Message } from '../types';
 import { encryptData, decryptData } from './security';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 // Storage key for offline message queue
 const OFFLINE_QUEUE_KEY = 'pullse_chat_offline_queue';
@@ -48,10 +48,7 @@ export function addMessageToQueue(
       // Only show toast for first queued message to avoid spam
       // Fix: Use setTimeout to avoid re-render issues
       setTimeout(() => {
-        toast({
-          title: "Message queued",
-          description: "Will be sent automatically when connection is restored",
-        } as any);
+        toast.info("Message queued", "Will be sent automatically when connection is restored");
       }, 0);
     }
   } catch (error) {
@@ -107,11 +104,7 @@ export function removeMessageFromQueue(messageId: string): void {
     if (queue.length > 0 && updatedQueue.length === 0) {
       // Fix: Use setTimeout to avoid re-render issues
       setTimeout(() => {
-        toast({
-          title: "All messages sent",
-          description: "Your queued messages have been delivered",
-          variant: "default"
-        } as any);
+        toast.success("All messages sent", "Your queued messages have been delivered");
       }, 0);
     }
   } catch (error) {
@@ -129,10 +122,7 @@ export function clearMessageQueue(): void {
     // Show a toast when queue is cleared manually
     // Fix: Use setTimeout to avoid re-render issues
     setTimeout(() => {
-      toast({
-        title: "Queue cleared",
-        description: "All pending messages have been removed",
-      } as any);
+      toast.info("Queue cleared", "All pending messages have been removed");
     }, 0);
   } catch (error) {
     console.error('Error clearing message queue:', error);
