@@ -3,7 +3,6 @@ import React from 'react';
 import ChatWidget from '@/components/ChatWidget/ChatWidget';
 
 const Index = () => {
-  // In a real app, this would come from your app's configuration or context
   const workspaceId = "demo-workspace-123";
   
   return (

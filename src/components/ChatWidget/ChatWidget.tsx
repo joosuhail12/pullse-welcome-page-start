@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -54,7 +53,6 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     };
   }, [loading, config.realtime?.enabled, workspaceId]);
   
-  // Apply custom branding if available
   const widgetStyle = useMemo(() => {
     return {
       ...(config.branding?.primaryColor && {
@@ -93,11 +91,10 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     }
   }, [handleStartChat, setUserFormData, config]);
 
-  // Get position styles based on config
   const getPositionStyles = useMemo(() => {
     const position = config.position?.placement || 'bottom-right';
-    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 4;
-    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 4;
+    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 1;
+    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 1;
     
     let positionStyle: React.CSSProperties = {};
     
@@ -105,7 +102,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
       case 'bottom-left':
         positionStyle = { 
           bottom: `${offsetY}rem`, 
-          left: `${offsetX}rem`,
+          left: `${offsetX}rem`, 
           right: 'auto'
         };
         break;
