@@ -1,0 +1,99 @@
+
+import React from 'react';
+import { Message } from '../types';
+import MessageList from './MessageList';
+import MessageInput from './MessageInput';
+import PoweredByBar from './PoweredByBar';
+
+interface ChatBodyProps {
+  messages: Message[];
+  messageText: string;
+  setMessageText: (text: string) => void;
+  isTyping: boolean;
+  remoteIsTyping: boolean;
+  handleSendMessage: () => void;
+  handleUserTyping: () => void;
+  handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleEndChat: () => void;
+  readReceipts: Record<string, Date>;
+  onMessageReaction?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
+  searchTerm: string;
+  messageIds: string[];
+  highlightText: (text: string, term: string) => { text: string; highlighted: boolean }[];
+  agentAvatar?: string;
+  userAvatar?: string;
+  handleLoadMoreMessages: () => Promise<void>;
+  hasMoreMessages: boolean;
+  isLoadingMore: boolean;
+  showInlineForm: boolean;
+  inlineFormComponent: React.ReactNode;
+  conversationId: string;
+  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
+}
+
+const ChatBody: React.FC<ChatBodyProps> = ({
+  messages,
+  messageText,
+  setMessageText,
+  isTyping,
+  remoteIsTyping,
+  handleSendMessage,
+  handleUserTyping,
+  handleFileUpload,
+  handleEndChat,
+  readReceipts,
+  onMessageReaction,
+  searchTerm,
+  messageIds,
+  highlightText,
+  agentAvatar,
+  userAvatar,
+  handleLoadMoreMessages,
+  hasMoreMessages,
+  isLoadingMore,
+  showInlineForm,
+  inlineFormComponent,
+  conversationId,
+  agentStatus
+}) => {
+  return (
+    <div className="flex flex-col flex-grow overflow-hidden">
+      {inlineFormComponent}
+      
+      {(!showInlineForm || conversationId) && (
+        <MessageList 
+          messages={messages}
+          isTyping={isTyping || remoteIsTyping}
+          setMessageText={setMessageText}
+          readReceipts={readReceipts}
+          onMessageReaction={onMessageReaction}
+          searchResults={messageIds}
+          highlightMessage={highlightText}
+          searchTerm={searchTerm}
+          agentAvatar={agentAvatar}
+          userAvatar={userAvatar}
+          onScrollTop={handleLoadMoreMessages}
+          hasMoreMessages={hasMoreMessages}
+          isLoadingMore={isLoadingMore}
+          conversationId={conversationId}
+          agentStatus={agentStatus}
+        />
+      )}
+      
+      <MessageInput
+        messageText={messageText}
+        setMessageText={setMessageText}
+        handleSendMessage={handleSendMessage}
+        handleFileUpload={handleFileUpload}
+        handleEndChat={handleEndChat}
+        hasUserSentMessage={isTyping}
+        onTyping={handleUserTyping}
+        disabled={showInlineForm}
+      />
+      
+      <PoweredByBar />
+    </div>
+  );
+};
+
+export default ChatBody;
