@@ -23,7 +23,8 @@ const DEFAULT_LIMIT: RateLimitConfig = {
 };
 
 // Store rate limit state in memory (would use Redis or similar in production)
-const rateLimitStore: Record<string, RateLimitState> = {};
+// Export this so it can be accessed by other modules
+export const rateLimitStore: Record<string, RateLimitState> = {};
 
 /**
  * Check if the current request would exceed rate limits
