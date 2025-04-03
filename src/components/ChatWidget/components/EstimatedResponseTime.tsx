@@ -37,15 +37,15 @@ const EstimatedResponseTime: React.FC<EstimatedResponseTimeProps> = ({
   const getStatusColor = () => {
     switch (agentStatus) {
       case 'online':
-        return 'text-green-600 bg-green-50';
+        return 'text-green-700 bg-green-50 border border-green-100';
       case 'busy':
-        return 'text-amber-600 bg-amber-50';
+        return 'text-amber-700 bg-amber-50 border border-amber-100';
       case 'away':
-        return 'text-yellow-600 bg-yellow-50';
+        return 'text-yellow-700 bg-yellow-50 border border-yellow-100';
       case 'offline':
-        return 'text-gray-600 bg-gray-50';
+        return 'text-gray-700 bg-gray-50 border border-gray-100';
       default:
-        return 'text-gray-600 bg-gray-50';
+        return 'text-gray-700 bg-gray-50 border border-gray-100';
     }
   };
 
@@ -69,7 +69,7 @@ const EstimatedResponseTime: React.FC<EstimatedResponseTimeProps> = ({
       <Tooltip>
         <TooltipTrigger asChild>
           <div 
-            className={`inline-flex items-center text-xs px-2 py-1 rounded ${getStatusColor()} ${className} transition-all duration-300 hover:shadow-sm`}
+            className={`inline-flex items-center text-xs px-3 py-1.5 rounded-full font-medium shadow-sm ${getStatusColor()} ${className} transition-all duration-300 hover:shadow`}
             role="status"
             aria-label={`Estimated response time: ${getEstimatedTime()}`}
           >
@@ -77,7 +77,7 @@ const EstimatedResponseTime: React.FC<EstimatedResponseTimeProps> = ({
             <span>Est. Response: {getEstimatedTime()}</span>
           </div>
         </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
+        <TooltipContent side="top" className="text-xs bg-white border border-gray-200 shadow-md">
           <p>{getTooltipMessage()}</p>
         </TooltipContent>
       </Tooltip>

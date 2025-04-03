@@ -10,6 +10,29 @@ export function useWidgetConfig(workspaceId?: string) {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
+  // Apply brand colors to document root for CSS variable usage
+  useEffect(() => {
+    if (config.branding?.primaryColor) {
+      // Create a style element to apply the brand colors
+      const styleElement = document.createElement('style');
+      styleElement.textContent = `
+        :root {
+          --vivid-purple: ${config.branding.primaryColor};
+          --chat-header-bg: ${config.branding.primaryColor};
+          --user-bubble-bg: ${config.branding.primaryColor};
+          --system-bubble-bg: #F8F7FF;
+          --system-bubble-text: #1f2937;
+        }
+      `;
+      
+      document.head.appendChild(styleElement);
+      
+      return () => {
+        document.head.removeChild(styleElement);
+      };
+    }
+  }, [config.branding?.primaryColor]);
+
   useEffect(() => {
     async function loadConfig() {
       if (!workspaceId) {

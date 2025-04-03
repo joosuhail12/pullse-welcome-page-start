@@ -24,15 +24,15 @@ const StatusMessage = ({
   const getStatusIcon = () => {
     switch (type) {
       case 'info':
-        return <Info size={14} className="mr-1.5 text-blue-500" />;
+        return <Info size={14} className="mr-1.5 text-blue-600" />;
       case 'warning':
-        return <AlertCircle size={14} className="mr-1.5 text-amber-500" />;
+        return <AlertCircle size={14} className="mr-1.5 text-amber-600" />;
       case 'success':
-        return <CheckCircle2 size={14} className="mr-1.5 text-green-500" />;
+        return <CheckCircle2 size={14} className="mr-1.5 text-green-600" />;
       case 'error':
-        return <AlertCircle size={14} className="mr-1.5 text-red-500" />;
+        return <AlertCircle size={14} className="mr-1.5 text-red-600" />;
       case 'status-change':
-        return <Clock size={14} className="mr-1.5 text-purple-500" />;
+        return <Clock size={14} className="mr-1.5 text-purple-600" />;
       default:
         return null;
     }
@@ -51,12 +51,12 @@ const StatusMessage = ({
       case 'status-change':
         return 'bg-purple-50 border-purple-100 text-purple-700';
       default:
-        return 'bg-gray-100/80 border-gray-100 text-gray-500';
+        return 'bg-gray-100 border-gray-200 text-gray-700';
     }
   };
 
   return (
-    <div className={`py-1.5 px-5 rounded-full text-xs font-medium text-center shadow-sm border flex items-center justify-center max-w-[80%] mx-auto ${getStatusColor()} ${className}`}>
+    <div className={`py-1.5 px-5 rounded-full text-xs font-medium text-center shadow-sm border flex items-center justify-center max-w-[80%] mx-auto animate-subtle-fade-in ${getStatusColor()} ${className}`}>
       {getStatusIcon()}
       <span>{renderText ? renderText(text) : text}</span>
       {timestamp && (

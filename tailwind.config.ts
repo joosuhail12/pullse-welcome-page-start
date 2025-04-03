@@ -76,7 +76,7 @@ export default {
           DEFAULT: '#E5DEFF'
         },
         'vivid-purple': {
-          DEFAULT: 'hsl(var(--vivid-purple))',
+          DEFAULT: 'hsl(var(--vivid-purple, 256 96% 67%))', // Allow CSS variable override
           50: '#F5F3FF',
           100: '#EDE9FE',
           200: '#DDD6FE',
@@ -89,18 +89,18 @@ export default {
           900: '#4C1D95'
         },
         'chat-header': {
-          DEFAULT: 'hsl(var(--chat-header-bg))',
-          foreground: 'hsl(var(--chat-header-text))'
+          DEFAULT: 'hsl(var(--chat-header-bg, 256 96% 67%))',
+          foreground: 'hsl(var(--chat-header-text, 0 0% 100%))'
         },
         'user-bubble': {
-          DEFAULT: 'hsl(var(--user-bubble-bg))',
-          foreground: 'hsl(var(--user-bubble-text))'
+          DEFAULT: 'hsl(var(--user-bubble-bg, 256 96% 67%))',
+          foreground: 'hsl(var(--user-bubble-text, 0 0% 100%))'
         },
         'system-bubble': {
-          DEFAULT: 'hsl(var(--system-bubble-bg))',
-          foreground: 'hsl(var(--system-bubble-text))'
+          DEFAULT: 'hsl(var(--system-bubble-bg, 270 100% 98%))',
+          foreground: 'hsl(var(--system-bubble-text, 222 47% 11%))'
         },
-        'chat-bg': 'hsl(var(--chat-bg))'
+        'chat-bg': 'hsl(var(--chat-bg, 0 0% 100%))'
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -191,6 +191,19 @@ export default {
             opacity: '1',
             transform: 'scale(1)' 
           }
+        },
+        'message-pop': {
+          '0%': {
+            opacity: '0.8',
+            transform: 'scale(0.95)'
+          },
+          '50%': {
+            transform: 'scale(1.02)'
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'scale(1)'
+          }
         }
       },
       animation: {
@@ -202,11 +215,14 @@ export default {
         'scale-in': 'scale-in 0.4s ease-out',
         'subtle-fade-in': 'subtle-fade-in 0.4s ease-out forwards',
         'subtle-slide-in': 'subtle-slide-in 0.4s ease-out',
-        'subtle-scale': 'subtle-scale 0.3s ease-out'
+        'subtle-scale': 'subtle-scale 0.3s ease-out',
+        'message-pop': 'message-pop 0.3s ease-out'
       },
       boxShadow: {
         'chat-bubble': '0 2px 8px rgba(0, 0, 0, 0.05)',
-        'chat-widget': '0 4px 20px rgba(0, 0, 0, 0.1)'
+        'chat-widget': '0 4px 20px rgba(0, 0, 0, 0.1)',
+        'message': '0 2px 10px rgba(139, 92, 246, 0.1)',
+        'message-hover': '0 4px 15px rgba(139, 92, 246, 0.15)'
       },
       screens: {
         'xs': '480px',
