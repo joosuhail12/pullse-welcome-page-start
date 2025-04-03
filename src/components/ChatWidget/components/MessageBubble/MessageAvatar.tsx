@@ -2,12 +2,13 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Bot } from 'lucide-react';
+import { AgentStatus } from '../../types';
 
 export interface MessageAvatarProps {
   isUserMessage: boolean;
   userAvatar?: string;
   agentAvatar?: string;
-  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
+  agentStatus?: AgentStatus;
 }
 
 const MessageAvatar = ({ 
