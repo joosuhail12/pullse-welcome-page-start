@@ -66,7 +66,8 @@ export function useWidgetConfig(workspaceId?: string) {
           
           // Get the default placement value and ensure it's valid
           const defaultPlacementValue = defaultConfig.position?.placement || 'bottom-right';
-          const validatedPlacement = ensureValidPosition(defaultPlacementValue);
+          // Ensure we're using the ChatPositionString type
+          const validatedPlacement: ChatPositionString = ensureValidPosition(defaultPlacementValue);
           
           const devConfig: ChatWidgetConfig = {
             ...defaultConfig,
@@ -94,7 +95,8 @@ export function useWidgetConfig(workspaceId?: string) {
         
         // Get the fetched placement value and ensure it's valid
         const fetchedPlacementValue = fetchedConfig.position?.placement || 'bottom-right';
-        const validatedPlacement = ensureValidPosition(fetchedPlacementValue);
+        // Ensure we're using the ChatPositionString type
+        const validatedPlacement: ChatPositionString = ensureValidPosition(fetchedPlacementValue);
         
         setConfig({
           ...fetchedConfig,
@@ -110,7 +112,8 @@ export function useWidgetConfig(workspaceId?: string) {
         
         // Get the default placement value for error fallback
         const defaultPlacementValue = defaultConfig.position?.placement || 'bottom-right';
-        const validatedPlacement = ensureValidPosition(defaultPlacementValue);
+        // Ensure we're using the ChatPositionString type
+        const validatedPlacement: ChatPositionString = ensureValidPosition(defaultPlacementValue);
         
         setConfig({
           ...defaultConfig,
