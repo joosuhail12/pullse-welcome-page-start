@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Message } from '../types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
@@ -59,6 +59,30 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   agentStatus,
   onToggleHighlight
 }) => {
+  const [typingStartTime, setTypingStartTime] = useState<number | null>(null);
+  const [typingDuration, setTypingDuration] = useState(0);
+  
+  // Track how long typing has been active
+  useEffect(() => {
+    if (remoteIsTyping && !typingStartTime) {
+      setTypingStartTime(Date.now());
+    } else if (!remoteIsTyping && typingStartTime) {
+      setTypingStartTime(null);
+      setTypingDuration(0);
+    }
+  }, [remoteIsTyping, typingStartTime]);
+  
+  // Update typing duration while typing is active
+  useEffect(() => {
+    if (!typingStartTime) return;
+    
+    const intervalId = setInterval(() => {
+      setTypingDuration(Date.now() - typingStartTime);
+    }, 1000);
+    
+    return () => clearInterval(intervalId);
+  }, [typingStartTime]);
+
   return (
     <div className="flex flex-col flex-grow overflow-hidden">
       {inlineFormComponent}
@@ -82,6 +106,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
             conversationId={conversationId}
             agentStatus={agentStatus}
             onToggleHighlight={onToggleHighlight}
+            typingDuration={typingDuration}
           />
         </div>
       )}

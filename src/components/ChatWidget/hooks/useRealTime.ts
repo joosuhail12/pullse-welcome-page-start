@@ -29,6 +29,9 @@ export function useRealTime(
   const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [reconnectionInProgress, setReconnectionInProgress] = useState(false);
   
+  // Track if any message was received while user was away
+  const [unreadWhileAway, setUnreadWhileAway] = useState(false);
+  
   // Use the realtime subscriptions hook
   const { remoteIsTyping, readReceipts, deliveredReceipts, connectionState } = useRealtimeSubscriptions(
     chatChannelName,
@@ -92,6 +95,28 @@ export function useRealTime(
       unsubscribe();
     };
   }, [config?.realtime?.enabled]);
+
+  // Track page visibility to detect when user returns to the page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // User has returned to the page, force send read receipts
+        sendReadReceipts();
+        
+        // Reset unread flag after sending receipts
+        if (unreadWhileAway) {
+          setUnreadWhileAway(false);
+        }
+      }
+    };
+    
+    // Add event listener for page visibility
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [unreadWhileAway, sendReadReceipts]);
 
   // Effect for connection fallback mode
   useEffect(() => {
@@ -187,6 +212,7 @@ export function useRealTime(
     sessionId,
     handleTypingTimeout,
     reconnectionInProgress,
-    connectionState
+    connectionState,
+    unreadWhileAway
   };
 }
