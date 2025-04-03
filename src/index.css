@@ -4,6 +4,10 @@
 @tailwind utilities;
 
 @layer components {
+  .chat-message-bubble {
+    @apply p-3 mb-2 rounded-lg shadow-sm max-w-xs md:max-w-md;
+  }
+  
   .chat-message-system {
     @apply bg-soft-purple-50 text-system-bubble-foreground rounded-bl-none chat-message-bubble;
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
