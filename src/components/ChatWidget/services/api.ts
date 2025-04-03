@@ -8,7 +8,7 @@
  * implement proper error handling to prevent data leakage or corruption.
  */
 
-import { ChatWidgetConfig, defaultConfig, ChatPosition } from '../config';
+import { ChatWidgetConfig, defaultConfig } from '../config';
 import { getChatSessionId, setChatSessionId } from '../utils/cookies';
 import { sanitizeInput, validateMessage } from '../utils/validation';
 import { isRateLimited, generateCsrfToken, enforceHttps, signMessage, verifyMessageSignature } from '../utils/security';
@@ -20,6 +20,7 @@ import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 import { logger } from '@/lib/logger';
 import { requiresServerImplementation } from '../utils/serverSideAuth';
 import { isValidChatPosition } from '../embed/core/optionsValidator';
+import { ChatPositionString } from '../types';
 
 // Circuit names for different API endpoints
 const CONFIG_CIRCUIT = 'chat-widget-config';
