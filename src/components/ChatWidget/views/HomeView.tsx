@@ -1,7 +1,7 @@
 
 import React, { useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, MessageCircle, HelpCircle, Users } from 'lucide-react';
+import { MessageSquare, MessageCircle, Clock, Users } from 'lucide-react';
 import { defaultConfig, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
 import { dispatchChatEvent } from '../utils/events';
@@ -59,28 +59,28 @@ const HomeView = React.memo(({
         </p>
       </div>
       
-      {/* Feature highlights */}
+      {/* Team Availability Section */}
       <div className="mb-4 sm:mb-6 animate-subtle-fade-in space-y-3 sm:space-y-4">
         <div className="flex items-center gap-2 mb-1 sm:mb-2">
-          <h3 className="text-xs sm:text-sm uppercase tracking-wide font-semibold text-gray-500">How We Can Help</h3>
+          <h3 className="text-xs sm:text-sm uppercase tracking-wide font-semibold text-gray-500">Team Availability</h3>
           <div className="h-px flex-grow bg-gray-100"></div>
         </div>
         
         <div className="grid grid-cols-2 gap-2 sm:gap-3">
           <div className="bg-white/60 backdrop-blur-sm p-2 sm:p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-1 sm:gap-2 mb-1">
-              <HelpCircle size={isMobile ? 14 : 16} className="text-vivid-purple-500" />
-              <span className="text-2xs sm:text-sm font-medium text-gray-700">Ask Questions</span>
+              <Clock size={isMobile ? 14 : 16} className="text-vivid-purple-500" />
+              <span className="text-2xs sm:text-sm font-medium text-gray-700">Office Hours</span>
             </div>
-            <p className="text-3xs sm:text-xs text-gray-500">Get answers to your product questions</p>
+            <p className="text-3xs sm:text-xs text-gray-500">Mon-Fri: 9 AM - 5 PM EST</p>
           </div>
           
           <div className="bg-white/60 backdrop-blur-sm p-2 sm:p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-1 sm:gap-2 mb-1">
               <Users size={isMobile ? 14 : 16} className="text-vivid-purple-500" />
-              <span className="text-2xs sm:text-sm font-medium text-gray-700">Support Team</span>
+              <span className="text-2xs sm:text-sm font-medium text-gray-700">Team Size</span>
             </div>
-            <p className="text-3xs sm:text-xs text-gray-500">Talk to our friendly agents</p>
+            <p className="text-3xs sm:text-xs text-gray-500">10+ Support Agents</p>
           </div>
         </div>
       </div>
@@ -88,7 +88,7 @@ const HomeView = React.memo(({
       {/* Support status */}
       <div className="mb-4 sm:mb-6 animate-subtle-fade-in">
         <div className="flex items-center gap-2 mb-1 sm:mb-2">
-          <h3 className="text-xs sm:text-sm uppercase tracking-wide font-semibold text-gray-500">Support Status</h3>
+          <h3 className="text-xs sm:text-sm uppercase tracking-wide font-semibold text-gray-500">Current Availability</h3>
           <div className="h-px flex-grow bg-gray-100"></div>
         </div>
         
@@ -115,3 +115,4 @@ const HomeView = React.memo(({
 HomeView.displayName = 'HomeView';
 
 export default HomeView;
+
