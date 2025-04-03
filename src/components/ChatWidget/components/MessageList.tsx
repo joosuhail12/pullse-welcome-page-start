@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
@@ -18,11 +17,12 @@ interface MessageListProps {
   highlightMessage?: (text: string, searchTerm: string) => { text: string; highlighted: boolean }[];
   agentAvatar?: string;
   userAvatar?: string;
-  onScrollTop?: () => void; // Callback for infinite scroll
-  hasMoreMessages?: boolean; // Whether there are more messages to load
-  isLoadingMore?: boolean; // Whether we're currently loading more messages
-  inlineFormComponent?: React.ReactNode; // New prop for inline form component
-  conversationId?: string; // Add conversation ID to mark as read
+  onScrollTop?: () => void;
+  hasMoreMessages?: boolean;
+  isLoadingMore?: boolean;
+  inlineFormComponent?: React.ReactNode;
+  conversationId?: string;
+  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
 }
 
 const MessageList = ({ 
@@ -40,7 +40,8 @@ const MessageList = ({
   hasMoreMessages = false,
   isLoadingMore = false,
   inlineFormComponent,
-  conversationId
+  conversationId,
+  agentStatus = 'online'
 }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -49,40 +50,33 @@ const MessageList = ({
   const [lastScrollTop, setLastScrollTop] = useState(0);
   const [hasViewedMessages, setHasViewedMessages] = useState(false);
 
-  // Function to check if a message should be grouped with the previous one
   const isConsecutiveMessage = (index: number) => {
     if (index === 0) return false;
     const currentMsg = messages[index];
     const prevMsg = messages[index - 1];
     
-    // Group messages if they are from the same sender and within 2 minutes of each other
     return currentMsg.sender === prevMsg.sender && 
            currentMsg.type !== 'status' &&
            prevMsg.type !== 'status' &&
            currentMsg.timestamp.getTime() - prevMsg.timestamp.getTime() < 2 * 60 * 1000;
   };
 
-  // Function to highlight search results
   const isMessageHighlighted = (messageId: string) => {
     return searchResults?.includes(messageId) || false;
   };
 
-  // Handle scroll events
   const handleScroll = useCallback(() => {
     if (!scrollViewportRef.current) return;
 
     const { scrollTop, scrollHeight, clientHeight } = scrollViewportRef.current;
     
-    // Check if we're near the bottom to enable auto-scroll
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
     setAutoScroll(isNearBottom);
 
-    // Check if we're at the top to load more messages (infinite scroll)
     if (scrollTop === 0 && lastScrollTop !== 0 && onScrollTop && hasMoreMessages && !isLoadingMore) {
       onScrollTop();
     }
 
-    // Mark messages as viewed when scrolled
     if (!hasViewedMessages && conversationId) {
       setHasViewedMessages(true);
       markConversationAsRead(conversationId)
@@ -92,7 +86,6 @@ const MessageList = ({
     setLastScrollTop(scrollTop);
   }, [lastScrollTop, onScrollTop, hasMoreMessages, isLoadingMore, hasViewedMessages, conversationId]);
 
-  // Mark messages as viewed when component mounts
   useEffect(() => {
     if (conversationId && !hasViewedMessages) {
       setHasViewedMessages(true);
@@ -101,10 +94,8 @@ const MessageList = ({
     }
   }, [conversationId, hasViewedMessages]);
 
-  // Get the viewport element from ScrollArea and attach scroll event
   useEffect(() => {
     if (scrollAreaRef.current) {
-      // Find the viewport element within the ScrollArea
       const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (viewport) {
         scrollViewportRef.current = viewport as HTMLDivElement;
@@ -119,7 +110,6 @@ const MessageList = ({
     };
   }, [handleScroll]);
 
-  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     if (autoScroll && messagesEndRef.current) {
       setTimeout(() => {
@@ -128,11 +118,9 @@ const MessageList = ({
     }
   }, [messages, isTyping, autoScroll]);
 
-  // Render read receipt indicator with improved styling
   const renderReadReceipt = (message: Message) => {
     if (message.sender !== 'user') return null;
     
-    // Check if there's a read receipt for this message
     const hasReadReceipt = readReceipts[message.id] !== undefined;
     
     return (
@@ -160,14 +148,12 @@ const MessageList = ({
   return (
     <ScrollArea className="flex-grow p-4 bg-chat-bg" ref={scrollAreaRef}>
       <div className="space-y-4">
-        {/* Loading indicator for infinite scroll */}
         {isLoadingMore && (
           <div className="w-full text-center py-2 text-sm text-gray-500">
             Loading previous messages...
           </div>
         )}
         
-        {/* Show messages */}
         {messages.map((message, index) => (
           <div 
             key={message.id} 
@@ -182,7 +168,7 @@ const MessageList = ({
             }`}
             style={{ 
               animationDelay: `${index * 50}ms`,
-              opacity: 0 // Start with opacity 0, animation will bring to 1
+              opacity: 0
             }}
             id={message.id}
           >
@@ -197,7 +183,7 @@ const MessageList = ({
                   isConsecutive={isConsecutiveMessage(index)}
                   showAvatar={true}
                   avatarUrl={message.sender === 'system' ? agentAvatar : userAvatar}
-                  agentStatus="online"
+                  agentStatus={agentStatus}
                 />
               )}
               
@@ -211,14 +197,12 @@ const MessageList = ({
                 </div>
               )}
               
-              {/* Render inline form after the first system message if provided */}
               {inlineFormComponent && index === 0 && message.sender === 'system' && (
                 <div className="mt-3 w-full">
                   {inlineFormComponent}
                 </div>
               )}
               
-              {/* Read receipt indicators for user messages */}
               {renderReadReceipt(message)}
             </div>
           </div>
