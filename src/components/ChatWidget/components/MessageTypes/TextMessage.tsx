@@ -10,7 +10,7 @@ interface TextMessageProps {
 const TextMessage = ({ text, renderText }: TextMessageProps) => {
   const isMobile = useIsMobile();
   const textSizeClass = isMobile 
-    ? "text-sm leading-tight" 
+    ? "text-xs sm:text-sm leading-tight" 
     : "text-sm sm:text-base leading-relaxed";
   
   return (

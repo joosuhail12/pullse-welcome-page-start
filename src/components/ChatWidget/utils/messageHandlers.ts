@@ -143,3 +143,85 @@ export const sendMessageReaction = (
     timestamp: new Date()
   });
 };
+
+/**
+ * Generate mock conversations when loading fails
+ */
+export const getMockConversations = (): any[] => {
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const twoDaysAgo = new Date(now);
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+  
+  return [
+    {
+      id: 'mock-conv-1',
+      title: 'Technical Support',
+      timestamp: now,
+      lastMessage: 'We\'ll look into your issue right away.',
+      status: 'active',
+      agentInfo: {
+        name: 'Support Agent',
+        avatar: '',
+        status: 'online'
+      },
+      metadata: {
+        ticketProgress: 75
+      },
+      messages: [
+        {
+          id: 'msg-mock-1',
+          text: 'Hello! How can I help you today?',
+          sender: 'system',
+          timestamp: now,
+          status: 'read'
+        },
+        {
+          id: 'msg-mock-2',
+          text: 'I\'m having trouble with my account.',
+          sender: 'user',
+          timestamp: new Date(now.getTime() + 60000),
+          status: 'read'
+        },
+        {
+          id: 'msg-mock-3',
+          text: 'We\'ll look into your issue right away.',
+          sender: 'system',
+          timestamp: new Date(now.getTime() + 120000),
+          status: 'delivered'
+        }
+      ]
+    },
+    {
+      id: 'mock-conv-2',
+      title: 'Billing Support',
+      timestamp: yesterday,
+      lastMessage: 'Your invoice has been updated.',
+      status: 'active',
+      agentInfo: {
+        name: 'Billing Specialist',
+        avatar: '',
+        status: 'away'
+      },
+      metadata: {
+        ticketProgress: 35
+      }
+    },
+    {
+      id: 'mock-conv-3',
+      title: 'Product Inquiry',
+      timestamp: twoDaysAgo,
+      lastMessage: 'Thank you for your interest in our product.',
+      status: 'ended',
+      agentInfo: {
+        name: 'Sales Agent',
+        avatar: '',
+        status: 'offline'
+      },
+      metadata: {
+        ticketProgress: 100
+      }
+    }
+  ];
+};

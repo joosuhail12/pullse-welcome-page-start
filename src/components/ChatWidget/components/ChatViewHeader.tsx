@@ -14,6 +14,7 @@ interface ChatViewHeaderProps {
   searchResultCount: number;
   isSearching: boolean;
   showSearchFeature: boolean;
+  ticketProgress?: number; // New prop for ticket progress
 }
 
 const ChatViewHeader = ({ 
@@ -25,7 +26,8 @@ const ChatViewHeader = ({
   clearSearch, 
   searchResultCount,
   isSearching,
-  showSearchFeature
+  showSearchFeature,
+  ticketProgress
 }: ChatViewHeaderProps) => {
   return (
     <div className="sticky top-0 z-20 shadow-md">
@@ -34,6 +36,7 @@ const ChatViewHeader = ({
         onBack={onBack} 
         onToggleSearch={showSearchFeature ? toggleSearch : undefined}
         showSearch={showSearch}
+        ticketProgress={ticketProgress}
       />
       
       {showSearch && showSearchFeature && (

@@ -17,7 +17,7 @@ const MessageStatus = ({
 }: MessageStatusProps) => {
   return (
     <div className="flex items-center justify-end mt-1 text-xs gap-1">
-      <span className="text-[10px] text-gray-500">
+      <span className="text-[10px] sm:text-xs text-gray-500">
         {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
       </span>
       
@@ -42,7 +42,7 @@ const MessageStatus = ({
       {status === 'read' && (
         <div className="flex items-center text-vivid-purple status-icon-animation" title="Read">
           <CheckCheck size={12} />
-          <span className="ml-1 text-[10px]">Read</span>
+          <span className="ml-1 text-[10px] hidden sm:inline">Read</span>
         </div>
       )}
       

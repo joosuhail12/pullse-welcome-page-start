@@ -43,6 +43,7 @@ interface ChatViewPresentationProps {
   handleFormComplete: (formData: Record<string, string>) => void;
   config: ChatWidgetConfig;
   onToggleMessageImportance?: (messageId: string) => void;
+  ticketProgress?: number; // New prop for ticket progress
 }
 
 /**
@@ -83,13 +84,14 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
   showInlineForm,
   handleFormComplete,
   config,
-  onToggleMessageImportance
+  onToggleMessageImportance,
+  ticketProgress = 50 // Default to 50% if not provided
 }) => {
   const isMobile = useIsMobile();
   
   // Calculate height dynamically based on screen size
   const chatViewHeight = isMobile 
-    ? "h-[85vh] max-h-[85vh]" 
+    ? "h-[90vh] max-h-[90vh]" 
     : "h-[600px] max-h-[85vh]";
   
   const inlineFormComponent = useMemo(() => {
@@ -127,6 +129,7 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
           searchResultCount={searchResultCount}
           isSearching={isSearching}
           showSearchFeature={showSearchFeature}
+          ticketProgress={ticketProgress}
         />
         
         <KeyboardShortcutsInfo />

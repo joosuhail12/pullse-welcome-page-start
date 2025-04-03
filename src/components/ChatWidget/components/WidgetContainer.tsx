@@ -52,7 +52,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
     : "w-[90vw] sm:w-80 md:w-96"; // Percentage based with breakpoints
     
   const widgetHeight = isMobile 
-    ? "h-[85vh]" // Taller on mobile to use more screen space
+    ? "h-[90vh]" // Taller on mobile to use more screen space
     : "h-[500px] sm:h-[600px]";
     
   const widgetMaxHeight = "max-h-[90vh] sm:max-h-[85vh]"; // Increased max height for small screens

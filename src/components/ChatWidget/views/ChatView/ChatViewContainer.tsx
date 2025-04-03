@@ -1,10 +1,10 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Conversation } from '../../types';
 import { ChatWidgetConfig, defaultConfig } from '../../config';
 import { useChatMessages } from '../../hooks/useChatMessages';
 import { useMessageReactions } from '../../hooks/useMessageReactions';
 import { useMessageSearch } from '../../hooks/useMessageSearch';
+import { useInlineForm } from '../../hooks/useInlineForm';
 import { dispatchChatEvent } from '../../utils/events';
 import ChatViewPresentation from './ChatViewPresentation';
 
@@ -34,16 +34,21 @@ const ChatViewContainer = ({
 }: ChatViewContainerProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [showInlineForm, setShowInlineForm] = useState(
-    config?.preChatForm?.enabled && !userFormData && !conversation.contactIdentified
+  const [ticketProgress, setTicketProgress] = useState(
+    conversation.metadata?.ticketProgress || Math.floor(Math.random() * 100)
   );
 
-  // Update inline form visibility when user data or contact status changes
-  useEffect(() => {
-    if (userFormData || conversation.contactIdentified) {
-      setShowInlineForm(false);
-    }
-  }, [userFormData, conversation.contactIdentified]);
+  // Use the new inline form hook
+  const {
+    showInlineForm,
+    handleFormComplete
+  } = useInlineForm(
+    conversation,
+    config,
+    userFormData,
+    setUserFormData,
+    onUpdateConversation
+  );
 
   const {
     messages,
@@ -137,9 +142,15 @@ const ChatViewContainer = ({
           : msg
       );
     });
+
+    // When a message is marked important, update ticket progress as well
+    setTicketProgress(prevProgress => {
+      // Randomly increment progress between 5-15% when message is marked important
+      const increment = Math.floor(Math.random() * 10) + 5;
+      return Math.min(prevProgress + increment, 100);
+    });
   }, [setMessages]);
 
-  // Prepare data for presentation component
   const agentAvatar = useMemo(() => 
     conversation.agentInfo?.avatar || config?.branding?.avatarUrl, 
     [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]
@@ -198,6 +209,7 @@ const ChatViewContainer = ({
       handleFormComplete={handleFormComplete}
       config={config}
       onToggleMessageImportance={handleToggleMessageImportance}
+      ticketProgress={ticketProgress}
     />
   );
 };

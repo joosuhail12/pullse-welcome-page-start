@@ -4,17 +4,19 @@ import { Conversation } from '../types';
 import { ArrowLeft, Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AgentPresence from './AgentPresence';
+import { Progress } from '@/components/ui/progress';
 
 interface ChatHeaderProps {
   conversation: Conversation;
   onBack: () => void;
   onToggleSearch?: () => void;
   showSearch?: boolean;
+  ticketProgress?: number; // New prop for ticket progress
 }
 
-const ChatHeader = ({ conversation, onBack, onToggleSearch, showSearch }: ChatHeaderProps) => {
+const ChatHeader = ({ conversation, onBack, onToggleSearch, showSearch, ticketProgress }: ChatHeaderProps) => {
   return (
-    <div className="bg-vivid-purple-700 text-white p-4 flex items-center justify-between shadow-sm z-10 relative overflow-hidden">
+    <div className="bg-vivid-purple-700 text-white p-2 sm:p-4 flex flex-col shadow-sm z-10 relative overflow-hidden">
       {/* Subtle gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-vivid-purple-600 to-vivid-purple-800 opacity-90"></div>
       
@@ -29,33 +31,46 @@ const ChatHeader = ({ conversation, onBack, onToggleSearch, showSearch }: ChatHe
         </div>
       </div>
       
-      <div className="flex items-center gap-3 z-10 relative">
-        <Button 
-          variant="ghost" 
-          className="p-2 h-auto w-auto text-white hover:bg-white/20 hover:text-white"
-          onClick={onBack}
-        >
-          <ArrowLeft size={18} className="text-white" />
-        </Button>
-        
-        <div>
-          <h2 className="font-semibold text-sm tracking-tight">
-            {conversation.title || 'Support Chat'}
-          </h2>
-          <AgentPresence 
-            workspaceId={conversation.id.split(':')[0]}
-          />
+      <div className="flex items-center justify-between z-10 relative">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Button 
+            variant="ghost" 
+            className="p-1 sm:p-2 h-auto w-auto text-white hover:bg-white/20 hover:text-white"
+            onClick={onBack}
+          >
+            <ArrowLeft size={16} className="text-white" />
+          </Button>
+          
+          <div>
+            <h2 className="font-semibold text-xs sm:text-sm tracking-tight">
+              {conversation.title || 'Support Chat'}
+            </h2>
+            <AgentPresence 
+              workspaceId={conversation.id.split(':')[0]}
+            />
+          </div>
         </div>
+        
+        {onToggleSearch && (
+          <Button
+            variant="ghost"
+            className="p-1 sm:p-2 h-auto w-auto text-white hover:bg-white/20 hover:text-white relative z-10"
+            onClick={onToggleSearch}
+          >
+            {showSearch ? <X size={16} /> : <Search size={16} />}
+          </Button>
+        )}
       </div>
       
-      {onToggleSearch && (
-        <Button
-          variant="ghost"
-          className="p-2 h-auto w-auto text-white hover:bg-white/20 hover:text-white relative z-10"
-          onClick={onToggleSearch}
-        >
-          {showSearch ? <X size={18} /> : <Search size={18} />}
-        </Button>
+      {/* Ticket progress bar */}
+      {ticketProgress !== undefined && (
+        <div className="mt-2 px-2 z-10 relative">
+          <div className="flex justify-between text-[10px] sm:text-xs mb-1">
+            <span>Ticket Progress</span>
+            <span>{Math.round(ticketProgress)}%</span>
+          </div>
+          <Progress value={ticketProgress} className="h-1.5 sm:h-2 w-full bg-white/30" />
+        </div>
       )}
     </div>
   );
