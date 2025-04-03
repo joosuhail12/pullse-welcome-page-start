@@ -1,8 +1,9 @@
-
 import React, { useEffect } from 'react';
 import { toast } from 'sonner';
+import { KeyboardShortcutProps } from './KeyboardShortcutsInfo';
 
 interface ChatKeyboardHandlerProps {
+  children: React.ReactNode;
   messageText: string;
   handleSendMessage: () => void;
   toggleSearch: () => void;
@@ -11,9 +12,10 @@ interface ChatKeyboardHandlerProps {
   scrollToBottom?: () => void;
   loadOlderMessages?: () => void;
   enableKeyboardToasts?: boolean;
+  customShortcuts?: KeyboardShortcutProps[];
 }
 
-const ChatKeyboardHandler: React.FC<React.PropsWithChildren<ChatKeyboardHandlerProps>> = ({ 
+const ChatKeyboardHandler: React.FC<ChatKeyboardHandlerProps> = ({ 
   children,
   messageText,
   handleSendMessage,
@@ -22,12 +24,11 @@ const ChatKeyboardHandler: React.FC<React.PropsWithChildren<ChatKeyboardHandlerP
   showSearchFeature,
   scrollToBottom,
   loadOlderMessages,
-  enableKeyboardToasts = false
+  enableKeyboardToasts = false,
+  customShortcuts = []
 }) => {
-  // Effect to add keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Alt+/ to focus search
       if (e.altKey && e.key === '/' && showSearchFeature) {
         e.preventDefault();
         toggleSearch();
@@ -37,19 +38,16 @@ const ChatKeyboardHandler: React.FC<React.PropsWithChildren<ChatKeyboardHandlerP
         }
       }
       
-      // Alt+Enter to send message
       if (e.altKey && e.key === 'Enter' && messageText.trim().length > 0) {
         e.preventDefault();
         handleSendMessage();
       }
       
-      // Escape to close search
       if (e.key === 'Escape' && showSearch) {
         e.preventDefault();
         toggleSearch();
       }
       
-      // Alt+End to scroll to bottom
       if (e.altKey && e.key === 'End' && scrollToBottom) {
         e.preventDefault();
         scrollToBottom();
@@ -59,7 +57,6 @@ const ChatKeyboardHandler: React.FC<React.PropsWithChildren<ChatKeyboardHandlerP
         }
       }
       
-      // Alt+Home to load older messages
       if (e.altKey && e.key === 'Home' && loadOlderMessages) {
         e.preventDefault();
         loadOlderMessages();
@@ -69,11 +66,7 @@ const ChatKeyboardHandler: React.FC<React.PropsWithChildren<ChatKeyboardHandlerP
         }
       }
       
-      // Alt+R to quick reply to last message (if function provided)
       if (e.altKey && e.key === 'r') {
-        // This would be connected via props if implemented
-        // We're preparing the interface for future functionality
-        
         if (enableKeyboardToasts) {
           toast.info('Quick reply shortcut pressed');
         }
@@ -90,7 +83,8 @@ const ChatKeyboardHandler: React.FC<React.PropsWithChildren<ChatKeyboardHandlerP
     showSearchFeature, 
     scrollToBottom, 
     loadOlderMessages, 
-    enableKeyboardToasts
+    enableKeyboardToasts,
+    customShortcuts
   ]);
 
   return <>{children}</>;
