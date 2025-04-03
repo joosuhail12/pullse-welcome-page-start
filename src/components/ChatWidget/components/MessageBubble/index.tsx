@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Message } from '../../types';
 import { sanitizeInput } from '../../utils/validation';
@@ -18,7 +19,7 @@ interface MessageBubbleProps {
   showAvatar?: boolean;
   isConsecutive?: boolean;
   avatarUrl?: string;
-  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
+  agentStatus?: 'online' | 'offline' | 'away' | 'busy'; // Add this line
 }
 
 const MessageBubble = ({ 
