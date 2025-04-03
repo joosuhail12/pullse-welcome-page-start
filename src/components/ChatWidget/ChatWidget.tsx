@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -54,7 +53,6 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     };
   }, [loading, config.realtime?.enabled, workspaceId]);
   
-  // Apply custom branding if available
   const widgetStyle = useMemo(() => {
     return {
       ...(config.branding?.primaryColor && {
@@ -93,11 +91,10 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     }
   }, [handleStartChat, setUserFormData, config]);
 
-  // Get position styles based on config
-  const getPositionStyles = useMemo(() => {
+  const getLauncherPositionStyles = useMemo(() => {
     const position = config.position?.placement || 'bottom-right';
-    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 4;
-    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 4;
+    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 1;
+    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 1;
     
     let positionStyle: React.CSSProperties = {};
     
@@ -105,15 +102,17 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
       case 'bottom-left':
         positionStyle = { 
           bottom: `${offsetY}rem`, 
-          left: `${offsetX}rem`,
-          right: 'auto'
+          left: `${offsetX}rem`, 
+          right: 'auto',
+          top: 'auto'
         };
         break;
       case 'top-right':
         positionStyle = { 
           top: `${offsetY}rem`, 
           right: `${offsetX}rem`,
-          bottom: 'auto'
+          bottom: 'auto',
+          left: 'auto'
         };
         break;
       case 'top-left':
@@ -128,12 +127,62 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
       default:
         positionStyle = { 
           bottom: `${offsetY}rem`, 
-          right: `${offsetX}rem`
+          right: `${offsetX}rem`,
+          top: 'auto',
+          left: 'auto'
         };
     }
     
     return positionStyle;
   }, [config.position]);
+
+  const getWidgetContainerPositionStyles = useMemo(() => {
+    const position = config.position?.placement || 'bottom-right';
+    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 1;
+    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 1;
+    const launcherHeight = isMobile ? 3.5 : 4;
+    const containerMargin = 1;
+    const totalOffset = offsetY + launcherHeight + containerMargin;
+    
+    let positionStyle: React.CSSProperties = {};
+    
+    switch(position) {
+      case 'bottom-left':
+        positionStyle = { 
+          bottom: `${totalOffset}rem`, 
+          left: `${offsetX}rem`, 
+          right: 'auto',
+          top: 'auto'
+        };
+        break;
+      case 'top-right':
+        positionStyle = { 
+          top: `${offsetY}rem`, 
+          right: `${offsetX}rem`,
+          bottom: 'auto',
+          left: 'auto'
+        };
+        break;
+      case 'top-left':
+        positionStyle = { 
+          top: `${offsetY}rem`, 
+          left: `${offsetX}rem`,
+          bottom: 'auto',
+          right: 'auto'
+        };
+        break;
+      case 'bottom-right':
+      default:
+        positionStyle = { 
+          bottom: `${totalOffset}rem`, 
+          right: `${offsetX}rem`,
+          top: 'auto',
+          left: 'auto'
+        };
+    }
+    
+    return positionStyle;
+  }, [config.position, isMobile]);
 
   if (loading) {
     return (
@@ -155,7 +204,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
       {isOpen && (
         <div 
           className={`fixed ${widgetWidth} h-[${widgetHeight}] max-h-[${widgetMaxHeight}] z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden`}
-          style={{...widgetStyle, ...getPositionStyles}}
+          style={{...widgetStyle, ...getWidgetContainerPositionStyles}}
         >
           <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden">
             {viewState === 'chat' ? (
@@ -190,7 +239,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
           {config.branding?.showBrandingBar !== false && <PoweredByBar />}
         </div>
       )}
-      <div className="fixed flex flex-col items-end" style={getPositionStyles}>
+      <div className="fixed flex flex-col items-end z-40" style={getLauncherPositionStyles}>
         <Button
           className="rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105"
           style={config.branding?.primaryColor ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor } : {}}
