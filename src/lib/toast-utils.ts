@@ -58,12 +58,15 @@ export const retryableToast = (
 ) => {
   const { onRetry, ...toastOptions } = options
   
-  // Create a proper ToastAction component for the retry button
-  const retryAction = (
-    <ToastAction altText="Retry" onClick={onRetry}>
-      Retry
-    </ToastAction>
-  ) as ToastActionElement
+  // Create a ToastAction element without using JSX in a .ts file
+  const retryAction = {
+    type: ToastAction,
+    props: {
+      altText: "Retry",
+      onClick: onRetry,
+      children: ["Retry"]
+    }
+  } as ToastActionElement
   
   return showToast('error', {
     ...toastOptions,
