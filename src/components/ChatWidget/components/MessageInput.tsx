@@ -120,7 +120,7 @@ const MessageInput = ({
   };
 
   return (
-    <div className="border-t p-4">
+    <div className="border-t border-gray-100 p-3 bg-white/80 backdrop-blur-sm">
       <div className="flex flex-col">
         {fileError && (
           <div className="mb-2 text-xs text-red-500 p-2 bg-red-50 rounded">
@@ -168,8 +168,8 @@ const MessageInput = ({
           </div>
         )}
         
-        <div className="flex items-center">
-          <label htmlFor="file-upload" className={`cursor-pointer p-2 ${disabled ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-100'} rounded-md`}>
+        <div className="flex items-center bg-white rounded-md shadow-sm border border-gray-200 focus-within:ring-1 focus-within:ring-vivid-purple focus-within:border-vivid-purple">
+          <label htmlFor="file-upload" className={`cursor-pointer p-2 ${disabled ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-50'} rounded-l-md transition-colors`}>
             <Paperclip size={18} className="text-gray-500" />
             <input 
               ref={fileInputRef}
@@ -182,14 +182,14 @@ const MessageInput = ({
             />
           </label>
           
-          <div className="relative flex-grow mx-2">
+          <div className="relative flex-grow">
             <Textarea 
               value={messageText}
               onChange={handleChange}
               onKeyDown={handleKeyPress}
               placeholder="Type a message..."
-              className={`flex-grow min-h-[44px] max-h-[120px] p-3 border rounded-md focus:outline-none resize-none pr-10 text-sm
-                ${isAtLimit ? 'border-red-500' : isNearLimit ? 'border-amber-500' : ''}`}
+              className={`min-h-[44px] max-h-[120px] p-2 border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none text-sm
+                ${isAtLimit ? 'text-red-500' : isNearLimit ? 'text-amber-600' : ''}`}
               rows={1}
               maxLength={MAX_CHARS}
               disabled={disabled}
@@ -199,10 +199,10 @@ const MessageInput = ({
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                   disabled={disabled}
                 >
-                  <Smile size={18} className="text-gray-500" />
+                  <Smile size={16} className="text-gray-500" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent side="top" align="end" className="w-auto p-0 border-none">
@@ -217,7 +217,7 @@ const MessageInput = ({
             </Popover>
             {charCount > 0 && (
               <div 
-                className={`absolute right-10 bottom-1 text-xs px-1.5 py-0.5 rounded-full
+                className={`absolute right-8 bottom-1 text-xs px-1.5 py-0.5 rounded-full
                   ${isAtLimit ? 'bg-red-100 text-red-700' : 
                   isNearLimit ? 'bg-amber-100 text-amber-700' : 
                   'bg-gray-100 text-gray-500'}`}
@@ -230,7 +230,8 @@ const MessageInput = ({
           <Button 
             onClick={handleSendMessage}
             disabled={!messageText.trim() || disabled}
-            className="h-auto rounded-md chat-widget-button p-2.5"
+            className="h-auto rounded-r-md chat-widget-button p-2 aspect-square"
+            variant={messageText.trim() ? "default" : "ghost"}
           >
             <Send size={18} />
           </Button>
@@ -242,7 +243,7 @@ const MessageInput = ({
               variant="outline" 
               size="sm" 
               onClick={handleEndChat}
-              className="text-xs text-gray-500"
+              className="text-xs text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
               disabled={disabled}
             >
               <X size={14} className="mr-1" /> End chat

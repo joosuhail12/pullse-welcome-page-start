@@ -130,6 +130,22 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
     return null;
   }, [showInlineForm, config, handleFormComplete]);
 
+  const renderPoweredBy = () => {
+    if (!config.branding?.showBrandingBar) return null;
+    
+    return (
+      <div className="border-t border-gray-100 py-2 px-3 bg-white/90 backdrop-blur-sm flex items-center justify-center gap-1 text-xs text-gray-500">
+        <span>Powered by</span>
+        <img 
+          src="https://framerusercontent.com/images/9N8Z1vTRbJsHlrIuTjm6Ajga4dI.png" 
+          alt="Pullse Logo" 
+          className="h-4 w-auto"
+        />
+        <span className="font-medium">Pullse</span>
+      </div>
+    );
+  };
+
   return (
     <div 
       className="flex flex-col h-[600px] bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 rounded-lg shadow-lg"
@@ -179,36 +195,40 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
       
       {inlineFormComponent}
       
-      {(!showInlineForm || conversation.contactIdentified) && (
-        <MessageList 
-          messages={messages}
-          isTyping={isTyping || remoteIsTyping}
+      <div className="flex flex-col flex-grow overflow-hidden">
+        {(!showInlineForm || conversation.contactIdentified) && (
+          <MessageList 
+            messages={messages}
+            isTyping={isTyping || remoteIsTyping}
+            setMessageText={setMessageText}
+            readReceipts={readReceipts}
+            onMessageReaction={onMessageReaction}
+            searchResults={messageIds}
+            highlightMessage={highlightText}
+            searchTerm={searchTerm}
+            agentAvatar={agentAvatar}
+            userAvatar={userAvatar}
+            onScrollTop={handleLoadMoreMessages}
+            hasMoreMessages={hasMoreMessages}
+            isLoadingMore={isLoadingMore}
+            conversationId={conversation.id}
+            agentStatus={conversation.agentInfo?.status}
+          />
+        )}
+        
+        <MessageInput
+          messageText={messageText}
           setMessageText={setMessageText}
-          readReceipts={readReceipts}
-          onMessageReaction={onMessageReaction}
-          searchResults={messageIds}
-          highlightMessage={highlightText}
-          searchTerm={searchTerm}
-          agentAvatar={agentAvatar}
-          userAvatar={userAvatar}
-          onScrollTop={handleLoadMoreMessages}
-          hasMoreMessages={hasMoreMessages}
-          isLoadingMore={isLoadingMore}
-          conversationId={conversation.id}
-          agentStatus={conversation.agentInfo?.status}
+          handleSendMessage={handleSendMessage}
+          handleFileUpload={handleFileUpload}
+          handleEndChat={handleEndChat}
+          hasUserSentMessage={isTyping}
+          onTyping={handleUserTyping}
+          disabled={showInlineForm}
         />
-      )}
-      
-      <MessageInput
-        messageText={messageText}
-        setMessageText={setMessageText}
-        handleSendMessage={handleSendMessage}
-        handleFileUpload={handleFileUpload}
-        handleEndChat={handleEndChat}
-        hasUserSentMessage={isTyping}
-        onTyping={handleUserTyping}
-        disabled={showInlineForm}
-      />
+        
+        {renderPoweredBy()}
+      </div>
     </div>
   );
 };
