@@ -2,6 +2,7 @@
 import { toast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import { ToastActionElement } from "@/components/ui/toast"
+import * as React from "react"
 
 type ToastType = 'info' | 'success' | 'warning' | 'error'
 
@@ -58,15 +59,15 @@ export const retryableToast = (
 ) => {
   const { onRetry, ...toastOptions } = options
   
-  // Create a ToastAction element without using JSX in a .ts file
-  const retryAction = {
-    type: ToastAction,
-    props: {
+  // Create the action element for the toast
+  const retryAction = React.createElement(
+    ToastAction,
+    {
       altText: "Retry",
       onClick: onRetry,
-      children: ["Retry"]
+      children: "Retry"
     }
-  } as ToastActionElement
+  ) as unknown as ToastActionElement
   
   return showToast('error', {
     ...toastOptions,
