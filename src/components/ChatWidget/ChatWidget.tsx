@@ -12,6 +12,7 @@ import EnhancedLoadingIndicator from './components/EnhancedLoadingIndicator';
 import ChatWidgetErrorBoundary from './components/ChatWidgetErrorBoundary';
 import ConnectionManager from './components/ConnectionManager';
 import { ConnectionStatus } from './utils/reconnectionManager';
+import ChatKeyboardHandler from './components/ChatKeyboardHandler';
 
 export interface ChatWidgetProps {
   workspaceId: string;
@@ -54,6 +55,19 @@ const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
       }
     }, isMobile ? 50 : 0);
   }, [isOpen, clearUnreadMessages, isMobile]);
+  
+  // Global keyboard shortcut to toggle chat widget open/close with Alt+C
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === 'c') {
+        e.preventDefault();
+        toggleChat();
+      }
+    };
+    
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [toggleChat]);
 
   if (loading) {
     return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles} config={config} />;

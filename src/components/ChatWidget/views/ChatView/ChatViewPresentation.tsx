@@ -87,6 +87,14 @@ const ChatViewPresentation = ({
 }: ChatViewPresentationProps) => {
   const isMobile = useIsMobile();
 
+  // Function to scroll to bottom - will be passed to keyboard handler
+  const scrollToBottom = () => {
+    const lastMessage = document.getElementById(`message-${messages[messages.length - 1]?.id}`);
+    if (lastMessage) {
+      lastMessage.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   // Helper function to adapt highlightText for use in ChatBody
   const adaptHighlightTextForChatBody = (text: string): string[] => {
     // Just return the text as an array with one element
@@ -107,6 +115,15 @@ const ChatViewPresentation = ({
     }
     return null;
   }, [showInlineForm, config, handleFormComplete]);
+  
+  // Custom keyboard shortcuts for this view
+  const customShortcuts = [
+    { key: 'Alt + /', description: 'Search messages', category: 'search' },
+    { key: 'Alt + Enter', description: 'Send message', category: 'messages' },
+    { key: 'Alt + End', description: 'Go to latest messages', category: 'navigation' },
+    { key: 'Alt + Home', description: 'Load older messages', category: 'navigation' },
+    { key: 'Esc', description: 'Close search/popups', category: 'general' },
+  ];
 
   return (
     <div className="h-full flex flex-col" style={chatViewStyle}>
@@ -116,6 +133,8 @@ const ChatViewPresentation = ({
         messageText={messageText}
         showSearch={showSearch}
         showSearchFeature={showSearchFeature}
+        scrollToBottom={scrollToBottom}
+        loadOlderMessages={hasMoreMessages ? handleLoadMoreMessages : undefined}
       >
         <ChatViewHeader
           conversation={conversation}
@@ -127,6 +146,7 @@ const ChatViewPresentation = ({
           searchResultCount={searchResultCount}
           isSearching={isSearching}
           showSearchFeature={showSearchFeature}
+          ticketProgress={ticketProgress}
         />
 
         <ChatBody
@@ -154,6 +174,7 @@ const ChatViewPresentation = ({
           conversationId={conversation.id}
           agentStatus={conversation.agentInfo?.status}
           onToggleHighlight={onToggleMessageImportance}
+          typingDuration={isTyping ? 3000 : 0} // Add smart typing duration
         />
       </ChatKeyboardHandler>
 
@@ -162,7 +183,13 @@ const ChatViewPresentation = ({
         <PoweredByBar />
       )}
 
-      {isMobile && <KeyboardShortcutsInfo />}
+      {/* Enhanced keyboard shortcuts with customizable shortcuts */}
+      <div className="absolute bottom-16 right-2">
+        <KeyboardShortcutsInfo 
+          shortcuts={customShortcuts}
+          compact={true}
+        />
+      </div>
     </div>
   );
 };
