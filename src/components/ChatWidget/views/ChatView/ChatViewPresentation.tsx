@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Conversation } from '../../types';
+import { Conversation, Message } from '../../types';
 import { ChatWidgetConfig } from '../../config';
 import ChatViewHeader from '../../components/ChatViewHeader';
 import PreChatForm from '../../components/PreChatForm';
@@ -7,6 +7,7 @@ import KeyboardShortcutsInfo from '../../components/KeyboardShortcutsInfo';
 import ChatKeyboardHandler from '../../components/ChatKeyboardHandler';
 import ChatBody from '../../components/ChatBody';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { MessageReadStatus } from '../../components/MessageReadReceipt';
 
 interface ChatViewPresentationProps {
   conversation: Conversation;
@@ -24,7 +25,7 @@ interface ChatViewPresentationProps {
   onBack: () => void;
   showSearch: boolean;
   toggleSearch: () => void;
-  searchMessages: (term: string) => void;
+  searchMessages: Message[];
   clearSearch: () => void;
   searchResultCount: number;
   isSearching: boolean;
@@ -34,23 +35,18 @@ interface ChatViewPresentationProps {
   searchTerm: string;
   agentAvatar?: string;
   userAvatar?: string;
-  onMessageReaction?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
+  onMessageReaction?: (messageId: string, reaction: string) => void;
   handleLoadMoreMessages: () => Promise<void>;
   hasMoreMessages: boolean;
   isLoadingMore: boolean;
   showInlineForm: boolean;
   handleFormComplete: (formData: Record<string, string>) => void;
   config: ChatWidgetConfig;
-  onToggleMessageImportance?: (messageId: string) => void;
-  ticketProgress?: number;
+  onToggleMessageImportance: (messageId: string) => void;
+  ticketProgress: number;
 }
 
-/**
- * Presentational component that renders the UI for the chat view
- * This component doesn't contain any logic, it just renders the UI
- * based on the props it receives
- */
-const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({ 
+const ChatViewPresentation = ({
   conversation,
   chatViewStyle,
   messages,
@@ -84,56 +80,41 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
   handleFormComplete,
   config,
   onToggleMessageImportance,
-  ticketProgress = 50
-}) => {
+  ticketProgress,
+}: ChatViewPresentationProps) => {
   const isMobile = useIsMobile();
-  
-  // Calculate height dynamically based on screen size
-  const chatViewHeight = isMobile 
-    ? "h-[90vh] max-h-[90vh]" 
-    : "h-[600px] max-h-[85vh]";
-  
+
   const inlineFormComponent = useMemo(() => {
-    if (showInlineForm) {
+    if (showInlineForm && config?.preChatForm?.fields && config.preChatForm.fields.length > 0) {
       return (
-        <div className="mb-2 sm:mb-4 px-2 sm:px-4">
-          <PreChatForm config={config} onFormComplete={handleFormComplete} />
+        <div className="absolute inset-0 bg-white z-50">
+          <PreChatForm
+            fields={config.preChatForm.fields}
+            onFormComplete={handleFormComplete}
+          />
         </div>
       );
     }
     return null;
-  }, [showInlineForm, config, handleFormComplete]);
+  }, [showInlineForm, config?.preChatForm, handleFormComplete]);
 
   return (
-    <ChatKeyboardHandler
-      messageText={messageText}
-      handleSendMessage={handleSendMessage}
-      toggleSearch={toggleSearch}
-      showSearch={showSearch}
-      showSearchFeature={showSearchFeature}
-    >
-      <div 
-        className={`flex flex-col w-full ${chatViewHeight} bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 rounded-lg shadow-lg`}
-        style={chatViewStyle}
-        role="region" 
-        aria-label="Chat conversation"
+    <div className="h-full flex flex-col" style={chatViewStyle}>
+      <ChatKeyboardHandler
+        handleSendMessage={handleSendMessage}
+        toggleSearch={toggleSearch}
       >
-        <ChatViewHeader 
-          conversation={conversation} 
+        <ChatViewHeader
+          conversation={conversation}
           onBack={onBack}
           showSearch={showSearch}
           toggleSearch={toggleSearch}
-          searchMessages={searchMessages}
-          clearSearch={clearSearch}
           searchResultCount={searchResultCount}
           isSearching={isSearching}
           showSearchFeature={showSearchFeature}
-          ticketProgress={ticketProgress}
         />
-        
-        <KeyboardShortcutsInfo />
-        
-        <ChatBody 
+
+        <ChatBody
           messages={messages}
           messageText={messageText}
           setMessageText={setMessageText}
@@ -159,8 +140,26 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
           agentStatus={conversation.agentInfo?.status}
           onToggleHighlight={onToggleMessageImportance}
         />
-      </div>
-    </ChatKeyboardHandler>
+
+        <MessageInput
+          messageText={messageText}
+          setMessageText={setMessageText}
+          isTyping={isTyping}
+          handleSendMessage={handleSendMessage}
+          handleUserTyping={handleUserTyping}
+          handleFileUpload={handleFileUpload}
+          config={config}
+        />
+      </ChatKeyboardHandler>
+
+      {config?.branding?.poweredBy && (
+        <PoweredByBar
+          config={config}
+        />
+      )}
+
+      {isMobile && <KeyboardShortcutsInfo />}
+    </div>
   );
 };
 

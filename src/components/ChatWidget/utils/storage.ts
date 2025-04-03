@@ -3,7 +3,7 @@
  */
 import { Conversation } from '../types';
 import { getChatSessionId } from './cookies';
-import { encryptData, decryptData } from './security';
+import { encrypt as encryptData, decrypt as decryptData } from './security';
 
 const STORAGE_KEY = 'chat_widget_conversations';
 const MAX_STORED_CONVERSATIONS = 30;

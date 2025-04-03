@@ -1,10 +1,35 @@
-
 import Ably from 'ably';
-import { getAblyClient, setAblyClient, setFallbackMode, isInFallbackMode } from './config';
-import { dispatchValidatedEvent } from '../../embed/enhancedEvents';
-import { ChatEventType } from '../../config';
-import { processQueuedMessages } from './messaging';
-import { EventPriority } from '../../embed/enhancedEvents';
+import { v4 as uuidv4 } from 'uuid';
+import { getChatSessionId } from '../cookies';
+import { dispatchChatEvent } from '../events';
+import { getAuthSignature } from '../../services/ablyAuth';
+import { ChatEventType, ChatEvent } from '../../types';
+import { getAgentResponse } from '../simulateAgentTyping';
+
+// Function to get Ably client configuration
+export function getAblyClientConfig(apiKey?: string, userToken?: string): Ably.Types.ClientOptions {
+  // Check if we have an API key first
+  if (apiKey) {
+    return { key: apiKey };
+  }
+
+  // Otherwise, use token auth
+  return {
+    authUrl: '/api/ably/auth',
+    authMethod: 'POST',
+    authHeaders: { 'Content-Type': 'application/json' },
+    disconnectedRetryTimeout: 15000,
+    suspendedRetryTimeout: 30000,
+    transports: ['websocket', 'xhr'] as Ably.Types.Transport[],
+    fallbackHosts: [
+      'a.ably-realtime.com',
+      'b.ably-realtime.com',
+      'c.ably-realtime.com',
+      'd.ably-realtime.com',
+      'e.ably-realtime.com'
+    ]
+  };
+}
 
 /**
  * Initialize Ably client with token auth
@@ -277,5 +302,50 @@ export const cleanupAbly = (): void => {
     setPendingMessages([]);
   } catch (error) {
     console.error('Error cleaning up Ably:', error);
+  }
+};
+
+export const handleConnectionStateChange = (
+  state: Ably.Types.ConnectionStateChange,
+  realtimeClient: Ably.Realtime,
+  pendingMessages: Array<{ channelName: string; event: string; data: any }>,
+  setPendingMessages: React.Dispatch<React.SetStateAction<Array<{ channelName: string; event: string; data: any }>>>
+) => {
+  // Handle connection state changes
+  switch (state.state) {
+    case 'connected':
+      console.log('Ably connection established');
+      setFallbackMode(false);
+      dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'connected' }, EventPriority.HIGH);
+      processQueuedMessages();
+      break;
+    case 'disconnected':
+      console.warn('Ably connection disconnected, attempting to reconnect');
+      dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'disconnected' }, EventPriority.HIGH);
+      break;
+    case 'suspended':
+      console.warn('Ably connection suspended (multiple reconnection attempts failed)');
+      dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'suspended' }, EventPriority.HIGH);
+      
+      // After being suspended for 30 seconds, enable fallback mode
+      setTimeout(() => {
+        const client = getAblyClient();
+        if (client && client.connection.state === 'suspended') {
+          enableLocalFallback();
+        }
+      }, 30000);
+      break;
+    case 'failed':
+      console.error('Ably connection failed permanently:', state.error?.reason);
+      dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { 
+        status: 'failed', 
+        error: state.error?.reason || 'Connection failed' 
+      }, EventPriority.HIGH);
+      enableLocalFallback();
+      break;
+    case 'closed':
+      console.log('Ably connection closed');
+      dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'closed' }, EventPriority.HIGH);
+      break;
   }
 };

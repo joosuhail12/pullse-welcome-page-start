@@ -1,47 +1,50 @@
 
 import React from 'react';
-import { ThumbsUp, ThumbsDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Smile, ThumbsUp, ThumbsDown, Heart } from 'lucide-react';
 
-interface MessageReactionButtonsProps {
-  messageId: string;
-  currentReaction?: 'thumbsUp' | 'thumbsDown' | null;
-  onReact: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
-  animate?: boolean;
+export interface MessageReactionButtonsProps {
+  onReact?: (emoji: string) => void;
+  onClose: () => void;
 }
 
-const MessageReactionButtons = ({
-  messageId,
-  currentReaction,
-  onReact,
-  animate = false
-}: MessageReactionButtonsProps) => {
+const MessageReactionButtons = ({ onReact, onClose }: MessageReactionButtonsProps) => {
+  // Alias onReaction to onReact for backward compatibility
+  const handleReaction = (emoji: string) => {
+    if (onReact) {
+      onReact(emoji);
+    }
+  };
+
   return (
-    <div className="flex gap-2 mt-1.5">
-      <Button
-        variant="ghost"
-        size="sm"
-        className={`p-1 h-auto transition-all ${currentReaction === 'thumbsUp' ? 'bg-green-100' : ''} ${currentReaction === 'thumbsUp' && animate ? 'reaction-selected' : ''}`}
-        onClick={() => onReact(messageId, 'thumbsUp')}
+    <div className="absolute -top-10 left-0 bg-white rounded-full shadow-lg p-1 flex items-center gap-1 z-10 animate-fade-in">
+      <button 
+        onClick={() => handleReaction('👍')} 
+        className="p-1.5 hover:bg-gray-100 rounded-full"
         aria-label="Thumbs up"
       >
-        <ThumbsUp 
-          size={14} 
-          className={`transition-colors ${currentReaction === 'thumbsUp' ? 'text-green-600' : 'text-gray-500'}`} 
-        />
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        className={`p-1 h-auto transition-all ${currentReaction === 'thumbsDown' ? 'bg-red-100' : ''} ${currentReaction === 'thumbsDown' && animate ? 'reaction-selected' : ''}`}
-        onClick={() => onReact(messageId, 'thumbsDown')}
+        <ThumbsUp size={14} />
+      </button>
+      <button 
+        onClick={() => handleReaction('👎')} 
+        className="p-1.5 hover:bg-gray-100 rounded-full"
         aria-label="Thumbs down"
       >
-        <ThumbsDown 
-          size={14} 
-          className={`transition-colors ${currentReaction === 'thumbsDown' ? 'text-red-600' : 'text-gray-500'}`} 
-        />
-      </Button>
+        <ThumbsDown size={14} />
+      </button>
+      <button 
+        onClick={() => handleReaction('❤️')} 
+        className="p-1.5 hover:bg-gray-100 rounded-full"
+        aria-label="Heart"
+      >
+        <Heart size={14} />
+      </button>
+      <button 
+        onClick={() => handleReaction('😀')} 
+        className="p-1.5 hover:bg-gray-100 rounded-full"
+        aria-label="Smile"
+      >
+        <Smile size={14} />
+      </button>
     </div>
   );
 };

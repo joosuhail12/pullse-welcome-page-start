@@ -4,6 +4,7 @@ import { Message } from '../types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import PoweredByBar from './PoweredByBar';
+import { MessageReadStatus } from './MessageReadReceipt';
 
 interface ChatBodyProps {
   messages: Message[];
@@ -15,11 +16,11 @@ interface ChatBodyProps {
   handleUserTyping: () => void;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
-  readReceipts: Record<string, Date>;
-  onMessageReaction?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
+  readReceipts: Record<string, Date>;  // Updated to match expected type
+  onMessageReaction?: (messageId: string, reaction: string) => void;
   searchTerm: string;
   messageIds: string[];
-  highlightText: (text: string, term: string) => { text: string; highlighted: boolean }[];
+  highlightText: (text: string, term: string) => { text: string; highlighted: boolean }[];  // Updated to match function signature
   agentAvatar?: string;
   userAvatar?: string;
   handleLoadMoreMessages: () => Promise<void>;

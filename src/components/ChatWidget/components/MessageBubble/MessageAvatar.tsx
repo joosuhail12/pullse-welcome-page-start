@@ -1,60 +1,49 @@
 
 import React from 'react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { User } from 'lucide-react';
-import { AgentStatus } from '../../types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { User, Bot } from 'lucide-react';
 
-interface MessageAvatarProps {
-  sender?: 'user' | 'system' | 'status';
-  avatarUrl?: string;
-  isUserMessage?: boolean;
+export interface MessageAvatarProps {
+  isUserMessage: boolean;
   userAvatar?: string;
   agentAvatar?: string;
-  isRight?: boolean;
-  status?: AgentStatus;
+  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
 }
 
 const MessageAvatar = ({ 
-  sender, 
-  avatarUrl, 
   isUserMessage, 
-  userAvatar,
+  userAvatar, 
   agentAvatar,
-  isRight = false, 
-  status 
+  agentStatus 
 }: MessageAvatarProps) => {
-  // Support both old and new API
-  const effectiveSender = sender || (isUserMessage ? 'user' : 'system');
-  const effectiveAvatarUrl = avatarUrl || (effectiveSender === 'user' ? userAvatar : agentAvatar);
-  
-  const hasAvatar = !!effectiveAvatarUrl;
-  const initials = effectiveSender === 'system' ? 'AI' : 'U';
-  const avatarClass = effectiveSender === 'system' ? 'bg-vivid-purple/20 text-vivid-purple' : 'bg-gray-200 text-gray-700';
-  
-  // Status indicator colors
-  const statusColors = {
-    online: 'bg-green-500',
-    offline: 'bg-gray-400',
-    away: 'bg-yellow-500',
-    busy: 'bg-red-500'
+  // Determine status indicator color
+  const getStatusColor = () => {
+    switch (agentStatus) {
+      case 'online': return 'bg-green-500';
+      case 'away': return 'bg-yellow-500';
+      case 'busy': return 'bg-red-500';
+      case 'offline': return 'bg-gray-500';
+      default: return 'bg-gray-500';
+    }
   };
-  
-  const statusColor = status ? statusColors[status] : null;
-  
+
   return (
-    <div className={`flex-shrink-0 relative ${isRight ? 'order-last ml-2' : 'mr-2'}`}>
-      <Avatar className="h-8 w-8 rounded-full border border-white/10">
-        {hasAvatar && <AvatarImage src={effectiveAvatarUrl} alt={effectiveSender} className="rounded-full" />}
-        <AvatarFallback className={`${avatarClass} rounded-full`}>
-          <User size={14} />
+    <div className={`relative flex-shrink-0 ${isUserMessage ? 'ml-2' : 'mr-2'}`}>
+      <Avatar className="h-8 w-8 border border-gray-200">
+        <AvatarImage 
+          src={isUserMessage ? userAvatar : agentAvatar} 
+          alt={isUserMessage ? "User" : "Agent"}
+        />
+        <AvatarFallback className="bg-gray-100">
+          {isUserMessage ? <User size={15} className="text-gray-500" /> : <Bot size={15} className="text-gray-500" />}
         </AvatarFallback>
       </Avatar>
       
-      {/* Status indicator */}
-      {statusColor && (
+      {/* Status indicator for agent avatar */}
+      {!isUserMessage && agentStatus && (
         <span 
-          className={`absolute bottom-0 ${isRight ? 'left-0' : 'right-0'} w-2.5 h-2.5 ${statusColor} rounded-full ring-1 ring-white`}
-          aria-label={`Status: ${status}`}
+          className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${getStatusColor()}`}
+          title={`Agent is ${agentStatus}`}
         />
       )}
     </div>

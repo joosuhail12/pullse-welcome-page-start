@@ -1,6 +1,7 @@
 
-import { toast } from "@/hooks/use-toast"
+import { toast, type Toast } from "@/hooks/use-toast"
 import { createElement } from "react"
+import { ToastActionElement, ToasterToast } from "@/components/ui/toast"
 
 type ToastType = 'info' | 'success' | 'warning' | 'error'
 
@@ -8,7 +9,7 @@ interface ToastOptions {
   title?: string
   description?: string
   duration?: number
-  action?: React.ReactNode
+  action?: ToastActionElement
   variant?: 'default' | 'destructive' | 'warning'
   dismissible?: boolean
 }
@@ -69,13 +70,13 @@ export const retryableToast = (
       className: "bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2 py-1 rounded text-xs",
       onClick: () => {
         // Dismiss the current toast
-        toast.dismiss()
+        toast.dismiss?.()
         // Execute the retry action
         onRetry()
       }
     },
     'Retry'
-  )
+  ) as ToastActionElement
   
   return showToast('error', {
     ...toastOptions,

@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Conversation } from '../../types';
 import { ChatWidgetConfig, defaultConfig } from '../../config';
@@ -7,6 +8,7 @@ import { useMessageSearch } from '../../hooks/useMessageSearch';
 import { useInlineForm } from '../../hooks/useInlineForm';
 import { dispatchChatEvent } from '../../utils/events';
 import ChatViewPresentation from './ChatViewPresentation';
+import { MessageReadReceipt } from '../../components/MessageReadReceipt';
 
 interface ChatViewContainerProps {
   conversation: Conversation;
@@ -37,11 +39,12 @@ const ChatViewContainer = ({
   const [ticketProgress, setTicketProgress] = useState(
     conversation.metadata?.ticketProgress || Math.floor(Math.random() * 100)
   );
+  const [showInlineForm, setShowInlineForm] = useState(false);
 
   // Use the new inline form hook
   const {
-    showInlineForm,
-    handleFormComplete
+    showInlineForm: inlineFormVisible,
+    handleFormComplete: inlineFormComplete
   } = useInlineForm(
     conversation,
     config,
@@ -49,6 +52,10 @@ const ChatViewContainer = ({
     setUserFormData,
     onUpdateConversation
   );
+
+  useEffect(() => {
+    setShowInlineForm(inlineFormVisible);
+  }, [inlineFormVisible]);
 
   const {
     messages,
@@ -174,6 +181,18 @@ const ChatViewContainer = ({
     };
   }, [config?.branding?.primaryColor]);
 
+  // Convert readReceipts to the format expected by ChatViewPresentation
+  const formattedReadReceipts = useMemo(() => {
+    if (!readReceipts) return {};
+    const result: Record<string, Date> = {};
+    Object.entries(readReceipts).forEach(([id, receipt]) => {
+      if (receipt.timestamp) {
+        result[id] = receipt.timestamp;
+      }
+    });
+    return result;
+  }, [readReceipts]);
+
   return (
     <ChatViewPresentation 
       conversation={conversation}
@@ -187,7 +206,7 @@ const ChatViewContainer = ({
       handleUserTyping={handleUserTyping}
       handleFileUpload={handleFileUpload}
       handleEndChat={handleEndChat}
-      readReceipts={readReceipts}
+      readReceipts={formattedReadReceipts}
       onBack={onBack}
       showSearch={showSearch}
       toggleSearch={toggleSearch}

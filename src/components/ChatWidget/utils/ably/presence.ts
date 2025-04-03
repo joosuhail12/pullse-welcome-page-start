@@ -1,79 +1,70 @@
-
 import Ably from 'ably';
-import { getAblyClient, isInFallbackMode } from './config';
+import { v4 as uuidv4 } from 'uuid';
+import { getChatSessionId } from '../cookies';
 
-/**
- * Get presence data for a channel
- * @param channelName Channel name to get presence for
- * @returns Promise resolving to presence data
- */
-export const getPresence = async (channelName: string): Promise<Ably.Types.PresenceMessage[]> => {
-  const client = getAblyClient();
-  if (!client || isInFallbackMode()) {
-    console.warn('Ably client not initialized or in fallback mode, returning empty presence data');
-    return [];
-  }
-  
+// Function to generate a unique presence ID
+export const generatePresenceId = (): string => {
+  return uuidv4();
+};
+
+// Function to enter presence on a channel
+export const enterPresence = async (channel: Ably.Types.RealtimeChannel, clientId: string, data?: any): Promise<void> => {
   try {
-    const channel = client.channels.get(channelName);
-    return new Promise<Ably.Types.PresenceMessage[]>((resolve) => {
-      channel.presence.get((err, members) => {
-        if (err) {
-          console.error(`Error getting presence for channel ${channelName}:`, err);
-          resolve([]);
-        } else {
-          resolve(members || []);
-        }
-      });
-    });
+    await channel.presence.enterClient(clientId, data);
+    console.log(`Entered presence on channel ${channel.name} with clientId ${clientId}`);
   } catch (error) {
-    console.error(`Error getting presence for channel ${channelName}:`, error);
+    console.error(`Failed to enter presence on channel ${channel.name}:`, error);
+    throw error;
+  }
+};
+
+// Function to leave presence on a channel
+export const leavePresence = async (channel: Ably.Types.RealtimeChannel, clientId: string): Promise<void> => {
+  try {
+    await channel.presence.leaveClient(clientId);
+    console.log(`Left presence on channel ${channel.name} with clientId ${clientId}`);
+  } catch (error) {
+    console.error(`Failed to leave presence on channel ${channel.name}:`, error);
+    throw error;
+  }
+};
+
+// Function to get the current presence members on a channel
+export const getPresence = async (channel: Ably.Types.RealtimeChannel): Promise<Ably.Types.PresenceMessage[]> => {
+  try {
+    const presence = await channel.presence.get();
+    console.log(`Current presence members on channel ${channel.name}:`, presence);
+    return presence;
+  } catch (error) {
+    console.error(`Failed to get presence on channel ${channel.name}:`, error);
     return [];
   }
 };
 
-/**
- * Subscribe to presence events on a channel
- * @param channelName Channel name to subscribe to presence for
- * @param callback Callback to run when presence changes
- */
-export const subscribeToPresence = (
-  channelName: string,
-  callback: (presenceData: Ably.Types.PresenceMessage[]) => void
-): void => {
-  const client = getAblyClient();
-  if (!client || isInFallbackMode()) {
-    console.warn('Ably client not initialized or in fallback mode, presence subscription skipped');
-    return;
-  }
-  
-  try {
-    const channel = client.channels.get(channelName);
-    
-    const updateCallback = () => {
-      // Use our async wrapper for presence.get
-      getPresence(channelName).then(callback);
-    };
-    
-    // Initial presence data
-    updateCallback();
-    
-    // Subscribe to presence events
-    channel.presence.subscribe('enter', updateCallback);
-    channel.presence.subscribe('leave', updateCallback);
-    channel.presence.subscribe('update', updateCallback);
-    
-    // Set up recovery for presence failures
-    if (typeof channel.presence.on === 'function') {
-      channel.presence.on('error', (err) => {
-        console.error(`Presence error on channel ${channelName}:`, err);
-        setTimeout(updateCallback, 3000);
-      });
-    } else {
-      console.warn('Presence on method not available');
+// Fix presence event registration
+export const registerPresenceHandlers = (
+  channel: Ably.Types.RealtimeChannel,
+  onPresenceJoin?: (member: Ably.Types.PresenceMessage) => void,
+  onPresenceLeave?: (member: Ably.Types.PresenceMessage) => void,
+  onPresenceUpdate?: (member: Ably.Types.PresenceMessage) => void
+) => {
+  if (channel && channel.presence) {
+    if (onPresenceJoin) {
+      channel.presence.subscribe('enter', onPresenceJoin);
     }
-    
-  } catch (error) {
-    console.error(`Error subscribing to presence for channel ${channelName}:`, error);
+    if (onPresenceLeave) {
+      channel.presence.subscribe('leave', onPresenceLeave);
+    }
+    if (onPresenceUpdate) {
+      channel.presence.subscribe('update', onPresenceUpdate);
+    }
+  }
+};
+
+// Function to clear all presence subscriptions
+export const clearPresenceHandlers = (channel: Ably.Types.RealtimeChannel) => {
+  if (channel && channel.presence) {
+    channel.presence.unsubscribe();
+    console.log(`Cleared all presence subscriptions on channel ${channel.name}`);
   }
 };
