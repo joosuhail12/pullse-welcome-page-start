@@ -174,10 +174,10 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
       console.log(`Using default config for workspace ${sanitizedWorkspaceId} in development mode`);
       const defaultDevConfig = getDefaultConfig(sanitizedWorkspaceId);
       
-      // Ensure position.placement is a valid ChatPosition
+      // Ensure position.placement is a valid ChatPositionString
       const placementFromDefault = isValidChatPosition(defaultDevConfig.position?.placement || 'bottom-right') 
-        ? (defaultDevConfig.position?.placement as ChatPosition) 
-        : ('bottom-right' as ChatPosition);
+        ? (defaultDevConfig.position?.placement as ChatPositionString) 
+        : ('bottom-right' as ChatPositionString);
       
       const devConfig: ChatWidgetConfig = {
         ...defaultConfig,
@@ -198,10 +198,10 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
       console.warn('Config API circuit is open, using default config');
       const defaultFallbackConfig = getDefaultConfig(sanitizedWorkspaceId);
       
-      // Ensure position.placement is a valid ChatPosition
+      // Ensure position.placement is a valid ChatPositionString
       const placementFromFallback = isValidChatPosition(defaultFallbackConfig.position?.placement || 'bottom-right')
-        ? (defaultFallbackConfig.position?.placement as ChatPosition)
-        : ('bottom-right' as ChatPosition);
+        ? (defaultFallbackConfig.position?.placement as ChatPositionString)
+        : ('bottom-right' as ChatPositionString);
       
       const fallbackConfig: ChatWidgetConfig = {
         ...defaultConfig,
@@ -308,10 +308,10 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
     
     const defaultFallbackConfig = getDefaultConfig(sanitizeInput(workspaceId));
       
-    // Ensure position.placement is a valid ChatPosition
+    // Ensure position.placement is a valid ChatPositionString
     const placementFromFallback = isValidChatPosition(defaultFallbackConfig.position?.placement || 'bottom-right')
-      ? (defaultFallbackConfig.position?.placement as ChatPosition)
-      : ('bottom-right' as ChatPosition);
+      ? (defaultFallbackConfig.position?.placement as ChatPositionString)
+      : ('bottom-right' as ChatPositionString);
       
     const fallbackConfig: ChatWidgetConfig = {
       ...defaultConfig,

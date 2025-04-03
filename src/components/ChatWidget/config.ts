@@ -30,6 +30,13 @@ export type ChatBranding = {
   showBrandingBar?: boolean;
 };
 
+// Export ChatPosition type as a union of ChatPositionString or the placement object
+export type ChatPosition = ChatPositionString | {
+  placement: ChatPositionString;
+  offsetX?: number;
+  offsetY?: number;
+};
+
 export interface ChatWidgetConfig {
   workspaceId?: string;
   branding?: ChatBranding;
