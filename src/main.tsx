@@ -1,10 +1,12 @@
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import PullseChatWidgetLoader from './components/ChatWidget/embed';
+import PullseChatWidgetLoader, { ChatEventType, ChatEventPayload } from './components/ChatWidget/embed';
 import { initializeEmbedSecurity } from './components/ChatWidget/utils/embedSecurity';
 import { errorHandler } from '@/lib/error-handler';
+import { PullseChatWidgetOptions } from './components/ChatWidget/embed/types';
 
 // Create PullseNamespace to contain all global functions and variables
 const PullseNamespace = {
@@ -93,7 +95,12 @@ if (document.currentScript &&
 }
 
 // Export the widget loader for direct imports
-export { PullseChatWidgetLoader as default };
+export { 
+  PullseChatWidgetLoader as default,
+  ChatEventType,
+  ChatEventPayload, 
+  PullseChatWidgetOptions 
+};
 
 // Add the PullseNamespace to window for global access, but avoid polluting global scope
 (window as any).PullseSDK = PullseNamespace;

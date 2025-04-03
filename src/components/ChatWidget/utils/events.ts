@@ -38,6 +38,11 @@ export function dispatchChatEvent(
       console.error('Error in chat widget onEvent callback:', error);
     }
   }
+  
+  // Also dispatch to global instance if available
+  if ((window as any).__PULLSE_CHAT_INSTANCE__?.eventManager?.handleEvent) {
+    (window as any).__PULLSE_CHAT_INSTANCE__.eventManager.handleEvent(payload);
+  }
 }
 
 /**
@@ -65,7 +70,12 @@ export function subscribeToChatEvent(
       'pullse:chat:messageReceived',
       'pullse:contact:initiatedChat',
       'pullse:contact:formCompleted',
-      'pullse:message:reacted'
+      'pullse:message:reacted',
+      'pullse:user:updated',
+      'pullse:notifications:cleared',
+      'pullse:error',
+      'pullse:ready',
+      'pullse:config:updated'
     ];
     
     allEvents.forEach(event => {
@@ -98,4 +108,29 @@ export function registerGlobalEventHandler(
   callback: (payload: ChatEventPayload) => void
 ): () => void {
   return subscribeToChatEvent('all', callback);
+}
+
+/**
+ * Programmatically trigger a chat event
+ * This can be used by the API to simulate events
+ */
+export function triggerChatEvent(
+  eventType: ChatEventType,
+  data?: any
+): void {
+  // Create event payload
+  const payload: ChatEventPayload = {
+    type: eventType,
+    timestamp: new Date(),
+    data
+  };
+  
+  // Dispatch window CustomEvent
+  window.dispatchEvent(
+    new CustomEvent('pullse:' + eventType, {
+      detail: payload,
+      bubbles: true,
+      cancelable: true
+    })
+  );
 }

@@ -48,8 +48,71 @@
       var callback = args.length >= 2 ? args[1] : undefined;
       
       unregisterEventHandler(eventType, callback);
+    } else if (command === 'open') {
+      // Open chat widget
+      if (w.Pullse.chatAPI && w.Pullse.chatAPI.open) {
+        w.Pullse.chatAPI.open();
+      } else {
+        pullseChatQueue.push(['open']);
+        if (!initialized) {
+          initChatWidget({});
+        }
+      }
+    } else if (command === 'close') {
+      // Close chat widget
+      if (w.Pullse.chatAPI && w.Pullse.chatAPI.close) {
+        w.Pullse.chatAPI.close();
+      } else {
+        pullseChatQueue.push(['close']);
+      }
+    } else if (command === 'toggle') {
+      // Toggle chat widget
+      if (w.Pullse.chatAPI && w.Pullse.chatAPI.toggle) {
+        w.Pullse.chatAPI.toggle();
+      } else {
+        pullseChatQueue.push(['toggle']);
+      }
+    } else if (command === 'setUser' && args.length >= 1) {
+      // Set user data
+      if (w.Pullse.chatAPI && w.Pullse.chatAPI.setUserData) {
+        w.Pullse.chatAPI.setUserData(args[0]);
+      } else {
+        pullseChatQueue.push(['setUserData', args[0]]);
+      }
+    } else if (command === 'startConversation') {
+      // Start conversation, optionally with initial message
+      var initialMessage = args.length >= 1 ? args[0] : undefined;
+      if (w.Pullse.chatAPI && w.Pullse.chatAPI.startConversation) {
+        w.Pullse.chatAPI.startConversation(initialMessage);
+      } else {
+        pullseChatQueue.push(['startConversation', initialMessage]);
+      }
+    } else if (command === 'sendMessage' && args.length >= 1) {
+      // Send message
+      if (w.Pullse.chatAPI && w.Pullse.chatAPI.sendMessage) {
+        w.Pullse.chatAPI.sendMessage(args[0]);
+      } else {
+        pullseChatQueue.push(['sendMessage', args[0]]);
+      }
+    } else if (command === 'updateConfig' && args.length >= 1) {
+      // Update config
+      if (w.Pullse.chatAPI && w.Pullse.chatAPI.updateConfig) {
+        w.Pullse.chatAPI.updateConfig(args[0]);
+      } else {
+        pullseChatQueue.push(['updateConfig', args[0]]);
+        if (!initialized) {
+          initChatWidget(args[0]);
+        }
+      }
+    } else if (command === 'clearUnread') {
+      // Clear unread counter
+      if (w.Pullse.chatAPI && w.Pullse.chatAPI.clearUnreadCounter) {
+        w.Pullse.chatAPI.clearUnreadCounter();
+      } else {
+        pullseChatQueue.push(['clearUnreadCounter']);
+      }
     } else {
-      // Queue commands for later execution
+      // Queue unknown commands for later execution
       pullseChatQueue.push([command].concat(args));
     }
   };
