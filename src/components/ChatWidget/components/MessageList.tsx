@@ -26,6 +26,7 @@ interface MessageListProps {
   conversationId?: string;
   agentStatus?: AgentStatus;
   onToggleHighlight?: (messageId: string) => void;
+  typingDuration?: number; // Added typingDuration property
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -44,7 +45,8 @@ const MessageList: React.FC<MessageListProps> = ({
   isLoadingMore = false,
   conversationId,
   agentStatus = 'online',
-  onToggleHighlight
+  onToggleHighlight,
+  typingDuration = 0 // Add default value of 0
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -186,7 +188,7 @@ const MessageList: React.FC<MessageListProps> = ({
               agentAvatar={agentAvatar}
               agentStatus={agentStatus}
             />
-            <TypingIndicator />
+            <TypingIndicator typingDuration={typingDuration} />
           </div>
         )}
       </ScrollArea>
