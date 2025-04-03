@@ -1,6 +1,8 @@
 
 import { getChatSessionId } from '../utils/cookies';
 import { generateCsrfToken, signMessage } from '../utils/security';
+import { logger } from '@/lib/logger';
+import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 
 interface TokenParams {
   workspaceId: string;
@@ -17,7 +19,7 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
   try {
     const sessionId = getChatSessionId();
     const timestamp = Date.now();
-    const csrfToken = generateCsrfToken();
+    const { token: csrfToken } = generateCsrfToken();
     
     const headers = {
       'Content-Type': 'application/json',
@@ -34,7 +36,7 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
 
     // In development mode, return mock token for testing
     if (import.meta.env.DEV) {
-      console.log('Using mock token in development mode');
+      logger.debug('Using mock Ably token in development mode', 'ablyAuth.requestToken');
       return mockTokenResponse(params);
     }
 
@@ -45,12 +47,14 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch Ably token: ${response.status} ${response.statusText}`);
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`Failed to fetch Ably token: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
     return await response.json();
   } catch (error) {
-    console.error('Error requesting Ably token:', error);
+    const safeErrorMessage = sanitizeErrorMessage(error);
+    logger.error('Error requesting Ably token', 'ablyAuth.requestToken', { error: safeErrorMessage });
     throw error;
   }
 };

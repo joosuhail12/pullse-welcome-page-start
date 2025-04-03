@@ -11,10 +11,129 @@ import { toast } from '@/components/ui/use-toast';
 import { getDefaultConfig } from '../embed/api';
 import { errorHandler } from '@/lib/error-handler';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
+import { logger } from '@/lib/logger';
+import { requiresServerImplementation } from '../utils/serverSideAuth';
 
 // Circuit names for different API endpoints
 const CONFIG_CIRCUIT = 'chat-widget-config';
 const MESSAGE_CIRCUIT = 'chat-widget-message';
+const SECURITY_CIRCUIT = 'chat-widget-security';
+
+/**
+ * Server-side encryption API call
+ * @param data Data to encrypt
+ * @returns Encrypted data or placeholder in development
+ */
+export async function serverSideEncrypt(data: string): Promise<string> {
+  try {
+    // Check if circuit is open
+    if (isCircuitOpen(SECURITY_CIRCUIT)) {
+      logger.warn('Security API circuit is open, using fallback', 'api.serverSideEncrypt');
+      return `SERVER_ENCRYPT:${btoa(data)}`;
+    }
+    
+    // Development fallback
+    if (import.meta.env.DEV) {
+      return `SERVER_ENCRYPT:${btoa(data)}`;
+    }
+    
+    return await withResilience(
+      async () => {
+        const response = await fetch('/api/chat-widget/encrypt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ data })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        return result.encryptedData;
+      },
+      SECURITY_CIRCUIT,
+      // Security API retry options
+      {
+        maxRetries: 1,
+        initialDelayMs: 200,
+        maxDelayMs: 500
+      }
+    );
+  } catch (error) {
+    logger.error(
+      'Server-side encryption failed', 
+      'api.serverSideEncrypt', 
+      { error: sanitizeErrorMessage(error) }
+    );
+    
+    // Fallback for failures
+    return requiresServerImplementation('encrypt', { dataLength: data.length });
+  }
+}
+
+/**
+ * Server-side decryption API call
+ * @param encryptedData Data to decrypt
+ * @returns Decrypted data or original if not encrypted
+ */
+export async function serverSideDecrypt(encryptedData: string): Promise<string> {
+  // If not encrypted data, return as is
+  if (!encryptedData || !encryptedData.startsWith('SERVER_ENCRYPT:')) {
+    return encryptedData;
+  }
+  
+  try {
+    // Check if circuit is open
+    if (isCircuitOpen(SECURITY_CIRCUIT)) {
+      logger.warn('Security API circuit is open, using fallback', 'api.serverSideDecrypt');
+      // For development fallback only
+      return atob(encryptedData.substring(14));
+    }
+    
+    // Development fallback
+    if (import.meta.env.DEV) {
+      return atob(encryptedData.substring(14));
+    }
+    
+    return await withResilience(
+      async () => {
+        const response = await fetch('/api/chat-widget/decrypt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ encryptedData })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        return result.decryptedData;
+      },
+      SECURITY_CIRCUIT,
+      // Security API retry options
+      {
+        maxRetries: 1,
+        initialDelayMs: 200,
+        maxDelayMs: 500
+      }
+    );
+  } catch (error) {
+    logger.error(
+      'Server-side decryption failed', 
+      'api.serverSideDecrypt', 
+      { error: sanitizeErrorMessage(error) }
+    );
+    
+    // Return original encrypted data on failure
+    return encryptedData;
+  }
+}
 
 /**
  * Fetch chat widget configuration from the API

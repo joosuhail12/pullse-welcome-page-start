@@ -1,5 +1,13 @@
 
 import { getChatSessionId, invalidateSession, refreshSessionExpiry } from './cookies';
+import { serverSideEncrypt, serverSideDecrypt } from '../services/api';
+import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
+import { logger } from '@/lib/logger';
+import { 
+  requiresServerImplementation, 
+  signMessageServerSide, 
+  verifySignatureServerSide
+} from './serverSideAuth';
 
 // Store rate limiting data in memory
 const rateLimitStore: Record<string, { count: number; resetTime: number }> = {};
@@ -38,8 +46,25 @@ export function isRateLimited(): boolean {
  */
 function generateSecureRandom(length: number = 32): string {
   const array = new Uint8Array(length);
-  crypto.getRandomValues(array);
-  return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  
+  try {
+    crypto.getRandomValues(array);
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  } catch (error) {
+    logger.error(
+      'Could not generate secure random value', 
+      'security.generateSecureRandom', 
+      { error: sanitizeErrorMessage(error) }
+    );
+    
+    // Fallback for environments without crypto
+    let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    for (let i = 0; i < length; i++) {
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    return result;
+  }
 }
 
 /**
@@ -60,11 +85,9 @@ export function generateCsrfToken(): { token: string, nonce: string } {
   const timestamp = Date.now().toString(36);
   
   // Create token using session ID, nonce and timestamp
-  // Note: In a full implementation, the server would verify this token
   const tokenData = `${sessionId}:${nonce}:${timestamp}`;
   
-  // For client-side demo purposes, we encode the token
-  // In production, this would be signed by the server
+  // Encode token - in production this would be signed on the server
   const token = btoa(tokenData);
   
   return { token, nonce };
@@ -95,40 +118,58 @@ export function verifyCsrfToken(token: string, expectedNonce: string): boolean {
     
     return true;
   } catch (e) {
+    logger.error(
+      'CSRF token verification failed', 
+      'security.verifyCsrfToken', 
+      { error: sanitizeErrorMessage(e) }
+    );
     return false;
   }
 }
 
 /**
- * Client-side encryption placeholder - to be replaced with server-side encryption
+ * Client-side encryption placeholder - delegates to server-side encryption
  * @param data Data to encrypt
- * @returns Placeholder for encrypted data
+ * @returns Encrypted data from server, or placeholder
  */
 export function encryptData(data: string): string {
-  // This is just a placeholder - this operation should be performed on the server
-  // We'll just mark the data as needing server-side encryption
-  return `SERVER_ENCRYPT:${btoa(data)}`;
+  if (import.meta.env.DEV) {
+    // For development only, return a mock encrypted value
+    logger.debug('Using mock encryption in development mode', 'security.encryptData');
+    return `SERVER_ENCRYPT:${btoa(data)}`;
+  }
+  
+  // In production, we'll make an API call to encrypt server-side
+  return serverSideEncrypt(data);
 }
 
 /**
- * Client-side decryption placeholder - to be replaced with server-side decryption
+ * Client-side decryption placeholder - delegates to server-side decryption
  * @param encryptedData Data to decrypt
- * @returns Placeholder for decrypted data
+ * @returns Decrypted data from server, or original if not encrypted
  */
 export function decryptData(encryptedData: string): string {
-  // This is just a placeholder - this operation should be performed on the server
-  // We'll assume data from server is already decrypted
-  if (encryptedData.startsWith('SERVER_ENCRYPT:')) {
+  if (!encryptedData || !encryptedData.startsWith('SERVER_ENCRYPT:')) {
+    return encryptedData;
+  }
+  
+  if (import.meta.env.DEV) {
+    // For development only, simulate decryption
+    logger.debug('Using mock decryption in development mode', 'security.decryptData');
     try {
-      // For development purposes only, simulate decryption
       return atob(encryptedData.substring(14));
     } catch (error) {
-      console.error('Failed to process data', error);
+      logger.error(
+        'Failed to process development data', 
+        'security.decryptData', 
+        { error: sanitizeErrorMessage(error) }
+      );
       return '';
     }
   }
   
-  return encryptedData;
+  // In production, we'll make an API call to decrypt server-side
+  return serverSideDecrypt(encryptedData);
 }
 
 /**
@@ -150,28 +191,42 @@ export function enforceHttps(): boolean {
 
 /**
  * Generate a signature string for message integrity validation
- * This should ultimately be replaced with server-side signature generation
+ * Delegates to server-side implementation in production
  * @param message The message to sign
  * @param timestamp Timestamp when the message was created
  * @returns Signature for the message
  */
 export function signMessage(message: string, timestamp: number): string {
   const sessionId = getChatSessionId() || '';
-  return `SERVER_SIGN:${sessionId}:${timestamp}:${message.length}`;
+  
+  if (import.meta.env.DEV) {
+    // For development only, return a mock signature
+    logger.debug('Using mock signature in development mode', 'security.signMessage');
+    return `SERVER_SIGN:${sessionId}:${timestamp}:${message.length}`;
+  }
+  
+  // In production, we'll make an API call to sign server-side
+  return signMessageServerSide(message, timestamp);
 }
 
 /**
  * Verify message signature to ensure data integrity
- * This should ultimately be replaced with server-side signature verification
+ * Delegates to server-side implementation in production
  * @param message Original message
  * @param timestamp Original timestamp
  * @param signature Signature to verify
  * @returns True if signature is valid, false otherwise
  */
 export function verifyMessageSignature(message: string, timestamp: number, signature: string): boolean {
-  // This is a placeholder - actual verification should happen server-side
-  const expectedSignature = signMessage(message, timestamp);
-  return signature === expectedSignature;
+  if (import.meta.env.DEV) {
+    // For development only, simulate verification
+    const expectedSignature = signMessage(message, timestamp);
+    logger.debug('Using mock signature verification in development mode', 'security.verifyMessageSignature');
+    return signature === expectedSignature;
+  }
+  
+  // In production, we'll make an API call to verify server-side
+  return verifySignatureServerSide(message, timestamp, signature);
 }
 
 /**

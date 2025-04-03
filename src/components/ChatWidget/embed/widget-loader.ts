@@ -12,13 +12,24 @@ import { ChatEventType } from '../config';
 import { validateEventPayload } from '../utils/eventValidation';
 import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
+import { enforceHttps } from '../utils/security';
 
 // Export the main class for direct usage
 export { PullseChatWidgetLoader };
 
-// Add convenience method for initialization
+// Add convenience method for initialization with enhanced security
 export function initializeWidget(options: PullseChatWidgetOptions): PullseChatWidgetLoader {
   try {
+    // Ensure HTTPS in production environments
+    if (!enforceHttps()) {
+      logger.warn(
+        'Redirecting to HTTPS for security', 
+        'WidgetLoader.initialize', 
+        { url: window.location.href }
+      );
+      throw new Error('Insecure connection. Redirecting to HTTPS.');
+    }
+    
     return new PullseChatWidgetLoader(options);
   } catch (error) {
     // Sanitize error message before logging
