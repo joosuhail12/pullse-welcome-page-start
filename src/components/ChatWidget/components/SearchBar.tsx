@@ -38,34 +38,18 @@ const SearchBar = ({ onSearch, onClear, resultCount, isSearching }: SearchBarPro
     onClear();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      handleClear();
-    }
-  };
-
   return (
-    <div 
-      className="relative flex items-center gap-2 p-2 border-b border-gray-100"
-      id="search-panel"
-      role="search"
-      aria-label="Search messages"
-    >
+    <div className="relative flex items-center gap-2 p-2 border-b border-gray-100">
       <div className="relative flex-grow">
         <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">
-          <Search size={16} aria-hidden="true" />
+          <Search size={16} />
         </div>
         <Input
           type="text"
           placeholder="Search messages..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={handleKeyDown}
           className="pl-8 py-1 h-8 text-sm"
-          aria-label="Search messages"
-          aria-autocomplete="list"
-          aria-controls="search-results"
-          aria-expanded={searchTerm.length > 0}
         />
         {searchTerm && (
           <Button 
@@ -73,20 +57,15 @@ const SearchBar = ({ onSearch, onClear, resultCount, isSearching }: SearchBarPro
             size="sm" 
             className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
             onClick={handleClear}
-            aria-label="Clear search"
           >
-            <X size={14} aria-hidden="true" />
+            <X size={14} />
           </Button>
         )}
       </div>
       {isSearching ? (
-        <div className="text-xs text-gray-500" aria-live="polite">Searching...</div>
+        <div className="text-xs text-gray-500">Searching...</div>
       ) : searchTerm ? (
-        <div 
-          className="text-xs text-gray-500" 
-          aria-live="polite"
-          id="search-results"
-        >
+        <div className="text-xs text-gray-500">
           {resultCount} {resultCount === 1 ? 'result' : 'results'}
         </div>
       ) : null}

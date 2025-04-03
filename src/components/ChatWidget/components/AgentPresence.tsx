@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Agent } from '../types';
 import { getPresence, subscribeToPresence } from '../utils/ably';
 import useWidgetConfig from '../hooks/useWidgetConfig';
@@ -76,21 +76,23 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
     <div className="flex items-center mt-2">
       <span className="text-xs text-gray-500 mr-2">Online:</span>
       <div className="flex -space-x-2">
-        {agents.slice(0, maxDisplayed).map((agent) => (
-          <Tooltip key={agent.id}>
-            <TooltipTrigger asChild>
-              <Avatar className="h-6 w-6 border-2 border-white">
-                <AvatarImage src={agent.avatar} />
-                <AvatarFallback className="text-[10px] bg-vivid-purple text-white">
-                  {agent.name.split(' ').map(part => part[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p>{agent.name}</p>
-            </TooltipContent>
-          </Tooltip>
-        ))}
+        <TooltipProvider>
+          {agents.slice(0, maxDisplayed).map((agent) => (
+            <Tooltip key={agent.id}>
+              <TooltipTrigger asChild>
+                <Avatar className="h-6 w-6 border-2 border-white">
+                  <AvatarImage src={agent.avatar} />
+                  <AvatarFallback className="text-[10px] bg-vivid-purple text-white">
+                    {agent.name.split(' ').map(part => part[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>{agent.name}</p>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </TooltipProvider>
         
         {agents.length > maxDisplayed && (
           <Avatar className="h-6 w-6 border-2 border-white">

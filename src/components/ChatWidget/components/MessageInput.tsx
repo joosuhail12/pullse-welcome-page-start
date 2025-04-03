@@ -89,24 +89,16 @@ const MessageInput = ({
     <div className="p-4">
       <div className="flex flex-col">
         {fileError && (
-          <div 
-            className="mb-2 text-xs text-red-500 p-2 bg-red-50 rounded-md animate-fade-in"
-            role="alert"
-            aria-live="assertive"
-          >
+          <div className="mb-2 text-xs text-red-500 p-2 bg-red-50 rounded-md animate-fade-in">
             <div className="flex items-center">
-              <X size={14} className="mr-1" aria-hidden="true" />
+              <X size={14} className="mr-1" />
               {fileError}
             </div>
           </div>
         )}
         <div className="flex items-center space-x-2">
-          <label 
-            htmlFor="file-upload" 
-            className={`cursor-pointer p-2.5 rounded-full ${disabled ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-100'} transition-colors`}
-            aria-label="Upload file"
-          >
-            <Paperclip size={18} className="text-gray-500" aria-hidden="true" />
+          <label htmlFor="file-upload" className={`cursor-pointer p-2.5 rounded-full ${disabled ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-100'} transition-colors`}>
+            <Paperclip size={18} className="text-gray-500" />
             <input 
               id="file-upload" 
               type="file" 
@@ -114,7 +106,6 @@ const MessageInput = ({
               onChange={handleFileValidation}
               accept="image/jpeg,image/png,image/gif,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
               disabled={disabled}
-              aria-label="Upload file"
             />
           </label>
           
@@ -128,7 +119,6 @@ const MessageInput = ({
               rows={1}
               maxLength={2000}
               disabled={disabled}
-              aria-label="Message text"
             />
             <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
               <PopoverTrigger asChild>
@@ -137,14 +127,11 @@ const MessageInput = ({
                   size="icon" 
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full hover:bg-gray-100"
                   disabled={disabled}
-                  aria-label="Add emoji"
-                  aria-haspopup="dialog"
-                  aria-expanded={showEmojiPicker}
                 >
-                  <Smile size={18} className="text-gray-500" aria-hidden="true" />
+                  <Smile size={18} className="text-gray-500" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent side="top" align="end" className="w-auto p-0 border-none shadow-lg rounded-lg" role="dialog" aria-label="Choose emoji">
+              <PopoverContent side="top" align="end" className="w-auto p-0 border-none shadow-lg rounded-lg">
                 <div className="emoji-picker-container">
                   <Picker 
                     data={data} 
@@ -160,9 +147,8 @@ const MessageInput = ({
             onClick={handleSendMessage}
             disabled={!messageText.trim() || disabled}
             className="h-10 w-10 rounded-full chat-widget-button p-0 flex items-center justify-center transition-transform hover:scale-105"
-            aria-label="Send message"
           >
-            <Send size={18} aria-hidden="true" />
+            <Send size={18} />
           </Button>
         </div>
         
@@ -174,9 +160,8 @@ const MessageInput = ({
               onClick={handleEndChat}
               className="text-xs text-gray-500 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors"
               disabled={disabled}
-              aria-label="End chat"
             >
-              <X size={14} className="mr-1" aria-hidden="true" /> End chat
+              <X size={14} className="mr-1" /> End chat
             </Button>
           </div>
         )}
