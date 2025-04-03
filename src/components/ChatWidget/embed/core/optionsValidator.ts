@@ -58,7 +58,7 @@ export function validateWidgetOptions(options: PullseChatWidgetOptions): PullseC
 /**
  * Check if a position value is valid
  */
-export function isValidChatPosition(position: string | unknown): position is ChatPosition {
+export function isValidChatPosition(position: any): boolean {
   if (typeof position !== 'string') {
     return false;
   }
