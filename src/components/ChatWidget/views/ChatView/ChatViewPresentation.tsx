@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Conversation, Message } from '../../types';
 import { ChatWidgetConfig } from '../../config';
@@ -131,6 +130,7 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
   }, [showInlineForm, config, handleFormComplete]);
 
   const renderPoweredBy = () => {
+    // Explicitly check if branding bar should be shown
     if (!config.branding?.showBrandingBar) return null;
     
     return (
