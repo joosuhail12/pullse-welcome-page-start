@@ -26,9 +26,7 @@ export function useMessageActions(
 ) {
   const [messageText, setMessageText] = useState('');
   const [fileError, setFileError] = useState<string | null>(null);
-  const [lastMessageTime, setLastMessageTime] = useState(0);
-  const MESSAGE_THROTTLE_MS = 1000; // 1 second between messages
-
+  
   const handleSendMessage = useCallback(() => {
     // Validate and sanitize input
     const sanitizedText = validateMessage(messageText);
@@ -43,18 +41,6 @@ export function useMessageActions(
       });
       return;
     }
-    
-    // Message frequency throttling
-    const now = Date.now();
-    if (now - lastMessageTime < MESSAGE_THROTTLE_MS) {
-      toast({
-        title: "Sending too fast",
-        description: "Please wait a moment between messages",
-        variant: "destructive"
-      });
-      return;
-    }
-    setLastMessageTime(now);
     
     const userMessage = createUserMessage(sanitizedText);
     
@@ -110,7 +96,7 @@ export function useMessageActions(
         }, Math.floor(Math.random() * 400) + 200);
       }
     }
-  }, [messageText, messages, setMessages, chatChannelName, sessionId, config, setHasUserSentMessage, setIsTyping, lastMessageTime]);
+  }, [messageText, messages, setMessages, chatChannelName, sessionId, config, setHasUserSentMessage, setIsTyping]);
 
   const handleUserTyping = useCallback(() => {
     // If realtime is enabled, send typing indicator
@@ -144,14 +130,6 @@ export function useMessageActions(
       setFileError("Invalid file. Please upload images, PDFs, or documents under 5MB.");
       return;
     }
-    
-    // Message frequency throttling
-    const now = Date.now();
-    if (now - lastMessageTime < MESSAGE_THROTTLE_MS) {
-      setFileError("Please wait a moment between uploads.");
-      return;
-    }
-    setLastMessageTime(now);
     
     // Sanitize the file name
     const sanitizedFileName = sanitizeFileName(file.name);
@@ -207,7 +185,7 @@ export function useMessageActions(
         processSystemMessage(systemMessage, chatChannelName, sessionId, config);
       }, 1000);
     }
-  }, [messages, setMessages, config, setHasUserSentMessage, chatChannelName, sessionId, lastMessageTime]);
+  }, [messages, setMessages, config, setHasUserSentMessage, chatChannelName, sessionId]);
 
   const handleEndChat = useCallback(() => {
     const statusMessage: Message = {
@@ -245,3 +223,4 @@ export function useMessageActions(
     handleEndChat
   };
 }
+
