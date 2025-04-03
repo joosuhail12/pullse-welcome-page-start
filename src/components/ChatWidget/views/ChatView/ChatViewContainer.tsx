@@ -228,8 +228,8 @@ const ChatViewContainer = ({
     const result: Record<string, { status: MessageReadStatus; timestamp?: Date }> = {};
     Object.entries(readReceipts).forEach(([id, receipt]) => {
       result[id] = {
-        status: receipt.status || 'sent',
-        timestamp: receipt.timestamp
+        status: (receipt?.status as MessageReadStatus) || 'sent',
+        timestamp: receipt?.timestamp
       };
     });
     return result;

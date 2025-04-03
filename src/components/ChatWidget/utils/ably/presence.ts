@@ -1,4 +1,3 @@
-
 import Ably from 'ably';
 import { v4 as uuidv4 } from 'uuid';
 import { getChatSessionId } from '../cookies';
@@ -103,13 +102,14 @@ export const subscribeToPresence = (
 
   try {
     const channel = client.channels.get(channelName);
-    // Cast the channel to include presence property
-    const channelWithPresence = channel as unknown as { presence: Ably.Types.RealtimePresenceBase };
+    // Use a more flexible type casting
+    const channelWithPresence = channel as Ably.Types.RealtimeChannel;
     
     // Create handler to get all presence members
     const updatePresence = async () => {
       try {
-        const members = await channelWithPresence.presence.get();
+        // Use type assertion for presence get method
+        const members = await (channelWithPresence.presence as any).get() as Ably.Types.PresenceMessage[];
         callback(members || []);
       } catch (err) {
         console.error(`Error getting presence members for ${channelName}:`, err);
@@ -117,19 +117,20 @@ export const subscribeToPresence = (
       }
     };
     
-    // Subscribe to relevant presence events using 'on' instead of 'subscribe'
-    channelWithPresence.presence.on('enter', updatePresence);
-    channelWithPresence.presence.on('leave', updatePresence);
-    channelWithPresence.presence.on('update', updatePresence);
+    // Use type assertion for presence events
+    const presenceHandler = channelWithPresence.presence as any;
+    
+    // Subscribe to relevant presence events
+    presenceHandler.on('enter', updatePresence);
+    presenceHandler.on('leave', updatePresence);
+    presenceHandler.on('update', updatePresence);
     
     // Get initial presence
-    updatePresence().catch(err => {
-      console.error(`Error getting initial presence for ${channelName}:`, err);
-    });
+    updatePresence();
     
     // Return cleanup function
     return () => {
-      channelWithPresence.presence.off();
+      presenceHandler.off();
     };
   } catch (error) {
     console.error(`Error subscribing to presence on ${channelName}:`, error);
