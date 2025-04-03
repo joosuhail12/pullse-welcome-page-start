@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Conversation } from '../types';
 import { saveConversationToStorage, loadConversationsFromStorage } from '../utils/storage';
@@ -86,9 +87,6 @@ export function useChatState() {
     
     // Invalidate the session
     logout();
-    
-    // Optionally clear conversation history (depending on requirements)
-    // clearConversationsFromStorage();
   }, []);
 
   return {

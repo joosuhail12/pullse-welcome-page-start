@@ -63,38 +63,42 @@ const ChatBody: React.FC<ChatBodyProps> = ({
       {inlineFormComponent}
       
       {(!showInlineForm || conversationId) && (
-        <MessageList 
-          messages={messages}
-          isTyping={isTyping || remoteIsTyping}
-          setMessageText={setMessageText}
-          readReceipts={readReceipts}
-          onMessageReaction={onMessageReaction}
-          searchResults={messageIds}
-          highlightMessage={highlightText}
-          searchTerm={searchTerm}
-          agentAvatar={agentAvatar}
-          userAvatar={userAvatar}
-          onScrollTop={handleLoadMoreMessages}
-          hasMoreMessages={hasMoreMessages}
-          isLoadingMore={isLoadingMore}
-          conversationId={conversationId}
-          agentStatus={agentStatus}
-          onToggleHighlight={onToggleHighlight}
-        />
+        <div className="flex-grow flex flex-col">
+          <MessageList 
+            messages={messages}
+            isTyping={isTyping || remoteIsTyping}
+            setMessageText={setMessageText}
+            readReceipts={readReceipts}
+            onMessageReaction={onMessageReaction}
+            searchResults={messageIds}
+            highlightMessage={highlightText}
+            searchTerm={searchTerm}
+            agentAvatar={agentAvatar}
+            userAvatar={userAvatar}
+            onScrollTop={handleLoadMoreMessages}
+            hasMoreMessages={hasMoreMessages}
+            isLoadingMore={isLoadingMore}
+            conversationId={conversationId}
+            agentStatus={agentStatus}
+            onToggleHighlight={onToggleHighlight}
+          />
+        </div>
       )}
       
-      <MessageInput
-        messageText={messageText}
-        setMessageText={setMessageText}
-        handleSendMessage={handleSendMessage}
-        handleFileUpload={handleFileUpload}
-        handleEndChat={handleEndChat}
-        hasUserSentMessage={isTyping}
-        onTyping={handleUserTyping}
-        disabled={showInlineForm}
-      />
-      
-      <PoweredByBar />
+      <div className="flex-shrink-0">
+        <MessageInput
+          messageText={messageText}
+          setMessageText={setMessageText}
+          handleSendMessage={handleSendMessage}
+          handleFileUpload={handleFileUpload}
+          handleEndChat={handleEndChat}
+          hasUserSentMessage={isTyping}
+          onTyping={handleUserTyping}
+          disabled={showInlineForm}
+        />
+        
+        <PoweredByBar />
+      </div>
     </div>
   );
 };
