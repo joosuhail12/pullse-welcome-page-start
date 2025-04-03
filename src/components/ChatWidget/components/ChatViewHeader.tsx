@@ -28,7 +28,7 @@ const ChatViewHeader = ({
   showSearchFeature
 }: ChatViewHeaderProps) => {
   return (
-    <>
+    <div className="sticky top-0 z-20 shadow-md">
       <ChatHeader 
         conversation={conversation} 
         onBack={onBack} 
@@ -44,7 +44,7 @@ const ChatViewHeader = ({
           isSearching={isSearching}
         />
       )}
-    </>
+    </div>
   );
 };
 

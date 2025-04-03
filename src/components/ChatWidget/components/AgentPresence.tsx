@@ -74,20 +74,28 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
   
   return (
     <div className="flex items-center mt-2">
-      <span className="text-xs text-gray-500 mr-2">Online:</span>
+      <span className="text-xs text-gray-100 mr-2 opacity-80">Online:</span>
       <div className="flex -space-x-2">
         <TooltipProvider>
           {agents.slice(0, maxDisplayed).map((agent) => (
             <Tooltip key={agent.id}>
               <TooltipTrigger asChild>
-                <Avatar className="h-6 w-6 border-2 border-white">
-                  <AvatarImage src={agent.avatar} />
-                  <AvatarFallback className="text-[10px] bg-vivid-purple text-white">
-                    {agent.name.split(' ').map(part => part[0]).join('')}
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-6 w-6 border-2 border-white">
+                    <AvatarImage src={agent.avatar} />
+                    <AvatarFallback className="text-[10px] bg-vivid-purple text-white">
+                      {agent.name.split(' ').map(part => part[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  {/* Pulsing dot for online status */}
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-500 border border-white">
+                    <span className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75"></span>
+                  </span>
+                </div>
               </TooltipTrigger>
-              <TooltipContent side="bottom">
+              <TooltipContent side="bottom" className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-green-500"></span>
                 <p>{agent.name}</p>
               </TooltipContent>
             </Tooltip>

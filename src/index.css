@@ -180,6 +180,48 @@
     transform: translateY(-1px);
     transition: transform 0.2s ease;
   }
+
+  /* NEW HEADER STYLES */
+  /* Pulsing status indicator */
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(0.95);
+      opacity: 0.7;
+    }
+    50% {
+      transform: scale(1.05);  
+      opacity: 0.3;
+    }
+    100% {
+      transform: scale(0.95);
+      opacity: 0.7;
+    }
+  }
+  
+  .status-pulse {
+    animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+  }
+
+  /* Header with pattern and gradients */
+  .chat-header-pattern {
+    position: relative;
+    overflow: hidden;
+    background-color: theme('colors.vivid-purple');
+  }
+  
+  .chat-header-pattern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 15%),
+      radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 15%);
+    opacity: 0.6;
+    z-index: 1;
+  }
 }
 
 /* Enhanced keyboard navigation indicators for chat components */
