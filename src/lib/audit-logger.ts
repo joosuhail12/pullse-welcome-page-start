@@ -1,13 +1,14 @@
 
-import { SecurityEventType, SecurityEventOutcome, SecurityEventSeverity } from '../components/ChatWidget/utils/securityTypes';
+import { SecurityEventType as SecurityEventTypeEnum, SecurityEventOutcome, SecurityEventSeverity } from '../components/ChatWidget/utils/securityTypes';
 
 // Re-export the types with export type for isolatedModules
-export type { SecurityEventType, SecurityEventOutcome, SecurityEventSeverity };
+export { SecurityEventTypeEnum as SecurityEventType };
+export type { SecurityEventOutcome, SecurityEventSeverity };
 
 // Simple audit logger implementation
 class AuditLogger {
   logSecurityEvent(
-    eventType: SecurityEventType,
+    eventType: SecurityEventTypeEnum,
     outcome: SecurityEventOutcome,
     details?: any,
     severity: SecurityEventSeverity = 'MEDIUM'

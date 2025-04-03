@@ -16,8 +16,7 @@ import { validateEventPayload } from '../utils/eventValidation';
 import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 import { enforceHttps } from '../utils/security';
-import { auditLogger } from '@/lib/audit-logger';
-import { SecurityEventType } from '../utils/securityTypes';
+import { auditLogger, SecurityEventType } from '@/lib/audit-logger';
 
 // Export the main class for direct usage
 export { PullseChatWidgetLoader };

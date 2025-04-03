@@ -1,4 +1,3 @@
-
 /**
  * Security-related utilities for the chat widget
  */
@@ -6,7 +5,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { dispatchChatEvent } from './events';
 import { logger } from '@/lib/logger';
-import { auditLogger, SecurityEventType, SecurityEventOutcome } from '@/lib/audit-logger';
+import { auditLogger, SecurityEventType } from '@/lib/audit-logger';
 import { EventPriority } from './eventValidation';
 
 // Constants

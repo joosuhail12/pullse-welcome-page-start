@@ -12,11 +12,14 @@ export enum SecurityEventType {
   TOKEN_EXPIRED = 'token_expired',
   TOKEN_REFRESH = 'token_refresh',
   TOKEN_REVOKED = 'token_revoked',
+  TOKEN_VALIDATED = 'token_validated',
   PERMISSION_DENIED = 'permission_denied',
   RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
   SECURITY_SETTING_CHANGE = 'security_setting_change',
   SUSPICIOUS_ACTIVITY = 'suspicious_activity',
-  DATA_ACCESS_ATTEMPT = 'data_access_attempt'
+  DATA_ACCESS_ATTEMPT = 'data_access_attempt',
+  API_ACCESS_DENIED = 'api_access_denied',
+  CONTENT_INJECTION_ATTEMPT = 'content_injection_attempt'
 }
 
 /**
