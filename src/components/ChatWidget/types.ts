@@ -20,6 +20,9 @@ export interface Message {
   unread?: boolean;    // New field to mark unread messages
 }
 
+// Standardized agent status type
+export type AgentStatus = 'online' | 'offline' | 'away' | 'busy';
+
 export interface Conversation {
   id: string;
   title: string;
@@ -30,19 +33,20 @@ export interface Conversation {
   agentInfo?: {
     name?: string;
     avatar?: string;
-    status?: 'online' | 'offline' | 'away' | 'busy';
+    status?: AgentStatus;
   };
   metadata?: any;
   sessionId?: string;
   contactIdentified?: boolean;
   unread?: boolean; // New property to track unread status
+  isResolved?: boolean; // Property to track if conversation is resolved
 }
 
 export interface Agent {
   id: string;
   name: string;
   avatar?: string;
-  status?: 'online' | 'away' | 'offline';
+  status?: AgentStatus;
 }
 
 export interface MessageReaction {
@@ -57,3 +61,9 @@ export interface MessageSearchResult {
   matchText: string;
   timestamp: Date;
 }
+
+// Define standard message types
+export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
+
+// Define standard user types
+export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status';

@@ -7,7 +7,7 @@ interface StatusMessageProps {
 
 const StatusMessage = ({ text }: StatusMessageProps) => {
   return (
-    <div className="bg-gray-100 py-1 px-3 rounded-full text-xs text-gray-500 text-center">
+    <div className="bg-gray-100 py-1.5 px-4 rounded-full text-xs text-gray-500 text-center shadow-sm">
       {text}
     </div>
   );

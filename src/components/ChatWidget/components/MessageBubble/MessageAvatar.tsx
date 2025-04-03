@@ -1,12 +1,13 @@
 
 import React from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { AgentStatus } from '../../types';
 
 interface MessageAvatarProps {
   sender: 'user' | 'system' | 'status';
   avatarUrl?: string;
   isRight?: boolean;
-  status?: 'online' | 'offline' | 'away' | 'busy' | undefined;
+  status?: AgentStatus;
 }
 
 const MessageAvatar = ({ sender, avatarUrl, isRight = false, status }: MessageAvatarProps) => {

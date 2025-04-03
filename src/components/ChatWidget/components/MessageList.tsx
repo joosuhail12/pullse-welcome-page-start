@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowDown, Loader2 } from 'lucide-react';
 import { MessageReadStatus } from './MessageReadReceipt';
 import MessageAvatar from './MessageBubble/MessageAvatar';
+import { AgentStatus } from '../types';
 
 interface MessageListProps {
   messages: any[];
@@ -23,7 +24,7 @@ interface MessageListProps {
   hasMoreMessages?: boolean;
   isLoadingMore?: boolean;
   conversationId?: string;
-  agentStatus?: 'online' | 'away' | 'offline';
+  agentStatus?: AgentStatus;
 }
 
 const MessageList: React.FC<MessageListProps> = ({

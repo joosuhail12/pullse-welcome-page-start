@@ -2,12 +2,13 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from 'lucide-react';
+import { AgentStatus } from '../types';
 
 interface MessageAvatarProps {
   isUserMessage: boolean;
   userAvatar?: string;
   agentAvatar?: string;
-  agentStatus?: 'online' | 'away' | 'offline';
+  agentStatus?: AgentStatus;
 }
 
 const MessageAvatar: React.FC<MessageAvatarProps> = React.memo(({ 
@@ -19,7 +20,8 @@ const MessageAvatar: React.FC<MessageAvatarProps> = React.memo(({
   const statusColorMap = {
     'online': 'bg-green-500',
     'away': 'bg-yellow-500',
-    'offline': 'bg-gray-400'
+    'offline': 'bg-gray-400',
+    'busy': 'bg-red-500'
   };
 
   return (

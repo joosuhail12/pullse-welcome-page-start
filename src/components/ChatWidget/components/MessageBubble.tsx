@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Message } from '../types';
+import { Message, AgentStatus } from '../types';
 import { Paperclip, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ interface MessageBubbleProps {
   showAvatar?: boolean;
   isConsecutive?: boolean;
   avatarUrl?: string;
-  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
+  agentStatus?: AgentStatus;
 }
 
 const MessageBubble = ({ 

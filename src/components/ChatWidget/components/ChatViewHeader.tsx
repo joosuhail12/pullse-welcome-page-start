@@ -3,7 +3,7 @@ import React from 'react';
 import { ArrowLeft, Search, X, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Conversation } from '../types';
+import { Conversation, AgentStatus } from '../types';
 import AgentPresence from './AgentPresence';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import TicketProgressBar from './TicketProgressBar';

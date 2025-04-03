@@ -2,12 +2,14 @@
 import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Agent } from '../types';
+import { Agent, AgentStatus } from '../types';
 import { getPresence, subscribeToPresence } from '../utils/ably';
 import useWidgetConfig from '../hooks/useWidgetConfig';
 
 interface AgentPresenceProps {
   workspaceId?: string;
+  agentName?: string;
+  status?: AgentStatus;
 }
 
 const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
