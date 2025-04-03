@@ -64,14 +64,31 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
     onFormComplete(sanitizedData);
   };
 
+  // Compute form styles based on config
+  const formStyle = {
+    backgroundColor: config.branding?.primaryColor ? 'rgba(139, 92, 246, 0.05)' : 'bg-gray-50',
+    borderColor: config.branding?.primaryColor || '#8B5CF6',
+  };
+
+  const labelStyle = {
+    color: config.branding?.primaryColor || '#1f2937',
+  };
+
   return (
-    <div className="bg-gray-50 p-4 rounded-lg mb-4 shadow-sm border border-gray-100">
+    <div 
+      className="bg-opacity-5 p-4 rounded-lg mb-4 shadow-sm border"
+      style={formStyle}
+    >
       <p className="text-sm text-gray-600 mb-3">
         Please provide your information to continue:
       </p>
       {config.preChatForm.fields.map((field) => (
         <div key={field.id} className="mb-3">
-          <Label htmlFor={field.id} className="text-xs font-medium mb-1 block">
+          <Label 
+            htmlFor={field.id} 
+            className="text-xs font-medium mb-1 block"
+            style={{ color: labelStyle.color }}
+          >
             {field.label}
             {field.required && <span className="text-red-500 ml-1">*</span>}
           </Label>
@@ -106,3 +123,4 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
 };
 
 export default PreChatForm;
+
