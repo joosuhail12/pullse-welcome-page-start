@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -100,7 +99,8 @@ export default {
           DEFAULT: 'hsl(var(--system-bubble-bg))',
           foreground: 'hsl(var(--system-bubble-text))'
         },
-        'chat-bg': 'hsl(var(--chat-bg))'
+        'chat-bg': 'hsl(var(--chat-bg))',
+        'dark-charcoal': '#221F26'
       },
       borderRadius: {
         lg: 'var(--radius)',
