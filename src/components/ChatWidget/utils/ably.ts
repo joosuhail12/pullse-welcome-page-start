@@ -2,7 +2,7 @@
 import Ably from 'ably';
 import { getReconnectionManager, ConnectionStatus } from './reconnectionManager';
 import { createValidatedEvent } from './eventValidation';
-import { dispatchValidatedEvent } from './embed/enhancedEvents';
+import { dispatchValidatedEvent, EventPriority } from '../embed/enhancedEvents';
 
 // Client instance to ensure singleton pattern
 let ablyClient: Ably.Realtime | null = null;
@@ -116,18 +116,18 @@ function setupConnectionStateListeners() {
   ablyClient.connection.on('connected', () => {
     console.log('Ably connection established');
     localFallbackMode = false;
-    dispatchValidatedEvent('chat:connectionChange', { status: 'connected' }, 'HIGH');
+    dispatchValidatedEvent('chat:connectionChange', { status: 'connected' }, EventPriority.HIGH);
     processQueuedMessages();
   });
   
   ablyClient.connection.on('disconnected', () => {
     console.warn('Ably connection disconnected, attempting to reconnect');
-    dispatchValidatedEvent('chat:connectionChange', { status: 'disconnected' }, 'HIGH');
+    dispatchValidatedEvent('chat:connectionChange', { status: 'disconnected' }, EventPriority.HIGH);
   });
   
   ablyClient.connection.on('suspended', () => {
     console.warn('Ably connection suspended (multiple reconnection attempts failed)');
-    dispatchValidatedEvent('chat:connectionChange', { status: 'suspended' }, 'HIGH');
+    dispatchValidatedEvent('chat:connectionChange', { status: 'suspended' }, EventPriority.HIGH);
     
     // After being suspended for 30 seconds, enable fallback mode
     setTimeout(() => {
@@ -142,13 +142,13 @@ function setupConnectionStateListeners() {
     dispatchValidatedEvent('chat:connectionChange', { 
       status: 'failed', 
       error: err?.message || 'Connection failed' 
-    }, 'HIGH');
+    }, EventPriority.HIGH);
     enableLocalFallback();
   });
   
   ablyClient.connection.on('closed', () => {
     console.log('Ably connection closed');
-    dispatchValidatedEvent('chat:connectionChange', { status: 'closed' }, 'HIGH');
+    dispatchValidatedEvent('chat:connectionChange', { status: 'closed' }, EventPriority.HIGH);
   });
 }
 
@@ -160,7 +160,7 @@ function enableLocalFallback(): void {
   
   localFallbackMode = true;
   console.warn('Switching to local fallback mode due to Ably unavailability');
-  dispatchValidatedEvent('chat:connectionChange', { status: 'fallback' }, 'HIGH');
+  dispatchValidatedEvent('chat:connectionChange', { status: 'fallback' }, EventPriority.HIGH);
 }
 
 /**
