@@ -8,7 +8,7 @@ interface TabBarProps {
   viewState: ViewState;
   onChangeView: (view: ViewState) => void;
   activeTab?: string;
-  onChangeTab?: (tab: any) => void;
+  onChangeTab?: (tab: string) => void;
 }
 
 const TabBar = ({ 
@@ -23,7 +23,7 @@ const TabBar = ({
     if (onChangeTab) {
       onChangeTab(tab);
     } else if (tab === 'home' || tab === 'messages' || tab === 'chat') {
-      onChangeView(tab);
+      onChangeView(tab as ViewState);
     }
   };
 

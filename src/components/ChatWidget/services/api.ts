@@ -1,4 +1,3 @@
-
 /**
  * Chat Widget API Service
  * 
@@ -163,7 +162,10 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
     // Enforce HTTPS for security
     if (!enforceHttps()) {
       // If redirecting to HTTPS, return default config temporarily
-      return { ...defaultConfig, workspaceId: sanitizeInput(workspaceId) };
+      return { 
+        ...defaultConfig, 
+        workspaceId: sanitizeInput(workspaceId) 
+      };
     }
     
     // Validate and sanitize workspaceId
@@ -173,21 +175,39 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
     // since the API may not be available or may return HTML instead of JSON
     if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
       console.log(`Using default config for workspace ${sanitizedWorkspaceId} in development mode`);
-      return {
+      const defaultDevConfig = getDefaultConfig(sanitizedWorkspaceId);
+      
+      // Ensure position.placement is a valid ChatPosition
+      const devConfig: ChatWidgetConfig = {
         ...defaultConfig,
         workspaceId: sanitizedWorkspaceId,
-        ...getDefaultConfig(sanitizedWorkspaceId)
+        ...defaultDevConfig,
+        position: {
+          ...defaultConfig.position,
+          ...(defaultDevConfig.position || {})
+        }
       };
+      
+      return devConfig;
     }
     
     // Check if circuit is already open (too many failures)
     if (isCircuitOpen(CONFIG_CIRCUIT)) {
       console.warn('Config API circuit is open, using default config');
-      return { 
-        ...defaultConfig, 
+      const defaultFallbackConfig = getDefaultConfig(sanitizedWorkspaceId);
+      
+      // Ensure position.placement is a valid ChatPosition
+      const fallbackConfig: ChatWidgetConfig = {
+        ...defaultConfig,
         workspaceId: sanitizedWorkspaceId,
-        ...getDefaultConfig(sanitizedWorkspaceId)
+        ...defaultFallbackConfig,
+        position: {
+          ...defaultConfig.position,
+          ...(defaultFallbackConfig.position || {})
+        }
       };
+      
+      return fallbackConfig;
     }
     
     return await withResilience(
@@ -279,12 +299,20 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
       : new Error('Failed to fetch config')
     );
     
-    // Always fall back to default config for reliability
-    return { 
-      ...defaultConfig, 
+    const defaultFallbackConfig = getDefaultConfig(sanitizeInput(workspaceId));
+      
+    // Ensure position.placement is a valid ChatPosition
+    const fallbackConfig: ChatWidgetConfig = {
+      ...defaultConfig,
       workspaceId: sanitizeInput(workspaceId),
-      ...getDefaultConfig(sanitizeInput(workspaceId))
+      ...defaultFallbackConfig,
+      position: {
+        ...defaultConfig.position,
+        ...(defaultFallbackConfig.position || {})
+      }
     };
+    
+    return fallbackConfig;
   }
 };
 

@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { fetchChatWidgetConfig } from '../services/api';
-import { ChatWidgetConfig, defaultConfig } from '../config';
+import { ChatWidgetConfig, defaultConfig, ChatPosition } from '../config';
 import { getDefaultConfig } from '../embed/api';
 import { logger } from '@/lib/logger';
 
@@ -52,9 +52,14 @@ export function useWidgetConfig(workspaceId?: string) {
           );
           
           // Use the default config for development mode
-          const devConfig = {
+          const defaultPlacement = defaultConfig.position?.placement || 'bottom-right';
+          const devConfig: ChatWidgetConfig = {
             ...defaultConfig,
             workspaceId,
+            position: {
+              ...defaultConfig.position,
+              placement: defaultPlacement as ChatPosition
+            },
             // Merge with our simple default config
             ...getDefaultConfig(workspaceId)
           };
@@ -78,14 +83,19 @@ export function useWidgetConfig(workspaceId?: string) {
         const errorInstance = err instanceof Error ? err : new Error('Failed to fetch config');
         logger.error('Failed to fetch widget config', 'useWidgetConfig', errorInstance);
         
-        setError(errorInstance);
         // Still use default config as fallback
+        const defaultPlacement = defaultConfig.position?.placement || 'bottom-right';
         setConfig({
           ...defaultConfig,
           workspaceId,
+          position: {
+            ...defaultConfig.position,
+            placement: defaultPlacement as ChatPosition
+          },
           // Merge with our simple default config
           ...getDefaultConfig(workspaceId)
         });
+        setError(errorInstance);
       } finally {
         setLoading(false);
       }

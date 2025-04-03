@@ -1,6 +1,7 @@
 
 import { PullseChatWidgetOptions } from '../types';
 import { logger } from '@/lib/logger';
+import { ChatPosition } from '../../config';
 
 /**
  * Validate and sanitize widget options
@@ -27,7 +28,7 @@ export function validateWidgetOptions(options: PullseChatWidgetOptions): PullseC
   
   // Validate position
   if (validatedOptions.position && 
-      !['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(validatedOptions.position)) {
+      !isValidChatPosition(validatedOptions.position)) {
     logger.warn(
       `Invalid position: ${validatedOptions.position}, using default`, 
       'WidgetLoader'
@@ -53,6 +54,13 @@ export function validateWidgetOptions(options: PullseChatWidgetOptions): PullseC
   }
   
   return validatedOptions;
+}
+
+/**
+ * Check if a position value is valid
+ */
+export function isValidChatPosition(position: string): position is ChatPosition {
+  return ['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(position);
 }
 
 /**
