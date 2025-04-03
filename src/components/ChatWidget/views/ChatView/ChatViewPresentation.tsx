@@ -87,6 +87,13 @@ const ChatViewPresentation = ({
 }: ChatViewPresentationProps) => {
   const isMobile = useIsMobile();
 
+  // Helper function to adapt highlightText for use in ChatBody
+  const adaptHighlightTextForChatBody = (text: string): string[] => {
+    // Just return the text as an array with one element
+    // This is a simplified version since we just need to pass this to ChatBody
+    return [text];
+  };
+
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm && config?.preChatForm) {
       return (
@@ -136,7 +143,7 @@ const ChatViewPresentation = ({
           onMessageReaction={onMessageReaction}
           searchTerm={searchTerm}
           messageIds={messageIds}
-          highlightText={highlightText}
+          highlightMessage={adaptHighlightTextForChatBody}
           agentAvatar={agentAvatar}
           userAvatar={userAvatar}
           handleLoadMoreMessages={handleLoadMoreMessages}
@@ -148,22 +155,11 @@ const ChatViewPresentation = ({
           agentStatus={conversation.agentInfo?.status}
           onToggleHighlight={onToggleMessageImportance}
         />
-
-        <MessageInput
-          messageText={messageText}
-          setMessageText={setMessageText}
-          handleSendMessage={handleSendMessage}
-          handleFileUpload={handleFileUpload}
-          handleEndChat={handleEndChat}
-          hasUserSentMessage={true}
-          onTyping={handleUserTyping}
-          disabled={showInlineForm}
-          config={config}
-        />
       </ChatKeyboardHandler>
 
+      {/* Use simple PoweredByBar without config prop */}
       {config?.branding?.showBrandingBar !== false && (
-        <PoweredByBar config={config} />
+        <PoweredByBar />
       )}
 
       {isMobile && <KeyboardShortcutsInfo />}

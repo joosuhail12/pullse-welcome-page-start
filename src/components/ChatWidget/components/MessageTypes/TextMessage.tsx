@@ -15,7 +15,7 @@ const TextMessage = ({ text, renderText, highlightText }: TextMessageProps) => {
     : "text-sm sm:text-base leading-relaxed";
   
   const highlightMatches = (text: string, term?: string) => {
-    if (!term) return text;
+    if (!term || term.trim() === '') return text;
     
     const parts = text.split(new RegExp(`(${term})`, 'gi'));
     return (

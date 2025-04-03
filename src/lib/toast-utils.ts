@@ -69,7 +69,7 @@ export const retryableToast = (
       }
     },
     'Retry'
-  ) as unknown as ToastActionElement
+  ) as ToastActionElement
   
   return showToast('error', {
     ...toastOptions,

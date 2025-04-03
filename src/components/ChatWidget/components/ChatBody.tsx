@@ -16,11 +16,11 @@ interface ChatBodyProps {
   handleUserTyping: () => void;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
-  readReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }>;  // Updated type
+  readReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }>;
   onMessageReaction?: (messageId: string, reaction: string) => void;
   searchTerm: string;
   messageIds: string[];
-  highlightMessage: (text: string) => string[];  // Updated function signature
+  highlightMessage: (text: string) => string[];
   agentAvatar?: string;
   userAvatar?: string;
   handleLoadMoreMessages: () => Promise<void>;

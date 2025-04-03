@@ -112,10 +112,12 @@ const ChatView = React.memo(({
     }
   }, [loadPreviousMessages]);
 
-  const highlightText = (text: string) => {
+  const highlightText = useCallback((text: string): string[] => {
     if (!searchTerm) return [text];
-    return originalHighlightText(text, searchTerm).map(part => part.text);
-  };
+    
+    return originalHighlightText(text, searchTerm)
+      .map(part => part.text);
+  }, [searchTerm, originalHighlightText]);
 
   const agentAvatar = useMemo(() => conversation.agentInfo?.avatar || config?.branding?.avatarUrl, 
     [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]);
