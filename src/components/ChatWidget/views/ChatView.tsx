@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
@@ -36,14 +35,12 @@ const ChatView = React.memo(({
     config?.preChatForm?.enabled && !userFormData && !conversation.contactIdentified
   );
 
-  // Effect to update the showInlineForm state when userFormData changes
   useEffect(() => {
     if (userFormData || conversation.contactIdentified) {
       setShowInlineForm(false);
     }
   }, [userFormData, conversation.contactIdentified]);
 
-  // Chat messages hook
   const {
     messages,
     messageText,
@@ -59,7 +56,6 @@ const ChatView = React.memo(({
     loadPreviousMessages
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
 
-  // Message reactions hook
   const {
     handleMessageReaction
   } = useMessageReactions(
@@ -70,7 +66,6 @@ const ChatView = React.memo(({
     config
   );
 
-  // Message search hook
   const {
     searchTerm,
     setSearchTerm,
@@ -81,7 +76,6 @@ const ChatView = React.memo(({
     isSearching
   } = useMessageSearch(messages);
 
-  // Memoize setMessages function to prevent recreation on each render
   const setMessages = useCallback((updatedMessages: React.SetStateAction<typeof messages>) => {
     if (typeof updatedMessages === 'function') {
       const newMessages = updatedMessages(messages);
@@ -97,7 +91,6 @@ const ChatView = React.memo(({
     }
   }, [messages, conversation, onUpdateConversation]);
 
-  // Toggle search bar with memoized callback
   const toggleSearch = useCallback(() => {
     setShowSearch(prev => !prev);
     if (showSearch) {
@@ -105,7 +98,6 @@ const ChatView = React.memo(({
     }
   }, [showSearch, clearSearch]);
 
-  // Handle loading previous messages for infinite scroll
   const handleLoadMoreMessages = useCallback(async () => {
     if (!loadPreviousMessages) return;
     
@@ -117,35 +109,28 @@ const ChatView = React.memo(({
     }
   }, [loadPreviousMessages]);
 
-  // Handle form submission
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     setShowInlineForm(false);
     
-    // Update the parent form data if callback exists
     if (setUserFormData) {
       setUserFormData(formData);
     }
     
-    // Flag the conversation as having identified the contact
     onUpdateConversation({
       ...conversation,
       contactIdentified: true
     });
     
-    // Dispatch form completed event
     dispatchChatEvent('contact:formCompleted', { formData }, config);
   }, [setUserFormData, onUpdateConversation, conversation, config]);
 
-  // Memoize avatar URLs from config
   const agentAvatar = useMemo(() => conversation.agentInfo?.avatar || config?.branding?.avatarUrl, 
     [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]);
     
-  const userAvatar = undefined; // Could be set from user profile if available
+  const userAvatar = undefined;
 
-  // Determine if there could be more messages to load
-  const hasMoreMessages = messages.length >= 20; // Assuming we load 20 messages at a time
+  const hasMoreMessages = messages.length >= 20;
 
-  // Memoize inline form component to prevent unnecessary renders
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
       return (
@@ -157,25 +142,23 @@ const ChatView = React.memo(({
     return null;
   }, [showInlineForm, config, handleFormComplete]);
 
-  // Memoize style properties
   const chatViewStyle = useMemo(() => {
     return {
-      // Apply custom theme variables if available from config
       ...(config?.branding?.primaryColor && {
         '--chat-header-bg': config.branding.primaryColor,
         '--chat-header-text': '#ffffff',
         '--user-bubble-bg': config.branding.primaryColor,
         '--user-bubble-text': '#ffffff',
-        '--system-bubble-bg': '#f3f4f6',
+        '--system-bubble-bg': '#F5F3FF',
         '--system-bubble-text': '#1f2937',
-        '--chat-bg': '#ffffff',
+        '--chat-bg': 'linear-gradient(to bottom, #F5F3FF, #E5DEFF)',
       } as React.CSSProperties)
     };
   }, [config?.branding?.primaryColor]);
 
   return (
     <div 
-      className="flex flex-col h-[600px]"
+      className="flex flex-col h-[600px] bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 rounded-lg shadow-lg"
       style={chatViewStyle}
     >
       <ChatViewHeader 
@@ -192,7 +175,6 @@ const ChatView = React.memo(({
       
       {inlineFormComponent}
       
-      {/* Only show message list if the form has been submitted */}
       {(!showInlineForm || userFormData || conversation.contactIdentified) && (
         <MessageList 
           messages={messages}
@@ -225,7 +207,6 @@ const ChatView = React.memo(({
   );
 });
 
-// Add display name for dev tools
 ChatView.displayName = 'ChatView';
 
 export default ChatView;
