@@ -1,62 +1,45 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button'; 
 import { Search, X } from 'lucide-react';
 
 interface SearchBarProps {
-  onSearch: (term: string) => void;
+  placeholder?: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClear: () => void;
-  resultCount: number;
-  isSearching: boolean;
+  resultCount?: number;
+  isSearching?: boolean;
 }
 
-const SearchBar = ({ onSearch, onClear, resultCount, isSearching }: SearchBarProps) => {
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [debouncedTerm, setDebouncedTerm] = useState<string>('');
-
-  // Debounce search term
-  useEffect(() => {
-    const timerId = setTimeout(() => {
-      setDebouncedTerm(searchTerm);
-    }, 300);
-
-    return () => clearTimeout(timerId);
-  }, [searchTerm]);
-
-  // Perform search when debounced term changes
-  useEffect(() => {
-    if (debouncedTerm) {
-      onSearch(debouncedTerm);
-    } else if (debouncedTerm === '') {
-      onClear();
-    }
-  }, [debouncedTerm, onSearch, onClear]);
-
-  const handleClear = () => {
-    setSearchTerm('');
-    onClear();
-  };
-
+const SearchBar: React.FC<SearchBarProps> = ({ 
+  placeholder = "Search...", 
+  value, 
+  onChange, 
+  onClear,
+  resultCount,
+  isSearching
+}) => {
   return (
-    <div className="relative flex items-center gap-2 p-2 border-b border-gray-100">
+    <div className="relative flex items-center gap-2 w-full">
       <div className="relative flex-grow">
         <div className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400">
           <Search size={16} />
         </div>
         <Input
           type="text"
-          placeholder="Search messages..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-8 py-1 h-8 text-sm"
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          className="pl-8 py-1 h-8 text-sm w-full"
         />
-        {searchTerm && (
+        {value && (
           <Button 
             variant="ghost" 
             size="sm" 
             className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0"
-            onClick={handleClear}
+            onClick={onClear}
           >
             <X size={14} />
           </Button>
@@ -64,7 +47,7 @@ const SearchBar = ({ onSearch, onClear, resultCount, isSearching }: SearchBarPro
       </div>
       {isSearching ? (
         <div className="text-xs text-gray-500">Searching...</div>
-      ) : searchTerm ? (
+      ) : value && resultCount !== undefined ? (
         <div className="text-xs text-gray-500">
           {resultCount} {resultCount === 1 ? 'result' : 'results'}
         </div>

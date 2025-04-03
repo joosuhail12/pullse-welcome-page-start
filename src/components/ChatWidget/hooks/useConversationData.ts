@@ -1,127 +1,98 @@
 
-import { useEffect, useState, useMemo } from 'react';
-import { Conversation, Message } from '../types';
-import { dispatchChatEvent } from '../utils/events';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { Conversation, Message, MessageReadStatus } from '../types';
 import { useInlineForm } from './useInlineForm';
-
-interface ConversationDataResult {
-  messages: Message[];
-  hasMoreMessages: boolean;
-  isLoadingMore: boolean;
-  loadMoreMessages: () => Promise<void>;
-  showInlineForm: boolean;
-  inlineFormComponent: React.ReactNode;
-  messageReactions: {
-    onMessageReaction: (messageId: string, reaction: string) => void;
-  };
-  readReceipts: Record<string, { status: 'sent' | 'delivered' | 'read'; timestamp?: Date }>;
-}
+import { useLoadMoreMessages } from './useLoadMoreMessages';
+import { ChatWidgetConfig } from '../config';
+import { dispatchValidatedEvent } from '../events';
 
 export const useConversationData = (
   conversation: Conversation,
-  config: any,
+  config: ChatWidgetConfig,
   userFormData?: Record<string, any>,
   setUserFormData?: (data: Record<string, any>) => void
-): ConversationDataResult => {
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+) => {
+  const [messages, setMessages] = useState<Message[]>(conversation.messages || []);
   const [reactionsMap, setReactionsMap] = useState<Record<string, 'thumbsUp' | 'thumbsDown'>>({});
+  const [readReceipts, setReadReceipts] = useState<Record<string, { status: MessageReadStatus; timestamp?: Date }>>({});
   
-  const { 
-    showInlineForm, 
-    setShowInlineForm, 
-    handleFormComplete,
-    formType,
-    formConfig
-  } = useInlineForm(conversation);
-
-  const messages = useMemo(() => conversation?.messages || [], [conversation?.messages]);
-
-  // Generate inline form component when needed
-  const inlineFormComponent = useMemo(() => {
-    if (!showInlineForm) return null;
-    
-    // Dispatch event when form is displayed
-    dispatchChatEvent('chat:inlineFormDisplayed', { formType });
-    
-    // Return appropriate form based on formType
-    if (formType === 'contact') {
-      return (
-        <div className="p-4 bg-white rounded-lg shadow-sm">
-          <h3 className="text-lg font-medium mb-4">Contact Information</h3>
-          {/* Contact form would be implemented here */}
-        </div>
-      );
-    }
-    
-    return null;
-  }, [showInlineForm, formType, formConfig]);
-
-  // Handle form auto-display based on conversation state
+  // Handle inline forms
+  const inlineForm = useInlineForm(conversation, config);
+  
+  // Add inlineFormComponent to the returned object
+  const inlineFormComponent = inlineForm.formType ? (
+    <div className="inline-form-container">
+      {/* Form component would be rendered here */}
+      <p>Form: {inlineForm.formType}</p>
+    </div>
+  ) : null;
+  
+  // Dispatch event when inline form is displayed
   useEffect(() => {
-    if (!conversation.contactIdentified && !conversation.formData && !userFormData) {
-      setShowInlineForm(true);
+    if (inlineForm.showInlineForm) {
+      dispatchValidatedEvent('message:sent', {
+        conversationId: conversation.id,
+        formType: inlineForm.formType,
+        formConfig: inlineForm.formConfig
+      });
     }
-  }, [conversation.contactIdentified, conversation.formData, userFormData]);
-
+  }, [inlineForm.showInlineForm, conversation.id, inlineForm.formType, inlineForm.formConfig]);
+  
+  // Update messages when conversation changes
+  useEffect(() => {
+    if (conversation && conversation.messages) {
+      setMessages(conversation.messages);
+    }
+  }, [conversation]);
+  
+  // Handle form data
+  useEffect(() => {
+    if (conversation && conversation.formData && setUserFormData) {
+      setUserFormData(conversation.formData);
+    }
+  }, [conversation, setUserFormData]);
+  
   // Handle message reactions
-  const handleMessageReaction = (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => {
+  const handleMessageReaction = useCallback((messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => {
     setReactionsMap(prev => ({
       ...prev,
       [messageId]: reaction
     }));
-
-    // Dispatch reaction event
-    dispatchChatEvent('chat:messageReaction', {
+    
+    // Dispatch event for message reaction
+    dispatchValidatedEvent('message:reaction', {
+      conversationId: conversation.id,
       messageId,
-      reaction,
-      conversationId: conversation.id
+      reaction
     });
-  };
-
-  // Mock loading more messages
-  const loadMoreMessages = async () => {
-    setIsLoadingMore(true);
-    
-    try {
-      // Simulate API call to load more messages
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real implementation, you would fetch messages from an API
-      // and add them to the conversation
-      
-    } finally {
-      setIsLoadingMore(false);
-    }
-  };
-
+  }, [conversation.id]);
+  
+  // Load more messages functionality
+  const { 
+    hasMoreMessages, 
+    isLoadingMore, 
+    loadMoreMessages 
+  } = useLoadMoreMessages(conversation.id, messages, setMessages);
+  
+  // Message reactions object
   const messageReactions = useMemo(() => ({
+    reactionsMap,
+    handleMessageReaction,
     onMessageReaction: handleMessageReaction
-  }), [conversation.id]);
-
-  // Mock read receipts
-  const readReceipts = useMemo(() => {
-    const receipts: Record<string, { status: 'sent' | 'delivered' | 'read'; timestamp?: Date }> = {};
-    
-    messages.forEach(message => {
-      if (message.sender === 'user') {
-        receipts[message.id] = {
-          status: message.status || 'sent',
-          timestamp: new Date(message.timestamp.getTime() + 1000)
-        };
-      }
-    });
-    
-    return receipts;
-  }, [messages]);
-
+  }), [reactionsMap, handleMessageReaction]);
+  
   return {
     messages,
-    hasMoreMessages: false, // Set to true if there are more messages to load
+    hasMoreMessages,
     isLoadingMore,
     loadMoreMessages,
-    showInlineForm,
+    showInlineForm: inlineForm.showInlineForm,
     inlineFormComponent,
     messageReactions,
-    readReceipts
+    readReceipts,
+    addMessage: (message: Message) => {
+      setMessages(prev => [...prev, message]);
+    },
+    inlineForm
   };
 };
