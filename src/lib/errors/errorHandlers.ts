@@ -24,11 +24,11 @@ function handleAppError(error: AppError): void {
   logger.error(error.message, 'ErrorHandler', error.details);
   
   // Show toast notification for user-facing errors
-  if (error.userFacing) {
+  if (error.userFacing !== false) {
     toasts.error({
       title: 'Application Error',
       description: error.message,
-      duration: error.severity === 'CRITICAL' ? 0 : 5000
+      duration: error.severity === ErrorSeverity.CRITICAL ? 0 : 5000
     });
   }
 }
@@ -40,7 +40,7 @@ function handleNetworkError(error: NetworkError): void {
   logger.error('Network Error', 'ErrorHandler', {
     message: error.message,
     retryable: error.retryable,
-    statusCode: error.statusCode
+    statusCode: error.statusCode || 0
   });
   
   // Show toast notification for network errors
@@ -74,7 +74,7 @@ function handleUnknownError(error: unknown): void {
 export function handleStandardError(
   error: Error, 
   showToast: boolean = true,
-  severity: ErrorSeverity = 'MEDIUM'
+  severity: ErrorSeverity = ErrorSeverity.MEDIUM
 ): void {
   logger.error(error.message, 'ErrorHandler', { stack: error.stack });
   
@@ -82,7 +82,7 @@ export function handleStandardError(
     toasts.error({
       title: 'Error',
       description: error.message,
-      duration: severity === 'CRITICAL' ? 0 : 5000
+      duration: severity === ErrorSeverity.CRITICAL ? 0 : 5000
     });
   }
 }

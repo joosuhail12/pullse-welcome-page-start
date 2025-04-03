@@ -1,111 +1,111 @@
 
 /**
- * Error Types
- * 
- * Defines standard error classes for different types of application errors
- * with appropriate metadata and classification.
- * 
- * SECURITY NOTICE: Error classes should not expose sensitive information
- * in their default state.
+ * Error Type Definitions
  */
 
-// Error severity levels
 export enum ErrorSeverity {
-  LOW = 'low',      // Non-critical errors, user can continue
-  MEDIUM = 'medium', // Important but not blocking functionality
-  HIGH = 'high',    // Critical errors that prevent core functionality
-  FATAL = 'fatal'   // Application cannot function
+  LOW = 'LOW',
+  MEDIUM = 'MEDIUM',
+  HIGH = 'HIGH',
+  CRITICAL = 'CRITICAL'
 }
 
-// Base application error with metadata
+export interface ErrorDetails {
+  code?: string;
+  statusCode?: number;
+  details?: Record<string, any>;
+  retryable?: boolean;
+  retry?: () => void;
+}
+
 export class AppError extends Error {
-  code?: string
-  details?: Record<string, any>
-  severity: ErrorSeverity
-  retryable: boolean
+  public readonly severity: ErrorSeverity;
+  public readonly code: string;
+  public readonly details?: Record<string, any>;
+  public readonly retryable: boolean;
+  public readonly userFacing: boolean;
 
-  constructor(
-    message: string, 
-    code?: string, 
-    details?: Record<string, any>,
-    severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-    retryable: boolean = false
-  ) {
-    super(message);
-    this.name = 'AppError'
-    this.code = code
-    this.details = details
-    this.severity = severity
-    this.retryable = retryable
-  }
-}
-
-// Network related errors
-export class NetworkError extends AppError {
-  constructor(
-    message: string = 'Network connection issue',
-    details?: Record<string, any>
-  ) {
-    super(message, 'ERR_NETWORK', details, ErrorSeverity.MEDIUM, true)
-    this.name = 'NetworkError'
-  }
-}
-
-// API related errors
-export class ApiError extends AppError {
-  status?: number
-  
   constructor(
     message: string,
-    status?: number,
-    details?: Record<string, any>
+    code: string = 'APP_ERROR',
+    details?: Record<string, any>,
+    severity: ErrorSeverity = ErrorSeverity.MEDIUM,
+    retryable: boolean = false,
+    userFacing: boolean = true
   ) {
-    // API errors are often retryable
-    const retryable = !status || status >= 500 || status === 429
-    const severity = status && status >= 500 ? ErrorSeverity.HIGH : ErrorSeverity.MEDIUM
+    super(message);
+    this.name = 'AppError';
+    this.code = code;
+    this.details = details;
+    this.severity = severity;
+    this.retryable = retryable;
+    this.userFacing = userFacing;
     
-    super(message, `ERR_API_${status || 'UNKNOWN'}`, details, severity, retryable)
-    this.name = 'ApiError'
-    this.status = status
+    // For better stack traces in modern JS engines
+    Object.setPrototypeOf(this, new.target.prototype);
   }
 }
 
-// Service unavailable error (circuit breaker open)
-export class ServiceUnavailableError extends AppError {
-  serviceName: string
-  
-  constructor(serviceName: string) {
+export class NetworkError extends AppError {
+  public readonly statusCode?: number;
+  public readonly retry?: () => void;
+
+  constructor(
+    message: string = 'Network request failed',
+    details?: Record<string, any>,
+    severity: ErrorSeverity = ErrorSeverity.MEDIUM,
+    retryable: boolean = true,
+    retry?: () => void,
+    statusCode?: number
+  ) {
+    super(message, 'NETWORK_ERROR', details, severity, retryable, true);
+    this.name = 'NetworkError';
+    this.statusCode = statusCode;
+    this.retry = retry;
+  }
+}
+
+export class ApiError extends NetworkError {
+  constructor(
+    message: string,
+    statusCode: number,
+    details?: Record<string, any>,
+    severity: ErrorSeverity = ErrorSeverity.MEDIUM,
+    retryable: boolean = statusCode >= 500
+  ) {
+    super(message, details, severity, retryable, undefined, statusCode);
+    this.name = 'ApiError';
+  }
+}
+
+export class ServiceUnavailableError extends NetworkError {
+  constructor(service: string, details?: Record<string, any>) {
     super(
-      `Service ${serviceName} is currently unavailable`,
-      'ERR_SERVICE_UNAVAILABLE',
-      { serviceName },
+      `Service ${service} is currently unavailable`,
+      details,
       ErrorSeverity.HIGH,
-      false // Not immediately retryable when circuit is open
-    )
-    this.name = 'ServiceUnavailableError'
-    this.serviceName = serviceName
+      true
+    );
+    this.name = 'ServiceUnavailableError';
   }
 }
 
-// Authentication errors
 export class AuthError extends AppError {
-  constructor(
-    message: string = 'Authentication failed', 
-    code: string = 'ERR_AUTH',
-    details?: Record<string, any>
-  ) {
-    super(message, code, details, ErrorSeverity.HIGH, false)
-    this.name = 'AuthError'
+  constructor(message: string = 'Authentication failed', details?: Record<string, any>) {
+    super(message, 'AUTH_ERROR', details, ErrorSeverity.HIGH, false);
+    this.name = 'AuthError';
   }
 }
 
-// Validation errors
 export class ValidationError extends AppError {
-  constructor(
-    message: string = 'Validation failed', 
-    details?: Record<string, any>
-  ) {
-    super(message, 'ERR_VALIDATION', details, ErrorSeverity.MEDIUM, false)
-    this.name = 'ValidationError'
+  constructor(message: string, fieldErrors?: Record<string, string[]>) {
+    super(
+      message,
+      'VALIDATION_ERROR',
+      { fieldErrors },
+      ErrorSeverity.LOW,
+      false
+    );
+    this.name = 'ValidationError';
   }
 }

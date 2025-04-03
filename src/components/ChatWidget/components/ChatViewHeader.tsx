@@ -70,7 +70,7 @@ const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
   // Agent information from conversation
   const agentName = conversation.agentInfo?.name || 'Support';
   const agentStatus = conversation.agentInfo?.status || 'online';
-
+  
   return (
     <div className="bg-vivid-purple text-white p-2 sm:p-4 shadow-sm z-10">
       {showSearch ? (
@@ -166,13 +166,13 @@ const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
                   <DropdownMenuItem className="flex justify-between">
                     <span>Status</span>
                     <span className="text-right font-medium">
-                      {conversation.status === 'ended' ? 'Closed' : 'Active'}
+                      {conversation.status === 'ended' || conversation.status === 'closed' ? 'Closed' : 'Active'}
                     </span>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="flex justify-between">
                     <span>Created</span>
                     <span className="text-right font-medium">
-                      {new Date(conversation.timestamp).toLocaleDateString()}
+                      {conversation.createdAt.toLocaleDateString()}
                     </span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

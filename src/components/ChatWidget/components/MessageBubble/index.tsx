@@ -20,15 +20,7 @@ const LazyLoadFallback = () => (
 );
 
 export interface MessageBubbleProps {
-  message: {
-    id: string;
-    text: string;
-    type?: string;
-    sender: string;
-    timestamp: Date;
-    metadata?: Record<string, any>;
-    reactions?: string[];
-  };
+  message: Message;
   highlightText?: (text: string) => Array<{ text: string; highlighted: boolean }>;
   isHighlighted?: boolean;
   userAvatar?: string;
@@ -71,11 +63,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   const isUserMessage = message.sender === 'user';
   const isBotMessage = message.sender === 'bot' || message.sender === 'agent';
   const isSystemMessage = message.sender === 'system';
+  const isStatusMessage = message.sender === 'status';
 
   const messageTypeClass = isUserMessage
     ? 'bg-vivid-purple text-white rounded-t-2xl rounded-bl-2xl rounded-br-sm'
     : isBotMessage
     ? 'bg-system-bubble-bg text-system-bubble-text rounded-t-2xl rounded-br-2xl rounded-bl-sm border border-gray-100'
+    : isStatusMessage
+    ? 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200'
     : 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200';
 
   const messageContainerClass = isUserMessage
@@ -135,7 +130,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       )}
       onContextMenu={handleLongPress}
     >
-      {!isSystemMessage && (
+      {!isStatusMessage && (
         <MessageAvatar
           sender={message.sender}
           avatarUrl={isUserMessage ? userAvatar : agentAvatar}
@@ -147,7 +142,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
           'relative max-w-[80%] sm:max-w-md px-4 py-3',
           messageTypeClass,
           isHighlighted && 'bg-yellow-100 border-yellow-300',
-          isSystemMessage && 'py-2 px-3'
+          isStatusMessage && 'py-2 px-3'
         )}
       >
         {renderMessageContent()}
