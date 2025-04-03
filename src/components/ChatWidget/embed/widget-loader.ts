@@ -1,4 +1,3 @@
-
 import { PullseChatWidgetOptions } from './types';
 import { getPositionStyles, loadDependencies } from './utils';
 import { EventManager } from './events';

@@ -1,4 +1,3 @@
-
 /**
  * Pullse Chat Widget Embed Script
  * 
@@ -88,4 +87,4 @@ import { PullseChatWidgetAPIImpl } from './embed/api-implementation';
 
 // Export for ESM environments
 export default PullseChatWidgetLoader;
-export { PullseChatWidgetAPI, PullseChatWidgetLoader, PullseChatWidgetAPIImpl };
+export { PullseChatWidgetAPI, PullseChatWidgetAPIImpl };
