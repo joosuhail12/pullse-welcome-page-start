@@ -2,6 +2,7 @@
 import React, { ErrorInfo, ReactNode } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { errorHandler } from '@/lib/error-handler'
+import { logger } from '@/lib/logger'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -25,7 +26,17 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log the error
+    // Log the error with structured logger
+    logger.error(
+      `Error caught by boundary: ${error.message}`, 
+      'ErrorBoundary', 
+      { 
+        error,
+        componentStack: errorInfo.componentStack 
+      }
+    );
+    
+    // Handle the error with our error handler
     errorHandler.handle(error)
     
     // Call custom error handler if provided
@@ -35,6 +46,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   handleReset = () => {
+    logger.info('Resetting error boundary', 'ErrorBoundary');
     this.setState({ hasError: false, error: undefined })
   }
 

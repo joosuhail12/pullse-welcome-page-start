@@ -4,6 +4,7 @@ import { initializeAbly, cleanupAbly, reconnectAbly } from '../utils/ably';
 import { getAblyAuthUrl } from '../services/ablyAuth';
 import { ConnectionStatus, getReconnectionManager } from '../utils/reconnectionManager';
 import { toasts } from '@/lib/toast-utils';
+import { logger } from '@/lib/logger';
 
 interface ConnectionManagerProps {
   workspaceId: string;
@@ -31,9 +32,10 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
       try {
         await initializeAbly(authUrl);
         onStatusChange(ConnectionStatus.CONNECTED);
+        logger.info('Real-time communication initialized', 'ConnectionManager');
         ablyCleanup = cleanupAbly;
       } catch (err) {
-        console.error('Failed to initialize real-time communication:', err);
+        logger.error('Failed to initialize real-time communication', 'ConnectionManager', err);
         onStatusChange(ConnectionStatus.FAILED);
         startReconnectionProcess(authUrl);
       }
@@ -42,6 +44,8 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
     const startReconnectionProcess = (url: string) => {
       reconnectionManager.start(async () => {
         reconnectionAttempts.current += 1;
+        
+        logger.info(`Reconnection attempt ${reconnectionAttempts.current}`, 'ConnectionManager');
         
         if (reconnectionAttempts.current === 1) {
           toasts.warning({
@@ -56,6 +60,8 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
           onStatusChange(ConnectionStatus.CONNECTED);
           reconnectionAttempts.current = 0;
           
+          logger.info('Real-time connection restored', 'ConnectionManager');
+          
           toasts.success({
             title: 'Connected',
             description: 'Real-time connection restored'
@@ -66,7 +72,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
         
         return false;
       }).catch(error => {
-        console.error('Reconnection failed after multiple attempts:', error);
+        logger.error('Reconnection failed after multiple attempts', 'ConnectionManager', error);
         
         toasts.error({
           title: 'Connection Failed',

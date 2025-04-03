@@ -1,6 +1,7 @@
 
 import { toasts } from '@/lib/toast-utils'
 import { getCircuitState } from '@/components/ChatWidget/utils/resilience'
+import { logger } from '@/lib/logger'
 
 // Error severity levels
 export enum ErrorSeverity {
@@ -109,13 +110,21 @@ export const errorHandler = {
       description: error.message,
     })
     
-    // Optional: Log to error tracking service
-    console.error(`${error.name} [${error.severity}]:`, error)
+    // Log with appropriate severity level
+    logger.error(
+      `${error.name} [${error.severity}]: ${error.message}`, 
+      'ErrorHandler', 
+      {
+        code: error.code,
+        details: error.details,
+        stack: error.stack
+      }
+    )
     
     // For fatal errors we might want to show a recovery UI
     if (error.severity === ErrorSeverity.FATAL) {
       // Could trigger app-level error boundary or redirect to error page
-      console.error('FATAL ERROR - Application may be unstable')
+      logger.error('FATAL ERROR - Application may be unstable', 'ErrorHandler')
     }
   },
 
@@ -126,7 +135,11 @@ export const errorHandler = {
       description: error.message,
     })
     
-    console.error('Standard Error:', error)
+    logger.error('Standard Error', 'ErrorHandler', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    })
   },
 
   // Catch-all for unknown error types
@@ -136,7 +149,7 @@ export const errorHandler = {
       description: 'An unexpected error occurred',
     })
     
-    console.error('Unknown Error:', error)
+    logger.error('Unknown Error', 'ErrorHandler', { error })
   },
 
   // Create a custom application error
@@ -167,13 +180,13 @@ export const errorHandler = {
   ) => new ServiceUnavailableError(serviceName)
 }
 
-// Error logging utility
+// Error logging utility - replace with structured logging
 export const logError = (error: unknown) => {
   if (error instanceof Error) {
-    console.error(`[ERROR] ${error.name}: ${error.message}`)
-    console.error(error.stack)
+    logger.error(`${error.name}: ${error.message}`, 'ErrorLogger', { 
+      stack: error.stack 
+    })
   } else {
-    console.error('[ERROR] An unknown error occurred', error)
+    logger.error('An unknown error occurred', 'ErrorLogger', { error })
   }
 }
-

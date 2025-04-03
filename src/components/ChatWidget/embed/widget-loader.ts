@@ -1,7 +1,9 @@
+
 import { PullseChatWidgetOptions, EventCallback } from './types';
 import { ChatEventType, ChatEventPayload } from '../config';
 import { getEventManager, EventPriority } from './enhancedEvents';
 import { validateEventPayload } from '../utils/eventValidation';
+import { logger } from '@/lib/logger';
 
 export class PullseChatWidgetLoader {
   private options: PullseChatWidgetOptions;
@@ -19,8 +21,9 @@ export class PullseChatWidgetLoader {
   private validateOptions(options: PullseChatWidgetOptions): PullseChatWidgetOptions {
     // Ensure required fields
     if (!options.workspaceId) {
-      console.error('Pullse Chat Widget: workspaceId is required');
-      throw new Error('workspaceId is required for Pullse Chat Widget');
+      const error = new Error('workspaceId is required for Pullse Chat Widget');
+      logger.error('Widget initialization failed: workspaceId is required', 'WidgetLoader', error);
+      throw error;
     }
     
     // Clone options to avoid mutations
@@ -28,25 +31,37 @@ export class PullseChatWidgetLoader {
     
     // Sanitize color values
     if (validatedOptions.primaryColor && !this.isValidColor(validatedOptions.primaryColor)) {
-      console.warn(`Invalid primary color: ${validatedOptions.primaryColor}, using default`);
+      logger.warn(
+        `Invalid primary color: ${validatedOptions.primaryColor}, using default`, 
+        'WidgetLoader'
+      );
       delete validatedOptions.primaryColor;
     }
     
     // Validate position
     if (validatedOptions.position && 
         !['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(validatedOptions.position)) {
-      console.warn(`Invalid position: ${validatedOptions.position}, using default`);
+      logger.warn(
+        `Invalid position: ${validatedOptions.position}, using default`, 
+        'WidgetLoader'
+      );
       delete validatedOptions.position;
     }
     
     // Validate offsets
     if (validatedOptions.offsetX !== undefined && (isNaN(validatedOptions.offsetX) || validatedOptions.offsetX < 0)) {
-      console.warn(`Invalid offsetX: ${validatedOptions.offsetX}, using default`);
+      logger.warn(
+        `Invalid offsetX: ${validatedOptions.offsetX}, using default`, 
+        'WidgetLoader'
+      );
       delete validatedOptions.offsetX;
     }
     
     if (validatedOptions.offsetY !== undefined && (isNaN(validatedOptions.offsetY) || validatedOptions.offsetY < 0)) {
-      console.warn(`Invalid offsetY: ${validatedOptions.offsetY}, using default`);
+      logger.warn(
+        `Invalid offsetY: ${validatedOptions.offsetY}, using default`, 
+        'WidgetLoader'
+      );
       delete validatedOptions.offsetY;
     }
     
@@ -76,6 +91,8 @@ export class PullseChatWidgetLoader {
     }
     
     try {
+      logger.info('Initializing Pullse Chat Widget', 'WidgetLoader');
+      
       // Create container for widget
       this.container = document.createElement('div');
       this.container.id = 'pullse-chat-widget-container';
@@ -92,8 +109,9 @@ export class PullseChatWidgetLoader {
       this.setupEventHandlers();
       
       this.isInitialized = true;
+      logger.info('Widget initialized successfully', 'WidgetLoader');
     } catch (error) {
-      console.error('Failed to initialize Pullse Chat Widget:', error);
+      logger.error('Failed to initialize Pullse Chat Widget', 'WidgetLoader', error);
       this.dispatchEvent({
         type: 'chat:error',
         timestamp: new Date(),
@@ -154,11 +172,13 @@ export class PullseChatWidgetLoader {
     
     // Register global event handler if provided
     if (this.options.onEvent) {
+      logger.debug('Registering global onEvent handler', 'WidgetLoader');
       eventManager.on('all', this.options.onEvent);
     }
     
     // Register specific event handlers if provided
     if (this.options.eventHandlers) {
+      logger.debug('Registering event handlers', 'WidgetLoader');
       Object.entries(this.options.eventHandlers).forEach(([eventType, handler]) => {
         if (handler) {
           eventManager.on(eventType as ChatEventType, handler);
@@ -179,6 +199,7 @@ export class PullseChatWidgetLoader {
    * Subscribe to events
    */
   public on(eventType: ChatEventType | 'all', callback: EventCallback): () => void {
+    logger.debug(`Subscribing to ${eventType} events`, 'WidgetLoader');
     const eventManager = getEventManager();
     return eventManager.on(eventType, callback);
   }
@@ -187,6 +208,7 @@ export class PullseChatWidgetLoader {
    * Unsubscribe from events
    */
   public off(eventType: ChatEventType | 'all', callback?: EventCallback): void {
+    logger.debug(`Unsubscribing from ${eventType} events`, 'WidgetLoader');
     const eventManager = getEventManager();
     eventManager.off(eventType, callback);
   }
@@ -195,6 +217,8 @@ export class PullseChatWidgetLoader {
    * Destroy the widget instance
    */
   public destroy(): void {
+    logger.info('Destroying widget instance', 'WidgetLoader');
+    
     if (this.container && this.container.parentNode) {
       this.container.parentNode.removeChild(this.container);
     }
@@ -207,5 +231,7 @@ export class PullseChatWidgetLoader {
     delete (window as any).__PULLSE_CHAT_CONFIG__;
     
     this.isInitialized = false;
+    
+    logger.info('Widget instance destroyed', 'WidgetLoader');
   }
 }

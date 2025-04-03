@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useWidgetPosition } from '../hooks/useWidgetPosition';
 import { dispatchChatEvent } from '../utils/events';
 import { errorHandler } from '@/lib/error-handler';
+import { logger } from '@/lib/logger';
 
 interface ChatWidgetErrorBoundaryProps {
   children: React.ReactNode;
@@ -22,6 +23,13 @@ const ChatWidgetErrorBoundary = ({ children, workspaceId }: ChatWidgetErrorBound
   const handleError = (err: Error) => {
     errorHandler.handle(err);
     setError(err);
+    
+    logger.error(
+      'Chat widget encountered an error', 
+      'ChatWidgetErrorBoundary', 
+      { error: err.message, workspaceId }
+    );
+    
     dispatchChatEvent('error', { error: err.message }, undefined);
   };
   

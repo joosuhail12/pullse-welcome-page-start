@@ -1,5 +1,6 @@
 
 import { ChatEventType, ChatEventPayload, ChatWidgetConfig } from '../config';
+import { logger } from '@/lib/logger';
 
 /**
  * Dispatches a chat widget event as a CustomEvent on the window object
@@ -21,6 +22,11 @@ export function dispatchChatEvent(
     data
   };
   
+  // Debug log in development only
+  logger.debug(`Dispatching event: ${eventType}`, 'events', {
+    data: import.meta.env.DEV ? data : undefined
+  });
+  
   // Dispatch window CustomEvent
   window.dispatchEvent(
     new CustomEvent('pullse:' + eventType, {
@@ -35,7 +41,7 @@ export function dispatchChatEvent(
     try {
       config.onEvent(payload);
     } catch (error) {
-      console.error('Error in chat widget onEvent callback:', error);
+      logger.error('Error in chat widget onEvent callback', 'events', error);
     }
   }
 }
@@ -68,12 +74,14 @@ export function subscribeToChatEvent(
       'pullse:message:reacted'
     ];
     
+    logger.debug('Subscribing to all events', 'events');
     allEvents.forEach(event => {
       window.addEventListener(event, handleEvent);
     });
     
     // Return cleanup function
     return () => {
+      logger.debug('Unsubscribing from all events', 'events');
       allEvents.forEach(event => {
         window.removeEventListener(event, handleEvent);
       });
@@ -81,10 +89,13 @@ export function subscribeToChatEvent(
   } else {
     // Subscribe to specific event
     const eventName = 'pullse:' + eventType;
+    
+    logger.debug(`Subscribing to event: ${eventName}`, 'events');
     window.addEventListener(eventName, handleEvent);
     
     // Return cleanup function
     return () => {
+      logger.debug(`Unsubscribing from event: ${eventName}`, 'events');
       window.removeEventListener(eventName, handleEvent);
     };
   }
@@ -97,5 +108,6 @@ export function subscribeToChatEvent(
 export function registerGlobalEventHandler(
   callback: (payload: ChatEventPayload) => void
 ): () => void {
+  logger.debug('Registering global event handler', 'events');
   return subscribeToChatEvent('all', callback);
 }

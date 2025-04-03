@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { fetchChatWidgetConfig } from '../services/api';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import { getDefaultConfig } from '../embed/api';
+import { logger } from '@/lib/logger';
 
 export function useWidgetConfig(workspaceId?: string) {
   const [config, setConfig] = useState<ChatWidgetConfig>(defaultConfig);
@@ -22,7 +23,10 @@ export function useWidgetConfig(workspaceId?: string) {
         
         // Log that we're in development mode
         if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
-          console.log(`Using default config for workspace ${workspaceId} in development mode`);
+          logger.debug(
+            `Using default config for workspace ${workspaceId} in development mode`, 
+            'useWidgetConfig'
+          );
           
           // Use the default config for development mode
           const devConfig = {
@@ -37,11 +41,21 @@ export function useWidgetConfig(workspaceId?: string) {
           return;
         }
         
+        logger.info(`Fetching config for workspace ${workspaceId}`, 'useWidgetConfig');
         const fetchedConfig = await fetchChatWidgetConfig(workspaceId);
+        
+        logger.debug('Config fetched successfully', 'useWidgetConfig', {
+          hasRealtime: !!fetchedConfig.realtime,
+          hasBranding: !!fetchedConfig.branding
+        });
+        
         setConfig(fetchedConfig);
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to fetch config'));
+        const errorInstance = err instanceof Error ? err : new Error('Failed to fetch config');
+        logger.error('Failed to fetch widget config', 'useWidgetConfig', errorInstance);
+        
+        setError(errorInstance);
         // Still use default config as fallback
         setConfig({
           ...defaultConfig,
