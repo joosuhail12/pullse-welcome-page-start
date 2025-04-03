@@ -1,9 +1,10 @@
+
 import React, { useMemo } from 'react';
 import { Check, Clock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-export type MessageReadStatus = 'unread' | 'sent' | 'delivered' | 'read';
+export type MessageReadStatus = 'unread' | 'sent' | 'delivered' | 'read' | 'failed';
 
 interface MessageReadReceiptProps {
   status?: MessageReadStatus;

@@ -16,11 +16,11 @@ interface ChatBodyProps {
   handleUserTyping: () => void;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
-  readReceipts: Record<string, Date>;  // Updated to match expected type
+  readReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }>;  // Updated type
   onMessageReaction?: (messageId: string, reaction: string) => void;
   searchTerm: string;
   messageIds: string[];
-  highlightText: (text: string, term: string) => { text: string; highlighted: boolean }[];  // Updated to match function signature
+  highlightMessage: (text: string) => string[];  // Updated function signature
   agentAvatar?: string;
   userAvatar?: string;
   handleLoadMoreMessages: () => Promise<void>;
@@ -47,7 +47,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   onMessageReaction,
   searchTerm,
   messageIds,
-  highlightText,
+  highlightMessage,
   agentAvatar,
   userAvatar,
   handleLoadMoreMessages,
@@ -72,7 +72,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
             readReceipts={readReceipts}
             onMessageReaction={onMessageReaction}
             searchResults={messageIds}
-            highlightMessage={highlightText}
+            highlightMessage={highlightMessage}
             searchTerm={searchTerm}
             agentAvatar={agentAvatar}
             userAvatar={userAvatar}
