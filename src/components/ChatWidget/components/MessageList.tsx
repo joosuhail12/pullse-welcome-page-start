@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import MessageBubble from './MessageBubble';
+import MessageBubble from './MessageBubble'; // Ensure this points to the right file
 import TypingIndicator from './TypingIndicator';
 import { Button } from '@/components/ui/button';
 import { ArrowDown, Loader2 } from 'lucide-react';

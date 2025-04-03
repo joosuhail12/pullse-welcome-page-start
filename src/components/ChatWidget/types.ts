@@ -90,7 +90,7 @@ export interface MessageAvatarProps {
   agentStatus?: AgentStatus;
 }
 
-// Define MessageBubble props
+// Update MessageBubbleProps with the missing properties
 export interface MessageBubbleProps {
   message: Message;
   highlightText?: string;
@@ -102,6 +102,8 @@ export interface MessageBubbleProps {
   agentStatus?: AgentStatus;
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
+  searchTerm?: string; // Added searchTerm property
+  onToggleHighlight?: () => void; // Added onToggleHighlight property
 }
 
 // Define QuickReplyMessage props
