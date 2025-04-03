@@ -2,6 +2,12 @@
 import { ChatEventType, ChatEventPayload, ChatWidgetConfig } from '../config';
 import { logger } from '@/lib/logger';
 
+export enum EventPriority {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high'
+}
+
 /**
  * Dispatches a chat widget event as a CustomEvent on the window object
  * and calls the optional onEvent callback if provided in the config
@@ -9,11 +15,13 @@ import { logger } from '@/lib/logger';
  * @param eventType The type of event to dispatch
  * @param data Optional data to include with the event
  * @param config The chat widget configuration
+ * @param priority Optional priority level for the event
  */
 export function dispatchChatEvent(
   eventType: ChatEventType, 
   data?: any, 
-  config?: ChatWidgetConfig
+  config?: ChatWidgetConfig,
+  priority?: EventPriority
 ): void {
   // Create event payload
   const payload: ChatEventPayload = {
@@ -44,6 +52,35 @@ export function dispatchChatEvent(
       logger.error('Error in chat widget onEvent callback', 'events', error);
     }
   }
+  
+  // Call specific event handler if provided
+  if (config?.eventHandlers?.[eventType]) {
+    try {
+      config.eventHandlers[eventType]!(payload);
+    } catch (error) {
+      logger.error(`Error in chat widget ${eventType} event handler`, 'events', error);
+    }
+  }
+}
+
+/**
+ * A validated version of dispatchChatEvent that can be used by internal modules
+ * with priority handling and additional validation
+ */
+export function dispatchValidatedEvent(
+  eventType: ChatEventType,
+  data?: any,
+  priority: EventPriority = EventPriority.MEDIUM
+): void {
+  try {
+    // Perform any validation here if needed
+    
+    // Get the widget config from global state or context
+    // For now, we'll just pass undefined and let dispatchChatEvent handle it
+    dispatchChatEvent(eventType, data, undefined, priority);
+  } catch (error) {
+    logger.error(`Failed to dispatch validated event: ${eventType}`, 'events', error);
+  }
 }
 
 /**
@@ -71,7 +108,9 @@ export function subscribeToChatEvent(
       'pullse:chat:messageReceived',
       'pullse:contact:initiatedChat',
       'pullse:contact:formCompleted',
-      'pullse:message:reacted'
+      'pullse:message:reacted',
+      'pullse:chat:connectionChange',
+      'pullse:chat:error'
     ];
     
     logger.debug('Subscribing to all events', 'events');

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Agent, AgentStatus } from '../types';
-import { getPresence, subscribeToPresence } from '../utils/ably';
+import { getAblyClient, subscribeToPresence } from '../utils/ably';
 import useWidgetConfig from '../hooks/useWidgetConfig';
 
 interface AgentPresenceProps {
@@ -32,28 +32,9 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
     
     // Channel for workspace-level presence with proper scoping
     const channelName = `workspace:${workspaceId}:presence`;
-
-    // Fetch initial presence
-    const fetchInitialPresence = async () => {
-      try {
-        const presenceData = await getPresence(channelName);
-        const agentData: Agent[] = presenceData.map(member => ({
-          id: member.clientId,
-          name: member.data?.name || 'Agent',
-          avatar: member.data?.avatar,
-          status: 'online'
-        }));
-        
-        setAgents(agentData);
-      } catch (error) {
-        console.error('Error fetching initial presence:', error);
-      }
-    };
     
-    fetchInitialPresence();
-    
-    // Subscribe to presence updates
-    subscribeToPresence(channelName, (presenceData) => {
+    // Subscribe to presence updates using the new subscription function
+    const unsubscribe = subscribeToPresence(channelName, (presenceData) => {
       const agentData: Agent[] = presenceData.map(member => ({
         id: member.clientId,
         name: member.data?.name || 'Agent',
@@ -66,7 +47,7 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
     
     // Return cleanup function
     return () => {
-      // Cleanup will be handled by the cleanupAbly function
+      unsubscribe();
     };
   }, [workspaceId, config.realtime?.enabled]);
   

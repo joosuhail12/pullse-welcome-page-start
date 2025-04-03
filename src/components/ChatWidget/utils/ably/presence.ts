@@ -12,8 +12,10 @@ export const generatePresenceId = (): string => {
 // Function to enter presence on a channel
 export const enterPresence = async (channel: Ably.Types.RealtimeChannelBase, clientId: string, data?: any): Promise<void> => {
   try {
-    await channel.presence.enterClient(clientId, data);
-    console.log(`Entered presence on channel ${channel.name} with clientId ${clientId}`);
+    if (channel && channel.presence) {
+      await channel.presence.enterClient(clientId, data);
+      console.log(`Entered presence on channel ${channel.name} with clientId ${clientId}`);
+    }
   } catch (error) {
     console.error(`Failed to enter presence on channel ${channel.name}:`, error);
     throw error;
@@ -23,8 +25,10 @@ export const enterPresence = async (channel: Ably.Types.RealtimeChannelBase, cli
 // Function to leave presence on a channel
 export const leavePresence = async (channel: Ably.Types.RealtimeChannelBase, clientId: string): Promise<void> => {
   try {
-    await channel.presence.leaveClient(clientId);
-    console.log(`Left presence on channel ${channel.name} with clientId ${clientId}`);
+    if (channel && channel.presence) {
+      await channel.presence.leaveClient(clientId);
+      console.log(`Left presence on channel ${channel.name} with clientId ${clientId}`);
+    }
   } catch (error) {
     console.error(`Failed to leave presence on channel ${channel.name}:`, error);
     throw error;
@@ -34,9 +38,12 @@ export const leavePresence = async (channel: Ably.Types.RealtimeChannelBase, cli
 // Function to get the current presence members on a channel
 export const getPresence = async (channel: Ably.Types.RealtimeChannelBase): Promise<Ably.Types.PresenceMessage[]> => {
   try {
-    const presence = await channel.presence.get();
-    console.log(`Current presence members on channel ${channel.name}:`, presence);
-    return presence;
+    if (channel && channel.presence) {
+      const presence = await channel.presence.get();
+      console.log(`Current presence members on channel ${channel.name}:`, presence);
+      return presence;
+    }
+    return [];
   } catch (error) {
     console.error(`Failed to get presence on channel ${channel.name}:`, error);
     return [];
