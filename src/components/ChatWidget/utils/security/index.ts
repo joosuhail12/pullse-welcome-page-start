@@ -30,14 +30,9 @@ export {
 
 // Export rate limiting
 export {
-  isRateLimited
+  isRateLimited,
+  trackAPICall
 } from './rateLimit';
-
-// Create stub for trackAPICall if missing
-export function trackAPICall(endpoint: string, ip?: string): boolean {
-  // Simple stub implementation
-  return true;
-}
 
 // Export session management stubs if needed
 export function validateSession(sessionId: string): boolean {
@@ -58,3 +53,4 @@ export function refreshSession(sessionId: string): string {
 
 // Export types - fix the path to use the correct file
 export * from '@/lib/security/securityTypes';
+

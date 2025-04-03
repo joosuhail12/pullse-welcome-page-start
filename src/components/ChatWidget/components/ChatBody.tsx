@@ -95,7 +95,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
         <MessageInput
           messageText={messageText}
           setMessageText={setMessageText}
-          handleSendMessage={handleSendMessage}
+          onSendMessage={handleSendMessage}
           handleFileUpload={handleFileUpload}
           handleEndChat={handleEndChat}
           hasUserSentMessage={isTyping}

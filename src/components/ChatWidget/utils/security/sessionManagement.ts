@@ -9,6 +9,7 @@
 import { getChatSessionId, invalidateSession } from '../cookies';
 import { auditLogger } from '@/lib/audit-logger';
 import { rateLimitStore } from './rateLimit';
+import { SecurityEventType } from '@/lib/security/securityTypes';
 
 /**
  * Logout user and invalidate session
@@ -64,7 +65,7 @@ export function enforceHttps(): boolean {
   ) {
     // Log security event for HTTP access attempt
     auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
+      SecurityEventType.SECURITY_SETTING_CHANGE,
       'ATTEMPT',
       { 
         action: 'enforce_https', 
