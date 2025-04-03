@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MessageBubble from './MessageBubble';
@@ -163,7 +162,7 @@ const MessageList: React.FC<MessageListProps> = ({
             >
               <MessageBubble
                 message={message}
-                highlightText={searchTerm && highlightMessage ? searchTerm : undefined}
+                searchTerm={searchTerm}
                 isHighlighted={isHighlighted}
                 userAvatar={userAvatar}
                 agentAvatar={agentAvatar}
@@ -172,6 +171,7 @@ const MessageList: React.FC<MessageListProps> = ({
                 agentStatus={message.sender === 'agent' ? agentStatus : undefined}
                 readStatus={readReceipt.status}
                 readTimestamp={readReceipt.timestamp}
+                onToggleHighlight={onToggleHighlight ? () => onToggleHighlight(message.id) : undefined}
               />
             </div>
           );
