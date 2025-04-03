@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -138,13 +137,35 @@ export default {
 					'50%': {
 						transform: 'translateY(-5px)'
 					}
+				},
+				'slide-in-right': {
+					'0%': { 
+						opacity: '0',
+						transform: 'translateX(20px)' 
+					},
+					'100%': { 
+						opacity: '1',
+						transform: 'translateX(0)' 
+					}
+				},
+				'scale-in': {
+					'0%': { 
+						opacity: '0',
+						transform: 'scale(0.9)' 
+					},
+					'100%': { 
+						opacity: '1',
+						transform: 'scale(1)' 
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out forwards',
-				'typing-bounce': 'typing-bounce 1s infinite'
+				'typing-bounce': 'typing-bounce 1s infinite',
+				'slide-in-right': 'slide-in-right 0.5s ease-out',
+				'scale-in': 'scale-in 0.4s ease-out'
 			},
 			boxShadow: {
 				'chat-bubble': '0 2px 8px rgba(0, 0, 0, 0.05)',
