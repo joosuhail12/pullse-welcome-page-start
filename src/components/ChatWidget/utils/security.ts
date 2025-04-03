@@ -199,3 +199,52 @@ export function verifyMessageSignature(message: string, timestamp: number, signa
     return false;
   }
 }
+
+/**
+ * Logout the current user session
+ */
+export function logout(): void {
+  try {
+    // Clear session cookies or tokens
+    document.cookie = 'pullse_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    localStorage.removeItem('chat_widget_session');
+    
+    // Log the security event
+    auditLogger.logSecurityEvent(
+      SecurityEventType.LOGOUT,
+      'SUCCESS',
+      { action: 'user_logout' }
+    );
+  } catch (error) {
+    logger.error('Error during logout', 'security.logout', {
+      error: sanitizeErrorMessage(error)
+    });
+  }
+}
+
+/**
+ * Verify if the current session is valid
+ */
+export function checkSessionValidity(): boolean {
+  try {
+    // Check for existence of session token
+    const sessionCookie = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('pullse_session='));
+    
+    // Check session timestamp if it exists
+    if (sessionCookie) {
+      const sessionToken = sessionCookie.split('=')[1];
+      return !!sessionToken;
+    }
+    
+    // Check local storage as fallback
+    const localSession = localStorage.getItem('chat_widget_session');
+    return !!localSession;
+  } catch (error) {
+    logger.error('Error checking session validity', 'security.checkSessionValidity', {
+      error: sanitizeErrorMessage(error)
+    });
+    return false;
+  }
+}
