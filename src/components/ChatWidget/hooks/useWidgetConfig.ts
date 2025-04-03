@@ -9,7 +9,7 @@ import { ChatPositionString } from '../types';
 
 // Helper function to ensure the returned value is a valid ChatPositionString
 function ensureValidPosition(position: unknown): ChatPositionString {
-  if (isValidChatPosition(position)) {
+  if (typeof position === 'string' && isValidChatPosition(position)) {
     return position;
   }
   return 'bottom-right' as const;

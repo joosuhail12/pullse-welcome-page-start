@@ -1,5 +1,4 @@
 
-
 import { AgentStatus, ChatPositionString } from "./types";
 
 export type ChatEventType = 
@@ -45,7 +44,7 @@ export interface ChatWidgetConfig {
   workspaceId?: string;
   branding?: ChatBranding;
   position?: {
-    placement: ChatPosition;
+    placement: ChatPositionString;
     offsetX?: number;
     offsetY?: number;
   };
@@ -99,7 +98,7 @@ export const defaultConfig: ChatWidgetConfig = {
     showBrandingBar: true
   },
   position: {
-    placement: 'bottom-right',
+    placement: 'bottom-right' as ChatPositionString,
     offsetX: 20,
     offsetY: 20
   },
@@ -111,4 +110,3 @@ export const defaultConfig: ChatWidgetConfig = {
     typing: true
   }
 };
-
