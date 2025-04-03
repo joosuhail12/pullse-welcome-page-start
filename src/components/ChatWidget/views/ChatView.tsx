@@ -1,5 +1,5 @@
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageInputSection from '../components/MessageInputSection';
@@ -19,7 +19,7 @@ interface ChatViewProps {
   setUserFormData?: (data: Record<string, string>) => void;
 }
 
-const ChatView = ({ 
+const ChatView: React.FC<ChatViewProps> = ({ 
   conversation, 
   onBack, 
   onUpdateConversation, 
@@ -27,8 +27,8 @@ const ChatView = ({
   playMessageSound,
   userFormData,
   setUserFormData
-}: ChatViewProps) => {
-  const [showSearch, setShowSearch] = React.useState(false);
+}) => {
+  const [showSearch, setShowSearch] = useState(false);
 
   // Chat messages hook
   const {

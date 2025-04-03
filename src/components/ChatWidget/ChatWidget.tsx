@@ -15,15 +15,15 @@ import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
 import { useConnectionState } from './hooks/useConnectionState';
-import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import { getPendingMessageCount } from './utils/offlineQueue';
 
 interface ChatWidgetProps {
   workspaceId?: string;
 }
 
-export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
+const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
   const {
     viewState,
     activeConversation,
@@ -283,4 +283,5 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
 // Add displayName for debugging and React DevTools
 ChatWidget.displayName = 'ChatWidget';
 
+export { ChatWidget };
 export default ChatWidget;

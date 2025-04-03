@@ -21,7 +21,7 @@ interface MessagesSectionProps {
 }
 
 // Using React.memo to prevent unnecessary re-renders
-const MessagesSection = React.memo(({ 
+const MessagesSection: React.FC<MessagesSectionProps> = React.memo(({ 
   messages,
   isTyping,
   remoteIsTyping,
@@ -36,7 +36,7 @@ const MessagesSection = React.memo(({
   onScrollTop,
   hasMoreMessages,
   isLoadingMore
-}: MessagesSectionProps) => {
+}) => {
   // Use useCallback for the scroll handler if it exists
   const handleScrollTop = useCallback(async () => {
     if (onScrollTop) {
