@@ -7,7 +7,7 @@ export interface Message {
   type?: 'text' | 'file' | 'card' | 'quick_reply' | 'status';
   fileUrl?: string;
   fileName?: string;
-  status?: 'sent' | 'delivered' | 'read';
+  status?: 'sending' | 'sent' | 'delivered' | 'read';
   reaction?: 'thumbsUp' | 'thumbsDown' | null;
   cardData?: {
     title: string;
