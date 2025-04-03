@@ -121,9 +121,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   };
 
   const messageTypeClass = isUserMessage
-    ? `bg-vivid-purple text-white ${isConsecutive ? getConsecutiveClasses() : 'rounded-t-2xl rounded-bl-2xl rounded-br-sm'}`
+    ? `chat-message-user text-white ${isConsecutive ? 'rounded-t-md rounded-bl-md rounded-br-sm mt-1' : 'rounded-t-2xl rounded-bl-2xl rounded-br-sm'}`
     : isBotMessage
-    ? `bg-system-bubble-bg text-system-bubble-text ${isConsecutive ? getConsecutiveClasses() : 'rounded-t-2xl rounded-br-2xl rounded-bl-sm'} border border-gray-100 ${getStatusBasedClasses()}`
+    ? `chat-message-system text-system-bubble-text ${isConsecutive ? 'rounded-t-md rounded-br-md rounded-bl-sm mt-1' : 'rounded-t-2xl rounded-br-2xl rounded-bl-sm'} border border-gray-100 ${getStatusBasedClasses()}`
     : 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200';
 
   const messageContainerClass = isUserMessage
@@ -262,7 +262,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       className={cn(
         'group flex items-end relative animate-fade-in',
         messageContainerClass,
-        isConsecutive ? 'mb-1' : 'mb-4' // Less margin between consecutive messages
+        isConsecutive ? 'mb-1' : 'mb-4'
       )}
       onContextMenu={handleLongPress}
     >
