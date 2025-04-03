@@ -44,15 +44,9 @@ const ChatHeader = ({ conversation, onBack, onToggleSearch, showSearch, ticketPr
           <div>
             <h2 className="font-semibold text-xs sm:text-sm tracking-tight">
               {conversation.title || 'Support Chat'}
-              {conversation.isResolved && (
-                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Resolved
-                </span>
-              )}
             </h2>
             <AgentPresence 
               workspaceId={conversation.id.split(':')[0]}
-              status={conversation.agentInfo?.status}
             />
           </div>
         </div>

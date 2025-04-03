@@ -12,13 +12,7 @@
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import { getChatSessionId, setChatSessionId } from '../utils/cookies';
 import { sanitizeInput, validateMessage } from '../utils/validation';
-import { 
-  isRateLimited, 
-  getCsrfToken,
-  enforceHttps,
-  signMessage,
-  verifyMessageSignature
-} from '../utils/security';
+import { isRateLimited, generateCsrfToken, enforceHttps, signMessage, verifyMessageSignature } from '../utils/security';
 import { withResilience, withRetry, isCircuitOpen } from '../utils/resilience';
 import { toast } from '@/components/ui/use-toast';
 import { getDefaultConfig } from '../embed/api';
@@ -179,22 +173,20 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
     // since the API may not be available or may return HTML instead of JSON
     if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
       console.log(`Using default config for workspace ${sanitizedWorkspaceId} in development mode`);
-      const defConfig = getDefaultConfig(sanitizedWorkspaceId);
       return {
         ...defaultConfig,
         workspaceId: sanitizedWorkspaceId,
-        ...(defConfig || {})
+        ...getDefaultConfig(sanitizedWorkspaceId)
       };
     }
     
     // Check if circuit is already open (too many failures)
     if (isCircuitOpen(CONFIG_CIRCUIT)) {
       console.warn('Config API circuit is open, using default config');
-      const defConfig = getDefaultConfig(sanitizedWorkspaceId);
       return { 
         ...defaultConfig, 
         workspaceId: sanitizedWorkspaceId,
-        ...(defConfig || {})
+        ...getDefaultConfig(sanitizedWorkspaceId)
       };
     }
     
@@ -213,7 +205,7 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
         const timestamp = Date.now();
         
         // Generate CSRF token with nonce
-        const { token: csrfToken, nonce: csrfNonce } = getCsrfToken();
+        const { token: csrfToken, nonce: csrfNonce } = generateCsrfToken();
         
         // Include CSRF token, nonce and timestamp in headers
         const headers: HeadersInit = {
@@ -288,11 +280,10 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
     );
     
     // Always fall back to default config for reliability
-    const defConfig = getDefaultConfig(sanitizeInput(workspaceId));
     return { 
       ...defaultConfig, 
       workspaceId: sanitizeInput(workspaceId),
-      ...(defConfig || {})
+      ...getDefaultConfig(sanitizeInput(workspaceId))
     };
   }
 };

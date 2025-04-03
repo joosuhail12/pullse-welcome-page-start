@@ -1,6 +1,5 @@
-
 import React, { useMemo } from 'react';
-import { Conversation, Message } from '../../types';
+import { Conversation } from '../../types';
 import { ChatWidgetConfig } from '../../config';
 import ChatViewHeader from '../../components/ChatViewHeader';
 import PreChatForm from '../../components/PreChatForm';

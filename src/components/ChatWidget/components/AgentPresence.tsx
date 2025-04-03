@@ -2,39 +2,26 @@
 import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Agent, AgentStatus } from '../types';
+import { Agent } from '../types';
 import { getPresence, subscribeToPresence } from '../utils/ably';
 import useWidgetConfig from '../hooks/useWidgetConfig';
 
 interface AgentPresenceProps {
   workspaceId?: string;
-  status?: AgentStatus;
-  agentName?: string;
 }
 
-const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId, status, agentName }) => {
+const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const { config } = useWidgetConfig(workspaceId);
   const maxDisplayed = 5;
   
   useEffect(() => {
     if (!workspaceId || !config.realtime?.enabled) {
-      // Use mock data when real-time is disabled or if status is provided directly
-      if (status) {
-        const mockAgent = { 
-          id: '1', 
-          name: agentName || 'Agent', 
-          status 
-        };
-        setAgents([mockAgent]);
-        return;
-      }
-      
-      // Default mock agents
+      // Use mock data when real-time is disabled
       const mockAgents = [
-        { id: '1', name: 'John Doe', avatar: '/placeholder.svg', status: 'online' as AgentStatus },
-        { id: '2', name: 'Jane Smith', avatar: '/placeholder.svg', status: 'online' as AgentStatus },
-        { id: '3', name: 'Alex Johnson', avatar: '/placeholder.svg', status: 'online' as AgentStatus },
+        { id: '1', name: 'John Doe', avatar: '/placeholder.svg', status: 'online' as const },
+        { id: '2', name: 'Jane Smith', avatar: '/placeholder.svg', status: 'online' as const },
+        { id: '3', name: 'Alex Johnson', avatar: '/placeholder.svg', status: 'online' as const },
       ];
       
       setAgents(mockAgents);
@@ -52,7 +39,7 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId, status, agen
           id: member.clientId,
           name: member.data?.name || 'Agent',
           avatar: member.data?.avatar,
-          status: 'online' as AgentStatus
+          status: 'online'
         }));
         
         setAgents(agentData);
@@ -69,7 +56,7 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId, status, agen
         id: member.clientId,
         name: member.data?.name || 'Agent',
         avatar: member.data?.avatar,
-        status: 'online' as AgentStatus
+        status: 'online'
       }));
       
       setAgents(agentData);
@@ -79,7 +66,7 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId, status, agen
     return () => {
       // Cleanup will be handled by the cleanupAbly function
     };
-  }, [workspaceId, config.realtime?.enabled, status, agentName]);
+  }, [workspaceId, config.realtime?.enabled]);
   
   if (agents.length === 0) {
     return null;

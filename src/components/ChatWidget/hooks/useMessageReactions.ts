@@ -50,7 +50,7 @@ export function useMessageReactions(
       messageId, 
       reaction,
       timestamp: new Date() 
-    });
+    }, config);
   }, [messages, setMessages, chatChannelName, sessionId, config]);
 
   return {

@@ -16,7 +16,7 @@ import { validateEventPayload } from '../utils/eventValidation';
 import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 import { enforceHttps } from '../utils/security';
-import { auditLogger, SecurityEventType } from '@/lib/audit-logger';
+import { auditLogger } from '@/lib/audit-logger';
 
 // Export the main class for direct usage
 export { PullseChatWidgetLoader };
@@ -35,7 +35,7 @@ export function initializeWidget(options: PullseChatWidgetOptions): PullseChatWi
   try {
     // Log widget initialization attempt
     auditLogger.logSecurityEvent(
-      SecurityEventType.SECURITY_SETTING_CHANGE,
+      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
       'ATTEMPT',
       { 
         action: 'widget_initialize', 
@@ -59,7 +59,7 @@ export function initializeWidget(options: PullseChatWidgetOptions): PullseChatWi
     
     // Log successful widget initialization
     auditLogger.logSecurityEvent(
-      SecurityEventType.SECURITY_SETTING_CHANGE,
+      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
       'SUCCESS',
       { 
         action: 'widget_initialize', 
@@ -77,7 +77,7 @@ export function initializeWidget(options: PullseChatWidgetOptions): PullseChatWi
     
     // Log initialization failure
     auditLogger.logSecurityEvent(
-      SecurityEventType.SECURITY_SETTING_CHANGE,
+      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
       'FAILURE',
       { 
         action: 'widget_initialize', 

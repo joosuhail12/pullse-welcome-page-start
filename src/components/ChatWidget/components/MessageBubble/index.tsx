@@ -1,6 +1,6 @@
 
 import React, { useState, lazy, Suspense } from 'react';
-import { Message, MessageType, UserType, AgentStatus } from '../../types';
+import { MessageType, UserType } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
 import MessageStatus from './MessageStatus';
@@ -9,10 +9,12 @@ import MessageReactionButtons from './MessageReactionButtons';
 import MessageReadReceipt, { MessageReadStatus } from '../MessageReadReceipt';
 import { cn } from '@/lib/utils';
 
+// Lazy load less commonly used message types
 const CardMessage = lazy(() => import('../MessageTypes/CardMessage'));
 const FileMessage = lazy(() => import('../MessageTypes/FileMessage'));
 const QuickReplyMessage = lazy(() => import('../MessageTypes/QuickReplyMessage'));
 
+// Loading fallback for lazy components
 const LazyLoadFallback = () => (
   <div className="w-full h-16 bg-gray-100 animate-pulse rounded-md"></div>
 );
@@ -25,27 +27,15 @@ interface MessageBubbleProps {
     sender: UserType;
     timestamp: Date;
     metadata?: Record<string, any>;
-    reaction?: 'thumbsUp' | 'thumbsDown' | null;
     reactions?: string[];
-    cardData?: {
-      title?: string;
-      description?: string;
-      imageUrl?: string;
-      buttons?: Array<{
-        text: string;
-        url?: string;
-        action?: string;
-      }>;
-    };
-    quickReplies?: string[];
   };
   highlightText?: string;
   isHighlighted?: boolean;
   userAvatar?: string;
   agentAvatar?: string;
   onReply?: (text: string) => void;
-  onReaction?: (messageId: string, emoji: 'thumbsUp' | 'thumbsDown') => void;
-  agentStatus?: AgentStatus;
+  onReaction?: (messageId: string, emoji: string) => void;
+  agentStatus?: 'online' | 'away' | 'offline';
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
 }
@@ -70,16 +60,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     }
   };
 
-  const handleReaction = (emoji: 'thumbsUp' | 'thumbsDown') => {
+  const handleReaction = (emoji: string) => {
     if (onReaction) {
       onReaction(message.id, emoji);
       setShowReactions(false);
     }
   };
 
+  // Determine if the message is from the user or the agent
   const isUserMessage = message.sender === 'user';
-  const isBotMessage = message.sender === 'bot' || message.sender === 'agent' || message.sender === 'system';
-  const isSystemMessage = message.sender === 'status';
+  const isBotMessage = message.sender === 'bot' || message.sender === 'agent';
+  const isSystemMessage = message.sender === 'system';
 
   const messageTypeClass = isUserMessage
     ? 'bg-vivid-purple text-white rounded-t-2xl rounded-bl-2xl rounded-br-sm'
@@ -94,12 +85,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     : 'mx-auto max-w-[85%] text-center';
 
   const handleLongPress = (e: React.MouseEvent) => {
+    // Activate reactions on long press
     if (onReaction) {
       e.preventDefault();
       toggleReactions();
     }
   };
 
+  // Render message content based on type
   const renderMessageContent = () => {
     switch (message.type) {
       case 'text':
@@ -107,36 +100,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       case 'card':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            <CardMessage 
-              title={message.cardData?.title}
-              description={message.cardData?.description}
-              imageUrl={message.cardData?.imageUrl}
-              metadata={message.metadata}
-              buttonText={message.cardData?.buttons?.[0]?.text}
-              buttonUrl={message.cardData?.buttons?.[0]?.url}
-            />
+            {message.metadata && <CardMessage metadata={message.metadata} />}
           </Suspense>
         );
       case 'file':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            <FileMessage 
-              fileName={message.fileName}
-              fileUrl={message.fileUrl}
-              fileType={message.metadata?.fileType}
-              fileSize={message.metadata?.fileSize}
-              metadata={message.metadata}
-            />
+            {message.metadata && <FileMessage metadata={message.metadata} />}
           </Suspense>
         );
       case 'quick_reply':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            <QuickReplyMessage
-              options={message.quickReplies}
-              onReply={(text) => onReply && onReply(text)}
-              metadata={message.metadata}
-            />
+            {message.metadata && (
+              <QuickReplyMessage
+                metadata={message.metadata}
+                onReply={(text) => onReply && onReply(text)}
+              />
+            )}
           </Suspense>
         );
       case 'status':
@@ -156,9 +137,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     >
       {!isSystemMessage && (
         <MessageAvatar
-          sender={message.sender}
-          avatarUrl={isUserMessage ? userAvatar : agentAvatar}
-          status={isUserMessage ? undefined : agentStatus}
+          isUserMessage={isUserMessage}
+          userAvatar={userAvatar}
+          agentAvatar={agentAvatar}
+          agentStatus={agentStatus}
         />
       )}
 
@@ -173,6 +155,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         {renderMessageContent()}
         <MessageStatus timestamp={message.timestamp} />
         
+        {/* Read receipts - Only show for user messages */}
         {isUserMessage && (
           <div className="absolute -bottom-4 right-1">
             <MessageReadReceipt 
@@ -181,32 +164,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
             />
           </div>
         )}
-
-        {message.reaction && !showReactions && (
-          <div className="absolute -bottom-6 left-0">
-            <div className={`p-1 rounded-full ${
-              message.reaction === 'thumbsUp' ? 'bg-green-100' : 'bg-red-100'
-            }`}>
-              {message.reaction === 'thumbsUp' ? (
-                <span className="flex items-center">
-                  <span className="text-green-600 text-xs mr-1">👍</span>
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <span className="text-red-600 text-xs mr-1">👎</span>
-                </span>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {showReactions && onReaction && (
         <MessageReactionButtons
           onReaction={handleReaction}
           onClose={() => setShowReactions(false)}
-          currentReaction={message.reaction}
-          animate={true}
         />
       )}
     </div>

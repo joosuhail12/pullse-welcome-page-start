@@ -18,21 +18,17 @@ export interface ChatWidgetProps {
 }
 
 const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
-  const chatState = useChatState();
-  const { state } = chatState;
-  
-  // Extract values from state for easier access
-  const viewState = state.viewState;
-  const activeConversation = state.activeConversation;
-  const userFormData = state.userFormData;
-  
-  // Define handler functions from chatState
-  const handleStartChat = chatState.startChat;
-  const handleBackToMessages = chatState.backToMessages;
-  const handleChangeView = chatState.changeView;
-  const handleSelectConversation = chatState.selectConversation;
-  const handleUpdateConversation = chatState.updateConversation;
-  const setUserFormData = chatState.setUserFormData;
+  const {
+    viewState,
+    activeConversation,
+    handleStartChat,
+    handleBackToMessages,
+    handleChangeView,
+    handleSelectConversation,
+    handleUpdateConversation,
+    userFormData,
+    setUserFormData
+  } = useChatState();
   
   const { config, loading, error } = useWidgetConfig(workspaceId);
   const [isOpen, setIsOpen] = useState(false);
@@ -60,33 +56,15 @@ const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   }, [isOpen, clearUnreadMessages, isMobile]);
 
   if (loading) {
-    return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles()} config={config} />;
+    return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles} config={config} />;
   }
-
-  const handleConnectionStatusChange = (status: 'connected' | 'disconnected' | 'connecting' | 'failed') => {
-    switch (status) {
-      case 'connected':
-        setConnectionStatus(ConnectionStatus.CONNECTED);
-        break;
-      case 'disconnected':
-        setConnectionStatus(ConnectionStatus.DISCONNECTED);
-        break;
-      case 'connecting':
-        setConnectionStatus(ConnectionStatus.CONNECTING);
-        break;
-      case 'failed':
-        setConnectionStatus(ConnectionStatus.FAILED);
-        break;
-    }
-  };
 
   return (
     <ChatWidgetErrorBoundary workspaceId={workspaceId}>
       <ConnectionManager
         workspaceId={workspaceId}
-        config={config}
         enabled={config.realtime?.enabled}
-        onStatusChange={handleConnectionStatusChange}
+        onStatusChange={setConnectionStatus}
       />
       
       <WidgetContainer 
@@ -95,7 +73,7 @@ const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         activeConversation={activeConversation}
         config={config}
         widgetStyle={widgetStyle}
-        containerStyles={getWidgetContainerPositionStyles()}
+        containerStyles={getWidgetContainerPositionStyles}
         userFormData={userFormData}
         handleSelectConversation={handleSelectConversation}
         handleUpdateConversation={handleUpdateConversation}
@@ -111,7 +89,7 @@ const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         unreadCount={unreadCount}
         onClick={toggleChat}
         config={config}
-        positionStyles={getLauncherPositionStyles()}
+        positionStyles={getLauncherPositionStyles}
       />
     </ChatWidgetErrorBoundary>
   );

@@ -1,66 +1,59 @@
 
 import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ExternalLink } from 'lucide-react';
+import { sanitizeInput } from '../../utils/validation';
 
-export interface CardMessageProps {
-  title?: string;
-  description?: string;
-  imageUrl?: string;
-  buttonText?: string;
-  buttonUrl?: string;
-  metadata?: Record<string, any>;
+interface CardButton {
+  text: string;
+  action: string;
 }
 
-const CardMessage: React.FC<CardMessageProps> = ({ 
-  title, 
-  description, 
-  imageUrl, 
-  buttonText, 
-  buttonUrl,
-  metadata
-}) => {
-  // Use provided values or extract from metadata if not directly provided
-  const cardTitle = title || metadata?.title;
-  const cardDescription = description || metadata?.description;
-  const cardImageUrl = imageUrl || metadata?.imageUrl;
-  const cardButtonText = buttonText || metadata?.buttonText || 'Learn More';
-  const cardButtonUrl = buttonUrl || metadata?.buttonUrl || '#';
+interface CardMessageProps {
+  cardData: {
+    title: string;
+    description: string;
+    imageUrl?: string;
+    buttons?: CardButton[];
+  };
+}
 
+const CardMessage = ({ cardData }: CardMessageProps) => {
+  // Sanitize card data
+  const cardTitle = cardData.title ? sanitizeInput(cardData.title) : '';
+  const cardDesc = cardData.description ? sanitizeInput(cardData.description) : '';
+  
   return (
-    <div className="rounded-md overflow-hidden border border-gray-200 w-full max-w-[300px]">
-      {cardImageUrl && (
-        <div className="w-full h-40 overflow-hidden">
+    <Card className="w-full max-w-xs mt-2 shadow-sm">
+      {cardData.imageUrl && (
+        <div className="aspect-video overflow-hidden">
           <img 
-            src={cardImageUrl} 
-            alt={cardTitle || 'Card'} 
+            src={cardData.imageUrl} 
+            alt={cardTitle} 
             className="w-full h-full object-cover"
-            loading="lazy"
           />
         </div>
       )}
-      
-      <div className="p-3">
-        {cardTitle && (
-          <h4 className="font-medium text-sm mb-1">{cardTitle}</h4>
-        )}
+      <CardContent className="p-4">
+        <h4 className="font-semibold">{cardTitle}</h4>
+        <p className="text-sm text-gray-600 mt-1">{cardDesc}</p>
         
-        {cardDescription && (
-          <p className="text-xs text-gray-600 mb-3">{cardDescription}</p>
+        {cardData.buttons && cardData.buttons.length > 0 && (
+          <div className="mt-3 flex flex-col gap-2">
+            {cardData.buttons.map((button, i) => (
+              <Button 
+                key={i} 
+                size="sm" 
+                variant="outline" 
+                className="w-full"
+              >
+                {sanitizeInput(button.text)}
+              </Button>
+            ))}
+          </div>
         )}
-        
-        {cardButtonUrl && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="w-full text-xs h-8"
-            onClick={() => window.open(cardButtonUrl, '_blank', 'noopener,noreferrer')}
-          >
-            {cardButtonText} <ExternalLink className="ml-1" size={12} />
-          </Button>
-        )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

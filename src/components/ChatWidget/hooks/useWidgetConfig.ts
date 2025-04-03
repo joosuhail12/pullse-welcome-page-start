@@ -32,6 +32,8 @@ export function useWidgetConfig(workspaceId?: string) {
           const devConfig = {
             ...defaultConfig,
             workspaceId,
+            // Merge with our simple default config
+            ...getDefaultConfig(workspaceId)
           };
           
           setConfig(devConfig);
@@ -53,10 +55,13 @@ export function useWidgetConfig(workspaceId?: string) {
         const errorInstance = err instanceof Error ? err : new Error('Failed to fetch config');
         logger.error('Failed to fetch widget config', 'useWidgetConfig', errorInstance);
         
+        setError(errorInstance);
         // Still use default config as fallback
         setConfig({
           ...defaultConfig,
           workspaceId,
+          // Merge with our simple default config
+          ...getDefaultConfig(workspaceId)
         });
       } finally {
         setLoading(false);

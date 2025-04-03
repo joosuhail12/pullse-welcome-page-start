@@ -8,10 +8,10 @@
  * information with preventing sensitive data disclosure.
  */
 
-import { showErrorToast } from '@/lib/toast-utils';
-import { getCircuitState } from '@/components/ChatWidget/utils/resilience';
-import { logger } from '@/lib/logger';
-import { sanitizeErrorMessage, getSafeErrorDetails } from '@/lib/error-sanitizer';
+import { toasts } from '@/lib/toast-utils'
+import { getCircuitState } from '@/components/ChatWidget/utils/resilience'
+import { logger } from '@/lib/logger'
+import { sanitizeErrorMessage, getSafeErrorDetails } from '@/lib/error-sanitizer'
 
 // Error severity levels
 export enum ErrorSeverity {
@@ -122,14 +122,14 @@ export const errorHandler = {
   // Handle and display generic errors
   handle: (error: unknown) => {
     if (error instanceof AppError) {
-      return errorHandler.handleAppError(error);
+      return errorHandler.handleAppError(error)
     }
     
     if (error instanceof Error) {
-      return errorHandler.handleStandardError(error);
+      return errorHandler.handleStandardError(error)
     }
 
-    errorHandler.handleUnknownError(error);
+    errorHandler.handleUnknownError(error)
   },
 
   // Specific handling for application-defined errors
@@ -139,15 +139,15 @@ export const errorHandler = {
       ? 'destructive' 
       : error.severity === ErrorSeverity.MEDIUM 
         ? 'warning' 
-        : 'default';
+        : 'default'
     
     // Always use sanitized message for user-facing toast
     const safeMessage = sanitizeErrorMessage(error.message);
     
-    showErrorToast(safeMessage, {
+    toasts.error({
       title: error.code || 'Application Error',
-      variant
-    });
+      description: safeMessage,
+    })
     
     // Log with appropriate severity level using safe details
     logger.error(
@@ -158,12 +158,12 @@ export const errorHandler = {
         details: error.details ? getSafeErrorDetails(error.details) : undefined,
         stack: error.stack ? sanitizeErrorMessage(error.stack) : undefined
       }
-    );
+    )
     
     // For fatal errors we might want to show a recovery UI
     if (error.severity === ErrorSeverity.FATAL) {
       // Could trigger app-level error boundary or redirect to error page
-      logger.error('FATAL ERROR - Application may be unstable', 'ErrorHandler');
+      logger.error('FATAL ERROR - Application may be unstable', 'ErrorHandler')
     }
   },
 
@@ -172,22 +172,24 @@ export const errorHandler = {
     // Sanitize the message for user-facing toast
     const safeMessage = sanitizeErrorMessage(error.message);
     
-    showErrorToast(safeMessage, {
+    toasts.error({
       title: 'Unexpected Error',
-    });
+      description: safeMessage,
+    })
     
-    logger.error('Standard Error', 'ErrorHandler', getSafeErrorDetails(error));
+    logger.error('Standard Error', 'ErrorHandler', getSafeErrorDetails(error))
   },
 
   // Catch-all for unknown error types
   handleUnknownError: (error: unknown) => {
     // For unknown errors, use a generic message for the user
-    showErrorToast('An unexpected error occurred', {
+    toasts.error({
       title: 'Unknown Error',
-    });
+      description: 'An unexpected error occurred',
+    })
     
     // But log as much safe detail as we can gather
-    logger.error('Unknown Error', 'ErrorHandler', getSafeErrorDetails(error));
+    logger.error('Unknown Error', 'ErrorHandler', getSafeErrorDetails(error))
   },
 
   // Create a custom application error
@@ -225,5 +227,5 @@ export const errorHandler = {
  * TODO: Add error categorization for reporting
  */
 export const logError = (error: unknown) => {
-  logger.error('An error occurred', 'ErrorLogger', getSafeErrorDetails(error));
+  logger.error('An error occurred', 'ErrorLogger', getSafeErrorDetails(error))
 }

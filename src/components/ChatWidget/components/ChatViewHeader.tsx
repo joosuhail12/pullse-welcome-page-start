@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
-import { Conversation } from '../types';
-import { ArrowLeft, Search, X, Check, Clock, AlertCircle } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, Search, X, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
+import { Conversation } from '../types';
 import AgentPresence from './AgentPresence';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import TicketProgressBar from './TicketProgressBar';
 
 interface ChatViewHeaderProps {
   conversation: Conversation;
@@ -20,9 +21,9 @@ interface ChatViewHeaderProps {
   ticketProgress?: number;
 }
 
-const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({ 
-  conversation, 
-  onBack, 
+const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
+  conversation,
+  onBack,
   showSearch,
   toggleSearch,
   searchMessages,
@@ -30,122 +31,126 @@ const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
   searchResultCount,
   isSearching,
   showSearchFeature = true,
-  ticketProgress
+  ticketProgress,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  
-  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    searchMessages(value);
-  };
-  
-  const handleClearSearch = () => {
-    setSearchTerm('');
-    clearSearch();
+  // Determine ticket status from conversation.status
+  const getTicketStatus = () => {
+    if (!conversation.status) return 'new';
+    
+    switch (conversation.status) {
+      case 'ended':
+        return 'closed';
+      case 'active':
+        return conversation.isResolved ? 'resolved' : 'in-progress';
+      default:
+        return 'new';
+    }
   };
   
   return (
-    <header className="bg-vivid-purple text-white p-2 sm:p-4 flex flex-col shadow-sm z-10">
-      <div className="flex items-center justify-between">
-        {showSearch ? (
-          <div className="flex items-center flex-1 space-x-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 text-white" 
-              onClick={toggleSearch}
-            >
-              <ArrowLeft size={16} />
-            </Button>
-            <div className="relative flex-1">
+    <div className="bg-vivid-purple text-black shadow-lg z-20 flex flex-col relative chat-header-pattern">
+      {/* Decorative pattern overlay */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none">
+        <div className="absolute inset-0" 
+          style={{
+            backgroundImage: `radial-gradient(circle at 25px 25px, rgba(0, 0, 0, 0.3) 2%, transparent 0%), 
+                              radial-gradient(circle at 75px 75px, rgba(0, 0, 0, 0.3) 2%, transparent 0%)`,
+            backgroundSize: '100px 100px',
+          }}>
+        </div>
+      </div>
+      
+      <div className="p-4 flex items-center justify-between relative z-10">
+        <div className="flex items-center flex-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="p-1.5 mr-3 text-black hover:bg-black/20 hover:text-black rounded-full"
+            aria-label="Back to conversations"
+          >
+            <ArrowLeft size={18} />
+          </Button>
+          
+          {!showSearch && (
+            <div className="flex-1 flex flex-col justify-center overflow-hidden min-w-0">
+              <div className="flex items-center">
+                <h3 className="font-semibold truncate text-md text-black">
+                  {conversation.title}
+                </h3>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-1 p-1 h-6 w-6 text-black hover:bg-black/20 hover:text-black rounded-full"
+                    >
+                      <Info size={14} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-64 bg-white text-black border-gray-300">
+                    <div className="text-xs">
+                      <p className="font-medium">Conversation Details</p>
+                      <p className="text-black/80 mt-1">
+                        Started on {conversation.timestamp.toLocaleDateString()} at {conversation.timestamp.toLocaleTimeString()}
+                      </p>
+                      {conversation.status && (
+                        <p className="mt-1">
+                          Status: <span className="font-semibold capitalize">{conversation.status}</span>
+                        </p>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              
+              {conversation.agentInfo?.name && (
+                <AgentPresence 
+                  agentName={conversation.agentInfo.name} 
+                  status={conversation.agentInfo.status} 
+                />
+              )}
+            </div>
+          )}
+          
+          {showSearch && (
+            <div className="flex-1 flex items-center">
               <Input
                 type="text"
                 placeholder="Search messages..."
-                value={searchTerm}
-                onChange={handleSearchInputChange}
-                className="h-8 bg-white/20 border-0 focus-visible:ring-white/30 text-white placeholder:text-white/70 text-sm"
+                className="h-8 bg-black/10 border-0 text-black placeholder:text-black/70 focus-visible:ring-black/30"
+                onChange={(e) => searchMessages(e.target.value)}
                 autoFocus
               />
-              {searchTerm && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 absolute right-1 top-1 text-white/70 hover:text-white"
-                  onClick={handleClearSearch}
-                >
-                  <X size={14} />
-                </Button>
-              )}
-            </div>
-            {searchResultCount > 0 && (
-              <span className="text-xs bg-white/20 px-2 py-1 rounded">
-                {searchResultCount}
+              <span className="mx-2 text-xs text-black/90 font-medium">
+                {isSearching ? 'Searching...' : searchResultCount > 0 ? `${searchResultCount} results` : ''}
               </span>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center">
-              <Button 
-                variant="ghost" 
-                className="p-1 sm:p-2 h-auto w-auto text-white hover:bg-white/20 mr-2"
-                onClick={onBack}
-              >
-                <ArrowLeft size={16} />
-              </Button>
-              <div>
-                <div className="flex items-center">
-                  <h2 className="font-medium text-sm sm:text-base">
-                    {conversation.title || 'Chat'}
-                  </h2>
-                  {conversation.isResolved && (
-                    <span className="ml-2 flex items-center px-1.5 py-0.5 text-[10px] rounded-full bg-green-500/20 text-white">
-                      <Check size={10} className="mr-1" />
-                      Resolved
-                    </span>
-                  )}
-                </div>
-                
-                <AgentPresence 
-                  workspaceId={conversation.id.split(':')[0]} 
-                  status={conversation.agentInfo?.status} 
-                />
-              </div>
             </div>
-            
-            {showSearchFeature && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-white hover:bg-white/20"
-                onClick={toggleSearch}
-              >
-                <Search size={16} />
-              </Button>
-            )}
-          </>
-        )}
+          )}
+        </div>
+        
+        <div className="flex items-center">
+          {showSearchFeature && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={showSearch ? clearSearch : toggleSearch}
+              className="p-1.5 text-black hover:bg-black/20 hover:text-black rounded-full"
+              aria-label={showSearch ? 'Close search' : 'Search messages'}
+            >
+              {showSearch ? <X size={16} /> : <Search size={16} />}
+            </Button>
+          )}
+        </div>
       </div>
       
-      {/* Ticket progress bar */}
-      {ticketProgress !== undefined && (
-        <div className="mt-2 px-2">
-          <div className="flex justify-between text-[10px] sm:text-xs mb-1">
-            <span>Request Progress</span>
-            <span>{Math.round(ticketProgress)}%</span>
-          </div>
-          <Progress value={ticketProgress} className="h-1.5 sm:h-2 w-full bg-white/30" />
-        </div>
-      )}
-      
-      {/* Search indicator */}
-      {isSearching && (
-        <div className="mt-1 flex justify-center">
-          <span className="text-xs animate-pulse">Searching...</span>
-        </div>
-      )}
-    </header>
+      {/* Enhanced Ticket Progress Bar */}
+      <TicketProgressBar 
+        status={getTicketStatus()} 
+        className="bg-gradient-to-r from-black/10 to-black/20"
+      />
+    </div>
   );
 };
 

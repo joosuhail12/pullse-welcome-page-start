@@ -1,38 +1,44 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { sanitizeInput } from '../../utils/validation';
 
-export interface QuickReplyMessageProps {
-  options?: string[];
-  onReply: (text: string) => void;
-  metadata?: Record<string, any>;
+interface QuickReply {
+  text: string;
+  action: string;
 }
 
-const QuickReplyMessage: React.FC<QuickReplyMessageProps> = ({ 
-  options, 
-  onReply,
-  metadata
-}) => {
-  // Use provided options or extract from metadata
-  const quickReplyOptions = options || metadata?.options || [];
-  
-  if (quickReplyOptions.length === 0) {
-    return null;
-  }
-  
+interface QuickReplyMessageProps {
+  text: string;
+  quickReplies?: QuickReply[];
+  renderText: (text: string) => React.ReactNode;
+  setMessageText?: (text: string) => void;
+}
+
+const QuickReplyMessage = ({ text, quickReplies, renderText, setMessageText }: QuickReplyMessageProps) => {
   return (
-    <div className="flex flex-wrap gap-2 mt-2">
-      {quickReplyOptions.map((option, index) => (
-        <Button
-          key={`quick-reply-${index}`}
-          variant="secondary"
-          size="sm"
-          onClick={() => onReply(option)}
-          className="text-xs py-1 h-auto"
-        >
-          {option}
-        </Button>
-      ))}
+    <div className="flex flex-col">
+      {renderText(text)}
+      {quickReplies && quickReplies.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {quickReplies.map((reply, i) => (
+            <Button 
+              key={i} 
+              size="sm" 
+              variant="secondary" 
+              className="text-xs py-1.5 h-auto"
+              onClick={() => {
+                if (setMessageText) {
+                  // Sanitize the quick reply text before setting
+                  setMessageText(sanitizeInput(reply.text));
+                }
+              }}
+            >
+              {sanitizeInput(reply.text)}
+            </Button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Message } from '../types';
 import { Paperclip, ThumbsUp, ThumbsDown } from 'lucide-react';
@@ -5,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { sanitizeInput } from '../utils/validation';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MessageReadStatus } from './MessageReadReceipt';
 
 interface MessageBubbleProps {
   message: Message;
@@ -125,12 +125,12 @@ const MessageBubble = ({
                     className="text-xs py-1.5 h-auto"
                     onClick={() => {
                       if (setMessageText) {
-                        // Each quickReply is already a string in this context
-                        setMessageText(sanitizeInput(reply));
+                        // Sanitize the quick reply text before setting
+                        setMessageText(sanitizeInput(reply.text));
                       }
                     }}
                   >
-                    {sanitizeInput(reply)}
+                    {sanitizeInput(reply.text)}
                   </Button>
                 ))}
               </div>

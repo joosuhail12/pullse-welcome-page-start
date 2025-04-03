@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Message, AgentStatus } from '../types';
+import { Message } from '../types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import PoweredByBar from './PoweredByBar';
@@ -28,7 +28,7 @@ interface ChatBodyProps {
   showInlineForm: boolean;
   inlineFormComponent: React.ReactNode;
   conversationId: string;
-  agentStatus?: AgentStatus;
+  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
   onToggleHighlight?: (messageId: string) => void;
 }
 

@@ -1,5 +1,6 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Conversation, AgentStatus } from '../types';
+import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
@@ -33,6 +34,7 @@ const ChatView = React.memo(({
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+  // Use the new inline form hook
   const {
     showInlineForm,
     handleFormComplete
@@ -112,13 +114,14 @@ const ChatView = React.memo(({
     }
   }, [loadPreviousMessages]);
 
+  // Prepare content for rendering
   const agentAvatar = useMemo(() => conversation.agentInfo?.avatar || config?.branding?.avatarUrl, 
     [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]);
     
   const userAvatar = undefined;
   const hasMoreMessages = messages.length >= 20;
-  const agentStatus: AgentStatus | undefined = conversation.agentInfo?.status;
 
+  // Render pre-chat form component when needed
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
       return <PreChatForm config={config} onFormComplete={handleFormComplete} />;
@@ -180,7 +183,7 @@ const ChatView = React.memo(({
             hasMoreMessages={hasMoreMessages}
             isLoadingMore={isLoadingMore}
             conversationId={conversation.id}
-            agentStatus={agentStatus}
+            agentStatus={conversation.agentInfo?.status}
           />
         )}
       </div>

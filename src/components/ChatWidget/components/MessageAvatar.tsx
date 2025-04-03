@@ -2,33 +2,31 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User } from 'lucide-react';
-import { AgentStatus } from '../types';
 
 interface MessageAvatarProps {
-  sender: 'user' | 'system';
-  avatarUrl?: string;
-  status?: AgentStatus;
+  isUserMessage: boolean;
+  userAvatar?: string;
+  agentAvatar?: string;
+  agentStatus?: 'online' | 'away' | 'offline';
 }
 
 const MessageAvatar: React.FC<MessageAvatarProps> = React.memo(({ 
-  sender, 
-  avatarUrl,
-  status = 'online'
+  isUserMessage, 
+  userAvatar, 
+  agentAvatar,
+  agentStatus = 'online'
 }) => {
-  const isUserMessage = sender === 'user';
-  
   const statusColorMap = {
     'online': 'bg-green-500',
     'away': 'bg-yellow-500',
-    'offline': 'bg-gray-400',
-    'busy': 'bg-red-500'
+    'offline': 'bg-gray-400'
   };
 
   return (
     <div className="relative flex-shrink-0 mx-2 mb-1">
       <Avatar className="h-6 w-6 border border-gray-200">
         <AvatarImage 
-          src={avatarUrl} 
+          src={isUserMessage ? userAvatar : agentAvatar} 
           alt={isUserMessage ? "User" : "Agent"}
           className="object-cover"
           loading="lazy"
@@ -39,9 +37,9 @@ const MessageAvatar: React.FC<MessageAvatarProps> = React.memo(({
       </Avatar>
       
       {/* Status indicator for agent */}
-      {!isUserMessage && status && (
+      {!isUserMessage && agentStatus && (
         <span 
-          className={`absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full border border-white ${statusColorMap[status]}`}
+          className={`absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full border border-white ${statusColorMap[agentStatus]}`}
         />
       )}
     </div>

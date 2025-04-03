@@ -1,86 +1,59 @@
+
 export interface Message {
   id: string;
   text: string;
-  type: MessageType;
-  sender: UserType;
+  sender: 'user' | 'system' | 'status';
   timestamp: Date;
-  metadata?: Record<string, any>;
-  reaction?: 'thumbsUp' | 'thumbsDown';
-  reactions?: string[];
-  cardData?: {
-    title?: string;
-    description?: string;
-    imageUrl?: string;
-    buttons?: {
-      text: string;
-      url?: string;
-      action?: string;
-    }[];
-  };
-  quickReplies?: string[];
-  status?: MessageStatus;
-  // File properties
-  fileName?: string;
+  type?: 'text' | 'file' | 'card' | 'quick_reply' | 'status';
   fileUrl?: string;
-  fileType?: string;
-  fileSize?: number;
+  fileName?: string;
+  status?: 'sending' | 'sent' | 'delivered' | 'read';
+  reaction?: 'thumbsUp' | 'thumbsDown' | null;
+  cardData?: {
+    title: string;
+    description: string;
+    imageUrl?: string;
+    buttons?: Array<{ text: string; action: string }>;
+  };
+  quickReplies?: Array<{ text: string; action: string }>;
+  important?: boolean; // New field to mark important messages
+  unread?: boolean;    // New field to mark unread messages
 }
-
-export type MessageType = 'text' | 'image' | 'file' | 'card' | 'quickReplies' | 'system' | 'typing';
-export type UserType = 'user' | 'agent' | 'system' | 'bot';
-export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
 
 export interface Conversation {
   id: string;
-  title?: string;
+  title: string;
+  messages?: Message[];
+  timestamp: Date;
   lastMessage?: string;
-  lastMessageTime?: Date;
-  unreadCount?: number;
-  status?: 'active' | 'closed' | 'pending';
-  participants?: string[];
-  metadata?: Record<string, any>;
+  status?: 'active' | 'ended';
+  agentInfo?: {
+    name?: string;
+    avatar?: string;
+    status?: 'online' | 'offline' | 'away' | 'busy';
+  };
+  metadata?: any;
+  sessionId?: string;
+  contactIdentified?: boolean;
+  unread?: boolean; // New property to track unread status
 }
 
-export interface UserData {
-  name?: string;
-  email?: string;
-  phone?: string;
-  company?: string;
-  metadata?: Record<string, any>;
+export interface Agent {
+  id: string;
+  name: string;
+  avatar?: string;
+  status?: 'online' | 'away' | 'offline';
 }
 
-export interface ChatState {
-  viewState: 'welcome' | 'chat' | 'form' | 'conversations' | 'settings';
-  messages: Message[];
-  conversations: Conversation[];
-  activeConversation: Conversation | null;
-  userFormData: UserData;
-  isTyping: boolean;
-  error: string | null;
+export interface MessageReaction {
+  messageId: string;
+  reaction: 'thumbsUp' | 'thumbsDown';
+  userId: string;
+  timestamp: Date;
 }
 
-export interface ChatAction {
-  type: string;
-  payload?: any;
-}
-
-export interface ChatContextType {
-  state: ChatState;
-  dispatch: React.Dispatch<ChatAction>;
-  sendMessage: (text: string, type?: MessageType, metadata?: Record<string, any>) => void;
-  startChat: () => void;
-  endChat: () => void;
-  backToMessages: () => void;
-  changeView: (view: ChatState['viewState']) => void;
-  selectConversation: (conversation: Conversation) => void;
-  updateConversation: (conversation: Conversation) => void;
-  setUserFormData: (data: UserData) => void;
-}
-
-export interface ChatWidgetTheme {
-  primaryColor?: string;
-  secondaryColor?: string;
-  textColor?: string;
-  backgroundColor?: string;
-  fontFamily?: string;
+export interface MessageSearchResult {
+  messageId: string;
+  matchText: string;
+  timestamp: Date;
 }

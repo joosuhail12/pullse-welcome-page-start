@@ -21,15 +21,10 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const isMobile = useIsMobile();
 
-  // Safely get the field ID, falling back to name if not provided
-  const getFieldId = (field: { id?: string, name: string }) => field.id || field.name;
-
   // Handle input change for form
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    // Find field by name
-    const field = config.preChatForm?.fields?.find(f => f.name === name);
+    const field = config.preChatForm.fields.find(f => f.name === name);
     
     // Mark field as touched
     setTouched(prev => ({
@@ -57,7 +52,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
 
   // Validate if the form is complete and valid
   const validateFormCompletion = (data: Record<string, string>) => {
-    const requiredFields = config.preChatForm?.fields?.filter(field => field.required) || [];
+    const requiredFields = config.preChatForm.fields.filter(field => field.required);
     const allRequiredFilled = requiredFields.every(field => {
       const fieldValue = data[field.name];
       return fieldValue && fieldValue.trim() !== '' && !validateField(field.name, fieldValue, true);
@@ -97,10 +92,6 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
     return null;
   };
 
-  if (!config.preChatForm?.fields) {
-    return null;
-  }
-
   return (
     <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 border border-gray-100 animate-fade-in w-full max-w-full sm:max-w-md mx-auto">
       <h3 className="text-center font-semibold mb-3 sm:mb-4 text-gray-700 text-sm sm:text-base">
@@ -108,54 +99,51 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
       </h3>
       
       <div className="space-y-3 sm:space-y-4">
-        {config.preChatForm.fields.map((field) => {
-          const fieldId = getFieldId(field);
-          return (
-            <div key={fieldId} className="space-y-1">
-              <Label 
-                htmlFor={fieldId} 
-                className="text-xs sm:text-sm font-medium flex items-center gap-1"
-              >
-                {field.label}
-                {field.required && <span className="text-red-500 ml-1">*</span>}
-              </Label>
-              
-              <div className="relative">
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                  {getFieldIcon(field.name)}
-                </div>
-                
-                <Input
-                  id={fieldId}
-                  name={field.name}
-                  type={field.type}
-                  required={field.required}
-                  placeholder={field.placeholder}
-                  value={formData[field.name] || ''}
-                  onChange={handleInputChange}
-                  onBlur={() => handleBlur(field.name)}
-                  className={`pl-10 h-9 sm:h-10 transition-all text-xs sm:text-sm ${
-                    touched[field.name] && formErrors[field.name] 
-                      ? 'border-red-500 bg-red-50' 
-                      : touched[field.name] && !formErrors[field.name]
-                      ? 'border-green-500 bg-green-50'
-                      : 'border-gray-200'
-                  }`}
-                  aria-describedby={formErrors[field.name] ? `${fieldId}-error` : undefined}
-                />
+        {config.preChatForm.fields.map((field) => (
+          <div key={field.id} className="space-y-1">
+            <Label 
+              htmlFor={field.id} 
+              className="text-xs sm:text-sm font-medium flex items-center gap-1"
+            >
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            
+            <div className="relative">
+              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                {getFieldIcon(field.name)}
               </div>
               
-              {touched[field.name] && formErrors[field.name] && (
-                <p 
-                  id={`${fieldId}-error`} 
-                  className="text-2xs sm:text-xs text-red-500 mt-1 animate-fade-in"
-                >
-                  {formErrors[field.name]}
-                </p>
-              )}
+              <Input
+                id={field.id}
+                name={field.name}
+                type={field.type}
+                required={field.required}
+                placeholder={field.placeholder}
+                value={formData[field.name] || ''}
+                onChange={handleInputChange}
+                onBlur={() => handleBlur(field.name)}
+                className={`pl-10 h-9 sm:h-10 transition-all text-xs sm:text-sm ${
+                  touched[field.name] && formErrors[field.name] 
+                    ? 'border-red-500 bg-red-50' 
+                    : touched[field.name] && !formErrors[field.name]
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-200'
+                }`}
+                aria-describedby={formErrors[field.name] ? `${field.id}-error` : undefined}
+              />
             </div>
-          );
-        })}
+            
+            {touched[field.name] && formErrors[field.name] && (
+              <p 
+                id={`${field.id}-error`} 
+                className="text-2xs sm:text-xs text-red-500 mt-1 animate-fade-in"
+              >
+                {formErrors[field.name]}
+              </p>
+            )}
+          </div>
+        ))}
       </div>
       
       <div className="mt-4 sm:mt-6">

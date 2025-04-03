@@ -1,9 +1,8 @@
-
 import { getChatSessionId } from '../utils/cookies';
-import { getCsrfToken, signMessage } from '../utils/security';
+import { generateCsrfToken, signMessage } from '../utils/security';
 import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
-import { auditLogger, SecurityEventType } from '@/lib/audit-logger';
+import { auditLogger } from '@/lib/audit-logger';
 
 interface TokenParams {
   workspaceId: string;
@@ -34,7 +33,7 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
   try {
     const sessionId = getChatSessionId();
     const timestamp = Date.now();
-    const { token: csrfToken } = getCsrfToken();
+    const { token: csrfToken } = generateCsrfToken();
     
     const headers = {
       'Content-Type': 'application/json',
@@ -51,7 +50,7 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
 
     // Log token request attempt
     auditLogger.logSecurityEvent(
-      SecurityEventType.TOKEN_EXPIRED,
+      auditLogger.SecurityEventType.TOKEN_ISSUED,
       'ATTEMPT',
       { 
         service: 'ably', 
@@ -67,7 +66,7 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
       
       // Log successful mock token generation
       auditLogger.logSecurityEvent(
-        SecurityEventType.TOKEN_EXPIRED,
+        auditLogger.SecurityEventType.TOKEN_ISSUED,
         'SUCCESS',
         { 
           service: 'ably',
@@ -91,7 +90,7 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
       
       // Log token request failure
       auditLogger.logSecurityEvent(
-        SecurityEventType.TOKEN_EXPIRED,
+        auditLogger.SecurityEventType.TOKEN_REJECTED,
         'FAILURE',
         { 
           service: 'ably',
@@ -109,7 +108,7 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
     
     // Log successful token issuance
     auditLogger.logSecurityEvent(
-      SecurityEventType.TOKEN_EXPIRED,
+      auditLogger.SecurityEventType.TOKEN_ISSUED,
       'SUCCESS',
       { 
         service: 'ably',
@@ -126,7 +125,7 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
     
     // Log token request exception
     auditLogger.logSecurityEvent(
-      SecurityEventType.TOKEN_EXPIRED,
+      auditLogger.SecurityEventType.TOKEN_REJECTED,
       'FAILURE',
       { 
         service: 'ably',

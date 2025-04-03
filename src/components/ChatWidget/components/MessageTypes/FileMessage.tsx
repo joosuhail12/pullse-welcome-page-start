@@ -1,133 +1,94 @@
 
 import React from 'react';
-import { FileText, Download, Image, File } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Paperclip, Loader2, CheckCircle2, FileIcon, ImageIcon } from 'lucide-react';
 
-export interface FileMessageProps {
+interface FileMessageProps {
+  text: string;
   fileName?: string;
   fileUrl?: string;
-  fileType?: string;
-  fileSize?: number;
-  metadata?: Record<string, any>;
+  renderText: (text: string) => React.ReactNode;
+  uploading?: boolean;
 }
 
-const FileMessage: React.FC<FileMessageProps> = ({ 
-  fileName, 
-  fileUrl, 
-  fileType,
-  fileSize,
-  metadata
-}) => {
-  // Use provided values or extract from metadata if not directly provided
-  const fileNameToUse = fileName || metadata?.fileName || 'File';
-  const fileUrlToUse = fileUrl || metadata?.fileUrl;
-  const fileTypeToUse = fileType || metadata?.fileType || getFileTypeFromName(fileNameToUse);
-  const fileSizeToUse = fileSize || metadata?.fileSize;
-
-  const isImage = fileTypeToUse?.startsWith('image/') || fileNameToUse.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+const FileMessage = ({ text, fileName, fileUrl, renderText, uploading = false }: FileMessageProps) => {
+  const [uploaded, setUploaded] = React.useState(false);
+  const [imageError, setImageError] = React.useState(false);
   
-  // Format file size
-  const formattedSize = fileSizeToUse ? formatFileSize(fileSizeToUse) : '';
+  // Determine if the file is an image by checking the filename extension
+  const isImage = fileUrl && 
+    fileName?.match(/\.(jpeg|jpg|gif|png|webp)$/i) !== null && 
+    !imageError;
   
-  return (
-    <div className="w-full">
-      {isImage && fileUrlToUse ? (
-        <div className="mb-2">
-          <img 
-            src={fileUrlToUse} 
-            alt={fileNameToUse}
-            className="max-w-[250px] max-h-[200px] rounded-md object-contain"
-            loading="lazy"
-          />
-        </div>
-      ) : null}
+  // Simulate successful upload after uploading state completes
+  React.useEffect(() => {
+    if (!uploading && fileName && !uploaded) {
+      setTimeout(() => setUploaded(true), 500);
       
-      <div className="flex items-center p-2 rounded-md bg-gray-50 border border-gray-200">
-        <div className="mr-2 p-2 bg-gray-100 rounded-md">
-          {getFileIcon(fileTypeToUse)}
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-gray-700 truncate" title={fileNameToUse}>
-            {fileNameToUse}
-          </p>
-          {formattedSize && (
-            <p className="text-xs text-gray-500">{formattedSize}</p>
-          )}
-        </div>
-        
-        {fileUrlToUse && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
-            onClick={() => window.open(fileUrlToUse, '_blank')}
-            title="Download"
-          >
-            <Download size={16} />
-          </Button>
+      // Reset animation after it plays
+      const timer = setTimeout(() => setUploaded(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [uploading, fileName, uploaded]);
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  // Choose appropriate icon based on file type
+  const getFileIcon = () => {
+    if (uploading) {
+      return <Loader2 size={18} className="mr-2 text-vivid-purple animate-spin" />;
+    } else if (uploaded) {
+      return <CheckCircle2 size={18} className="mr-2 text-green-500 animate-bounce" />;
+    } else {
+      return <Paperclip size={18} className="mr-2 text-vivid-purple/80" />;
+    }
+  };
+
+  return (
+    <div className="flex flex-col">
+      {renderText(text)}
+      
+      <div 
+        className={`mt-2 p-3 rounded-lg transition-all duration-300
+          ${uploading ? 'bg-gray-100/80 animate-pulse' : 'bg-gray-100/90 hover:bg-gray-200/80'} 
+          ${uploaded ? 'file-upload-success' : ''}
+          border border-gray-200/80 shadow-sm`}
+      >
+        {isImage && fileUrl ? (
+          <div className="space-y-2">
+            <div className="flex items-center">
+              {getFileIcon()}
+              <span className="text-sm font-medium text-blue-600 truncate max-w-[200px] hover:underline">
+                {fileName || 'Image'}
+              </span>
+              {uploading && (
+                <span className="ml-2 text-xs text-gray-600 font-medium">Uploading...</span>
+              )}
+            </div>
+            <div className="relative rounded-md overflow-hidden bg-white border border-gray-200">
+              <img 
+                src={fileUrl} 
+                alt={fileName || 'Uploaded image'} 
+                className="max-w-full max-h-[200px] object-contain"
+                onError={handleImageError}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center">
+            {getFileIcon()}
+            <span className="text-sm font-medium text-blue-600 truncate max-w-[200px] hover:underline">
+              {fileName || 'File'}
+            </span>
+            {uploading && (
+              <span className="ml-2 text-xs text-gray-600 font-medium">Uploading...</span>
+            )}
+          </div>
         )}
       </div>
     </div>
   );
 };
-
-function getFileIcon(fileType?: string) {
-  if (!fileType) return <File size={20} className="text-gray-400" />;
-  
-  if (fileType.startsWith('image/')) {
-    return <Image size={20} className="text-blue-500" />;
-  }
-  
-  if (fileType.includes('pdf')) {
-    return <FileText size={20} className="text-red-500" />;
-  }
-  
-  if (fileType.includes('word') || fileType.includes('doc')) {
-    return <FileText size={20} className="text-blue-700" />;
-  }
-  
-  if (fileType.includes('excel') || fileType.includes('sheet') || fileType.includes('csv')) {
-    return <FileText size={20} className="text-green-600" />;
-  }
-  
-  return <File size={20} className="text-gray-600" />;
-}
-
-function getFileTypeFromName(fileName: string): string {
-  const extension = fileName.split('.').pop()?.toLowerCase();
-  
-  switch (extension) {
-    case 'jpg':
-    case 'jpeg':
-      return 'image/jpeg';
-    case 'png':
-      return 'image/png';
-    case 'gif':
-      return 'image/gif';
-    case 'pdf':
-      return 'application/pdf';
-    case 'doc':
-    case 'docx':
-      return 'application/msword';
-    case 'xls':
-    case 'xlsx':
-      return 'application/vnd.ms-excel';
-    case 'csv':
-      return 'text/csv';
-    default:
-      return 'application/octet-stream';
-  }
-}
-
-function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-  
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
 
 export default FileMessage;

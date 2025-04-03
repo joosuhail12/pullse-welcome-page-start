@@ -1,89 +1,97 @@
 
 import { useState, useCallback } from 'react';
+import { Message, MessageSearchResult } from '../types';
 
-// Define the search result interface
-export interface MessageSearchResult {
-  id: string;
-  messageId: string;
-  text: string;
-  matchText: string;
-  timestamp: Date;
-  isUserMessage: boolean;
-}
-
-export function useMessageSearch() {
-  const [searchText, setSearchText] = useState('');
+export function useMessageSearch(messages: Message[]) {
+  const [searchTerm, setSearchTerm] = useState<string>('');
   const [searchResults, setSearchResults] = useState<MessageSearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [selectedResultIndex, setSelectedResultIndex] = useState(-1);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [currentResult, setCurrentResult] = useState<number>(-1);
 
-  const performSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
+  const searchMessages = useCallback((term: string) => {
+    if (!term.trim()) {
       setSearchResults([]);
-      setSelectedResultIndex(-1);
+      setCurrentResult(-1);
       return;
     }
 
     setIsSearching(true);
-
-    try {
-      // This would typically call an API or search through local messages
-      // For now, we'll just create a mock result
-      setTimeout(() => {
-        const mockResults: MessageSearchResult[] = [
-          {
-            id: 'search-1',
-            messageId: 'msg-123',
-            text: 'This is a sample message with the search term',
-            matchText: 'search term',
-            timestamp: new Date(),
-            isUserMessage: false,
-          }
-        ];
-        
-        setSearchResults(mockResults);
-        setIsSearching(false);
-        if (mockResults.length > 0) {
-          setSelectedResultIndex(0);
-        }
-      }, 500);
-    } catch (error) {
-      console.error('Error searching messages:', error);
-      setIsSearching(false);
-    }
-  }, []);
-
-  const handleSearch = useCallback((query: string) => {
-    setSearchText(query);
-    performSearch(query);
-  }, [performSearch]);
-
-  const selectNextResult = useCallback(() => {
-    if (searchResults.length === 0) return;
-    setSelectedResultIndex((prev) => (prev + 1) % searchResults.length);
-  }, [searchResults.length]);
-
-  const selectPreviousResult = useCallback(() => {
-    if (searchResults.length === 0) return;
-    setSelectedResultIndex((prev) => (prev - 1 + searchResults.length) % searchResults.length);
-  }, [searchResults.length]);
+    
+    // Simple search implementation - can be expanded with more sophisticated search
+    const results: MessageSearchResult[] = [];
+    
+    messages.forEach(message => {
+      if (message.text && message.text.toLowerCase().includes(term.toLowerCase())) {
+        results.push({
+          messageId: message.id,
+          matchText: message.text,
+          timestamp: message.timestamp
+        });
+      }
+    });
+    
+    setSearchResults(results);
+    setCurrentResult(results.length > 0 ? 0 : -1);
+    setIsSearching(false);
+  }, [messages]);
 
   const clearSearch = useCallback(() => {
-    setSearchText('');
+    setSearchTerm('');
     setSearchResults([]);
-    setSelectedResultIndex(-1);
+    setCurrentResult(-1);
+  }, []);
+
+  const scrollToNextResult = useCallback(() => {
+    if (searchResults.length === 0) return;
+    
+    const nextIdx = (currentResult + 1) % searchResults.length;
+    setCurrentResult(nextIdx);
+    
+    // Scroll to the message element
+    const messageElement = document.getElementById(searchResults[nextIdx].messageId);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [searchResults, currentResult]);
+
+  const scrollToPrevResult = useCallback(() => {
+    if (searchResults.length === 0) return;
+    
+    const prevIdx = (currentResult - 1 + searchResults.length) % searchResults.length;
+    setCurrentResult(prevIdx);
+    
+    // Scroll to the message element
+    const messageElement = document.getElementById(searchResults[prevIdx].messageId);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [searchResults, currentResult]);
+
+  // Helper function to highlight text based on search term
+  // Returns an array of parts with highlighted status instead of JSX
+  const highlightText = useCallback((text: string, term: string): { text: string; highlighted: boolean }[] => {
+    if (!term.trim() || !text) return [{ text, highlighted: false }];
+    
+    const regex = new RegExp(`(${term})`, 'gi');
+    const parts = text.split(regex);
+    
+    return parts.map((part) => ({
+      text: part,
+      highlighted: regex.test(part)
+    }));
   }, []);
 
   return {
-    searchText,
-    handleSearch,
+    searchTerm,
+    setSearchTerm,
     searchResults,
-    isSearching,
-    selectedResultIndex,
-    selectNextResult,
-    selectPreviousResult,
+    searchMessages,
     clearSearch,
+    isSearching,
+    currentResult,
+    scrollToNextResult,
+    scrollToPrevResult,
+    highlightText,
+    messageIds: searchResults.map(r => r.messageId)
   };
 }
-
-export default useMessageSearch;

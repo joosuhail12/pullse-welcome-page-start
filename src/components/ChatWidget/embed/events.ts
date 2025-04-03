@@ -7,7 +7,7 @@ import { debounce } from './utils';
  * Event management for the chat widget
  */
 export class EventManager {
-  protected eventListeners: Map<string, EventCallback[]> = new Map();
+  private eventListeners: Map<string, EventCallback[]> = new Map();
   private debouncedDispatch: (event: ChatEventPayload) => void;
   
   constructor() {
@@ -21,7 +21,7 @@ export class EventManager {
    */
   public handleEvent(event: ChatEventPayload): void {
     // Handle typing events with debouncing
-    if (event.type === 'typing' as ChatEventType) {
+    if (event.type === 'typing') {
       this.debouncedDispatch(event);
     } else {
       // Handle other events immediately
@@ -71,7 +71,7 @@ export class EventManager {
   /**
    * Dispatch event to registered listeners
    */
-  protected dispatchToListeners(event: ChatEventPayload): void {
+  private dispatchToListeners(event: ChatEventPayload): void {
     // Dispatch to specific event listeners
     const listeners = this.eventListeners.get(event.type as ChatEventType);
     if (listeners) {
