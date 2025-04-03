@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Paperclip, Smile, X } from 'lucide-react';
+import { Send, Paperclip, Smile, X, Image } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
@@ -16,7 +16,7 @@ interface MessageInputProps {
   handleEndChat: () => void;
   hasUserSentMessage: boolean;
   onTyping?: () => void;
-  disabled?: boolean; // Add the disabled prop
+  disabled?: boolean;
 }
 
 const MessageInput = ({ 
@@ -27,10 +27,17 @@ const MessageInput = ({
   handleEndChat,
   hasUserSentMessage,
   onTyping,
-  disabled = false // Set a default value to false
+  disabled = false
 }: MessageInputProps) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [filePreview, setFilePreview] = useState<{url: string, type: string, name: string} | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const MAX_CHARS = 2000;
+  const charCount = messageText.length;
+  const isNearLimit = charCount > MAX_CHARS * 0.8;
+  const isAtLimit = charCount >= MAX_CHARS;
   
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -58,6 +65,7 @@ const MessageInput = ({
 
   const handleFileValidation = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFileError(null);
+    setFilePreview(null);
     const files = e.target.files;
     if (!files || files.length === 0) return;
     
@@ -81,8 +89,34 @@ const MessageInput = ({
       e.target.files = dataTransfer.files;
     }
     
-    // Proceed with upload
-    handleFileUpload(e);
+    // Generate preview
+    if (file.type.startsWith('image/')) {
+      setFilePreview({
+        url: URL.createObjectURL(file),
+        type: 'image',
+        name: sanitizedName
+      });
+    } else {
+      setFilePreview({
+        url: '',
+        type: file.type,
+        name: sanitizedName
+      });
+    }
+  };
+  
+  const clearFilePreview = () => {
+    setFilePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
+  const submitFile = () => {
+    if (fileInputRef.current && fileInputRef.current.files?.length) {
+      handleFileUpload({ target: fileInputRef.current } as React.ChangeEvent<HTMLInputElement>);
+      clearFilePreview();
+    }
   };
 
   return (
@@ -93,10 +127,52 @@ const MessageInput = ({
             {fileError}
           </div>
         )}
+        
+        {filePreview && (
+          <div className="mb-3 p-2 bg-gray-50 rounded-lg border border-gray-200 flex items-center">
+            {filePreview.type === 'image' ? (
+              <div className="relative w-14 h-14 mr-2">
+                <img 
+                  src={filePreview.url} 
+                  alt="Preview" 
+                  className="w-full h-full object-cover rounded"
+                />
+              </div>
+            ) : (
+              <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center mr-2">
+                <Image size={20} className="text-gray-500" />
+              </div>
+            )}
+            <div className="flex-grow overflow-hidden">
+              <p className="text-sm font-medium truncate">{filePreview.name}</p>
+              <p className="text-xs text-gray-500">Ready to upload</p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={clearFilePreview}
+                title="Cancel"
+              >
+                <X size={16} />
+              </Button>
+              <Button 
+                size="sm" 
+                className="h-8 chat-widget-button"
+                onClick={submitFile}
+              >
+                Send
+              </Button>
+            </div>
+          </div>
+        )}
+        
         <div className="flex items-center">
           <label htmlFor="file-upload" className={`cursor-pointer p-2 ${disabled ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-100'} rounded-md`}>
             <Paperclip size={18} className="text-gray-500" />
             <input 
+              ref={fileInputRef}
               id="file-upload" 
               type="file" 
               className="hidden" 
@@ -112,9 +188,10 @@ const MessageInput = ({
               onChange={handleChange}
               onKeyDown={handleKeyPress}
               placeholder="Type a message..."
-              className="flex-grow min-h-[44px] max-h-[120px] p-3 border rounded-md focus:outline-none resize-none pr-10 text-sm"
+              className={`flex-grow min-h-[44px] max-h-[120px] p-3 border rounded-md focus:outline-none resize-none pr-10 text-sm
+                ${isAtLimit ? 'border-red-500' : isNearLimit ? 'border-amber-500' : ''}`}
               rows={1}
-              maxLength={2000}
+              maxLength={MAX_CHARS}
               disabled={disabled}
             />
             <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
@@ -138,6 +215,16 @@ const MessageInput = ({
                 </div>
               </PopoverContent>
             </Popover>
+            {charCount > 0 && (
+              <div 
+                className={`absolute right-10 bottom-1 text-xs px-1.5 py-0.5 rounded-full
+                  ${isAtLimit ? 'bg-red-100 text-red-700' : 
+                  isNearLimit ? 'bg-amber-100 text-amber-700' : 
+                  'bg-gray-100 text-gray-500'}`}
+              >
+                {charCount}/{MAX_CHARS}
+              </div>
+            )}
           </div>
           
           <Button 
