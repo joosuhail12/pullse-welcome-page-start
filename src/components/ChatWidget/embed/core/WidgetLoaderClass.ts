@@ -1,12 +1,19 @@
-
 import { PullseChatWidgetOptions, EventCallback } from '../types';
 import { ChatEventType, ChatEventPayload } from '../../config';
-import { getEventManager, EventPriority } from '../enhancedEvents';
-import { validateEventPayload } from '../../utils/eventValidation';
-import { logger } from '@/lib/logger';
-import { initializeWidgetDOM } from './domManager';
 import { validateWidgetOptions } from './optionsValidator';
+import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
+import { 
+  initializeWidgetContainer, 
+  loadWidgetScript,
+  initializeWidgetEvents,
+  cleanupWidgetReferences
+} from '../initialization/widgetInitializer';
+import {
+  subscribeToWidgetEvent,
+  unsubscribeFromWidgetEvent,
+  dispatchWidgetEvent
+} from '../events/widgetEvents';
 
 export class PullseChatWidgetLoader {
   private options: PullseChatWidgetOptions;
@@ -30,19 +37,16 @@ export class PullseChatWidgetLoader {
       logger.info('Initializing Pullse Chat Widget', 'WidgetLoader');
       
       // Create container for widget
-      this.container = document.createElement('div');
-      this.container.id = 'pullse-chat-widget-container';
-      document.body.appendChild(this.container);
+      this.container = initializeWidgetContainer(this.options);
       
       // Store global instance reference
       (window as any).__PULLSE_CHAT_INSTANCE__ = this;
-      (window as any).__PULLSE_CHAT_CONFIG__ = this.options;
       
       // Initialize widget script
-      this.loadWidgetScript();
+      loadWidgetScript(this.options);
       
       // Set up event handlers from options
-      this.setupEventHandlers();
+      initializeWidgetEvents(this.options);
       
       this.isInitialized = true;
       logger.info('Widget initialized successfully', 'WidgetLoader');
@@ -54,71 +58,29 @@ export class PullseChatWidgetLoader {
         error: safeErrorMessage
       });
       
-      this.dispatchEvent({
+      dispatchWidgetEvent({
         type: 'chat:error',
         timestamp: new Date(),
         data: {
           error: 'initialization_failed',
           message: safeErrorMessage
         }
-      } as ChatEventPayload);
-    }
-  }
-  
-  /**
-   * Load the widget script
-   */
-  private loadWidgetScript(): void {
-    initializeWidgetDOM(this.options);
-  }
-  
-  /**
-   * Set up event handlers from options
-   */
-  private setupEventHandlers(): void {
-    const eventManager = getEventManager();
-    
-    // Register global event handler if provided
-    if (this.options.onEvent) {
-      logger.debug('Registering global onEvent handler', 'WidgetLoader');
-      eventManager.on('all', this.options.onEvent);
-    }
-    
-    // Register specific event handlers if provided
-    if (this.options.eventHandlers) {
-      logger.debug('Registering event handlers', 'WidgetLoader');
-      Object.entries(this.options.eventHandlers).forEach(([eventType, handler]) => {
-        if (handler) {
-          eventManager.on(eventType as ChatEventType, handler);
-        }
       });
     }
-  }
-  
-  /**
-   * Dispatch an event
-   */
-  private dispatchEvent(event: ChatEventPayload): void {
-    const eventManager = getEventManager();
-    eventManager.handleEvent(event);
   }
   
   /**
    * Subscribe to events
    */
   public on(eventType: ChatEventType | 'all', callback: EventCallback): () => void {
-    logger.debug(`Subscribing to ${eventType} events`, 'WidgetLoader');
-    const eventManager = getEventManager();
-    return eventManager.on(eventType, callback);
+    return subscribeToWidgetEvent(eventType, callback);
   }
   
   /**
    * Unsubscribe from events
    */
   public off(eventType: ChatEventType | 'all', callback?: EventCallback): void {
-    logger.debug(`Unsubscribing from ${eventType} events`, 'WidgetLoader');
-    const eventManager = getEventManager();
-    eventManager.off(eventType, callback);
+    unsubscribeFromWidgetEvent(eventType, callback);
   }
   
   /**
@@ -132,11 +94,10 @@ export class PullseChatWidgetLoader {
     }
     
     // Clean up event handlers
-    getEventManager().dispose();
+    cleanupEventHandlers();
     
     // Remove global instance reference
-    delete (window as any).__PULLSE_CHAT_INSTANCE__;
-    delete (window as any).__PULLSE_CHAT_CONFIG__;
+    cleanupWidgetReferences();
     
     this.isInitialized = false;
     

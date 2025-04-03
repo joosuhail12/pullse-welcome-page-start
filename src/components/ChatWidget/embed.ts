@@ -6,11 +6,17 @@
  * with customizable configuration options.
  */
 
-import { PullseChatWidgetLoader, initializeWidget } from './embed/widget-loader';
+import { 
+  PullseChatWidgetLoader, 
+  initializeWidget, 
+  on as subscribeToEvent,
+  off as unsubscribeFromEvent,
+  dispatchWidgetEvent
+} from './embed/widget-loader';
 import { PullseChatWidgetOptions, EventCallback } from './embed/types';
 import { ChatEventType, ChatEventPayload } from './config';
 import { WIDGET_VERSION, checkForUpdates } from './embed/api';
-import { getEventManager, EventPriority, dispatchValidatedEvent } from './embed/enhancedEvents';
+import { getEventManager, EventPriority } from './embed/enhancedEvents';
 import { validateEventPayload } from './utils/eventValidation';
 
 // Create global Pullse object
@@ -59,7 +65,7 @@ import { validateEventPayload } from './utils/eventValidation';
     console.error('Pullse Chat Widget not initialized');
     return;
   }
-  getEventManager().off(eventType, callback);
+  unsubscribeFromEvent(eventType, callback);
 };
 
 // Add function to dispatch validated events
@@ -68,7 +74,15 @@ import { validateEventPayload } from './utils/eventValidation';
     console.error('Pullse Chat Widget not initialized');
     return null;
   }
-  return dispatchValidatedEvent(eventType, data, priority);
+  
+  const event: ChatEventPayload = {
+    type: eventType,
+    timestamp: new Date(),
+    data: data
+  };
+  
+  dispatchWidgetEvent(event);
+  return event;
 };
 
 // Export for ESM environments
