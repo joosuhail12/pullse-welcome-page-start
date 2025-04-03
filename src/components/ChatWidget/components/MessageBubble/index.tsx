@@ -19,7 +19,7 @@ interface MessageBubbleProps {
   showAvatar?: boolean;
   isConsecutive?: boolean;
   avatarUrl?: string;
-  agentStatus?: 'online' | 'offline' | 'away' | 'busy'; // Add this line
+  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
 }
 
 const MessageBubble = ({ 
