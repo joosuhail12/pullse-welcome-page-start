@@ -57,20 +57,20 @@ const MessageReadReceipt: React.FC<MessageReadReceiptProps> = ({ status, timesta
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 transition-all duration-200">
             {status === 'read' ? (
               <div className="flex">
                 <Check className={`h-3 w-3 ${getStatusStyle()}`} />
                 <Check className={`h-3 w-3 -ml-1 ${getStatusStyle()}`} />
               </div>
             ) : status === 'delivered' ? (
-              <Check className={`h-3 w-3 ${getStatusStyle()}`} />
+              <Check className={`h-3 w-3 ${getStatusStyle()} animate-subtle-fade-in`} />
             ) : (
               <div className={`h-2 w-2 rounded-full ${getStatusStyle()}`} />
             )}
           </div>
         </TooltipTrigger>
-        <TooltipContent side="bottom" sideOffset={5} className="text-xs">
+        <TooltipContent side="bottom" sideOffset={5} className="text-xs bg-white/90 backdrop-blur-sm border border-gray-100">
           {getLabel()}{timestamp ? ` at ${getTimeString()}` : ''}
         </TooltipContent>
       </Tooltip>

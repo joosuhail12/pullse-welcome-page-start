@@ -32,7 +32,7 @@ const CardMessage = ({ cardData, metadata }: CardMessageProps) => {
   const cardDesc = data.description ? sanitizeInput(data.description) : '';
   
   return (
-    <Card className="w-full max-w-xs mt-2 shadow-sm">
+    <Card className="w-full max-w-xs mt-2 shadow-sm border border-gray-100/80 overflow-hidden">
       {data.imageUrl && (
         <div className="aspect-video overflow-hidden">
           <img 
@@ -43,7 +43,7 @@ const CardMessage = ({ cardData, metadata }: CardMessageProps) => {
         </div>
       )}
       <CardContent className="p-4">
-        <h4 className="font-semibold">{cardTitle}</h4>
+        <h4 className="font-semibold text-base">{cardTitle}</h4>
         <p className="text-sm text-gray-600 mt-1">{cardDesc}</p>
         
         {data.buttons && data.buttons.length > 0 && (
@@ -53,7 +53,7 @@ const CardMessage = ({ cardData, metadata }: CardMessageProps) => {
                 key={i} 
                 size="sm" 
                 variant="outline" 
-                className="w-full"
+                className="w-full transition-all hover:bg-vivid-purple/10 border border-vivid-purple/20"
               >
                 {sanitizeInput(button.text)}
               </Button>

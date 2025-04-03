@@ -23,8 +23,8 @@ const DateSeparator: React.FC<DateSeparatorProps> = ({ date, className = '' }) =
   return (
     <div className={`flex items-center justify-center my-6 ${className}`}>
       <Separator className="flex-grow bg-gray-200" />
-      <div className="mx-2 px-3 py-1 bg-gray-100 rounded-full flex items-center text-xs text-gray-600">
-        <Calendar size={12} className="mr-1.5" />
+      <div className="mx-2 px-3 py-1 bg-gray-50 rounded-full flex items-center text-xs text-gray-600 shadow-sm border border-gray-100">
+        <Calendar size={12} className="mr-1.5 text-vivid-purple/70" />
         {getDateText(date)}
       </div>
       <Separator className="flex-grow bg-gray-200" />

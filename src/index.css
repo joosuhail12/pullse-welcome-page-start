@@ -168,6 +168,7 @@
     z-index: 1;
     margin-left: auto;
     margin-right: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
   
   .chat-message-system {
@@ -181,6 +182,32 @@
     z-index: 1;
     margin-right: auto;
     margin-left: 0;
+    border: 1px solid rgba(139, 92, 246, 0.1);
+  }
+  
+  /* Add bubble tails */
+  .chat-message-user:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: -8px;
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(225deg, #8b5cf6 0%, #8b5cf6 100%);
+    border-bottom-left-radius: 16px;
+    z-index: -1;
+  }
+  
+  .chat-message-system:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: -8px;
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #ede9fe 0%, #ede9fe 100%);
+    border-bottom-right-radius: 16px;
+    z-index: -1;
   }
   
   /* Bubble hover effects */
@@ -281,6 +308,30 @@
   .pre-chat-btn {
     @apply transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md;
     box-shadow: 0 3px 10px rgba(139, 92, 246, 0.15);
+  }
+  
+  /* Card-style message bubbles */
+  .card-message-user {
+    @apply rounded-lg border border-white/10 shadow-md;
+    background: linear-gradient(145deg, #9672f7 0%, #8b5cf6 100%);
+  }
+  
+  .card-message-system {
+    @apply rounded-lg border border-gray-100 shadow-sm;
+    background: linear-gradient(145deg, #f8f7ff 0%, #f5f3ff 100%);
+  }
+  
+  /* Message group styling for consecutive messages */
+  .message-group-first {
+    @apply rounded-t-2xl rounded-bl-2xl rounded-br-md mt-2;
+  }
+  
+  .message-group-middle {
+    @apply rounded-md my-1;
+  }
+  
+  .message-group-last {
+    @apply rounded-b-2xl rounded-tr-2xl rounded-tl-md mb-2;
   }
 }
 
