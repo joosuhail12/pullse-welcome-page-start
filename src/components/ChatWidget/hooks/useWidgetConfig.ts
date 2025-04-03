@@ -7,6 +7,14 @@ import { logger } from '@/lib/logger';
 import { isValidChatPosition } from '../embed/core/optionsValidator';
 import { ChatPositionString } from '../types';
 
+// Helper function to ensure the returned value is a valid ChatPositionString
+function ensureValidPosition(position: unknown): ChatPositionString {
+  if (isValidChatPosition(position)) {
+    return position;
+  }
+  return 'bottom-right' as const;
+}
+
 export function useWidgetConfig(workspaceId?: string) {
   const [config, setConfig] = useState<ChatWidgetConfig>(defaultConfig);
   const [loading, setLoading] = useState<boolean>(true);
@@ -56,17 +64,8 @@ export function useWidgetConfig(workspaceId?: string) {
           // Get the default placement value
           const defaultPlacementValue = defaultConfig.position?.placement || 'bottom-right';
           
-          // We need to verify and ensure type safety for ChatPosition
-          let validatedPlacement: ChatPositionString;
-          
-          // Use our type guard to verify the position is valid
-          if (isValidChatPosition(defaultPlacementValue)) {
-            // TypeScript now knows this is a valid ChatPosition
-            validatedPlacement = defaultPlacementValue;
-          } else {
-            // Default to a known valid position
-            validatedPlacement = 'bottom-right';
-          }
+          // Use our helper function to ensure we have a valid ChatPositionString
+          const validatedPlacement = ensureValidPosition(defaultPlacementValue);
           
           const devConfig: ChatWidgetConfig = {
             ...defaultConfig,
@@ -95,17 +94,8 @@ export function useWidgetConfig(workspaceId?: string) {
         // Get the fetched placement value
         const fetchedPlacementValue = fetchedConfig.position?.placement || 'bottom-right';
         
-        // We need to verify and ensure type safety for ChatPosition
-        let validatedPlacement: ChatPositionString;
-        
-        // Use our type guard to verify the position is valid
-        if (isValidChatPosition(fetchedPlacementValue)) {
-          // TypeScript now knows this is a valid ChatPosition
-          validatedPlacement = fetchedPlacementValue;
-        } else {
-          // Default to a known valid position
-          validatedPlacement = 'bottom-right';
-        }
+        // Use our helper function to ensure we have a valid ChatPositionString
+        const validatedPlacement = ensureValidPosition(fetchedPlacementValue);
         
         setConfig({
           ...fetchedConfig,
@@ -122,17 +112,8 @@ export function useWidgetConfig(workspaceId?: string) {
         // Get the default placement value for error fallback
         const defaultPlacementValue = defaultConfig.position?.placement || 'bottom-right';
         
-        // We need to verify and ensure type safety for ChatPosition
-        let validatedPlacement: ChatPositionString;
-        
-        // Use our type guard to verify the position is valid
-        if (isValidChatPosition(defaultPlacementValue)) {
-          // TypeScript now knows this is a valid ChatPosition
-          validatedPlacement = defaultPlacementValue;
-        } else {
-          // Default to a known valid position
-          validatedPlacement = 'bottom-right';
-        }
+        // Use our helper function to ensure we have a valid ChatPositionString
+        const validatedPlacement = ensureValidPosition(defaultPlacementValue);
         
         setConfig({
           ...defaultConfig,

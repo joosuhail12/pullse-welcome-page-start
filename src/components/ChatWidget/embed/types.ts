@@ -1,6 +1,6 @@
 
 import { ChatEventType, ChatEventPayload } from '../config';
-import { ChatPosition, ChatBranding } from '../types';
+import { ChatPosition, ChatPositionString } from '../types';
 
 /**
  * Configuration options for the Pullse Chat Widget
@@ -9,7 +9,7 @@ export interface PullseChatWidgetOptions {
   workspaceId: string;
   welcomeMessage?: string;
   primaryColor?: string;
-  position?: ChatPosition;
+  position?: ChatPositionString;
   offsetX?: number;
   offsetY?: number;
   hideBranding?: boolean;

@@ -1,16 +1,23 @@
 
 import { useMemo } from 'react';
-import { ChatWidgetConfig, ChatPosition } from '../config';
+import { ChatWidgetConfig } from '../config';
+import { ChatPositionString } from '../types';
 
 export function useWidgetPosition(
   config: ChatWidgetConfig,
   isMobile: boolean
 ) {
   const getLauncherPositionStyles = useMemo(() => {
-    // Convert string position to object if needed
-    const position = typeof config.position === 'string' 
-      ? config.position
-      : (config.position?.placement || 'bottom-right');
+    // Convert position to a valid ChatPositionString
+    let positionString: ChatPositionString = 'bottom-right';
+    
+    // Extract position string from config
+    if (typeof config.position?.placement === 'string') {
+      // Check if the position is valid
+      if (['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(config.position.placement)) {
+        positionString = config.position.placement as ChatPositionString;
+      }
+    }
       
     // Handle offset values correctly
     const offsetX = typeof config.position === 'object' && config.position.offsetX !== undefined
@@ -23,7 +30,7 @@ export function useWidgetPosition(
     
     let positionStyle: React.CSSProperties = {};
     
-    switch(position) {
+    switch(positionString) {
       case 'bottom-left':
         positionStyle = { 
           bottom: `${offsetY}rem`, 
@@ -62,10 +69,16 @@ export function useWidgetPosition(
   }, [config.position, isMobile]);
 
   const getWidgetContainerPositionStyles = useMemo(() => {
-    // Convert string position to object if needed
-    const position = typeof config.position === 'string' 
-      ? config.position
-      : (config.position?.placement || 'bottom-right');
+    // Convert position to a valid ChatPositionString
+    let positionString: ChatPositionString = 'bottom-right';
+    
+    // Extract position string from config
+    if (typeof config.position?.placement === 'string') {
+      // Check if the position is valid
+      if (['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(config.position.placement)) {
+        positionString = config.position.placement as ChatPositionString;
+      }
+    }
       
     // Handle offset values correctly
     const offsetX = typeof config.position === 'object' && config.position.offsetX !== undefined
@@ -82,7 +95,7 @@ export function useWidgetPosition(
     
     let positionStyle: React.CSSProperties = {};
     
-    switch(position) {
+    switch(positionString) {
       case 'bottom-left':
         positionStyle = { 
           bottom: `${totalOffset}rem`, 
