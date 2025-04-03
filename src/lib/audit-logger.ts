@@ -1,3 +1,4 @@
+
 /**
  * Secure Audit Logger for Security Events
  * 
@@ -13,9 +14,10 @@
 
 import { logger } from './logger';
 import { sanitizeErrorMessage, getSafeErrorDetails } from './error-sanitizer';
+import { SecurityEventType, SecurityEventOutcome, SecurityEventSeverity } from './securityTypes';
 
-// Security event types that should be audit logged
-export { SecurityEventType, SecurityEventOutcome, SecurityEventSeverity } from './securityTypes';
+// Re-export types for use by other modules
+export type { SecurityEventOutcome, SecurityEventSeverity };
 
 // Standard format for audit log entries
 export interface AuditLogEntry {
@@ -162,7 +164,7 @@ export const auditLogger = {
     logSecurityEvent(SecurityEventType.LOGOUT, 'SUCCESS', { userId }),
     
   logAccessDenied: (userId: string, resource: string, details?: any) =>
-    logSecurityEvent(SecurityEventType.ACCESS_DENIED, 'FAILURE', 
+    logSecurityEvent(SecurityEventType.UNAUTHORIZED_ACCESS, 'FAILURE', 
       { userId, resource, ...details }, 'HIGH'),
       
   logTokenIssued: (userId: string, tokenType: string, details?: any) =>

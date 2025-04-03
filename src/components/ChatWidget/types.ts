@@ -68,3 +68,52 @@ export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
 
 // Define standard user types
 export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status';
+
+// Define ChatPosition type
+export type ChatPosition = 
+  | 'bottom-right'
+  | 'bottom-left'
+  | 'top-right'
+  | 'top-left'
+  | {
+      placement: string;
+      offsetX: number;
+      offsetY: number;
+    };
+
+// Define MessageReadStatus type 
+export type MessageReadStatus = 'unread' | 'delivered' | 'read';
+
+// Define MessageReaction types
+export interface MessageReactionButtonsProps {
+  onReact: (emoji: string) => void;
+  onClose: () => void;
+}
+
+// Define MessageAvatar props
+export interface MessageAvatarProps {
+  isUserMessage: boolean;
+  userAvatar: string;
+  agentAvatar: string;
+  agentStatus?: AgentStatus;
+}
+
+// Define MessageBubble props
+export interface MessageBubbleProps {
+  message: Message;
+  highlightText?: string;
+  isHighlighted?: boolean;
+  userAvatar: string;
+  agentAvatar: string;
+  onReply: (text: string) => void;
+  onReaction: (messageId: string, emoji: string) => void;
+  agentStatus?: AgentStatus;
+  readStatus?: MessageReadStatus;
+  readTimestamp?: Date;
+}
+
+// Define QuickReplyMessage props
+export interface QuickReplyMessageProps {
+  metadata: Record<string, any>;
+  onReply: (text: string) => void;
+}

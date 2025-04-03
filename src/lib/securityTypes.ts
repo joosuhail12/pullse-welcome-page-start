@@ -54,7 +54,18 @@ export enum SecurityEventType {
   WIDGET_INSTALLED = 'widget_installed',
   WIDGET_CONFIG_CHANGED = 'widget_config_changed',
   WIDGET_ORIGIN_VERIFIED = 'widget_origin_verified',
-  WIDGET_ORIGIN_REJECTED = 'widget_origin_rejected'
+  WIDGET_ORIGIN_REJECTED = 'widget_origin_rejected',
+  
+  // Token events
+  TOKEN_ISSUED = 'token_issued',
+  TOKEN_REJECTED = 'token_rejected',
+  TOKEN_REVOKED = 'token_revoked',
+  
+  // Access control events
+  ACCESS_DENIED = 'access_denied',
+  
+  // Admin events
+  ADMIN_ACTION = 'admin_action'
 }
 
 /**
