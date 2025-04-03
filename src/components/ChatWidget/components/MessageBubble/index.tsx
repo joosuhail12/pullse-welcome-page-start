@@ -30,7 +30,7 @@ interface MessageBubbleProps {
     reactions?: string[];
   };
   highlightText?: string;
-  isHighlighted?: boolean;
+  isHighlighted?: boolean;  // Changed from "highlighted" to "isHighlighted" to match the usage in MessageList
   userAvatar?: string;
   agentAvatar?: string;
   onReply?: (text: string) => void;
@@ -38,19 +38,23 @@ interface MessageBubbleProps {
   agentStatus?: 'online' | 'away' | 'offline' | 'busy';
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
+  searchTerm?: string;  // Added searchTerm prop to match usage in MessageList
+  onToggleHighlight?: () => void;  // Added onToggleHighlight prop to match usage in MessageList
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   message,
   highlightText,
-  isHighlighted,
+  isHighlighted,  // Changed from "highlighted" to "isHighlighted"
   userAvatar,
   agentAvatar,
   onReply,
   onReaction,
   agentStatus,
   readStatus = 'sent',
-  readTimestamp
+  readTimestamp,
+  searchTerm,  // Added searchTerm prop
+  onToggleHighlight  // Added onToggleHighlight prop
 }) => {
   const [showReactions, setShowReactions] = useState(false);
 
@@ -148,7 +152,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         className={cn(
           'relative max-w-[80%] sm:max-w-md px-4 py-3',
           messageTypeClass,
-          isHighlighted && 'bg-yellow-100 border-yellow-300',
+          isHighlighted && 'bg-yellow-100 border-yellow-300',  // Changed from "highlighted" to "isHighlighted"
           isSystemMessage && 'py-2 px-3'
         )}
       >

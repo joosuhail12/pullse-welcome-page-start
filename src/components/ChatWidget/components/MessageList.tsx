@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MessageBubble from './MessageBubble';
@@ -163,7 +164,7 @@ const MessageList: React.FC<MessageListProps> = ({
               <MessageBubble
                 message={message}
                 searchTerm={searchTerm}
-                highlighted={isHighlighted}
+                isHighlighted={isHighlighted}
                 userAvatar={userAvatar}
                 agentAvatar={agentAvatar}
                 onReply={setMessageText}
