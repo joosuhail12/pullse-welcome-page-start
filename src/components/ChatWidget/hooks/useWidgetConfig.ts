@@ -7,10 +7,13 @@ import { logger } from '@/lib/logger';
 import { isValidChatPosition } from '../embed/core/optionsValidator';
 import { ChatPositionString } from '../types';
 
-// Helper function to ensure the returned value is a valid ChatPositionString
+/**
+ * Helper function to ensure the returned value is a valid ChatPositionString
+ * This adds type safety by ensuring we only return valid position values
+ */
 function ensureValidPosition(position: unknown): ChatPositionString {
   if (typeof position === 'string' && isValidChatPosition(position)) {
-    return position as ChatPositionString;
+    return position;
   }
   return 'bottom-right';
 }

@@ -1,5 +1,7 @@
 
 import { EventCallback } from './types';
+import { ChatPositionString } from '../types';
+import { isValidChatPosition } from './core/optionsValidator';
 
 /**
  * Debounce function for optimizing event callbacks
@@ -20,13 +22,20 @@ export function debounce<F extends (...args: any[]) => void>(
 
 /**
  * Get position styles based on placement
+ * Ensures that position is a valid ChatPositionString
  */
 export function getPositionStyles(
   position: string | undefined, 
-  offsetX: number | undefined, 
-  offsetY: number | undefined
+  offsetX: number | undefined = 20, 
+  offsetY: number | undefined = 20
 ): string {
-  switch (position) {
+  // Validate the position or use default
+  const validPosition: ChatPositionString = (position && isValidChatPosition(position))
+    ? position
+    : 'bottom-right';
+    
+  // Apply appropriate CSS based on the position
+  switch (validPosition) {
     case 'bottom-left':
       return `bottom: ${offsetY}px; left: ${offsetX}px;`;
     case 'top-right':

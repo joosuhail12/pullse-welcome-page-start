@@ -30,16 +30,6 @@ export type ChatBranding = {
   showBrandingBar?: boolean;
 };
 
-// Use the ChatPositionString type from types.ts
-export type ChatPosition = ChatPositionString;
-
-export enum ChatWidgetViews {
-  HOME = 'home',
-  CHAT = 'chat',
-  MESSAGES = 'messages',
-  SETTINGS = 'settings'
-}
-
 export interface ChatWidgetConfig {
   workspaceId?: string;
   branding?: ChatBranding;
@@ -98,7 +88,7 @@ export const defaultConfig: ChatWidgetConfig = {
     showBrandingBar: true
   },
   position: {
-    placement: 'bottom-right' as ChatPositionString,
+    placement: 'bottom-right',
     offsetX: 20,
     offsetY: 20
   },
