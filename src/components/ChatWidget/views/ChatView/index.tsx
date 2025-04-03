@@ -15,11 +15,32 @@ interface ChatViewProps {
 }
 
 /**
- * Main ChatView component that serves as the entry point for the chat interface.
- * It delegates all the logic to the ChatViewContainer component.
+ * Main entry point for the Chat View
+ * This component acts as a simple wrapper around the container component
+ * which handles all the state management and logic
  */
-const ChatView: React.FC<ChatViewProps> = (props) => {
-  return <ChatViewContainer {...props} />;
-};
+const ChatView = React.memo(({ 
+  conversation, 
+  onBack, 
+  onUpdateConversation, 
+  config,
+  playMessageSound,
+  userFormData,
+  setUserFormData
+}: ChatViewProps) => {
+  return (
+    <ChatViewContainer
+      conversation={conversation}
+      onBack={onBack}
+      onUpdateConversation={onUpdateConversation}
+      config={config}
+      playMessageSound={playMessageSound}
+      userFormData={userFormData}
+      setUserFormData={setUserFormData}
+    />
+  );
+});
+
+ChatView.displayName = 'ChatView';
 
 export default ChatView;

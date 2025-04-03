@@ -70,16 +70,7 @@ const MessageBubble = ({
       
       case 'card':
         if (!message.cardData) return <TextMessage text={sanitizedText} renderText={renderText} />;
-        
-        return (
-          <CardMessage 
-            title={message.cardData.title || ''}
-            description={message.cardData.description || ''}
-            imageUrl={message.cardData.imageUrl}
-            buttons={message.cardData.buttons || []}
-            onClick={() => {}} // Provide an empty function since it's required
-          />
-        );
+        return <CardMessage cardData={message.cardData} />;
       
       case 'quick_reply':
         return <QuickReplyMessage 
@@ -112,7 +103,7 @@ const MessageBubble = ({
     return null;
   };
 
-  // Render avatar for the messages
+  // Render avatar for the system messages
   const renderAvatar = () => {
     if (!showAvatar || message.sender === 'status' || isConsecutive) return null;
     return (
@@ -144,7 +135,7 @@ const MessageBubble = ({
   return (
     <div className="flex items-start">
       {message.sender === 'system' && renderAvatar()}
-      <div className={`max-w-[85%] ${bubbleClasses}`}>
+      <div className={`max-w-[80%] ${bubbleClasses}`}>
         {renderMessage()}
         <div className="flex justify-between items-center">
           <div className={`text-xs mt-2 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-500'}`}>
