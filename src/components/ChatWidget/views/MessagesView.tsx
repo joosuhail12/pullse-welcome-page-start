@@ -349,7 +349,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   );
 
   return (
-    <div className="flex flex-col p-2 h-full">
+    <div className="flex flex-col p-2 h-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100">
       <div className="mb-3 flex justify-between items-center px-2">
         <h2 className="font-semibold text-gray-700" id="messagesViewTitle">Recent Conversations</h2>
         <Tooltip>
@@ -382,7 +382,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         isSearching={isSearching}
       />
       
-      <div className="flex items-center justify-between px-2 py-2 bg-gray-50 rounded-md mb-2" role="toolbar" aria-label="Conversation sorting and filtering options">
+      <div className="flex items-center justify-between px-2 py-2 bg-white/60 backdrop-blur-sm rounded-md mb-2 shadow-sm" role="toolbar" aria-label="Conversation sorting and filtering options">
         <div className="flex items-center gap-2">
           <Select 
             value={statusFilter} 
@@ -402,7 +402,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="h-8 gap-1 text-xs"
+            className="h-8 gap-1 text-xs text-vivid-purple hover:bg-vivid-purple/10"
             onClick={toggleGrouping}
             aria-pressed={groupBy !== 'none'}
             aria-label={`${groupBy === 'none' ? 'Group by date' : 'Remove grouping'}`}
@@ -414,7 +414,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         <Button 
           variant="ghost" 
           size="sm" 
-          className="h-8 gap-1 text-xs"
+          className="h-8 gap-1 text-xs text-vivid-purple hover:bg-vivid-purple/10"
           onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
           aria-label={`Sort by ${sortOrder === 'newest' ? 'oldest first' : 'newest first'}`}
         >
@@ -449,11 +449,11 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
           <div className="space-y-4 px-1">
             {Object.keys(paginationData.pagedGroupedConversations).length === 0 ? (
               <div className="text-center py-8 text-gray-500 animate-fade-in">
-                <div className="bg-gray-50 p-6 rounded-lg max-w-xs mx-auto">
+                <div className="bg-white/70 backdrop-blur-sm p-6 rounded-lg max-w-xs mx-auto shadow-sm">
                   <div className="flex justify-center mb-4">
                     <div className="relative">
                       <MessageSquare className="mx-auto text-gray-300" size={40} strokeWidth={1.5} />
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-gray-50 rounded-full flex items-center justify-center">
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm">
                         <Plus className="text-vivid-purple" size={18} />
                       </div>
                     </div>
@@ -468,15 +468,15 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                       <p className="text-sm mb-4">Start your first conversation to receive support or information.</p>
                       <div className="flex flex-col gap-2 text-sm text-gray-600 mb-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs">1</div>
+                          <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">1</div>
                           <span>Click the "+" button to start chatting</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs">2</div>
+                          <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">2</div>
                           <span>Ask questions or request assistance</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-xs">3</div>
+                          <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">3</div>
                           <span>Get answers from our support team</span>
                         </div>
                       </div>
@@ -498,7 +498,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
               Object.entries(paginationData.pagedGroupedConversations).map(([group, groupConversations]) => (
                 <div key={group} className="mb-4">
                   {groupBy !== 'none' && (
-                    <div className="text-xs font-medium text-gray-500 mb-2 px-2" 
+                    <div className="text-xs font-medium text-vivid-purple mb-2 px-2" 
                       role="heading" aria-level={2}>
                       {group}
                     </div>
@@ -508,11 +508,11 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                       <Card
                         key={conversation.id}
                         onClick={() => handleSelectConversation(conversation)}
-                        className={`p-3 hover:bg-soft-purple-50 cursor-pointer border ${
-                          conversation.unread ? 'border-l-4 border-l-vivid-purple' : 'border-gray-100'
+                        className={`p-3 hover:bg-soft-purple-50 cursor-pointer border bg-white/60 backdrop-blur-sm ${
+                          conversation.unread ? 'border-l-4 border-l-vivid-purple' : 'border-white/30'
                         } transition-colors group relative ${
                           animateOut === conversation.id ? 'animate-fade-out' : 'animate-fade-in'
-                        }`}
+                        } shadow-sm`}
                         tabIndex={0}
                         role="button"
                         aria-label={`Conversation: ${conversation.title}${conversation.unread ? ', unread' : ''}`}
@@ -607,7 +607,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         )}
       </ScrollArea>
 
-      {/* Pagination controls */}
+      {/* Pagination controls with updated styling */}
       {paginationData.totalPages > 1 && (
         <Pagination className="mt-4">
           <PaginationContent role="navigation" aria-label="Conversation pagination">
@@ -615,7 +615,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
               <PaginationPrevious 
                 onClick={() => handlePageChange(Math.max(1, paginationData.currentPage - 1))}
                 aria-disabled={paginationData.currentPage === 1}
-                className={paginationData.currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                className={`${paginationData.currentPage === 1 ? "pointer-events-none opacity-50" : ""} text-vivid-purple hover:bg-vivid-purple/10`}
                 aria-label="Previous page"
               />
             </PaginationItem>
@@ -628,6 +628,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                   onClick={() => handlePageChange(page)}
                   aria-current={page === paginationData.currentPage ? "page" : undefined}
                   aria-label={`Page ${page}`}
+                  className={page === paginationData.currentPage ? "bg-vivid-purple text-white hover:bg-vivid-purple/90" : "hover:bg-vivid-purple/10 text-vivid-purple"}
                 >
                   {page}
                 </PaginationLink>
@@ -638,7 +639,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
               <PaginationNext 
                 onClick={() => handlePageChange(Math.min(paginationData.totalPages, paginationData.currentPage + 1))}
                 aria-disabled={paginationData.currentPage === paginationData.totalPages}
-                className={paginationData.currentPage === paginationData.totalPages ? "pointer-events-none opacity-50" : ""}
+                className={`${paginationData.currentPage === paginationData.totalPages ? "pointer-events-none opacity-50" : ""} text-vivid-purple hover:bg-vivid-purple/10`}
                 aria-label="Next page"
               />
             </PaginationItem>

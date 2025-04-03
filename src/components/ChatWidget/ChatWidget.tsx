@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -121,14 +122,14 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     return (
       <div className="fixed bottom-4 right-4 flex flex-col items-end">
         <Button
-          className="rounded-full w-14 h-14 flex items-center justify-center chat-widget-button relative"
+          className="rounded-full w-14 h-14 flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105"
           style={buttonStyle}
           onClick={toggleChat}
         >
           <MessageSquare size={24} className="text-white" />
           {!isOpen && unreadCount > 0 && (
             <Badge 
-              className="absolute -top-2 -right-2 bg-red-500 text-white border-white border-2" 
+              className="absolute -top-2 -right-2 bg-red-500 text-white border-white border-2 animate-pulse" 
               variant="destructive"
             >
               {unreadCount}
@@ -140,14 +141,21 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
   }, [config.branding?.primaryColor, toggleChat, isOpen, unreadCount]);
 
   if (loading) {
-    return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
+    return (
+      <div className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 p-4 font-sans flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-vivid-purple border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-vivid-purple">Loading...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <>
       {isOpen && (
         <div 
-          className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] z-50 chat-widget-container"
+          className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] z-50 chat-widget-container animate-fade-in shadow-chat-widget"
           style={widgetStyle}
         >
           <div className="relative w-full h-full flex flex-col">
