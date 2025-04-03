@@ -13,6 +13,7 @@ import { validateEventPayload } from '../utils/eventValidation';
 import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 import { enforceHttps } from '../utils/security';
+import { auditLogger } from '@/lib/audit-logger';
 
 // Export the main class for direct usage
 export { PullseChatWidgetLoader };
@@ -20,6 +21,18 @@ export { PullseChatWidgetLoader };
 // Add convenience method for initialization with enhanced security
 export function initializeWidget(options: PullseChatWidgetOptions): PullseChatWidgetLoader {
   try {
+    // Log widget initialization attempt
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
+      'ATTEMPT',
+      { 
+        action: 'widget_initialize', 
+        workspaceId: options.workspaceId,
+        environment: import.meta.env.MODE
+      },
+      'LOW'
+    );
+    
     // Ensure HTTPS in production environments
     if (!enforceHttps()) {
       logger.warn(
@@ -30,11 +43,38 @@ export function initializeWidget(options: PullseChatWidgetOptions): PullseChatWi
       throw new Error('Insecure connection. Redirecting to HTTPS.');
     }
     
-    return new PullseChatWidgetLoader(options);
+    const widgetInstance = new PullseChatWidgetLoader(options);
+    
+    // Log successful widget initialization
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
+      'SUCCESS',
+      { 
+        action: 'widget_initialize', 
+        workspaceId: options.workspaceId,
+        environment: import.meta.env.MODE
+      },
+      'LOW'
+    );
+    
+    return widgetInstance;
   } catch (error) {
     // Sanitize error message before logging
     const safeErrorMessage = sanitizeErrorMessage(error);
     logger.error('Failed to initialize widget', 'WidgetLoader', { error: safeErrorMessage });
+    
+    // Log initialization failure
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
+      'FAILURE',
+      { 
+        action: 'widget_initialize', 
+        workspaceId: options.workspaceId || 'unknown',
+        error: safeErrorMessage
+      },
+      'MEDIUM'
+    );
+    
     throw error;
   }
 }

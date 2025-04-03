@@ -1,4 +1,3 @@
-
 import { getChatSessionId, invalidateSession, refreshSessionExpiry } from './cookies';
 import { serverSideEncrypt, serverSideDecrypt } from '../services/api';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
@@ -8,6 +7,7 @@ import {
   signMessageServerSide, 
   verifySignatureServerSide
 } from './serverSideAuth';
+import { auditLogger } from '@/lib/audit-logger';
 
 // Store rate limiting data in memory
 const rateLimitStore: Record<string, { count: number; resetTime: number }> = {};
@@ -36,7 +36,24 @@ export function isRateLimited(): boolean {
   rateLimitStore[sessionId].count++;
   
   // Check if limit is exceeded
-  return rateLimitStore[sessionId].count > MAX_REQUESTS_PER_WINDOW;
+  const isLimited = rateLimitStore[sessionId].count > MAX_REQUESTS_PER_WINDOW;
+  
+  // Log rate limiting events
+  if (isLimited) {
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.SUSPICIOUS_ACTIVITY,
+      'FAILURE',
+      { 
+        action: 'rate_limit_exceeded', 
+        sessionId, 
+        requestCount: rateLimitStore[sessionId].count,
+        windowMs: RATE_LIMIT_WINDOW_MS
+      },
+      'MEDIUM'
+    );
+  }
+  
+  return isLimited;
 }
 
 /**
@@ -90,6 +107,18 @@ export function generateCsrfToken(): { token: string, nonce: string } {
   // Encode token - in production this would be signed on the server
   const token = btoa(tokenData);
   
+  // Log token creation
+  auditLogger.logSecurityEvent(
+    auditLogger.SecurityEventType.TOKEN_ISSUED,
+    'SUCCESS',
+    { 
+      tokenType: 'CSRF', 
+      sessionId: sessionId,
+      maskedNonce: `${nonce.substring(0,4)}...`
+    },
+    'LOW'
+  );
+  
   return { token, nonce };
 }
 
@@ -106,15 +135,47 @@ export function verifyCsrfToken(token: string, expectedNonce: string): boolean {
     const [sessionId, nonce, timestampStr] = decoded.split(':');
     
     // Verify session ID
-    if (sessionId !== getChatSessionId()) return false;
+    if (sessionId !== getChatSessionId()) {
+      auditLogger.logSecurityEvent(
+        auditLogger.SecurityEventType.TOKEN_REJECTED,
+        'FAILURE',
+        { tokenType: 'CSRF', reason: 'session_mismatch' },
+        'HIGH'
+      );
+      return false;
+    }
     
     // Verify nonce
-    if (nonce !== expectedNonce) return false;
+    if (nonce !== expectedNonce) {
+      auditLogger.logSecurityEvent(
+        auditLogger.SecurityEventType.TOKEN_REJECTED,
+        'FAILURE',
+        { tokenType: 'CSRF', reason: 'nonce_mismatch' },
+        'HIGH'
+      );
+      return false;
+    }
     
     // Check token freshness (10 minute expiry)
     const timestamp = parseInt(timestampStr, 36);
     const now = Date.now();
-    if (now - timestamp > 600000) return false;
+    if (now - timestamp > 600000) {
+      auditLogger.logSecurityEvent(
+        auditLogger.SecurityEventType.TOKEN_REJECTED,
+        'FAILURE',
+        { tokenType: 'CSRF', reason: 'token_expired', ageMs: now - timestamp },
+        'MEDIUM'
+      );
+      return false;
+    }
+    
+    // Log successful validation
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.TOKEN_VALIDATED,
+      'SUCCESS',
+      { tokenType: 'CSRF', sessionId },
+      'LOW'
+    );
     
     return true;
   } catch (e) {
@@ -123,6 +184,14 @@ export function verifyCsrfToken(token: string, expectedNonce: string): boolean {
       'security.verifyCsrfToken', 
       { error: sanitizeErrorMessage(e) }
     );
+    
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.TOKEN_REJECTED,
+      'FAILURE',
+      { tokenType: 'CSRF', reason: 'invalid_format', error: sanitizeErrorMessage(e) },
+      'HIGH'
+    );
+    
     return false;
   }
 }
@@ -183,6 +252,19 @@ export function enforceHttps(): boolean {
     !window.location.hostname.includes('localhost') &&
     !window.location.hostname.includes('127.0.0.1')
   ) {
+    // Log security event for HTTP access attempt
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
+      'ATTEMPT',
+      { 
+        action: 'enforce_https', 
+        from: window.location.protocol,
+        to: 'https:',
+        host: window.location.hostname
+      },
+      'MEDIUM'
+    );
+    
     window.location.href = window.location.href.replace('http:', 'https:');
     return false;
   }
@@ -233,10 +315,20 @@ export function verifyMessageSignature(message: string, timestamp: number, signa
  * Logout user and invalidate session
  */
 export function logout(): void {
-  // Clear rate limiting data for the current session
+  // Log logout event
   const sessionId = getChatSessionId();
-  if (sessionId && rateLimitStore[sessionId]) {
-    delete rateLimitStore[sessionId];
+  if (sessionId) {
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.LOGOUT,
+      'SUCCESS',
+      { sessionId },
+      'LOW'
+    );
+  
+    // Clear rate limiting data for the current session
+    if (rateLimitStore[sessionId]) {
+      delete rateLimitStore[sessionId];
+    }
   }
   
   // Invalidate the session

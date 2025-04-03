@@ -3,6 +3,7 @@ import { getChatSessionId } from '../utils/cookies';
 import { generateCsrfToken, signMessage } from '../utils/security';
 import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
+import { auditLogger } from '@/lib/audit-logger';
 
 interface TokenParams {
   workspaceId: string;
@@ -34,10 +35,35 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
       timestamp
     };
 
+    // Log token request attempt
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.TOKEN_ISSUED,
+      'ATTEMPT',
+      { 
+        service: 'ably', 
+        workspaceId: params.workspaceId,
+        channelName: params.channelName
+      }
+    );
+
     // In development mode, return mock token for testing
     if (import.meta.env.DEV) {
       logger.debug('Using mock Ably token in development mode', 'ablyAuth.requestToken');
-      return mockTokenResponse(params);
+      const mockToken = mockTokenResponse(params);
+      
+      // Log successful mock token generation
+      auditLogger.logSecurityEvent(
+        auditLogger.SecurityEventType.TOKEN_ISSUED,
+        'SUCCESS',
+        { 
+          service: 'ably',
+          environment: 'development',
+          mock: true,
+          workspaceId: params.workspaceId
+        }
+      );
+      
+      return mockToken;
     }
 
     const response = await fetch('/api/chat-widget/token', {
@@ -48,13 +74,54 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
+      
+      // Log token request failure
+      auditLogger.logSecurityEvent(
+        auditLogger.SecurityEventType.TOKEN_REJECTED,
+        'FAILURE',
+        { 
+          service: 'ably',
+          statusCode: response.status,
+          error: sanitizeErrorMessage(errorText),
+          workspaceId: params.workspaceId
+        },
+        'HIGH'
+      );
+      
       throw new Error(`Failed to fetch Ably token: ${response.status} ${response.statusText} - ${errorText}`);
     }
 
-    return await response.json();
+    const tokenResponse = await response.json();
+    
+    // Log successful token issuance
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.TOKEN_ISSUED,
+      'SUCCESS',
+      { 
+        service: 'ably',
+        workspaceId: params.workspaceId,
+        issued: tokenResponse.issued,
+        expires: tokenResponse.expires
+      }
+    );
+    
+    return tokenResponse;
   } catch (error) {
     const safeErrorMessage = sanitizeErrorMessage(error);
     logger.error('Error requesting Ably token', 'ablyAuth.requestToken', { error: safeErrorMessage });
+    
+    // Log token request exception
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.TOKEN_REJECTED,
+      'FAILURE',
+      { 
+        service: 'ably',
+        error: safeErrorMessage,
+        workspaceId: params.workspaceId
+      },
+      'HIGH'
+    );
+    
     throw error;
   }
 };
