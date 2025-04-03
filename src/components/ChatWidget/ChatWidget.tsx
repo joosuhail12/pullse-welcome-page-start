@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -142,7 +141,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 1;
     const widgetHeightPx = isMobile ? 500 : 600; 
     const widgetHeightRem = widgetHeightPx / 16;
-    const buttonMargin = 1; // 1rem margin between widget and button
+    const buttonMargin = 2.5; // Increased from 1 to 2.5 to create more space
     
     let launcherStyle: React.CSSProperties = {};
     
