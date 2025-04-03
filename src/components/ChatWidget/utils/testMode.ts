@@ -179,3 +179,32 @@ export function createTestBadge(): JSX.Element | null {
     </div>
   );
 }
+
+/**
+ * Simulate the agent typing indicator in test mode
+ * @param callback Function to call when "typing" is finished
+ * @param duration Optional typing duration in milliseconds
+ * @returns Timeout ID for cleanup
+ */
+export function simulateAgentTypingInTestMode(
+  callback: () => void,
+  duration: number = 1500
+): ReturnType<typeof setTimeout> {
+  return setTimeout(callback, duration);
+}
+
+/**
+ * Generate a simulated agent response in test mode
+ * @param text Message text
+ * @returns A system message
+ */
+export function simulateAgentResponseInTestMode(text: string): Message {
+  return {
+    id: uuidv4(),
+    text,
+    sender: 'system',
+    timestamp: new Date(),
+    type: 'text',
+    status: 'sent'
+  };
+}
