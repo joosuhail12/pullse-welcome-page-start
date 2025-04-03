@@ -33,26 +33,26 @@ const HomeView = React.memo(({
   }, [onStartChat, config]);
   
   return (
-    <div className="flex flex-col p-5 h-full animate-fade-in bg-gradient-to-br from-soft-purple-50 to-vivid-purple-100">
+    <div className="flex flex-col p-5 h-full animate-fade-in bg-gradient-to-br from-soft-purple-50 to-soft-purple-100">
       {/* Welcoming header with avatar */}
-      <div className="flex flex-col items-center mb-6 transform transition-all duration-500 hover:scale-[1.02]">
-        <Avatar className="h-20 w-20 mb-4 shadow-md animate-scale-in">
+      <div className="flex flex-col items-center mb-6 transition-transform duration-300 hover:scale-[1.01]">
+        <Avatar className="h-20 w-20 mb-4 shadow-sm animate-subtle-scale">
           <AvatarImage src="https://framerusercontent.com/images/9N8Z1vTRbJsHlrIuTjm6Ajga4dI.png" />
-          <AvatarFallback className="bg-vivid-purple-100 text-vivid-purple-600 text-xl">
+          <AvatarFallback className="bg-soft-purple-100 text-vivid-purple-600 text-xl">
             <MessageCircle size={30} />
           </AvatarFallback>
         </Avatar>
         
-        <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-vivid-purple-600 to-vivid-purple-500 bg-clip-text text-transparent animate-slide-in-right">
+        <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-vivid-purple-600 to-vivid-purple-500 bg-clip-text text-transparent animate-subtle-slide-in">
           {config.welcomeMessage}
         </h1>
         
-        <p className="text-base text-gray-600 mt-3 text-center leading-relaxed max-w-xs animate-fade-in delay-200">
+        <p className="text-base text-gray-600 mt-3 text-center leading-relaxed max-w-xs animate-subtle-fade-in">
           Get help, ask questions, or start a conversation with our friendly support team.
         </p>
       </div>
       
-      <div className="mb-4 animate-fade-in delay-300">
+      <div className="mb-4 animate-subtle-fade-in">
         <div className="flex items-center gap-2">
           <h3 className="text-sm uppercase tracking-wide font-semibold text-gray-500">Support Status</h3>
           <div className="h-px flex-grow bg-gray-100"></div>
@@ -63,10 +63,10 @@ const HomeView = React.memo(({
         </div>
       </div>
       
-      <div className="mt-auto animate-fade-in delay-500">
+      <div className="mt-auto animate-subtle-fade-in">
         <Button 
           onClick={handleStartChatClick}
-          className="chat-widget-button flex items-center gap-2 w-full py-2.5 shadow-md transition-all hover:shadow-lg hover:scale-[1.02]"
+          className="chat-widget-button flex items-center gap-2 w-full py-2.5 shadow-md transition-all hover:shadow-lg hover:scale-[1.01]"
           style={buttonStyle}
         >
           <MessageSquare size={18} />
