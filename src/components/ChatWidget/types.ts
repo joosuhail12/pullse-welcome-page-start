@@ -1,5 +1,3 @@
-
-
 export interface Message {
   id: string;
   text: string;
@@ -112,3 +110,14 @@ export interface QuickReplyMessageProps {
   onReply: (text: string) => void;
 }
 
+// Fixed ChatPosition type
+export type ChatPosition = 
+  | 'bottom-right' 
+  | 'bottom-left' 
+  | 'top-right' 
+  | 'top-left'
+  | {
+      placement: string;
+      offsetX: number;
+      offsetY: number;
+    };
