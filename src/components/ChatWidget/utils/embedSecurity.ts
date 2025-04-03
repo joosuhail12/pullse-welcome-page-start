@@ -1,6 +1,11 @@
-
 /**
  * Security utilities for widget embedding
+ * 
+ * This module implements security features for safely embedding the chat widget
+ * into third-party websites, including isolation, CSP enforcement, and SRI.
+ * 
+ * SECURITY NOTICE: Embedding security is critical to prevent clickjacking,
+ * data exfiltration, and other cross-origin attacks.
  */
 
 import { RESOURCE_INTEGRITY } from '../embed/api';
@@ -8,6 +13,10 @@ import { RESOURCE_INTEGRITY } from '../embed/api';
 /**
  * Creates a meta tag with CSP directives for widget embedding
  * @param hostElement The element to append the meta tag to
+ * 
+ * TODO: Regularly update CSP policies with new security requirements
+ * TODO: Consider implementing nonce-based CSP for dynamic scripts
+ * TODO: Add reporting endpoints for CSP violations
  */
 export function injectCSP(hostElement: Element | Document = document): void {
   // Create the meta tag for CSP
@@ -38,6 +47,9 @@ export function injectCSP(hostElement: Element | Document = document): void {
  * @param scriptUrl The URL of the script
  * @param integrity Integrity hash for the script
  * @returns Script element with SRI attributes
+ * 
+ * TODO: Automate integrity hash generation during build process
+ * TODO: Implement fallback mechanisms for SRI failures
  */
 export function createScriptWithSRI(scriptUrl: string, integrity?: string): HTMLScriptElement {
   const script = document.createElement('script');
@@ -66,6 +78,9 @@ export function createScriptWithSRI(scriptUrl: string, integrity?: string): HTML
  * This provides stronger isolation from the host page
  * @param container The container element to attach the Shadow DOM to
  * @returns The Shadow DOM root element
+ * 
+ * TODO: Evaluate closed Shadow DOM mode for additional security
+ * TODO: Implement feature detection with graceful degradation
  */
 export function createShadowContainer(container: HTMLElement): ShadowRoot {
   // Check if browser supports Shadow DOM
@@ -124,6 +139,9 @@ export function createShadowContainer(container: HTMLElement): ShadowRoot {
  * Initialize security features for the embedded widget with enhanced isolation
  * @param containerId ID of the container element
  * @returns Container and shadow root for the widget
+ * 
+ * TODO: Add Trusted Types support where available
+ * TODO: Implement iframe isolation as an alternative to Shadow DOM
  */
 export function initializeEmbedSecurity(containerId: string = 'pullse-chat-widget-container'): { 
   container: HTMLDivElement; 
@@ -178,6 +196,9 @@ export function initializeEmbedSecurity(containerId: string = 'pullse-chat-widge
  * @param url Script URL
  * @param integrity Integrity hash (optional, will use predefined if available)
  * @returns Promise that resolves when script is loaded
+ * 
+ * TODO: Add timeout handling for script loading
+ * TODO: Implement graceful fallbacks for integrity failures
  */
 export function loadScriptWithIntegrity(url: string, integrity?: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -195,6 +216,8 @@ export function loadScriptWithIntegrity(url: string, integrity?: string): Promis
  * @param url Stylesheet URL
  * @param integrity Integrity hash (optional, will use predefined if available)
  * @returns Promise that resolves when stylesheet is loaded
+ * 
+ * TODO: Add error handling for stylesheet loading failures
  */
 export function loadStylesheetWithIntegrity(url: string, integrity?: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -229,7 +252,11 @@ export function isMobileDevice(): boolean {
     (window.innerWidth <= 640);
 }
 
-// Add responsive meta tag to parent document if embedded
+/**
+ * Add responsive meta tag to parent document if embedded
+ * 
+ * TODO: Consider adding additional viewport security controls
+ */
 export function ensureResponsiveMetaTags(): void {
   if (!document.querySelector('meta[name="viewport"]')) {
     const meta = document.createElement('meta');

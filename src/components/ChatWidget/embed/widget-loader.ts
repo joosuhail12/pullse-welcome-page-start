@@ -4,6 +4,9 @@
  * 
  * This module provides the core functionality for loading and initializing
  * the Pullse Chat Widget with various configuration options.
+ * 
+ * SECURITY NOTICE: The widget loader is a critical security boundary and
+ * must carefully validate all inputs and enforce security controls.
  */
 
 import { PullseChatWidgetLoader } from './core/WidgetLoaderClass';
@@ -19,6 +22,15 @@ import { auditLogger } from '@/lib/audit-logger';
 export { PullseChatWidgetLoader };
 
 // Add convenience method for initialization with enhanced security
+/**
+ * Initialize the Chat Widget with security checks and logging
+ * @param options Configuration options for the widget
+ * @returns Initialized widget instance
+ * 
+ * TODO: Add domain allowlisting for embedding security
+ * TODO: Implement stricter origin validation
+ * TODO: Consider adding Permissions-Policy headers
+ */
 export function initializeWidget(options: PullseChatWidgetOptions): PullseChatWidgetLoader {
   try {
     // Log widget initialization attempt

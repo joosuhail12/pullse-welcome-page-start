@@ -1,3 +1,12 @@
+/**
+ * Error Handler Utility
+ * 
+ * Provides standardized error handling, logging, and display
+ * with built-in security features like sanitization and classification.
+ * 
+ * SECURITY NOTICE: Error handling must balance providing useful
+ * information with preventing sensitive data disclosure.
+ */
 
 import { toasts } from '@/lib/toast-utils'
 import { getCircuitState } from '@/components/ChatWidget/utils/resilience'
@@ -37,6 +46,12 @@ export class AppError extends Error {
 }
 
 // Network related errors
+/**
+ * Network error with retry capabilities
+ * 
+ * TODO: Add network condition detection
+ * TODO: Implement progressive backoff for retries
+ */
 export class NetworkError extends AppError {
   constructor(
     message: string = 'Network connection issue',
@@ -48,6 +63,12 @@ export class NetworkError extends AppError {
 }
 
 // API related errors
+/**
+ * API error with status code information
+ * 
+ * TODO: Add correlation ID tracking
+ * TODO: Implement API version conflict detection
+ */
 export class ApiError extends AppError {
   status?: number
   
@@ -67,6 +88,12 @@ export class ApiError extends AppError {
 }
 
 // Service unavailable error (circuit breaker open)
+/**
+ * Service unavailable error with circuit breaker information
+ * 
+ * TODO: Add degraded mode capabilities
+ * TODO: Implement service health monitoring
+ */
 export class ServiceUnavailableError extends AppError {
   serviceName: string
   
@@ -84,6 +111,13 @@ export class ServiceUnavailableError extends AppError {
 }
 
 // Error handler utility
+/**
+ * Centralized error handler with sanitization and logging
+ * 
+ * TODO: Add error aggregation for similar errors
+ * TODO: Implement user feedback collection for critical errors
+ * TODO: Add automatic recovery suggestions based on error type
+ */
 export const errorHandler = {
   // Handle and display generic errors
   handle: (error: unknown) => {
@@ -186,7 +220,12 @@ export const errorHandler = {
   ) => new ServiceUnavailableError(serviceName)
 }
 
-// Error logging utility - replace with structured logging
+/**
+ * Error logging utility - replace with structured logging
+ * 
+ * TODO: Implement structured logging format
+ * TODO: Add error categorization for reporting
+ */
 export const logError = (error: unknown) => {
   logger.error('An error occurred', 'ErrorLogger', getSafeErrorDetails(error))
 }

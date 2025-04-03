@@ -1,3 +1,14 @@
+
+/**
+ * Security utilities for chat widget
+ * 
+ * This module provides core security functions for the Pullse Chat Widget
+ * including CSRF protection, message integrity, encryption, and rate limiting.
+ * 
+ * SECURITY NOTICE: Some functions in this file are placeholder implementations
+ * that should be replaced with proper server-side implementations in production.
+ */
+
 import { getChatSessionId, invalidateSession, refreshSessionExpiry } from './cookies';
 import { serverSideEncrypt, serverSideDecrypt } from '../services/api';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
@@ -17,6 +28,9 @@ const MAX_REQUESTS_PER_WINDOW = 10;     // 10 messages per minute
 /**
  * Check if the current request exceeds rate limits
  * @returns True if rate limit is exceeded, false otherwise
+ * 
+ * TODO: Implement server-side rate limiting with IP tracking and persistent storage
+ * TODO: Add exponential back-off for repeated abuse
  */
 export function isRateLimited(): boolean {
   const sessionId = getChatSessionId();
@@ -60,6 +74,8 @@ export function isRateLimited(): boolean {
  * Generate a cryptographically secure random string
  * @param length Length of the string to generate
  * @returns Random string
+ * 
+ * TODO: Consider using a more specialized crypto library in production
  */
 function generateSecureRandom(length: number = 32): string {
   const array = new Uint8Array(length);
@@ -87,6 +103,9 @@ function generateSecureRandom(length: number = 32): string {
 /**
  * Generate a CSRF token based on the session ID and a secure nonce
  * @returns CSRF token string and nonce object
+ * 
+ * TODO: Move token generation to server-side in production
+ * TODO: Use HMAC or similar cryptographic algorithm for token generation
  */
 export function generateCsrfToken(): { token: string, nonce: string } {
   const sessionId = getChatSessionId();
@@ -127,6 +146,9 @@ export function generateCsrfToken(): { token: string, nonce: string } {
  * @param token The token to verify
  * @param expectedNonce The nonce that was used to generate the token
  * @returns True if token is valid, false otherwise
+ * 
+ * TODO: Implement server-side verification with constant-time comparison
+ * TODO: Add additional context binding (e.g., action-specific tokens)
  */
 export function verifyCsrfToken(token: string, expectedNonce: string): boolean {
   try {
@@ -200,6 +222,9 @@ export function verifyCsrfToken(token: string, expectedNonce: string): boolean {
  * Client-side encryption placeholder - delegates to server-side encryption
  * @param data Data to encrypt
  * @returns Encrypted data from server, or placeholder
+ * 
+ * SECURITY NOTICE: Never implement encryption in client-side code for production.
+ * This function should always delegate to a secure server-side implementation.
  */
 export function encryptData(data: string): string {
   if (import.meta.env.DEV) {
@@ -216,6 +241,9 @@ export function encryptData(data: string): string {
  * Client-side decryption placeholder - delegates to server-side decryption
  * @param encryptedData Data to decrypt
  * @returns Decrypted data from server, or original if not encrypted
+ * 
+ * SECURITY NOTICE: Never implement decryption in client-side code for production.
+ * This function should always delegate to a secure server-side implementation.
  */
 export function decryptData(encryptedData: string): string {
   if (!encryptedData || !encryptedData.startsWith('SERVER_ENCRYPT:')) {
@@ -244,6 +272,9 @@ export function decryptData(encryptedData: string): string {
 /**
  * Enforce HTTPS by redirecting HTTP requests to HTTPS
  * @returns True if already on HTTPS, false if redirection occurred
+ * 
+ * TODO: Implement strict HSTS headers on server-side
+ * TODO: Consider preload list submission for production domains
  */
 export function enforceHttps(): boolean {
   if (
@@ -277,6 +308,9 @@ export function enforceHttps(): boolean {
  * @param message The message to sign
  * @param timestamp Timestamp when the message was created
  * @returns Signature for the message
+ * 
+ * SECURITY NOTICE: Client-side signatures provide minimal security.
+ * Production code should use server-side signing with proper key management.
  */
 export function signMessage(message: string, timestamp: number): string {
   const sessionId = getChatSessionId() || '';
@@ -298,6 +332,9 @@ export function signMessage(message: string, timestamp: number): string {
  * @param timestamp Original timestamp
  * @param signature Signature to verify
  * @returns True if signature is valid, false otherwise
+ * 
+ * SECURITY NOTICE: Client-side verification is insecure and easily bypassed.
+ * Production code should use server-side verification with proper key management.
  */
 export function verifyMessageSignature(message: string, timestamp: number, signature: string): boolean {
   if (import.meta.env.DEV) {
@@ -313,6 +350,9 @@ export function verifyMessageSignature(message: string, timestamp: number, signa
 
 /**
  * Logout user and invalidate session
+ * 
+ * TODO: Implement server-side session invalidation
+ * TODO: Add token revocation for all authentication tokens
  */
 export function logout(): void {
   // Log logout event
@@ -338,6 +378,8 @@ export function logout(): void {
 /**
  * Check if the session has expired and needs renewal
  * @returns True if session is valid, false otherwise
+ * 
+ * TODO: Implement token rotation and refresh tokens
  */
 export function checkSessionValidity(): boolean {
   const sessionId = getChatSessionId();
@@ -347,6 +389,10 @@ export function checkSessionValidity(): boolean {
 /**
  * Generate Content-Security-Policy directives for the chat widget
  * @returns CSP directives as a string
+ * 
+ * TODO: Review and update CSP rules regularly
+ * TODO: Implement nonce-based CSP for inline scripts if needed
+ * TODO: Consider implementing Report-Only mode during testing
  */
 export function generateCSPDirectives(): string {
   return [
@@ -370,6 +416,9 @@ export function generateCSPDirectives(): string {
  * Generate Subresource Integrity (SRI) attributes for script tags
  * Note: In production, these would be pre-computed and stored
  * @returns SRI hash attributes
+ * 
+ * TODO: Implement automated SRI hash generation during build process
+ * TODO: Validate all third-party resources with SRI
  */
 export function getScriptIntegrityHash(): string {
   // In a real implementation, this would return the pre-computed hash

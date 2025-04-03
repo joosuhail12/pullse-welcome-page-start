@@ -1,4 +1,14 @@
 
+/**
+ * Error Boundary Component
+ * 
+ * Catches and handles React component errors with proper security
+ * practices for error display and reporting.
+ * 
+ * SECURITY NOTICE: Error handling must carefully sanitize all error
+ * information to prevent sensitive data exposure in UI.
+ */
+
 import React, { ErrorInfo, ReactNode } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { errorHandler } from '@/lib/error-handler'
@@ -16,6 +26,13 @@ interface ErrorBoundaryState {
   error?: Error
 }
 
+/**
+ * React Error Boundary component that catches errors in the component tree
+ * 
+ * TODO: Add additional context capture for better debugging
+ * TODO: Implement automatic error reporting to monitoring service
+ * TODO: Consider adding recovery options for specific error types
+ */
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props)

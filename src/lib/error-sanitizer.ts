@@ -1,4 +1,14 @@
 
+/**
+ * Error Sanitizer
+ * 
+ * This module provides utilities for sanitizing error messages and removing
+ * sensitive information before logging or displaying to users.
+ * 
+ * SECURITY NOTICE: Proper error sanitization is critical to prevent
+ * information disclosure vulnerabilities and maintain user privacy.
+ */
+
 import { sanitizeInput } from '@/components/ChatWidget/utils/validation';
 
 /**
@@ -17,6 +27,10 @@ export enum SensitiveInfoType {
 
 /**
  * Patterns for detecting sensitive information
+ * 
+ * TODO: Regularly update these patterns to catch new types of sensitive data
+ * TODO: Consider using AI-based detection for more complex patterns
+ * TODO: Add specialized patterns for domain-specific sensitive data
  */
 const SENSITIVE_PATTERNS: Record<SensitiveInfoType, RegExp> = {
   [SensitiveInfoType.API_KEYS]: /(api[_-]?key|apikey|access[_-]?key)[=:]["']?\w{8,}["']?/gi,
@@ -33,6 +47,9 @@ const SENSITIVE_PATTERNS: Record<SensitiveInfoType, RegExp> = {
  * Redacts sensitive information from error messages
  * @param message The error message to sanitize
  * @returns Sanitized error message with sensitive data redacted
+ * 
+ * TODO: Add domain-specific sanitization patterns
+ * TODO: Implement smarter context-aware redaction
  */
 export function redactSensitiveInfo(message: string): string {
   if (!message) return '';
@@ -61,6 +78,9 @@ const ERROR_LENGTH_LIMITS = {
  * @param errorOrMessage Error object or message string
  * @param maxLength Maximum allowed length for the sanitized message
  * @returns Sanitized error message
+ * 
+ * TODO: Add additional sanitization for application-specific sensitive data
+ * TODO: Implement context-aware sanitization based on error type
  */
 export function sanitizeErrorMessage(
   errorOrMessage: unknown,
@@ -106,6 +126,9 @@ export function sanitizeErrorMessage(
  * Extracts safe error details for logging
  * @param error Error object to extract details from
  * @returns Object with sanitized error details
+ * 
+ * TODO: Add sanitization for custom error types with domain-specific fields
+ * TODO: Consider deeper object traversal for nested sensitive data
  */
 export function getSafeErrorDetails(error: unknown): Record<string, unknown> {
   try {

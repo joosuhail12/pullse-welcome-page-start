@@ -1,7 +1,14 @@
+
 /**
  * Chat Widget API Service
- * Provides methods to interact with the chat widget API
+ * 
+ * Provides methods to interact with the chat widget API with built-in
+ * security features including circuit breaking, retries, and resilience.
+ * 
+ * SECURITY NOTICE: API communications must validate all responses and
+ * implement proper error handling to prevent data leakage or corruption.
  */
+
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import { getChatSessionId, setChatSessionId } from '../utils/cookies';
 import { sanitizeInput, validateMessage } from '../utils/validation';
@@ -23,6 +30,10 @@ const SECURITY_CIRCUIT = 'chat-widget-security';
  * Server-side encryption API call
  * @param data Data to encrypt
  * @returns Encrypted data or placeholder in development
+ * 
+ * TODO: Implement proper encryption with key rotation
+ * TODO: Add additional input validation for encryption requests
+ * TODO: Consider using Web Crypto API where available
  */
 export async function serverSideEncrypt(data: string): Promise<string> {
   try {
@@ -78,6 +89,9 @@ export async function serverSideEncrypt(data: string): Promise<string> {
  * Server-side decryption API call
  * @param encryptedData Data to decrypt
  * @returns Decrypted data or original if not encrypted
+ * 
+ * TODO: Add additional validation of decrypted data
+ * TODO: Implement key versioning for seamless key rotation
  */
 export async function serverSideDecrypt(encryptedData: string): Promise<string> {
   // If not encrypted data, return as is
@@ -139,6 +153,10 @@ export async function serverSideDecrypt(encryptedData: string): Promise<string> 
  * Fetch chat widget configuration from the API
  * @param workspaceId The workspace ID to fetch configuration for
  * @returns Promise resolving to the chat widget configuration
+ * 
+ * TODO: Implement full signature verification for all responses
+ * TODO: Add caching with security headers for performance
+ * TODO: Implement tiered fallbacks for critical configuration
  */
 export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWidgetConfig> => {
   try {
@@ -275,6 +293,10 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
  * @param message The message to send
  * @param workspaceId The workspace ID
  * @returns Promise resolving to the API response
+ * 
+ * TODO: Add message content filtering for security
+ * TODO: Implement secure file uploads with content scanning
+ * TODO: Add end-to-end encryption options for sensitive communications
  */
 export const sendChatMessage = async (message: string, workspaceId: string): Promise<any> => {
   try {

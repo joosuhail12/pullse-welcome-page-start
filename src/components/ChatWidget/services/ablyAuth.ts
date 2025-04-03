@@ -1,4 +1,3 @@
-
 import { getChatSessionId } from '../utils/cookies';
 import { generateCsrfToken, signMessage } from '../utils/security';
 import { logger } from '@/lib/logger';
@@ -12,9 +11,23 @@ interface TokenParams {
 }
 
 /**
+ * Ably Authentication Service
+ * 
+ * This module handles secure authentication with the Ably real-time messaging service,
+ * including token request generation, signature validation, and circuit breaking.
+ * 
+ * SECURITY NOTICE: Real-time messaging authentication requires careful
+ * permission management to prevent unauthorized data access.
+ */
+
+/**
  * Request Ably capability token from server
  * @param params Token request parameters
  * @returns Token response from server
+ * 
+ * TODO: Implement capability restrictions based on user role
+ * TODO: Add token refresh mechanism before expiration
+ * TODO: Implement token revocation for security incidents
  */
 export const requestAblyToken = async (params: TokenParams): Promise<any> => {
   try {
@@ -130,6 +143,8 @@ export const requestAblyToken = async (params: TokenParams): Promise<any> => {
  * Get the authentication URL with capabilities
  * @param workspaceId Workspace ID for the token
  * @returns Full auth URL that can be used by Ably
+ * 
+ * TODO: Consider implementing short-lived authentication URLs
  */
 export const getAblyAuthUrl = (workspaceId: string): string => {
   // In development, we'll return a mock URL that will be intercepted
@@ -140,7 +155,11 @@ export const getAblyAuthUrl = (workspaceId: string): string => {
   return `/api/chat-widget/token?workspaceId=${encodeURIComponent(workspaceId)}`;
 };
 
-// Mock token response for development
+/**
+ * Mock token response for development
+ * 
+ * SECURITY NOTICE: This is only for development and must not be used in production
+ */
 function mockTokenResponse(params: TokenParams): any {
   // This is just for development - in production, tokens come from server
   return {

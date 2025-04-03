@@ -4,6 +4,12 @@
  * 
  * This module provides specialized logging for security-related events
  * with built-in sanitization and structured data format.
+ * 
+ * SECURITY NOTICE: In production, audit logs should be:
+ * 1. Stored in a tamper-evident system
+ * 2. Retained according to compliance requirements
+ * 3. Protected from unauthorized access and modification
+ * 4. Backed up regularly
  */
 
 import { logger } from './logger';
@@ -52,6 +58,9 @@ export interface AuditLogEntry {
  * @param details Additional event-specific details
  * @param severity Importance level of the event
  * @returns Formatted audit log entry
+ * 
+ * TODO: Add additional context data (e.g., request ID, correlation ID)
+ * TODO: Implement IP address tracking securely
  */
 const createAuditLogEntry = (
   eventType: SecurityEventType,
@@ -103,6 +112,11 @@ const createAuditLogEntry = (
  * @param outcome Result of the event
  * @param details Additional context about the event
  * @param severity Importance level
+ * 
+ * TODO: Implement server-side storage for audit logs
+ * TODO: Add alerting for high-severity security events
+ * TODO: Implement SIEM integration for security monitoring
+ * TODO: Add compliance reporting capabilities
  */
 const logSecurityEvent = (
   eventType: SecurityEventType,
@@ -134,6 +148,10 @@ const logSecurityEvent = (
         // This could be an immediate alert in production
         console.warn('HIGH SEVERITY SECURITY EVENT DETECTED:', eventType);
       }
+      
+      // TODO: Implement secure transmission to audit log storage
+      // TODO: Add non-repudiation features for critical audit logs
+      // TODO: Implement log integrity verification
     } catch (error) {
       // Always fail safe with audit logging
       logger.error('Failed to send audit log to server', 'AuditLog', 
