@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, ArrowUp, ArrowDown, Info, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -12,6 +12,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { loadConversationsFromStorage, deleteConversationFromStorage } from '../utils/storage';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useUnreadMessages } from '../hooks/useUnreadMessages';
+import { format } from 'date-fns';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface MessagesViewProps {
   onSelectConversation: (conversation: Conversation) => void;
@@ -34,6 +37,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   const [searchResults, setSearchResults] = useState<Conversation[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [animateOut, setAnimateOut] = useState<string | null>(null);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
 
   // Storage event listener for cross-tab synchronization
@@ -90,17 +94,29 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   const handleDeleteConversation = useCallback(async (e: React.MouseEvent, id: string) => {
     e.stopPropagation(); // Prevent triggering the parent onClick
     
-    try {
-      // Delete from storage with error handling
-      await deleteConversationFromStorage(id);
-      
-      // Update local state
-      setConversations(prev => prev.filter(conv => conv.id !== id));
-      toast.success('Conversation deleted');
-    } catch (error) {
-      console.error('Error deleting conversation:', error);
-      toast.error('Failed to delete conversation. Please try again.');
-    }
+    // Set animate out class for the conversation being deleted
+    setAnimateOut(id);
+    
+    // Wait for animation to complete before actually deleting
+    setTimeout(async () => {
+      try {
+        // Delete from storage with error handling
+        await deleteConversationFromStorage(id);
+        
+        // Update local state
+        setConversations(prev => prev.filter(conv => conv.id !== id));
+        toast.success('Conversation deleted');
+      } catch (error) {
+        console.error('Error deleting conversation:', error);
+        toast.error('Failed to delete conversation. Please try again.');
+        // Reset animation if deletion fails
+        setAnimateOut(null);
+      }
+    }, 300); // Match animation duration
+  }, []);
+
+  const formatDateDisplay = useCallback((date: Date): string => {
+    return format(date, 'MMM d, yyyy');
   }, []);
 
   const formatTime = useCallback((date: Date): string => {
@@ -115,7 +131,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       return `${Math.floor(diff / (1000 * 60 * 60))}h ago`;
     } else {
       // More than a day ago
-      return date.toLocaleDateString();
+      return format(date, 'h:mm a');
     }
   }, []);
 
@@ -316,23 +332,47 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     setGroupBy(prev => prev === 'none' ? 'date' : 'none');
   }, []);
 
+  // Loading skeletons for conversation items
+  const renderSkeletons = () => (
+    <div className="space-y-3">
+      {Array(3).fill(0).map((_, i) => (
+        <div key={i} className="flex items-start space-x-2 p-3 border rounded-md">
+          <Skeleton className="h-6 w-6 rounded-full" />
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-5/6" />
+          </div>
+          <Skeleton className="h-4 w-10" />
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex flex-col p-2 h-full">
       <div className="mb-3 flex justify-between items-center px-2">
-        <h2 className="font-semibold text-gray-700">Recent Conversations</h2>
-        <Button 
-          variant="ghost" 
-          size="sm"
-          className="text-vivid-purple hover:text-vivid-purple/90 relative"
-          onClick={handleStartNewChat}
-        >
-          <Plus size={18} />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </Button>
+        <h2 className="font-semibold text-gray-700" id="messagesViewTitle">Recent Conversations</h2>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="text-vivid-purple hover:text-vivid-purple/90 relative"
+              onClick={handleStartNewChat}
+              aria-label={`Start new conversation${unreadCount > 0 ? `. ${unreadCount} unread messages` : ''}`}
+            >
+              <Plus size={18} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center" aria-hidden="true">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Start a new conversation
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       <SearchBar 
@@ -342,11 +382,12 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         isSearching={isSearching}
       />
       
-      <div className="flex items-center justify-between px-2 py-2 bg-gray-50 rounded-md mb-2">
+      <div className="flex items-center justify-between px-2 py-2 bg-gray-50 rounded-md mb-2" role="toolbar" aria-label="Conversation sorting and filtering options">
         <div className="flex items-center gap-2">
           <Select 
             value={statusFilter} 
             onValueChange={(value: StatusFilter) => setStatusFilter(value)}
+            aria-label="Filter by status"
           >
             <SelectTrigger className="w-[110px] h-8 text-xs">
               <SelectValue placeholder="Status" />
@@ -363,6 +404,8 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
             size="sm" 
             className="h-8 gap-1 text-xs"
             onClick={toggleGrouping}
+            aria-pressed={groupBy !== 'none'}
+            aria-label={`${groupBy === 'none' ? 'Group by date' : 'Remove grouping'}`}
           >
             {groupBy === 'none' ? 'Group by Date' : 'No Grouping'}
           </Button>
@@ -373,6 +416,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
           size="sm" 
           className="h-8 gap-1 text-xs"
           onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+          aria-label={`Sort by ${sortOrder === 'newest' ? 'oldest first' : 'newest first'}`}
         >
           {sortOrder === 'newest' ? (
             <>Newest <ArrowDown size={14} /></>
@@ -382,11 +426,10 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         </Button>
       </div>
       
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1" role="region" aria-label="Conversations list">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-8">
-            <div className="h-5 w-5 border-2 border-vivid-purple border-t-transparent rounded-full animate-spin mb-2"></div>
-            <p className="text-sm text-gray-500">Loading conversations...</p>
+          <div className="p-4 space-y-4">
+            {renderSkeletons()}
           </div>
         ) : loadingError ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -444,6 +487,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                     size="sm" 
                     className="mt-2 mx-auto text-vivid-purple border-vivid-purple hover:text-vivid-purple/90 hover:bg-vivid-purple/5"
                     onClick={handleStartNewChat}
+                    aria-label="Start a new conversation"
                   >
                     <Plus size={16} className="mr-1" />
                     Start a new conversation
@@ -454,7 +498,8 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
               Object.entries(paginationData.pagedGroupedConversations).map(([group, groupConversations]) => (
                 <div key={group} className="mb-4">
                   {groupBy !== 'none' && (
-                    <div className="text-xs font-medium text-gray-500 mb-2 px-2">
+                    <div className="text-xs font-medium text-gray-500 mb-2 px-2" 
+                      role="heading" aria-level={2}>
                       {group}
                     </div>
                   )}
@@ -465,17 +510,29 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                         onClick={() => handleSelectConversation(conversation)}
                         className={`p-3 hover:bg-soft-purple-50 cursor-pointer border ${
                           conversation.unread ? 'border-l-4 border-l-vivid-purple' : 'border-gray-100'
-                        } transition-colors group relative`}
+                        } transition-colors group relative ${
+                          animateOut === conversation.id ? 'animate-fade-out' : 'animate-fade-in'
+                        }`}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Conversation: ${conversation.title}${conversation.unread ? ', unread' : ''}`}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            handleSelectConversation(conversation);
+                          }
+                        }}
                       >
                         <div className="flex justify-between items-start">
                           <div className="flex items-center">
                             <div className="relative">
-                              <MessageSquare size={16} className="text-vivid-purple mr-2 flex-shrink-0" />
+                              <MessageSquare size={16} className="text-vivid-purple mr-2 flex-shrink-0" aria-hidden="true" />
                               {conversation.status && (
-                                <div className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-white" 
+                                <div 
+                                  className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-white" 
                                   style={{
                                     backgroundColor: conversation.status === 'active' ? '#10b981' : '#9ca3af'  
                                   }}
+                                  aria-hidden="true"
                                 />
                               )}
                             </div>
@@ -497,7 +554,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                                   </Badge>
                                 )}
                                 {conversation.unread && (
-                                  <span className="w-2 h-2 bg-vivid-purple rounded-full"></span>
+                                  <span className="w-2 h-2 bg-vivid-purple rounded-full" aria-label="Unread conversation"></span>
                                 )}
                               </div>
                             </div>
@@ -508,15 +565,38 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                         <p className={`text-sm ${conversation.unread ? 'text-gray-700' : 'text-gray-500'} mt-1.5 ml-6 line-clamp-1 font-normal`}>
                           {conversation.lastMessage || 'No messages yet'}
                         </p>
+
+                        {/* Start date display with tooltip */}
+                        <div className="flex items-center gap-1 ml-6 mt-2 text-xs text-gray-400">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex items-center">
+                                <Calendar size={12} className="mr-1" />
+                                <span>Started {formatDateDisplay(conversation.timestamp)}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Created on {format(conversation.timestamp, 'MMMM d, yyyy')} at {format(conversation.timestamp, 'h:mm a')}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
                         
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
-                          onClick={(e) => handleDeleteConversation(e, conversation.id)}
-                        >
-                          <Trash2 size={14} className="text-gray-400 hover:text-red-500" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
+                              onClick={(e) => handleDeleteConversation(e, conversation.id)}
+                              aria-label={`Delete conversation: ${conversation.title}`}
+                            >
+                              <Trash2 size={14} className="text-gray-400 hover:text-red-500" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Delete conversation
+                          </TooltipContent>
+                        </Tooltip>
                       </Card>
                     ))}
                   </div>
@@ -530,12 +610,13 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       {/* Pagination controls */}
       {paginationData.totalPages > 1 && (
         <Pagination className="mt-4">
-          <PaginationContent>
+          <PaginationContent role="navigation" aria-label="Conversation pagination">
             <PaginationItem>
               <PaginationPrevious 
                 onClick={() => handlePageChange(Math.max(1, paginationData.currentPage - 1))}
                 aria-disabled={paginationData.currentPage === 1}
                 className={paginationData.currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                aria-label="Previous page"
               />
             </PaginationItem>
             
@@ -545,6 +626,8 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                 <PaginationLink 
                   isActive={page === paginationData.currentPage}
                   onClick={() => handlePageChange(page)}
+                  aria-current={page === paginationData.currentPage ? "page" : undefined}
+                  aria-label={`Page ${page}`}
                 >
                   {page}
                 </PaginationLink>
@@ -556,6 +639,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                 onClick={() => handlePageChange(Math.min(paginationData.totalPages, paginationData.currentPage + 1))}
                 aria-disabled={paginationData.currentPage === paginationData.totalPages}
                 className={paginationData.currentPage === paginationData.totalPages ? "pointer-events-none opacity-50" : ""}
+                aria-label="Next page"
               />
             </PaginationItem>
           </PaginationContent>
