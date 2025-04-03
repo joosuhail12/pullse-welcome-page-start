@@ -1,6 +1,6 @@
 
 import React, { useState, lazy, Suspense } from 'react';
-import { MessageType, UserType } from '../../types';
+import { Message } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
 import MessageStatus from './MessageStatus';
@@ -19,23 +19,23 @@ const LazyLoadFallback = () => (
   <div className="w-full h-16 bg-gray-100 animate-pulse rounded-md"></div>
 );
 
-interface MessageBubbleProps {
+export interface MessageBubbleProps {
   message: {
     id: string;
     text: string;
-    type?: MessageType;
-    sender: UserType;
+    type?: string;
+    sender: string;
     timestamp: Date;
     metadata?: Record<string, any>;
     reactions?: string[];
   };
-  highlightText?: string;
+  highlightText?: (text: string) => Array<{ text: string; highlighted: boolean }>;
   isHighlighted?: boolean;
   userAvatar?: string;
   agentAvatar?: string;
   onReply?: (text: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
-  agentStatus?: 'online' | 'away' | 'offline' | 'busy';
+  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
 }
@@ -121,7 +121,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
           </Suspense>
         );
       case 'status':
-        return <StatusMessage text={message.text} renderText={(text) => <span>{text}</span>} />;
+        return <StatusMessage text={message.text} />;
       default:
         return <TextMessage text={message.text} />;
     }
@@ -139,7 +139,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         <MessageAvatar
           sender={message.sender}
           avatarUrl={isUserMessage ? userAvatar : agentAvatar}
-          status={agentStatus}
         />
       )}
 

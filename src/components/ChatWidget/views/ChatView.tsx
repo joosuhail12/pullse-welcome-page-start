@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Conversation, MessageReadStatus } from '../types';
+import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
@@ -116,7 +116,7 @@ const ChatView = React.memo(({
 
   // Convert readReceipts to the correct format
   const formattedReadReceipts = useMemo(() => {
-    const formatted: Record<string, { status: MessageReadStatus; timestamp?: Date }> = {};
+    const formatted: Record<string, { status: string; timestamp?: Date }> = {};
     Object.entries(readReceipts).forEach(([messageId, timestamp]) => {
       formatted[messageId] = {
         status: 'read',

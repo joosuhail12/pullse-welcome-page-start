@@ -1,234 +1,282 @@
-import { ChatEventType, ChatEventPayload } from '../config';
-import { EventCallback, EventPriority, IEventManager, PrioritizedEvent } from './types';
 
-/**
- * Event Manager class that handles event subscription and dispatching
- * with support for prioritized event handling
- */
+import { EventCallback, EventPriority, IEventManager } from './types';
+import { ChatEventType, ChatEventPayload } from '../config';
+import { validateEventPayload, createValidatedEvent } from './validation';
+import { logger } from '@/lib/logger';
+
+const EVENT_PREFIX = 'pullse:';
+
 export class EventManager implements IEventManager {
-  private listeners: Map<ChatEventType | 'all', Set<EventCallback>>;
-  private eventQueue: PrioritizedEvent[];
-  private isProcessing: boolean;
-  private disposed: boolean;
+  private listeners: Map<string, Set<EventCallback>>;
+  private prioritizedListeners: Map<string, Map<EventPriority, Set<EventCallback>>>;
+  private globalHandlers: Set<(eventType: ChatEventType, payload: ChatEventPayload) => void>;
 
   constructor() {
     this.listeners = new Map();
-    this.eventQueue = [];
-    this.isProcessing = false;
-    this.disposed = false;
-    
-    // Process the event queue periodically
-    setInterval(() => this.processQueue(), 16); // ~60fps
+    this.prioritizedListeners = new Map();
+    this.globalHandlers = new Set();
   }
 
-  /**
-   * Subscribe to an event type
-   * @param eventType Type of event to listen for, or 'all' for all events
-   * @param callback Function to call when the event occurs
-   * @returns Function to unsubscribe
-   */
-  public on(eventType: ChatEventType | 'all', callback: EventCallback): () => void {
-    if (this.disposed) {
-      console.warn('EventManager has been disposed, ignoring subscription');
-      return () => {};
-    }
+  // Register an event listener
+  on(
+    eventType: ChatEventType | 'all',
+    callback: EventCallback,
+    options?: { priority?: EventPriority }
+  ): () => void {
+    const priority = options?.priority || EventPriority.NORMAL;
+    const fullEventType = eventType === 'all' ? 'all' : eventType;
 
-    if (!this.listeners.has(eventType)) {
-      this.listeners.set(eventType, new Set());
-    }
+    if (priority !== EventPriority.NORMAL) {
+      // Handle prioritized listeners
+      if (!this.prioritizedListeners.has(fullEventType)) {
+        this.prioritizedListeners.set(fullEventType, new Map());
+      }
 
-    this.listeners.get(eventType)!.add(callback);
+      const eventPriorities = this.prioritizedListeners.get(fullEventType)!;
 
-    // Return an unsubscribe function
-    return () => {
-      this.off(eventType, callback);
-    };
-  }
+      if (!eventPriorities.has(priority)) {
+        eventPriorities.set(priority, new Set());
+      }
 
-  /**
-   * Unsubscribe from an event type
-   * @param eventType Type of event to unsubscribe from, or 'all' for all events
-   * @param callback Optional specific callback to remove, otherwise removes all
-   */
-  public off(eventType: ChatEventType | 'all', callback?: EventCallback): void {
-    if (this.disposed) {
-      return;
-    }
-
-    if (!this.listeners.has(eventType)) {
-      return;
-    }
-
-    if (callback) {
-      this.listeners.get(eventType)!.delete(callback);
+      eventPriorities.get(priority)!.add(callback);
     } else {
-      this.listeners.delete(eventType);
+      // Handle regular listeners
+      if (!this.listeners.has(fullEventType)) {
+        this.listeners.set(fullEventType, new Set());
+      }
+
+      this.listeners.get(fullEventType)!.add(callback);
     }
+
+    // Return unsubscribe function
+    return () => this.off(eventType, callback);
   }
 
-  /**
-   * Create and validate an event
-   * @param type Event type
-   * @param data Optional event data
-   * @returns A valid event payload or null if validation fails
-   */
-  public createEvent(type: ChatEventType, data: any = {}): ChatEventPayload | null {
-    if (this.disposed) {
-      console.warn('EventManager has been disposed, cannot create events');
-      return null;
-    }
+  // Remove an event listener
+  off(eventType: ChatEventType | 'all', callback?: EventCallback): void {
+    const fullEventType = eventType === 'all' ? 'all' : eventType;
 
-    if (!type) {
-      console.error('Event type is required');
-      return null;
-    }
-    
-    // Create the event with required fields
-    const event: ChatEventPayload = {
-      type,
-      timestamp: new Date(),
-      data: data || {}
-    };
-    
-    return event;
-  }
-
-  /**
-   * Handle an event, adding it to the priority queue
-   * @param event Event payload
-   * @param priority Optional priority level for the event
-   */
-  public handleEvent(event: ChatEventPayload, priority: EventPriority = EventPriority.NORMAL): void {
-    if (this.disposed) {
-      console.warn('EventManager has been disposed, ignoring event');
+    // If no callback provided, remove all listeners for this event type
+    if (!callback) {
+      this.listeners.delete(fullEventType);
+      this.prioritizedListeners.delete(fullEventType);
       return;
     }
 
-    // Add to the queue with the specified priority
-    this.eventQueue.push({ event, priority });
-
-    // Start processing if not already doing so
-    if (!this.isProcessing) {
-      this.processQueue();
-    }
-  }
-
-  /**
-   * Process the event queue, dispatching events in priority order
-   */
-  private processQueue(): void {
-    if (this.isProcessing || this.disposed || this.eventQueue.length === 0) {
-      return;
+    // Remove from regular listeners
+    if (this.listeners.has(fullEventType)) {
+      this.listeners.get(fullEventType)!.delete(callback);
+      if (this.listeners.get(fullEventType)!.size === 0) {
+        this.listeners.delete(fullEventType);
+      }
     }
 
-    this.isProcessing = true;
+    // Remove from prioritized listeners
+    if (this.prioritizedListeners.has(fullEventType)) {
+      const eventPriorities = this.prioritizedListeners.get(fullEventType)!;
+      
+      eventPriorities.forEach((callbacks, priority) => {
+        callbacks.delete(callback);
+        if (callbacks.size === 0) {
+          eventPriorities.delete(priority);
+        }
+      });
 
-    try {
-      // Sort by priority (lower number = higher priority)
-      this.eventQueue.sort((a, b) => a.priority - b.priority);
-
-      // Take the highest priority event
-      const { event } = this.eventQueue.shift()!;
-
-      // Notify specific listeners
-      if (this.listeners.has(event.type)) {
-        this.listeners.get(event.type)!.forEach(callback => {
-          try {
-            callback(event);
-          } catch (error) {
-            console.error(`Error in event listener for ${event.type}:`, error);
-          }
-        });
-      }
-
-      // Notify 'all' listeners
-      if (this.listeners.has('all')) {
-        this.listeners.get('all')!.forEach(callback => {
-          try {
-            callback(event);
-          } catch (error) {
-            console.error(`Error in 'all' event listener for ${event.type}:`, error);
-          }
-        });
-      }
-    } finally {
-      this.isProcessing = false;
-
-      // If more events are in the queue, continue processing
-      if (this.eventQueue.length > 0) {
-        this.processQueue();
+      if (eventPriorities.size === 0) {
+        this.prioritizedListeners.delete(fullEventType);
       }
     }
   }
 
-  /**
-   * Remove all event listeners
-   */
-  public removeAllListeners(): void {
-    if (this.disposed) {
-      return;
-    }
-    
+  // Remove all event listeners
+  removeAllListeners(): void {
     this.listeners.clear();
+    this.prioritizedListeners.clear();
+    this.globalHandlers.clear();
   }
 
-  /**
-   * Clean up resources used by the EventManager
-   */
-  public dispose(): void {
-    if (this.disposed) {
+  // Dispatch an event to listeners
+  dispatch(eventType: ChatEventType, data?: any, priority?: EventPriority): void {
+    const event = createValidatedEvent(eventType, data);
+    
+    if (!validateEventPayload(event)) {
+      logger.warn('Invalid event payload detected and blocked', 'EventManager', { event });
       return;
     }
 
-    this.disposed = true;
-    this.removeAllListeners();
-    this.eventQueue = [];
+    // Higher priority handling
+    if (priority === EventPriority.CRITICAL || priority === EventPriority.HIGH) {
+      this.dispatchWithPriority(event, priority);
+      return;
+    }
+
+    // Dispatch to specific event listeners
+    this.dispatchToListeners(event.type, event);
+
+    // Dispatch to 'all' event listeners
+    this.dispatchToListeners('all', event);
+
+    // Dispatch to global handlers
+    this.globalHandlers.forEach(handler => {
+      try {
+        handler(event.type, event);
+      } catch (error) {
+        logger.error('Error in global event handler', 'EventManager', { error });
+      }
+    });
+
+    // Dispatch to DOM for external listeners
+    this.dispatchToDom(event);
+  }
+
+  // Register a global handler for all events
+  registerGlobalHandler(handler: (eventType: ChatEventType, payload: ChatEventPayload) => void): void {
+    this.globalHandlers.add(handler);
+  }
+
+  // Unregister a global handler
+  unregisterGlobalHandler(handler: (eventType: ChatEventType, payload: ChatEventPayload) => void): void {
+    this.globalHandlers.delete(handler);
+  }
+
+  // Helper method to dispatch events to specific listeners
+  private dispatchToListeners(eventType: string, event: ChatEventPayload): void {
+    // Regular listeners
+    if (this.listeners.has(eventType)) {
+      this.listeners.get(eventType)!.forEach(callback => {
+        try {
+          callback(event);
+        } catch (error) {
+          logger.error('Error in event listener', 'EventManager', { error, eventType });
+        }
+      });
+    }
+
+    // Prioritized listeners (for non-prioritized dispatches)
+    if (this.prioritizedListeners.has(eventType)) {
+      const eventPriorities = this.prioritizedListeners.get(eventType)!;
+      
+      // Dispatch to all priorities in order: CRITICAL, HIGH, NORMAL, LOW
+      const priorityOrder = [EventPriority.CRITICAL, EventPriority.HIGH, EventPriority.NORMAL, EventPriority.LOW];
+      
+      priorityOrder.forEach(priority => {
+        if (eventPriorities.has(priority)) {
+          eventPriorities.get(priority)!.forEach(callback => {
+            try {
+              callback(event);
+            } catch (error) {
+              logger.error('Error in prioritized event listener', 'EventManager', { error, eventType, priority });
+            }
+          });
+        }
+      });
+    }
+  }
+
+  // Helper method to dispatch high-priority events
+  private dispatchWithPriority(event: ChatEventPayload, priority: EventPriority): void {
+    const eventType = event.type;
+    
+    // Only dispatch to matching priority or higher
+    const validPriorities = priority === EventPriority.CRITICAL 
+      ? [EventPriority.CRITICAL] 
+      : [EventPriority.CRITICAL, EventPriority.HIGH];
+    
+    // Dispatch to specific event listeners with matching priority
+    if (this.prioritizedListeners.has(eventType)) {
+      const eventPriorities = this.prioritizedListeners.get(eventType)!;
+      
+      validPriorities.forEach(validPriority => {
+        if (eventPriorities.has(validPriority)) {
+          eventPriorities.get(validPriority)!.forEach(callback => {
+            try {
+              callback(event);
+            } catch (error) {
+              logger.error('Error in high-priority event listener', 'EventManager', { error, eventType, priority: validPriority });
+            }
+          });
+        }
+      });
+    }
+    
+    // Also dispatch to 'all' listeners with matching priority
+    if (this.prioritizedListeners.has('all')) {
+      const allPriorities = this.prioritizedListeners.get('all')!;
+      
+      validPriorities.forEach(validPriority => {
+        if (allPriorities.has(validPriority)) {
+          allPriorities.get(validPriority)!.forEach(callback => {
+            try {
+              callback(event);
+            } catch (error) {
+              logger.error('Error in high-priority "all" event listener', 'EventManager', { error, eventType, priority: validPriority });
+            }
+          });
+        }
+      });
+    }
+    
+    // After handling high-priority listeners, continue with normal dispatch
+    this.dispatchToListeners(eventType, event);
+    this.dispatchToListeners('all', event);
+    
+    // Global handlers
+    this.globalHandlers.forEach(handler => {
+      try {
+        handler(event.type, event);
+      } catch (error) {
+        logger.error('Error in global event handler (high priority)', 'EventManager', { error });
+      }
+    });
+    
+    // DOM events
+    this.dispatchToDom(event);
+  }
+
+  // Helper method to dispatch events to DOM
+  private dispatchToDom(event: ChatEventPayload): void {
+    if (typeof window !== 'undefined' && window.document) {
+      const domEvent = new CustomEvent(`${EVENT_PREFIX}${event.type}`, {
+        detail: event,
+        bubbles: true,
+        cancelable: true
+      });
+      
+      window.document.dispatchEvent(domEvent);
+      
+      // Also dispatch a generic event for catching all Pullse events
+      const allEvent = new CustomEvent(EVENT_PREFIX, {
+        detail: event,
+        bubbles: true,
+        cancelable: true
+      });
+      
+      window.document.dispatchEvent(allEvent);
+    }
   }
 }
 
 // Singleton instance
-let eventManager: EventManager | null = null;
+let eventManagerInstance: EventManager | null = null;
 
-/**
- * Get the singleton event manager instance
- * @returns EventManager instance
- */
-export function getEventManager(): IEventManager {
-  if (!eventManager) {
-    eventManager = new EventManager();
+// Get the event manager instance
+export const getEventManager = (): EventManager => {
+  if (!eventManagerInstance) {
+    eventManagerInstance = new EventManager();
   }
-  return eventManager;
-}
+  return eventManagerInstance;
+};
 
-/**
- * Dispatch an event via the event manager with validation
- * @param eventType Type of event to dispatch
- * @param data Optional data to include with the event
- * @param priority Optional priority level for the event
- * @returns The dispatched event or null if invalid
- */
-export function dispatchValidatedEvent(
-  eventType: ChatEventType, 
-  data?: any, 
-  priority: EventPriority = EventPriority.NORMAL
-): ChatEventPayload | null {
-  const manager = getEventManager();
-  const event = manager.createEvent(eventType, data);
-  
-  if (event) {
-    manager.handleEvent(event, priority);
-    return event;
-  }
-  
-  return null;
-}
+// Helper for dispatching validated events
+export const dispatchValidatedEvent = (eventType: ChatEventType, data?: any, priority?: EventPriority): void => {
+  getEventManager().dispatch(eventType, data, priority);
+};
 
-/**
- * Subscribe to an event via the event manager
- * @param eventType Type of event to listen for
- * @param callback Function to call when the event occurs
- * @returns Function to unsubscribe
- */
-export function subscribeToEvent(eventType: ChatEventType | 'all', callback: EventCallback): () => void {
-  return getEventManager().on(eventType, callback);
-}
+// Helper for subscribing to events
+export const subscribeToEvent = (
+  eventType: ChatEventType | 'all',
+  callback: EventCallback,
+  options?: { priority?: EventPriority }
+): () => void => {
+  return getEventManager().on(eventType, callback, options);
+};

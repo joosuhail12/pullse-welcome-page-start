@@ -1,85 +1,121 @@
 
-import { toast } from "@/hooks/use-toast"
-import { createElement } from "react"
+import React, { ReactNode } from 'react';
+import { toast, ToastProps } from '@/components/ui/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
-type ToastType = 'info' | 'success' | 'warning' | 'error'
+// Define the types for action buttons
+type ToastActionProps = {
+  label: string;
+  onClick: () => void;
+  className?: string;
+};
 
-interface ToastOptions {
-  title?: string
-  description?: string
-  duration?: number
-  action?: React.ReactNode
-  variant?: 'default' | 'destructive' | 'warning'
-  dismissible?: boolean
-}
+/**
+ * Enhanced toast utilities with consistent styling and improved accessibility.
+ */
 
-// Enhanced toast function with resilience features
-export const showToast = (
-  type: ToastType, 
-  options: ToastOptions = {}
+export const showSuccessToast = (
+  title: string,
+  description?: string,
+  action?: ToastActionProps
 ) => {
-  const { 
-    title, 
-    description, 
-    duration = 5000,
-    action,
-    variant = type === 'error' ? 'destructive' : type === 'warning' ? 'warning' : 'default',
-    dismissible = true
-  } = options
-  
-  // Prevent duplicate toasts by using an ID
-  const toastId = title ? `${type}-${title.replace(/\s+/g, '-').toLowerCase()}` : undefined
-
-  // Add a retry button for error toasts when provided with an action
   return toast({
     title,
     description,
-    variant,
-    duration,
-    action,
-    id: toastId,
-    // These spread through to the underlying Toast component
-    className: `toast-${type}`,
-  })
-}
+    variant: 'default',
+    className: 'bg-green-50 border-green-200',
+    action: action ? (
+      <ToastAction altText={action.label} onClick={action.onClick} className={action.className}>
+        {action.label}
+      </ToastAction>
+    ) : undefined,
+  });
+};
 
-// Convenience methods for each toast type
-export const toasts = {
-  info: (options: ToastOptions) => showToast('info', options),
-  success: (options: ToastOptions) => showToast('success', options),
-  warning: (options: ToastOptions) => showToast('warning', {
-    variant: 'warning', 
-    ...options
-  }),
-  error: (options: ToastOptions) => showToast('error', {
-    variant: 'destructive', 
-    ...options
-  })
-}
-
-// Toast with retry action
-export const retryableToast = (
-  options: ToastOptions & { onRetry: () => void }
+export const showErrorToast = (
+  title: string,
+  description?: string,
+  action?: ToastActionProps
 ) => {
-  const { onRetry, ...toastOptions } = options
+  return toast({
+    title,
+    description,
+    variant: 'destructive',
+    action: action ? (
+      <ToastAction altText={action.label} onClick={action.onClick} className={action.className}>
+        {action.label}
+      </ToastAction>
+    ) : undefined,
+  });
+};
+
+export const showWarningToast = (
+  title: string,
+  description?: string,
+  action?: ToastActionProps
+) => {
+  return toast({
+    title,
+    description,
+    variant: 'default',
+    className: 'bg-yellow-50 border-yellow-200',
+    action: action ? (
+      <ToastAction altText={action.label} onClick={action.onClick} className={action.className}>
+        {action.label}
+      </ToastAction>
+    ) : undefined,
+  });
+};
+
+export const showInfoToast = (
+  title: string,
+  description?: string,
+  action?: ToastActionProps
+) => {
+  return toast({
+    title,
+    description,
+    variant: 'default',
+    className: 'bg-blue-50 border-blue-200',
+    action: action ? (
+      <ToastAction altText={action.label} onClick={action.onClick} className={action.className}>
+        {action.label}
+      </ToastAction>
+    ) : undefined,
+  });
+};
+
+// Loading toast with auto-dismiss when complete
+export const showLoadingToast = (
+  loadingMessage: string,
+  promise: Promise<any>,
+  successMessage: string,
+  errorMessage: string
+) => {
+  const toastInstance = toast({
+    title: loadingMessage,
+    description: 'Please wait...',
+    duration: Infinity,
+  });
   
-  const retryAction = createElement(
-    'button',
-    {
-      className: "bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2 py-1 rounded text-xs",
-      onClick: () => {
-        // Dismiss the current toast
-        toast.dismiss()
-        // Execute the retry action
-        onRetry()
-      }
-    },
-    'Retry'
-  )
-  
-  return showToast('error', {
-    ...toastOptions,
-    action: retryAction,
-    duration: 10000 // Give more time for user to decide to retry
-  })
-}
+  promise
+    .then(() => {
+      toast({
+        id: toastInstance.id,
+        title: successMessage,
+        description: '',
+        variant: 'default',
+        className: 'bg-green-50 border-green-200',
+      });
+    })
+    .catch((error) => {
+      toast({
+        id: toastInstance.id,
+        title: errorMessage,
+        description: error.message || 'An error occurred',
+        variant: 'destructive',
+      });
+    });
+    
+  return toastInstance;
+};

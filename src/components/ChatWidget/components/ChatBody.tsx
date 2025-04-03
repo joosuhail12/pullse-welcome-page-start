@@ -60,6 +60,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
 }) => {
   // Create a wrapper for highlightText to match MessageList's expected format
   const highlightWrapper = (text: string) => {
+    if (!searchTerm) return [{ text, highlighted: false }];
     return highlightText(text, searchTerm);
   };
 

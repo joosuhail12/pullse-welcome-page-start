@@ -1,3 +1,4 @@
+
 export interface Message {
   id: string;
   text: string;
@@ -47,7 +48,7 @@ export interface Agent {
   id: string;
   name: string;
   avatar?: string;
-  status?: 'online' | 'away' | 'offline';
+  status?: 'online' | 'away' | 'offline' | 'busy';
 }
 
 export interface MessageReaction {

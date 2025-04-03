@@ -1,27 +1,24 @@
 
 import { ChatEventType, ChatEventPayload } from '../config';
 
+export type EventCallback = (payload: ChatEventPayload) => void;
+
 export enum EventPriority {
-  HIGH = 0,
-  NORMAL = 10,
-  LOW = 20,
-  BACKGROUND = 30
-}
-
-export interface EventCallback {
-  (event: ChatEventPayload): void;
-}
-
-export interface PrioritizedEvent {
-  event: ChatEventPayload;
-  priority: EventPriority;
+  CRITICAL = 'critical',
+  HIGH = 'high',
+  NORMAL = 'normal',
+  LOW = 'low'
 }
 
 export interface IEventManager {
-  on(eventType: ChatEventType | 'all', callback: EventCallback): () => void;
+  on(eventType: ChatEventType | 'all', callback: EventCallback, options?: { priority?: EventPriority }): () => void;
   off(eventType: ChatEventType | 'all', callback?: EventCallback): void;
-  handleEvent(event: ChatEventPayload, priority?: EventPriority): void;
-  createEvent(type: ChatEventType, data?: any): ChatEventPayload | null;
-  dispose(): void;
   removeAllListeners(): void;
+  dispatch(eventType: ChatEventType, data?: any, priority?: EventPriority): void;
+  registerGlobalHandler(handler: (eventType: ChatEventType, payload: ChatEventPayload) => void): void;
+  unregisterGlobalHandler(handler: (eventType: ChatEventType, payload: ChatEventPayload) => void): void;
+}
+
+export interface EventSubscription {
+  unsubscribe: () => void;
 }

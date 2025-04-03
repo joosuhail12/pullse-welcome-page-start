@@ -7,9 +7,7 @@ export interface StatusMessageProps {
 
 const StatusMessage: React.FC<StatusMessageProps> = ({ text }) => {
   return (
-    <div className="bg-gray-100 py-1.5 px-4 rounded-full text-xs text-gray-500 text-center shadow-sm">
-      {text}
-    </div>
+    <div className="text-xs text-gray-500">{text}</div>
   );
 };
 
