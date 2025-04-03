@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Conversation } from '../../types';
 import { ChatWidgetConfig, defaultConfig } from '../../config';
@@ -8,7 +7,7 @@ import { useMessageSearch } from '../../hooks/useMessageSearch';
 import { useInlineForm } from '../../hooks/useInlineForm';
 import { dispatchChatEvent } from '../../utils/events';
 import ChatViewPresentation from './ChatViewPresentation';
-import { MessageReadReceipt } from '../../components/MessageReadReceipt';
+import { MessageReadStatus } from '../../components/MessageReadReceipt';
 
 interface ChatViewContainerProps {
   conversation: Conversation;
@@ -87,7 +86,7 @@ const ChatViewContainer = ({
     setSearchTerm,
     searchMessages,
     clearSearch,
-    highlightText,
+    highlightText: originalHighlightText,
     messageIds,
     isSearching
   } = useMessageSearch(messages);
@@ -180,6 +179,47 @@ const ChatViewContainer = ({
       } as React.CSSProperties)
     };
   }, [config?.branding?.primaryColor]);
+
+  // Create proper highlightText function with the correct signature
+  const highlightText = useCallback((text: string, term: string) => {
+    if (!term) return [{text, highlighted: false}];
+    
+    // Simple highlight function implementation
+    const parts: {text: string; highlighted: boolean}[] = [];
+    const lowerText = text.toLowerCase();
+    const lowerTerm = term.toLowerCase();
+    let lastIndex = 0;
+    
+    let index = lowerText.indexOf(lowerTerm);
+    while (index !== -1) {
+      // Add non-matching part
+      if (index > lastIndex) {
+        parts.push({
+          text: text.substring(lastIndex, index),
+          highlighted: false
+        });
+      }
+      
+      // Add matching part
+      parts.push({
+        text: text.substring(index, index + term.length),
+        highlighted: true
+      });
+      
+      lastIndex = index + term.length;
+      index = lowerText.indexOf(lowerTerm, lastIndex);
+    }
+    
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push({
+        text: text.substring(lastIndex),
+        highlighted: false
+      });
+    }
+    
+    return parts;
+  }, []);
 
   // Convert readReceipts to the format expected by ChatViewPresentation
   const formattedReadReceipts = useMemo(() => {

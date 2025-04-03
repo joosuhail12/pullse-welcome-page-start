@@ -29,7 +29,7 @@ interface MessageBubbleProps {
     metadata?: Record<string, any>;
     reactions?: string[];
   };
-  highlightText?: string;
+  highlightText?: string; // Added this property
   isHighlighted?: boolean;
   userAvatar?: string;
   agentAvatar?: string;

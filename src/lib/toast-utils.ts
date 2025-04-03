@@ -1,7 +1,7 @@
 
-import { toast, type Toast } from "@/hooks/use-toast"
+import { toast } from "@/hooks/use-toast"
 import { createElement } from "react"
-import { ToastActionElement, ToasterToast } from "@/components/ui/toast"
+import { ToastActionElement } from "@/components/ui/toast"
 
 type ToastType = 'info' | 'success' | 'warning' | 'error'
 
@@ -64,16 +64,6 @@ export const retryableToast = (
     {
       className: "bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2 py-1 rounded text-xs",
       onClick: () => {
-        // Dismiss the current toast
-        const toastInstance = toast({
-          title: "Dismissing...",
-          duration: 0
-        });
-        
-        if (typeof toast.dismiss === 'function') {
-          toast.dismiss(toastInstance.id);
-        }
-        
         // Execute the retry action
         onRetry()
       }

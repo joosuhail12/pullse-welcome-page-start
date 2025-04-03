@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Conversation, Message } from '../../types';
 import { ChatWidgetConfig } from '../../config';
@@ -8,6 +9,8 @@ import ChatKeyboardHandler from '../../components/ChatKeyboardHandler';
 import ChatBody from '../../components/ChatBody';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageReadStatus } from '../../components/MessageReadReceipt';
+import MessageInput from '../../components/MessageInput';
+import PoweredByBar from '../../components/PoweredByBar';
 
 interface ChatViewPresentationProps {
   conversation: Conversation;
@@ -21,11 +24,11 @@ interface ChatViewPresentationProps {
   handleUserTyping: () => void;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
-  readReceipts: Record<string, Date>;
+  readReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }>;
   onBack: () => void;
   showSearch: boolean;
   toggleSearch: () => void;
-  searchMessages: Message[];
+  searchMessages: (term: string) => void;
   clearSearch: () => void;
   searchResultCount: number;
   isSearching: boolean;
@@ -85,30 +88,35 @@ const ChatViewPresentation = ({
   const isMobile = useIsMobile();
 
   const inlineFormComponent = useMemo(() => {
-    if (showInlineForm && config?.preChatForm?.fields && config.preChatForm.fields.length > 0) {
+    if (showInlineForm && config?.preChatForm) {
       return (
         <div className="absolute inset-0 bg-white z-50">
           <PreChatForm
-            fields={config.preChatForm.fields}
+            config={config}
             onFormComplete={handleFormComplete}
           />
         </div>
       );
     }
     return null;
-  }, [showInlineForm, config?.preChatForm, handleFormComplete]);
+  }, [showInlineForm, config, handleFormComplete]);
 
   return (
     <div className="h-full flex flex-col" style={chatViewStyle}>
       <ChatKeyboardHandler
         handleSendMessage={handleSendMessage}
         toggleSearch={toggleSearch}
+        messageText={messageText}
+        showSearch={showSearch}
+        showSearchFeature={showSearchFeature}
       >
         <ChatViewHeader
           conversation={conversation}
           onBack={onBack}
           showSearch={showSearch}
           toggleSearch={toggleSearch}
+          searchMessages={searchMessages}
+          clearSearch={clearSearch}
           searchResultCount={searchResultCount}
           isSearching={isSearching}
           showSearchFeature={showSearchFeature}
@@ -144,18 +152,18 @@ const ChatViewPresentation = ({
         <MessageInput
           messageText={messageText}
           setMessageText={setMessageText}
-          isTyping={isTyping}
           handleSendMessage={handleSendMessage}
-          handleUserTyping={handleUserTyping}
           handleFileUpload={handleFileUpload}
+          handleEndChat={handleEndChat}
+          hasUserSentMessage={true}
+          onTyping={handleUserTyping}
+          disabled={showInlineForm}
           config={config}
         />
       </ChatKeyboardHandler>
 
-      {config?.branding?.poweredBy && (
-        <PoweredByBar
-          config={config}
-        />
+      {config?.branding?.showBrandingBar !== false && (
+        <PoweredByBar config={config} />
       )}
 
       {isMobile && <KeyboardShortcutsInfo />}
