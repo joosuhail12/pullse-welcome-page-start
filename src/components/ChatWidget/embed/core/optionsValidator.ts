@@ -56,12 +56,14 @@ export function validateWidgetOptions(options: PullseChatWidgetOptions): PullseC
 }
 
 /**
- * Check if a position value is valid
+ * Check if a position value is valid and narrows the type
+ * This is a type guard function for ChatPosition
  */
-export function isValidChatPosition(position: any): boolean {
+export function isValidChatPosition(position: any): position is ChatPosition {
   if (typeof position !== 'string') {
     return false;
   }
+  
   return ['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(position);
 }
 
