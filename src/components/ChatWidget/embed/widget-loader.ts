@@ -1,13 +1,15 @@
+
 import { PullseChatWidgetOptions } from './types';
 import { getPositionStyles, loadDependencies } from './utils';
 import { EventManager } from './events';
 import { createLauncherButton, createWidgetContainer, injectWidgetStyles } from './ui-components';
 import { initLazyLoadViaScroll, prepareWidgetConfig } from './lazy-loading';
+import { PullseChatWidgetAPI, PullseChatWidgetAPIImpl } from './api';
 
 /**
  * Main widget loader class
  */
-export class PullseChatWidgetLoader {
+export class PullseChatWidgetLoader implements PullseChatWidgetAPI {
   private options: PullseChatWidgetOptions;
   private scriptElement: HTMLScriptElement | null = null;
   private styleElement: HTMLStyleElement | null = null;
@@ -17,6 +19,8 @@ export class PullseChatWidgetLoader {
   private widgetLoaded = false;
   private lazyLoadObserver: IntersectionObserver | null = null;
   private eventManager: EventManager;
+  private api: PullseChatWidgetAPIImpl;
+  private _isOpen = false;
 
   constructor(options: PullseChatWidgetOptions) {
     // Set default options
@@ -30,6 +34,7 @@ export class PullseChatWidgetLoader {
     };
 
     this.eventManager = new EventManager();
+    this.api = new PullseChatWidgetAPIImpl(this.options, this);
 
     // Validate required options
     if (!this.options.workspaceId) {
@@ -61,6 +66,7 @@ export class PullseChatWidgetLoader {
     } 
     // For auto-open, load full widget immediately
     else if (this.options.autoOpen) {
+      this._isOpen = true;
       this.createContainer();
       this.loadFullWidget();
     } 
@@ -88,6 +94,7 @@ export class PullseChatWidgetLoader {
     const button = this.launcherElement.querySelector('.pullse-chat-button');
     if (button) {
       button.onclick = () => {
+        this._isOpen = true;
         this.createContainer();
         this.loadFullWidget();
         if (this.launcherElement) {
@@ -147,6 +154,8 @@ export class PullseChatWidgetLoader {
       .catch(error => console.error('Failed to load dependencies:', error));
   }
   
+  // API Method implementations
+  
   /**
    * Subscribe to widget events
    */
@@ -159,5 +168,173 @@ export class PullseChatWidgetLoader {
    */
   public off(eventType: any, callback?: any): void {
     this.eventManager.off(eventType, callback);
+  }
+
+  /**
+   * Open the chat widget
+   */
+  public open(): void {
+    this._isOpen = true;
+    
+    if (!this.containerElement) {
+      this.createContainer();
+      this.loadFullWidget();
+    }
+    
+    if (this.launcherElement) {
+      this.launcherElement.style.display = 'none';
+    }
+    
+    // Try to trigger open on the widget if it's loaded
+    if (this.widgetLoaded && (window as any).__PULLSE_CHAT_WIDGET__) {
+      (window as any).__PULLSE_CHAT_WIDGET__.open();
+    }
+  }
+  
+  /**
+   * Close the chat widget
+   */
+  public close(): void {
+    this._isOpen = false;
+    
+    // Try to trigger close on the widget if it's loaded
+    if (this.widgetLoaded && (window as any).__PULLSE_CHAT_WIDGET__) {
+      (window as any).__PULLSE_CHAT_WIDGET__.close();
+    }
+    
+    // Show the launcher button again
+    if (this.launcherElement) {
+      this.launcherElement.style.display = 'block';
+    }
+  }
+  
+  /**
+   * Toggle the chat widget open/closed state
+   */
+  public toggle(): void {
+    if (this._isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  }
+  
+  /**
+   * Check if the chat widget is open
+   */
+  public isOpen(): boolean {
+    return this._isOpen;
+  }
+  
+  /**
+   * Update the widget configuration
+   */
+  public updateConfig(options: Partial<PullseChatWidgetOptions>): void {
+    this.options = { ...this.options, ...options };
+    
+    // Update the global config object
+    if ((window as any).__PULLSE_CHAT_CONFIG__) {
+      (window as any).__PULLSE_CHAT_CONFIG__ = {
+        ...(window as any).__PULLSE_CHAT_CONFIG__,
+        ...prepareWidgetConfig(this.options)
+      };
+    }
+    
+    // Try to update the widget if it's loaded
+    if (this.widgetLoaded && (window as any).__PULLSE_CHAT_WIDGET__) {
+      (window as any).__PULLSE_CHAT_WIDGET__.updateConfig(this.options);
+    }
+  }
+  
+  /**
+   * Get the current widget configuration
+   */
+  public getConfig(): PullseChatWidgetOptions {
+    return { ...this.options };
+  }
+  
+  /**
+   * Send a message programmatically
+   */
+  public async sendMessage(text: string, metadata?: Record<string, any>): Promise<void> {
+    // Make sure the widget is open
+    if (!this._isOpen) {
+      this.open();
+    }
+    
+    // Wait for the widget to load if necessary
+    if (!this.widgetLoaded) {
+      return new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (this.widgetLoaded && (window as any).__PULLSE_CHAT_WIDGET__) {
+            clearInterval(checkInterval);
+            (window as any).__PULLSE_CHAT_WIDGET__.sendMessage(text, metadata).then(resolve);
+          }
+        }, 100);
+        
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          resolve();
+        }, 5000);
+      });
+    }
+    
+    // Send the message if the widget is loaded
+    if ((window as any).__PULLSE_CHAT_WIDGET__) {
+      return (window as any).__PULLSE_CHAT_WIDGET__.sendMessage(text, metadata);
+    }
+  }
+  
+  /**
+   * Clear all messages in the current conversation
+   */
+  public clearMessages(): void {
+    if (this.widgetLoaded && (window as any).__PULLSE_CHAT_WIDGET__) {
+      (window as any).__PULLSE_CHAT_WIDGET__.clearMessages();
+    }
+  }
+  
+  /**
+   * Destroy the widget instance and remove from DOM
+   */
+  public destroy(): void {
+    // Remove all elements from DOM
+    if (this.containerElement) {
+      this.containerElement.parentElement?.removeChild(this.containerElement);
+      this.containerElement = null;
+    }
+    
+    if (this.launcherElement) {
+      this.launcherElement.parentElement?.removeChild(this.launcherElement);
+      this.launcherElement = null;
+    }
+    
+    if (this.styleElement) {
+      this.styleElement.parentElement?.removeChild(this.styleElement);
+      this.styleElement = null;
+    }
+    
+    if (this.scriptElement) {
+      this.scriptElement.parentElement?.removeChild(this.scriptElement);
+      this.scriptElement = null;
+    }
+    
+    // Stop observing if lazy loading was enabled
+    if (this.lazyLoadObserver) {
+      this.lazyLoadObserver.disconnect();
+      this.lazyLoadObserver = null;
+    }
+    
+    this.initialized = false;
+    this.widgetLoaded = false;
+  }
+  
+  /**
+   * Reload the widget with current configuration
+   */
+  public reload(): void {
+    this.destroy();
+    this.init();
   }
 }
