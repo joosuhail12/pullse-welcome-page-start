@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -102,7 +103,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     switch(position) {
       case 'bottom-left':
         positionStyle = { 
-          bottom: `${offsetY}rem`, 
+          bottom: `${offsetY + 5}rem`, // Add extra spacing to avoid overlap
           left: `${offsetX}rem`, 
           right: 'auto'
         };
@@ -125,7 +126,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
       case 'bottom-right':
       default:
         positionStyle = { 
-          bottom: `${offsetY}rem`, 
+          bottom: `${offsetY + 5}rem`, // Add extra spacing to avoid overlap
           right: `${offsetX}rem`
         };
     }
@@ -139,9 +140,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     
     const position = config.position?.placement || 'bottom-right';
     const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 1;
-    const widgetHeightPx = isMobile ? 500 : 600; 
-    const widgetHeightRem = widgetHeightPx / 16;
-    const buttonMargin = 2.5; // Increased from 1 to 2.5 to create more space
+    const buttonMargin = 2.5; // Margin for the button
     
     let launcherStyle: React.CSSProperties = {};
     
@@ -155,18 +154,20 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
         };
         break;
       case 'top-right':
+        // For top positions, we need different logic to position the launcher below the widget
         launcherStyle = { 
-          top: `${widgetHeightRem + buttonMargin}rem`, 
+          top: 'auto', // Remove top positioning
+          bottom: `${buttonMargin}rem`, // Position from the bottom instead
           right: `${offsetX}rem`,
-          bottom: 'auto',
           left: 'auto'
         };
         break;
       case 'top-left':
+        // For top positions, we need different logic to position the launcher below the widget
         launcherStyle = { 
-          top: `${widgetHeightRem + buttonMargin}rem`, 
+          top: 'auto', // Remove top positioning
+          bottom: `${buttonMargin}rem`, // Position from the bottom instead
           left: `${offsetX}rem`,
-          bottom: 'auto',
           right: 'auto'
         };
         break;
@@ -181,7 +182,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     }
     
     return launcherStyle;
-  }, [isOpen, getWidgetPositionStyles, config.position?.placement, config.position?.offsetX, isMobile]);
+  }, [isOpen, getWidgetPositionStyles, config.position?.placement, config.position?.offsetX]);
 
   if (loading) {
     return (
@@ -238,7 +239,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
           {config.branding?.showBrandingBar !== false && <PoweredByBar />}
         </div>
       )}
-      <div className="fixed flex flex-col items-end" style={getLauncherPositionStyles}>
+      <div className="fixed flex flex-col items-end z-40" style={getLauncherPositionStyles}>
         <Button
           className="rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105"
           style={config.branding?.primaryColor ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor } : {}}
