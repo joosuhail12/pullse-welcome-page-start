@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
@@ -158,7 +159,7 @@ const ChatView = React.memo(({
 
   return (
     <div 
-      className="flex flex-col h-[600px] bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 rounded-lg shadow-lg"
+      className="flex flex-col h-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100"
       style={chatViewStyle}
     >
       <ChatViewHeader 

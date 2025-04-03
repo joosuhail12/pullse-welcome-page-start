@@ -33,7 +33,6 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
   
-  // Initialize Ably only when needed and with proper cleanup
   useEffect(() => {
     let ablyCleanup: (() => void) | null = null;
     
@@ -52,7 +51,6 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     };
   }, [loading, config.realtime?.enabled, workspaceId]);
   
-  // Memoize styles to prevent recalculation
   const widgetStyle = useMemo(() => {
     return {
       ...(config.branding?.primaryColor && {
@@ -61,7 +59,6 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     };
   }, [config.branding?.primaryColor]);
 
-  // Clear unread messages when widget is opened
   useEffect(() => {
     if (isOpen) {
       clearUnreadMessages();
@@ -92,50 +89,6 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     }
   }, [handleStartChat, setUserFormData, config]);
 
-  // Memoize footer component to prevent re-renders
-  const renderFooter = useCallback(() => {
-    if (!config.branding?.showBrandingBar) return null;
-    
-    return (
-      <div className="mt-auto border-t border-gray-100 p-2 flex items-center justify-center gap-1 text-xs text-gray-400">
-        <span>Powered by</span>
-        <img 
-          src="https://framerusercontent.com/images/9N8Z1vTRbJsHlrIuTjm6Ajga4dI.png" 
-          alt="Pullse Logo" 
-          className="h-4 w-auto"
-        />
-        <span>Pullse</span>
-      </div>
-    );
-  }, [config.branding?.showBrandingBar]);
-
-  // Memoize launcher button to prevent re-renders
-  const renderLauncher = useCallback(() => {
-    const buttonStyle = config.branding?.primaryColor 
-      ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
-      : {};
-    
-    return (
-      <div className="fixed bottom-4 right-4 flex flex-col items-end">
-        <Button
-          className="rounded-full w-14 h-14 flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105"
-          style={buttonStyle}
-          onClick={toggleChat}
-        >
-          <MessageSquare size={24} className="text-white" />
-          {!isOpen && unreadCount > 0 && (
-            <Badge 
-              className="absolute -top-2 -right-2 bg-red-500 text-white border-white border-2 animate-pulse" 
-              variant="destructive"
-            >
-              {unreadCount}
-            </Badge>
-          )}
-        </Button>
-      </div>
-    );
-  }, [config.branding?.primaryColor, toggleChat, isOpen, unreadCount]);
-
   if (loading) {
     return (
       <div className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 p-4 font-sans flex items-center justify-center">
@@ -154,17 +107,19 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
           className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-2xl overflow-hidden" 
           style={widgetStyle}
         >
-          <div className="relative w-full h-full flex flex-col flex-grow">
+          <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden">
             {viewState === 'chat' ? (
-              <ChatView 
-                conversation={activeConversation!} 
-                onBack={handleBackToMessages} 
-                onUpdateConversation={handleUpdateConversation}
-                config={config}
-                playMessageSound={playMessageSound}
-                userFormData={userFormData}
-                setUserFormData={setUserFormData}
-              />
+              <div className="flex flex-col h-full">
+                <ChatView 
+                  conversation={activeConversation!} 
+                  onBack={handleBackToMessages} 
+                  onUpdateConversation={handleUpdateConversation}
+                  config={config}
+                  playMessageSound={playMessageSound}
+                  userFormData={userFormData}
+                  setUserFormData={setUserFormData}
+                />
+              </div>
             ) : (
               <div className="flex flex-col h-full">
                 <div className="flex-grow overflow-y-auto">
@@ -185,7 +140,23 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
           {config.branding?.showBrandingBar !== false && <PoweredByBar />}
         </div>
       )}
-      {renderLauncher()}
+      <div className="fixed bottom-4 right-4 flex flex-col items-end">
+        <Button
+          className="rounded-full w-14 h-14 flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105"
+          style={config.branding?.primaryColor ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor } : {}}
+          onClick={toggleChat}
+        >
+          <MessageSquare size={24} className="text-white" />
+          {!isOpen && unreadCount > 0 && (
+            <Badge 
+              className="absolute -top-2 -right-2 bg-red-500 text-white border-white border-2 animate-pulse" 
+              variant="destructive"
+            >
+              {unreadCount}
+            </Badge>
+          )}
+        </Button>
+      </div>
     </>
   );
 });
