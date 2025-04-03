@@ -77,10 +77,16 @@ export class EventManager implements IEventManager {
       data: data || {}
     };
     
+    this.handleEvent(payload, priority);
+  }
+
+  handleEvent(event: ChatEventPayload, priority: EventPriority = EventPriority.NORMAL): void {
+    const eventType = event.type;
+    
     // Call specific event listeners
     this.listeners[eventType]?.forEach(listener => {
       try {
-        listener.callback(payload);
+        listener.callback(event);
       } catch (error) {
         logger.error(`Error in event listener for ${eventType}`, 'EventManager', error);
       }
@@ -89,7 +95,7 @@ export class EventManager implements IEventManager {
     // Call 'all' event listeners
     this.listeners['all']?.forEach(listener => {
       try {
-        listener.callback(payload);
+        listener.callback(event);
       } catch (error) {
         logger.error(`Error in 'all' event listener for ${eventType}`, 'EventManager', error);
       }
@@ -98,7 +104,7 @@ export class EventManager implements IEventManager {
     // Call global handlers
     this.globalHandlers.forEach(handler => {
       try {
-        handler(eventType, payload);
+        handler(eventType, event);
       } catch (error) {
         logger.error(`Error in global handler for ${eventType}`, 'EventManager', error);
       }
@@ -110,7 +116,7 @@ export class EventManager implements IEventManager {
       eventType !== 'chat:presence' &&
       eventType !== 'chat:heartbeat'
     ) {
-      logger.debug(`Event dispatched: ${eventType}`, 'EventManager', { payload });
+      logger.debug(`Event dispatched: ${eventType}`, 'EventManager', { payload: event });
     }
   }
   
@@ -120,6 +126,11 @@ export class EventManager implements IEventManager {
   
   unregisterGlobalHandler(handler: (eventType: ChatEventType, payload: ChatEventPayload) => void): void {
     this.globalHandlers = this.globalHandlers.filter(h => h !== handler);
+  }
+
+  // Alias for removeAllListeners for compatibility
+  dispose(): void {
+    this.removeAllListeners();
   }
 }
 
@@ -133,3 +144,6 @@ export function getEventManager(): IEventManager {
   
   return eventManagerInstance;
 }
+
+// Export utility functions
+export { dispatchValidatedEvent, subscribeToEvent } from './eventUtils';

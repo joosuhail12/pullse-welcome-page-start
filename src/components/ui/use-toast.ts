@@ -1,31 +1,60 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { toast as originalToast } from "@/hooks/use-toast";
+import { useState, useCallback } from 'react';
 
-export type ToastProps = Parameters<typeof originalToast>[0];
+export interface Toast {
+  id?: string;
+  title?: string;
+  description?: string;
+  action?: React.ReactNode;
+  variant?: 'default' | 'destructive' | 'success' | 'warning';
+  duration?: number;
+}
 
-// Re-export the toast from hooks for convenience
-export { toast } from "@/hooks/use-toast";
+export type ToasterToast = Toast;
 
-// Add any additional toast utility functions here
 export const useToast = () => {
-  const [toasts, setToasts] = useState<ToastProps[]>([]);
+  const [toasts, setToasts] = useState<ToasterToast[]>([]);
 
-  const addToast = useCallback((props: ToastProps) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    const toastWithId = { ...props, id };
-    setToasts((prevToasts) => [...prevToasts, toastWithId]);
-    return id;
-  }, []);
+  const toast = useCallback(
+    ({ ...props }: Toast) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      
+      setToasts((prevToasts) => [
+        ...prevToasts,
+        { id, ...props },
+      ]);
 
-  const removeToast = useCallback((id: string) => {
-    setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
+      return {
+        id,
+        dismiss: () => setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id)),
+        update: (props: ToasterToast) =>
+          setToasts((prevToasts) =>
+            prevToasts.map((toast) =>
+              toast.id === id ? { ...toast, ...props } : toast
+            )
+          ),
+      };
+    },
+    []
+  );
+
+  const dismiss = useCallback((toastId?: string) => {
+    setToasts((prevToasts) =>
+      toastId
+        ? prevToasts.filter((toast) => toast.id !== toastId)
+        : []
+    );
   }, []);
 
   return {
+    toast,
+    dismiss,
     toasts,
-    addToast,
-    removeToast,
-    toast: originalToast // Re-export the toast function for convenience
   };
+};
+
+export const toast = (props: Toast) => {
+  // Basic implementation for direct usage in library code
+  console.log('Toast:', props);
+  // In a real implementation, this would trigger a toast UI
 };

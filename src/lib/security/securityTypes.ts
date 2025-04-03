@@ -1,47 +1,52 @@
 
 /**
- * Security event types for the chat widget
+ * Security-related type definitions
  */
+
 export enum SecurityEventType {
-  AUTHENTICATION = 'authentication',
-  AUTHORIZATION = 'authorization',
-  INPUT_VALIDATION = 'input_validation',
-  RATE_LIMITING = 'rate_limiting',
-  CSRF_PROTECTION = 'csrf_protection',
-  XSS_PROTECTION = 'xss_protection',
-  INJECTION_PROTECTION = 'injection_protection',
-  SESSION_MANAGEMENT = 'session_management',
-  CONFIGURATION = 'configuration',
-  ACCESS_CONTROL = 'access_control'
+  USER_LOGIN = 'user:login',
+  USER_LOGOUT = 'user:logout',
+  USER_CREATED = 'user:created',
+  USER_UPDATED = 'user:updated',
+  USER_DELETED = 'user:deleted',
+  ACCESS_DENIED = 'access:denied',
+  ACCESS_GRANTED = 'access:granted',
+  TOKEN_ISSUED = 'token:issued',
+  TOKEN_REJECTED = 'token:rejected',
+  TOKEN_VALIDATED = 'token:validated',
+  TOKEN_REVOKED = 'token:revoked',
+  TOKEN_REFRESHED = 'token:refreshed',
+  RATE_LIMIT_EXCEEDED = 'rate:exceeded',
+  POSSIBLE_XSS_ATTEMPT = 'security:xss_attempt',
+  POSSIBLE_INJECTION = 'security:injection',
+  INVALID_INPUT = 'security:invalid_input',
+  SUSPICIOUS_ACTIVITY = 'security:suspicious',
+  CRYPTO_OPERATION_FAILED = 'crypto:operation_failed',
+  CONFIG_CHANGED = 'config:changed',
+  WORKSPACE_CREATED = 'workspace:created',
+  SENSITIVE_DATA_ACCESS = 'data:sensitive_access',
+  AUDIT_LOG_CREATED = 'audit:log_created',
+  LOGOUT = 'user:logout'
 }
 
-/**
- * Security event outcome types
- */
-export type SecurityOutcome = 'SUCCESS' | 'FAILURE' | 'ATTEMPT' | 'UNKNOWN';
-
-/**
- * Security event severity levels
- */
-export type SecuritySeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-
-/**
- * Security event interface
- */
 export interface SecurityEvent {
   type: SecurityEventType;
-  outcome: SecurityOutcome;
+  status: 'SUCCESS' | 'FAILURE' | 'ATTEMPT';
   timestamp: Date;
-  details?: any;
-  severity: SecuritySeverity;
+  details?: Record<string, any>;
+  severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  userId?: string;
+  ip?: string;
+  userAgent?: string;
+  resourceId?: string;
+  resourceType?: string;
 }
 
-// Export the type for the security logger
 export interface SecurityLogger {
-  logSecurityEvent: (
-    eventType: SecurityEventType, 
-    outcome: SecurityOutcome, 
-    details?: any, 
-    severity?: SecuritySeverity
-  ) => void;
+  logSecurityEvent(
+    eventType: SecurityEventType,
+    status: 'SUCCESS' | 'FAILURE' | 'ATTEMPT',
+    details?: Record<string, any>,
+    severity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'
+  ): void;
 }

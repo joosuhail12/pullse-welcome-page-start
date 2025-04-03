@@ -19,6 +19,7 @@ export interface Message {
   reactions?: string[];
   status?: MessageReadStatus;
   fileName?: string;
+  fileUrl?: string;
   cardData?: {
     title: string;
     description: string;
@@ -55,6 +56,7 @@ export interface Conversation {
     status?: 'online' | 'offline' | 'away' | 'busy';
   };
   contactIdentified?: boolean;
+  formData?: Record<string, string>; // Add formData property
 }
 
 export interface User {
@@ -89,5 +91,6 @@ export interface MessageSearchResult {
   conversationId: string;
   score: number;
   highlight?: string[];
-  matchText?: string; // Add missing property
+  matchText?: string;
+  timestamp?: Date;
 }

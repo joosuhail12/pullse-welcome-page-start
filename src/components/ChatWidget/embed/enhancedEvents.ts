@@ -34,8 +34,8 @@ export function dispatchValidatedEvent(
     return null;
   }
 
-  // Use the event manager to handle the event with the specified priority
-  getEventManager().handleEvent(event, priority);
+  // Use the event manager to dispatch the event with the specified priority
+  getEventManager().dispatch(event.type, event.data, priority);
   
   // Also dispatch as DOM event for legacy consumers
   dispatchDomEvent(event);

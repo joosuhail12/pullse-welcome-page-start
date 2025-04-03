@@ -1,56 +1,63 @@
 
 /**
- * Rate Limiting utilities
- * 
- * Provides functions for enforcing rate limits
- * to prevent abuse of the chat system.
+ * Rate limiting utility
  */
 
-import { getChatSessionId } from '../cookies';
-import { auditLogger } from '@/lib/audit-logger';
+import { securityLogger } from "@/lib/security/securityLogger";
+import { SecurityEventType } from "@/lib/security/securityTypes";
 
-// Store rate limiting data in memory
-export const rateLimitStore: Record<string, { count: number; resetTime: number }> = {};
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-const MAX_REQUESTS_PER_WINDOW = 10;     // 10 messages per minute
+interface RateLimitConfig {
+  maxRequests: number;
+  windowMs: number;
+}
+
+interface RateLimitState {
+  count: number;
+  resetAt: number;
+}
+
+// Default rate limiting configuration
+const DEFAULT_LIMIT: RateLimitConfig = {
+  maxRequests: 10, // Max 10 requests
+  windowMs: 60000 // Per minute
+};
+
+// Store rate limit state in memory (would use Redis or similar in production)
+const rateLimitStore: Record<string, RateLimitState> = {};
 
 /**
- * Check if the current request exceeds rate limits
- * @returns True if rate limit is exceeded, false otherwise
- * 
- * TODO: Implement server-side rate limiting with IP tracking and persistent storage
- * TODO: Add exponential back-off for repeated abuse
+ * Check if the current request would exceed rate limits
  */
-export function isRateLimited(): boolean {
-  const sessionId = getChatSessionId();
-  if (!sessionId) return false; // No session, can't rate limit
-  
+export function isRateLimited(
+  endpoint: string = 'default',
+  ip: string = 'unknown',
+  config: RateLimitConfig = DEFAULT_LIMIT
+): boolean {
+  const key = `${endpoint}:${ip}`;
   const now = Date.now();
   
-  // Initialize or reset expired entry
-  if (!rateLimitStore[sessionId] || rateLimitStore[sessionId].resetTime < now) {
-    rateLimitStore[sessionId] = {
+  // Get or initialize rate limit state
+  if (!rateLimitStore[key] || rateLimitStore[key].resetAt < now) {
+    rateLimitStore[key] = {
       count: 0,
-      resetTime: now + RATE_LIMIT_WINDOW_MS
+      resetAt: now + config.windowMs
     };
   }
   
-  // Increment the counter
-  rateLimitStore[sessionId].count++;
+  // Check if limit exceeded
+  const isLimited = rateLimitStore[key].count >= config.maxRequests;
   
-  // Check if limit is exceeded
-  const isLimited = rateLimitStore[sessionId].count > MAX_REQUESTS_PER_WINDOW;
-  
-  // Log rate limiting events
   if (isLimited) {
-    auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.SUSPICIOUS_ACTIVITY,
+    securityLogger.logSecurityEvent(
+      SecurityEventType.RATE_LIMIT_EXCEEDED,
       'FAILURE',
-      { 
-        action: 'rate_limit_exceeded', 
-        sessionId, 
-        requestCount: rateLimitStore[sessionId].count,
-        windowMs: RATE_LIMIT_WINDOW_MS
+      {
+        endpoint,
+        ip,
+        count: rateLimitStore[key].count,
+        limit: config.maxRequests,
+        windowMs: config.windowMs,
+        resetsIn: rateLimitStore[key].resetAt - now
       },
       'MEDIUM'
     );
@@ -58,3 +65,35 @@ export function isRateLimited(): boolean {
   
   return isLimited;
 }
+
+/**
+ * Track API call for rate limiting
+ */
+export function trackAPICall(
+  endpoint: string = 'default',
+  ip: string = 'unknown'
+): boolean {
+  const key = `${endpoint}:${ip}`;
+  const now = Date.now();
+  
+  // Get or initialize rate limit state
+  if (!rateLimitStore[key] || rateLimitStore[key].resetAt < now) {
+    rateLimitStore[key] = {
+      count: 0,
+      resetAt: now + DEFAULT_LIMIT.windowMs
+    };
+  }
+  
+  // Increment counter
+  rateLimitStore[key].count++;
+  
+  // Check if limit exceeded
+  const isLimited = rateLimitStore[key].count >= DEFAULT_LIMIT.maxRequests;
+  
+  return !isLimited; // Return true if call is allowed
+}
+
+export default {
+  isRateLimited,
+  trackAPICall
+};

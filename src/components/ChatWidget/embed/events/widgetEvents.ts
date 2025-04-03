@@ -8,7 +8,7 @@
 import { ChatEventType, ChatEventPayload } from '../../config';
 import { EventCallback } from '../types';
 import { EventPriority, getEventManager } from '../../events';
-import { validateEventPayload } from '../../events';
+import { validateEventPayload } from '../../events/validation';
 import { logger } from '@/lib/logger';
 
 /**
@@ -50,7 +50,7 @@ export function dispatchWidgetEvent(event: ChatEventPayload): void {
   
   // Validate event before dispatching
   if (validateEventPayload(event)) {
-    eventManager.handleEvent(event);
+    eventManager.dispatch(event.type, event.data);
   } else {
     logger.warn('Invalid event payload detected and blocked', 'WidgetEvents', { event });
   }
@@ -91,5 +91,5 @@ export function unsubscribeFromWidgetEvent(
  * Clean up all event handlers and subscriptions
  */
 export function cleanupEventHandlers(): void {
-  getEventManager().dispose();
+  getEventManager().removeAllListeners();
 }

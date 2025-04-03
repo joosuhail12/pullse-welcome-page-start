@@ -65,7 +65,13 @@ export type ChatEventType =
   | 'message:fileUploaded'
   | 'chat:ended'
   | 'chat:error'
-  | 'chat:configUpdated'; // Added new event type for configuration updates
+  | 'chat:configUpdated'
+  | 'chat:typing'
+  | 'chat:presence'
+  | 'chat:heartbeat'
+  | 'chat:inlineFormDisplayed'
+  | 'chat:formSubmitted'
+  | 'chat:messageReaction';
 
 export interface ChatEventPayload {
   type: ChatEventType;

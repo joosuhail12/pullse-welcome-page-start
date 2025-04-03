@@ -32,15 +32,17 @@ const ChatView: React.FC<ChatViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Get message actions
   const {
+    fileError,
     handleSendMessage,
     handleFileUpload,
     handleUserTyping,
-    handleEndChat,
-    fileError
+    handleEndChat
   } = useMessageActions(conversation, onUpdateConversation, config, playMessageSound);
   
   // Get conversation data
@@ -57,8 +59,6 @@ const ChatView: React.FC<ChatViewProps> = ({
   
   // Get typing indicators
   const { handleTypingTimeout, clearTypingTimeout } = useTypingIndicator();
-  const isTyping = false; // Placeholder - would come from state
-  const remoteIsTyping = false; // Placeholder - would come from state
   
   // Get search functionality
   const { searchMessages, messageIds, highlightTextWithTerm } = useSearchMessages(messages);
@@ -69,6 +69,7 @@ const ChatView: React.FC<ChatViewProps> = ({
       handleSendMessage(messageText);
       setMessageText('');
       setIsComposing(false);
+      setIsTyping(false);
     }
   }, [messageText, handleSendMessage]);
   
@@ -87,9 +88,11 @@ const ChatView: React.FC<ChatViewProps> = ({
   
   // Handle user typing
   const handleUserTypingCallback = useCallback(() => {
+    setIsTyping(true);
     setIsComposing(true);
     handleUserTyping();
-  }, [handleUserTyping]);
+    handleTypingTimeout();
+  }, [handleUserTyping, handleTypingTimeout]);
   
   // Handle search term change
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,6 +129,9 @@ const ChatView: React.FC<ChatViewProps> = ({
         onBack={onBack}
         onToggleSearch={toggleSearch}
         showSearch={showSearchBar}
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        onEndChat={handleEndChat}
       />
       
       <ChatBody

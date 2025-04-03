@@ -1,92 +1,103 @@
 
-import { logger } from './logger';
-import { toasts } from './toast-utils';
-import { createAppError, createNetworkError } from './errors/errorFactory';
-import { AppError, NetworkError, ErrorSeverity } from './errors/types';
+import { toast } from "@/components/ui/use-toast";
+import { logger } from "./logger";
 
-/**
- * A singleton handler for application errors
- */
+// Error types
+export type AppError = {
+  code: string;
+  message: string;
+  userFacing: boolean;
+  retryable: boolean;
+  name: string;
+  timestamp: Date;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  details?: Record<string, any>;
+};
+
+export type NetworkError = {
+  status?: number;
+  retryable: boolean;
+  name: string;
+  message: string;
+  timestamp: Date;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+};
+
 class ErrorHandler {
-  /**
-   * Handle any type of error
-   */
-  handle(error: unknown): void {
-    if (error instanceof AppError) {
-      this.handleAppError(error);
-    } else if (error instanceof NetworkError) {
-      this.handleNetworkError(error);
-    } else {
-      this.handleUnknownError(error);
-    }
-  }
-  
-  /**
-   * Handle application errors
-   */
-  private handleAppError(error: AppError): void {
-    logger.error(error.message, 'ErrorHandler', error.details);
+  // Handle application-specific errors
+  handleAppError(error: AppError): void {
+    logger.error(error.message, 'ErrorHandler', { 
+      code: error.code,
+      details: error.details
+    });
     
-    // Show toast notification for user-facing errors
     if (error.userFacing) {
-      toasts.error({
-        title: 'Application Error',
+      toast({
+        title: "Error",
         description: error.message,
-        duration: error.severity === ErrorSeverity.CRITICAL ? 0 : 5000
+        variant: "destructive",
       });
     }
   }
   
-  /**
-   * Handle network errors
-   */
-  private handleNetworkError(error: NetworkError): void {
-    logger.error('Network Error', 'ErrorHandler', {
-      message: error.message,
-      retryable: error.retryable,
-      statusCode: error.statusCode
+  // Handle network errors
+  handleNetworkError(error: NetworkError): void {
+    logger.error(`Network error: ${error.message}`, 'ErrorHandler', { 
+      status: error.status,
+      retryable: error.retryable
     });
     
-    // Show toast notification for network errors
-    toasts.error({
-      title: 'Connection Error',
-      description: error.message || 'Unable to connect to the server',
-      action: error.retryable ? {
-        label: 'Retry',
-        onClick: error.retry ? error.retry : (() => window.location.reload())
-      } : undefined
+    toast({
+      title: "Connection Error",
+      description: error.message,
+      variant: "destructive",
     });
   }
   
-  /**
-   * Handle unknown errors
-   */
-  private handleUnknownError(error: unknown): void {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+  // Handle generic errors
+  handleStandardError(error: Error): void {
+    logger.error(error.message, 'ErrorHandler', { stack: error.stack });
     
-    logger.error('Unknown Error', 'ErrorHandler', {
-      error
-    });
-    
-    toasts.error({
-      title: 'Unexpected Error',
-      description: errorMessage
-    });
-  }
-  
-  /**
-   * Handle a standard error with the option to show a user-facing message
-   */
-  handleStandardError(error: Error, showToast = true, severity = ErrorSeverity.MEDIUM): void {
-    logger.error(error.message, 'ErrorHandler', {
-      stack: error.stack
-    });
-    
-    if (showToast) {
-      toasts.error({
-        title: 'Error',
+    // Only show generic errors in development
+    if (import.meta.env.DEV) {
+      toast({
+        title: "Error",
         description: error.message,
-        duration: severity === ErrorSeverity.CRITICAL ? 0 : 5000
+        variant: "destructive",
+      });
+    }
+  }
+  
+  // Main entry point for error handling
+  handle(error: unknown): void {
+    if (error && typeof error === 'object') {
+      // Check if it's an AppError
+      if ('userFacing' in error && 'code' in error) {
+        this.handleAppError(error as AppError);
+        return;
+      }
+      
+      // Check if it's a NetworkError
+      if ('status' in error) {
+        this.handleNetworkError(error as NetworkError);
+        return;
+      }
+    }
+    
+    // Default handling for standard Error objects
+    if (error instanceof Error) {
+      this.handleStandardError(error);
+      return;
+    }
+    
+    // Fallback for unknown error types
+    logger.error('Unknown error', 'ErrorHandler', { error });
+    
+    if (import.meta.env.DEV) {
+      toast({
+        title: "Unknown Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
       });
     }
   }

@@ -1,43 +1,45 @@
-
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { sendTypingIndicator } from '../utils/messageHandlers';
 
-export function useTypingIndicator(
-  chatChannelName: string,
-  sessionId: string,
-  realtimeEnabled: boolean
-) {
-  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
-  
-  // Clear typing timeout when component unmounts
-  const clearTypingTimeoutCallback = useCallback(() => {
-    if (typingTimeout) {
-      clearTimeout(typingTimeout);
-    }
-  }, [typingTimeout]);
-  
-  // Handle typing indicator timeout
-  const handleTypingTimeout = useCallback(() => {
-    if (!realtimeEnabled) return;
-    
-    // Clear previous timeout to avoid multiple typing:stop events
-    clearTypingTimeoutCallback();
-    
-    // Send typing:stop after 2 seconds of no typing
-    const timeout = setTimeout(() => {
-      sendTypingIndicator(chatChannelName, sessionId, 'stop');
-    }, 2000);
-    
-    setTypingTimeout(timeout);
-  }, [chatChannelName, sessionId, clearTypingTimeoutCallback, realtimeEnabled]);
+interface TypingIndicatorHook {
+  handleTypingTimeout: () => void;
+  clearTypingTimeout: () => void;
+}
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return clearTypingTimeoutCallback;
-  }, [clearTypingTimeoutCallback]);
+export const useTypingIndicator = (
+  channelName?: string,
+  sessionId?: string,
+  realtimeEnabled?: boolean
+): TypingIndicatorHook => {
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Clear any existing typing timeout
+  const clearTypingTimeout = useCallback(() => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  }, []);
+
+  // Handle typing timeout - reset typing state after delay
+  const handleTypingTimeout = useCallback(() => {
+    clearTypingTimeout();
+    
+    // Send typing indicator if realtime is enabled
+    if (realtimeEnabled && channelName && sessionId) {
+      sendTypingIndicator(channelName, sessionId, 'start');
+    }
+    
+    // Set new timeout to clear typing indicator after 3 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      if (realtimeEnabled && channelName && sessionId) {
+        sendTypingIndicator(channelName, sessionId, 'stop');
+      }
+    }, 3000);
+  }, [clearTypingTimeout, channelName, sessionId, realtimeEnabled]);
 
   return {
     handleTypingTimeout,
-    clearTypingTimeout: clearTypingTimeoutCallback
+    clearTypingTimeout
   };
-}
+};

@@ -1,50 +1,42 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Conversation } from '../types';
-import { ChatWidgetConfig } from '../config';
-import { dispatchChatEvent } from '../utils/events';
 
-/**
- * Hook for managing pre-chat form state and interactions
- */
-export function useInlineForm(
-  conversation: Conversation,
-  config: ChatWidgetConfig,
-  userFormData?: Record<string, string>,
-  setUserFormData?: (data: Record<string, string>) => void,
-  onUpdateConversation?: (updatedConversation: Conversation) => void
-) {
-  const [showInlineForm, setShowInlineForm] = useState(
-    config?.preChatForm?.enabled && !userFormData && !conversation.contactIdentified
-  );
+interface InlineFormResult {
+  showInlineForm: boolean;
+  setShowInlineForm: (show: boolean) => void;
+  handleFormComplete: (formData: Record<string, string>) => void;
+  formType: string;
+  formConfig: Record<string, any>;
+}
 
-  // Update form visibility when user data or contact status changes
-  useEffect(() => {
-    if (userFormData || conversation.contactIdentified) {
-      setShowInlineForm(false);
-    }
-  }, [userFormData, conversation.contactIdentified]);
+export const useInlineForm = (conversation: Conversation): InlineFormResult => {
+  const [showInlineForm, setShowInlineForm] = useState(false);
+  const [formType, setFormType] = useState('contact');
+  const [formConfig, setFormConfig] = useState<Record<string, any>>({
+    title: 'Contact Information',
+    fields: [
+      { id: 'name', label: 'Name', type: 'text', required: true },
+      { id: 'email', label: 'Email', type: 'email', required: true }
+    ]
+  });
 
+  // Handle form completion
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     setShowInlineForm(false);
     
-    if (setUserFormData) {
-      setUserFormData(formData);
-    }
+    // In a real implementation, this would update the conversation
+    // via an API call and then update the local state
+    console.log('Form submitted:', formData);
     
-    if (onUpdateConversation) {
-      onUpdateConversation({
-        ...conversation,
-        contactIdentified: true
-      });
-    }
-    
-    dispatchChatEvent('contact:formCompleted', { formData }, config);
-  }, [setUserFormData, onUpdateConversation, conversation, config]);
-
+    // For now, we just hide the form
+  }, []);
+  
   return {
     showInlineForm,
     setShowInlineForm,
-    handleFormComplete
+    handleFormComplete,
+    formType,
+    formConfig
   };
-}
+};

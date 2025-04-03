@@ -1,6 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { Message, MessageType, MessageSender, ChatWidgetConfig } from '../types';
+import { Message, MessageType, MessageSender } from '../types';
 import { publishToChannel } from './ably';
 import { dispatchChatEvent } from './events';
 
@@ -56,18 +56,15 @@ export const createSystemMessage = (text: string, type: MessageType = 'text'): M
 export const processSystemMessage = (
   message: Message, 
   channelName: string, 
-  sessionId: string,
-  config?: ChatWidgetConfig
+  sessionId: string
 ): void => {
   // Play sound notification if enabled
-  if (config?.features?.soundNotifications) {
-    const audio = new Audio('/message-notification.mp3');
-    audio.volume = 0.5;
-    audio.play().catch(e => console.warn('Could not play notification sound', e));
-  }
+  const audio = new Audio('/message-notification.mp3');
+  audio.volume = 0.5;
+  audio.play().catch(e => console.warn('Could not play notification sound', e));
   
   // Dispatch message received event
-  dispatchChatEvent('chat:messageReceived', { message }, config);
+  dispatchChatEvent('chat:messageReceived', { message });
 };
 
 /**
@@ -126,4 +123,15 @@ export const getRandomResponse = (): string => {
  */
 export const getMessage = (messages: Message[], messageId: string): Message | undefined => {
   return messages.find(message => message.id === messageId);
+};
+
+export default {
+  createMessage,
+  createUserMessage,
+  createSystemMessage,
+  processSystemMessage,
+  sendTypingIndicator,
+  sendDeliveryReceipt,
+  getRandomResponse,
+  getMessage
 };

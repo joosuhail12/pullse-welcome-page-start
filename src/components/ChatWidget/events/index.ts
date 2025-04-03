@@ -6,6 +6,8 @@ export { EventPriority, type EventCallback } from './types';
 export {
   EventManager,
   getEventManager,
+  dispatchValidatedEvent,
+  subscribeToEvent
 } from './eventManager';
 
 // Export DOM event utilities
@@ -22,8 +24,3 @@ export {
   validateEventData,
   sanitizeEventData
 } from './validation';
-
-// Export additional utility functions
-export {
-  dispatchValidatedEvent
-} from './eventUtils';
