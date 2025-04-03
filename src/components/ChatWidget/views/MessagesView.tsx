@@ -1,13 +1,16 @@
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Plus, Trash2, ArrowUp, ArrowDown, Filter } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Conversation } from '../types';
 import SearchBar from '../components/SearchBar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { loadConversationsFromStorage, deleteConversationFromStorage } from '../utils/storage';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 
 interface MessagesViewProps {
   onSelectConversation: (conversation: Conversation) => void;
@@ -16,58 +19,72 @@ interface MessagesViewProps {
 type SortOrder = 'newest' | 'oldest';
 type StatusFilter = 'all' | 'active' | 'ended';
 
+const ITEMS_PER_PAGE = 10;
+
 const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Conversation[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  useEffect(() => {
-    // Load conversations from localStorage
-    const loadConversations = () => {
-      setIsLoading(true);
-      try {
-        const storedConversations = localStorage.getItem('chat-conversations');
-        if (storedConversations) {
-          // Parse and convert string timestamps back to Date objects
-          const parsedConversations = JSON.parse(storedConversations).map((conv: any) => ({
-            ...conv,
-            timestamp: new Date(conv.timestamp)
-          }));
-          setConversations(parsedConversations);
+  const loadConversationsData = useCallback(async () => {
+    setIsLoading(true);
+    setLoadingError(null);
+
+    try {
+      // Adding error handling with retry logic
+      let retries = 3;
+      let conversationsData: Conversation[] = [];
+      
+      while (retries > 0) {
+        try {
+          conversationsData = loadConversationsFromStorage();
+          break; // Success, exit the retry loop
+        } catch (error) {
+          retries--;
+          if (retries === 0) {
+            throw error; // No more retries, throw the error
+          }
+          await new Promise(resolve => setTimeout(resolve, 500)); // Wait before retrying
         }
-      } catch (error) {
-        console.error('Error loading conversations:', error);
-        toast.error('Failed to load conversations');
-      } finally {
-        setIsLoading(false);
       }
-    };
 
-    loadConversations();
+      setConversations(conversationsData);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      setLoadingError('Failed to load conversations. Please try again.');
+      toast.error('Failed to load conversations');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const handleDeleteConversation = (e: React.MouseEvent, id: string) => {
+  useEffect(() => {
+    loadConversationsData();
+  }, [loadConversationsData]);
+
+  const handleDeleteConversation = useCallback(async (e: React.MouseEvent, id: string) => {
     e.stopPropagation(); // Prevent triggering the parent onClick
     
     try {
-      const updatedConversations = conversations.filter(conv => conv.id !== id);
-      setConversations(updatedConversations);
+      // Delete from storage with error handling
+      await deleteConversationFromStorage(id);
       
-      // Update localStorage
-      localStorage.setItem('chat-conversations', JSON.stringify(updatedConversations));
-      
+      // Update local state
+      setConversations(prev => prev.filter(conv => conv.id !== id));
       toast.success('Conversation deleted');
     } catch (error) {
       console.error('Error deleting conversation:', error);
-      toast.error('Failed to delete conversation');
+      toast.error('Failed to delete conversation. Please try again.');
     }
-  };
+  }, []);
 
-  const formatTime = (date: Date): string => {
+  const formatTime = useCallback((date: Date): string => {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     
@@ -81,9 +98,9 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       // More than a day ago
       return date.toLocaleDateString();
     }
-  };
+  }, []);
 
-  const handleStartNewChat = () => {
+  const handleStartNewChat = useCallback(() => {
     // Notify the parent component to start a new chat
     onSelectConversation({
       id: `conv-${Date.now()}`,
@@ -92,9 +109,9 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       timestamp: new Date(),
       status: 'active' // Set default status for new conversations
     });
-  };
+  }, [onSelectConversation]);
 
-  // Handle search functionality
+  // Handle search functionality with debouncing
   const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
     setIsSearching(true);
@@ -108,13 +125,24 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     setIsSearching(false);
   }, [conversations]);
 
+  // Optimized with debounce
+  useEffect(() => {
+    const debouncedSearch = setTimeout(() => {
+      if (searchTerm) {
+        handleSearch(searchTerm);
+      }
+    }, 300); // 300ms debounce delay
+
+    return () => clearTimeout(debouncedSearch);
+  }, [searchTerm, handleSearch]);
+
   const clearSearch = useCallback(() => {
     setSearchTerm('');
     setSearchResults([]);
   }, []);
 
-  // Apply sorting and filtering
-  const filteredAndSortedConversations = useCallback(() => {
+  // Apply sorting and filtering - memoized to prevent unnecessary recalculations
+  const filteredAndSortedConversations = useMemo(() => {
     // First apply the search filter if there's a search term
     let filtered = searchTerm ? searchResults : [...conversations];
     
@@ -133,7 +161,39 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     });
   }, [conversations, sortOrder, statusFilter, searchTerm, searchResults]);
 
-  const displayedConversations = filteredAndSortedConversations();
+  // Pagination calculation - memoized
+  const paginationData = useMemo(() => {
+    const totalItems = filteredAndSortedConversations.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
+    
+    // Ensure current page is valid
+    const validCurrentPage = Math.min(currentPage, totalPages);
+    if (validCurrentPage !== currentPage) {
+      setCurrentPage(validCurrentPage);
+    }
+    
+    const startIndex = (validCurrentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
+    
+    return {
+      totalItems,
+      totalPages,
+      startIndex,
+      endIndex,
+      currentPage: validCurrentPage,
+      displayedConversations: filteredAndSortedConversations.slice(startIndex, endIndex)
+    };
+  }, [filteredAndSortedConversations, currentPage]);
+
+  // Handle page change
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  // Retry loading data
+  const handleRetryLoading = useCallback(() => {
+    loadConversationsData();
+  }, [loadConversationsData]);
 
   return (
     <div className="flex flex-col p-2 h-full">
@@ -152,7 +212,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       <SearchBar 
         onSearch={handleSearch}
         onClear={clearSearch}
-        resultCount={searchTerm ? displayedConversations.length : 0}
+        resultCount={searchTerm ? filteredAndSortedConversations.length : 0}
         isSearching={isSearching}
       />
       
@@ -185,14 +245,29 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         </Button>
       </div>
       
-      <div className="flex-1 overflow-y-auto">
+      <ScrollArea className="flex-1">
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="h-5 w-5 border-2 border-vivid-purple border-t-transparent rounded-full animate-spin"></div>
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="h-5 w-5 border-2 border-vivid-purple border-t-transparent rounded-full animate-spin mb-2"></div>
+            <p className="text-sm text-gray-500">Loading conversations...</p>
+          </div>
+        ) : loadingError ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="text-red-500 mb-2">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            </div>
+            <p className="text-gray-700 mb-2">{loadingError}</p>
+            <Button variant="outline" size="sm" onClick={handleRetryLoading}>
+              Try Again
+            </Button>
           </div>
         ) : (
-          <div className="space-y-2">
-            {displayedConversations.map(conversation => (
+          <div className="space-y-2 px-1">
+            {paginationData.displayedConversations.map((conversation, index) => (
               <Card
                 key={conversation.id}
                 onClick={() => onSelectConversation(conversation)}
@@ -244,7 +319,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
               </Card>
             ))}
 
-            {displayedConversations.length === 0 && !isLoading && (
+            {paginationData.displayedConversations.length === 0 && !isLoading && (
               <div className="text-center py-8 text-gray-500 animate-fade-in">
                 <div className="bg-gray-50 p-6 rounded-lg max-w-xs mx-auto">
                   <div className="flex justify-center mb-4">
@@ -293,9 +368,44 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
             )}
           </div>
         )}
-      </div>
+      </ScrollArea>
+
+      {/* Pagination controls */}
+      {paginationData.totalPages > 1 && (
+        <Pagination className="mt-4">
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={() => handlePageChange(Math.max(1, paginationData.currentPage - 1))}
+                aria-disabled={paginationData.currentPage === 1}
+                className={paginationData.currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+            
+            {/* Generate page numbers */}
+            {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1).map(page => (
+              <PaginationItem key={page}>
+                <PaginationLink 
+                  isActive={page === paginationData.currentPage}
+                  onClick={() => handlePageChange(page)}
+                >
+                  {page}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            
+            <PaginationItem>
+              <PaginationNext 
+                onClick={() => handlePageChange(Math.min(paginationData.totalPages, paginationData.currentPage + 1))}
+                aria-disabled={paginationData.currentPage === paginationData.totalPages}
+                className={paginationData.currentPage === paginationData.totalPages ? "pointer-events-none opacity-50" : ""}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   );
 };
 
-export default MessagesView;
+export default React.memo(MessagesView);
