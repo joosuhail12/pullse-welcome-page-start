@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -15,8 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
 import { useConnectionState } from './hooks/useConnectionState';
-import { Toaster } from '@/components/ui/sonner';
-import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/toaster';
+import { toast } from '@/components/ui/use-toast';
 import { getPendingMessageCount } from './utils/offlineQueue';
 
 interface ChatWidgetProps {
@@ -43,7 +42,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
   const { isConnected, connectionState } = useConnectionState();
   const [pendingMessages, setPendingMessages] = useState(getPendingMessageCount());
   
-  // Effect for checking pending messages
   useEffect(() => {
     const checkPendingInterval = setInterval(() => {
       setPendingMessages(getPendingMessageCount());
@@ -52,7 +50,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
     return () => clearInterval(checkPendingInterval);
   }, []);
   
-  // Initialize Ably when config is loaded
   useEffect(() => {
     if (!loading && config.realtime?.enabled && workspaceId) {
       const authUrl = getAblyAuthUrl(workspaceId);
@@ -73,7 +70,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
     }
   }, [loading, config.realtime?.enabled, workspaceId]);
   
-  // Memoize the widget style to prevent re-renders
   const widgetStyle = useMemo(() => {
     return {
       ...(config.branding?.primaryColor && {
@@ -82,14 +78,12 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
     };
   }, [config.branding?.primaryColor]);
 
-  // Clear unread messages when opening the widget
   useEffect(() => {
     if (isOpen) {
       clearUnreadMessages();
     }
   }, [isOpen, clearUnreadMessages]);
 
-  // Toggles the chat widget open/closed
   const toggleChat = useCallback(() => {
     setIsOpen(prev => {
       const newIsOpen = !prev;
@@ -105,7 +99,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
     });
   }, [config, clearUnreadMessages]);
 
-  // Handle reconnection attempts
   const handleReconnect = useCallback(() => {
     if (connectionState === 'disconnected' || connectionState === 'suspended' || connectionState === 'failed') {
       toast.loading('Attempting to reconnect...', { id: 'reconnecting' });
@@ -129,13 +122,11 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
     }
   }, [connectionState, workspaceId]);
 
-  // Memoize the startChat handler
   const wrappedHandleStartChat = useCallback(() => {
     handleStartChat();
     dispatchChatEvent('contact:initiatedChat', undefined, config);
   }, [handleStartChat, config]);
 
-  // Render the footer section with the branding bar
   const renderFooter = useCallback(() => {
     if (!config.branding?.showBrandingBar) return null;
     
@@ -163,7 +154,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
     );
   }, [config.branding?.showBrandingBar, config.realtime?.enabled, isConnected, connectionState, handleReconnect]);
 
-  // Render the launcher button
   const renderLauncher = useCallback(() => {
     const buttonStyle = config.branding?.primaryColor 
       ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
@@ -209,7 +199,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
     );
   }, [config.branding?.primaryColor, config.realtime?.enabled, isConnected, isOpen, pendingMessages, toggleChat, unreadCount]);
 
-  // Show loading state while config is being loaded
   if (loading) {
     return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
   }
@@ -258,7 +247,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
               </div>
             )}
             
-            {/* Connection warning banner */}
             {config.realtime?.enabled && !isConnected && (
               <div 
                 className="absolute top-0 left-0 w-full bg-red-500 text-white text-xs py-1 px-2 text-center cursor-pointer"
@@ -274,13 +262,11 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
       )}
       {renderLauncher()}
       
-      {/* Add Sonner toaster for connection notifications */}
       <Toaster />
     </>
   );
 });
 
-// Add displayName for debugging and React DevTools
 ChatWidget.displayName = 'ChatWidget';
 
 export { ChatWidget };

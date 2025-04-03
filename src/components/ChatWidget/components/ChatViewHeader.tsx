@@ -16,7 +16,7 @@ interface ChatViewHeaderProps {
   showSearchFeature: boolean;
 }
 
-const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({ 
+const ChatViewHeader: React.FC<ChatViewHeaderProps> = React.memo(({ 
   conversation, 
   onBack, 
   showSearch, 
@@ -56,7 +56,7 @@ const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
       )}
     </>
   );
-};
+});
 
 // Add displayName for debugging
 ChatViewHeader.displayName = 'ChatViewHeader';

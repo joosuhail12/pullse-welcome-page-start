@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Message } from '../types';
 import { publishToChannel, getConnectionState } from '../utils/ably';

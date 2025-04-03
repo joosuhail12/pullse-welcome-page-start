@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from 'react';
 import { Message } from '../types';
 import { publishToChannel, subscribeToChannel, getConnectionState } from '../utils/ably';
@@ -8,7 +7,7 @@ import { useRealtimeSubscriptions } from './useRealtimeSubscriptions';
 import { useTypingIndicator } from './useTypingIndicator';
 import { simulateAgentTyping } from '../utils/simulateAgentTyping';
 import { useConnectionState } from './useConnectionState';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/use-toast';
 import { 
   addMessageToQueue, 
   getMessageQueue, 
@@ -25,22 +24,17 @@ export function useRealTime(
   config?: ChatWidgetConfig,
   playMessageSound?: () => void
 ) {
-  // Create channel name based on conversation
   const chatChannelName = `conversation:${conversation.id}`;
   const sessionChannelName = `session:${getChatSessionId()}`;
   const sessionId = getChatSessionId();
   
-  // Background sync interval in ms (default: 5s)
   const SYNC_INTERVAL = 5000;
   
-  // Track pending messages that couldn't be sent due to connection issues
   const [isBackgroundSyncing, setIsBackgroundSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(getPendingMessageCount());
   
-  // Use the connection state hook
   const { isConnected, connectionState } = useConnectionState();
   
-  // Use the realtime subscriptions hook
   const { remoteIsTyping, readReceipts } = useRealtimeSubscriptions(
     chatChannelName,
     sessionChannelName,
@@ -50,14 +44,12 @@ export function useRealTime(
     playMessageSound
   );
   
-  // Use the typing indicator hook
   const { handleTypingTimeout, clearTypingTimeout } = useTypingIndicator(
     chatChannelName, 
     sessionId, 
     !!config?.realtime?.enabled
   );
 
-  // Function to publish a message with connection-aware error handling
   const safePublishToChannel = useCallback(async (channel: string, event: string, data: any) => {
     if (!config?.realtime?.enabled) return true;
     
@@ -66,7 +58,6 @@ export function useRealTime(
         await publishToChannel(channel, event, data);
         return true;
       } else {
-        // Queue message if we're offline
         if (event === 'message') {
           addMessageToQueue(data, channel, event);
           toast.info('Message saved offline and will send when connection is restored', {
@@ -80,7 +71,6 @@ export function useRealTime(
     } catch (err) {
       console.error('Error publishing message:', err);
       
-      // Queue message if publish fails
       if (event === 'message') {
         addMessageToQueue(data, channel, event);
         toast.info('Message will be sent when connection is restored', {
@@ -93,7 +83,6 @@ export function useRealTime(
     }
   }, [config?.realtime?.enabled, isConnected]);
 
-  // Background sync function to process offline message queue
   const syncOfflineMessages = useCallback(async () => {
     if (!isConnected || !config?.realtime?.enabled) return;
     
@@ -103,7 +92,6 @@ export function useRealTime(
     setIsBackgroundSyncing(true);
     let successCount = 0;
     
-    // Process each queued message
     for (const queuedItem of queue) {
       try {
         await publishToChannel(
@@ -112,7 +100,6 @@ export function useRealTime(
           queuedItem.message
         );
         
-        // Remove successfully sent message
         removeMessageFromQueue(queuedItem.message.id);
         successCount++;
       } catch (error) {
@@ -120,11 +107,9 @@ export function useRealTime(
       }
     }
     
-    // Update pending count
     const remainingCount = getPendingMessageCount();
     setPendingCount(remainingCount);
     
-    // Show toast if any messages were sent
     if (successCount > 0) {
       toast.success(`Sent ${successCount} queued message${successCount > 1 ? 's' : ''}`, {
         id: 'sync-success',
@@ -142,14 +127,12 @@ export function useRealTime(
     setIsBackgroundSyncing(false);
   }, [isConnected, config?.realtime?.enabled]);
 
-  // Attempt to sync offline messages when connection is restored
   useEffect(() => {
     if (isConnected && pendingCount > 0 && config?.realtime?.enabled) {
       syncOfflineMessages();
     }
   }, [isConnected, pendingCount, config?.realtime?.enabled, syncOfflineMessages]);
 
-  // Set up periodic background sync
   useEffect(() => {
     if (!config?.realtime?.enabled) return;
     
@@ -162,10 +145,8 @@ export function useRealTime(
     return () => clearInterval(intervalId);
   }, [config?.realtime?.enabled, isConnected, pendingCount, isBackgroundSyncing, syncOfflineMessages]);
 
-  // For non-realtime mode, simulate agent typing
   useEffect(() => {
     if (!config?.realtime?.enabled) {
-      // Only simulate if the user has sent at least one message
       if (!hasUserSentMessage) return;
       
       const typingInterval = setInterval(() => {
@@ -179,11 +160,9 @@ export function useRealTime(
       };
     }
     
-    // No cleanup needed when realtime is enabled
     return () => {};
   }, [config?.realtime?.enabled, hasUserSentMessage, playMessageSound, setIsTyping, setMessages, clearTypingTimeout]);
 
-  // Function to add a message to the pending queue
   const addPendingMessage = useCallback((message: Message) => {
     addMessageToQueue(message, chatChannelName);
     setPendingCount(getPendingMessageCount());
