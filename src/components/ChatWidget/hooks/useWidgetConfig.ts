@@ -10,9 +10,9 @@ import { ChatPositionString } from '../types';
 // Helper function to ensure the returned value is a valid ChatPositionString
 function ensureValidPosition(position: unknown): ChatPositionString {
   if (typeof position === 'string' && isValidChatPosition(position)) {
-    return position;
+    return position as ChatPositionString;
   }
-  return 'bottom-right' as const;
+  return 'bottom-right';
 }
 
 export function useWidgetConfig(workspaceId?: string) {

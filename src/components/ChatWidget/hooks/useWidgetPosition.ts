@@ -2,22 +2,26 @@
 import { useMemo } from 'react';
 import { ChatWidgetConfig } from '../config';
 import { ChatPositionString } from '../types';
+import { isValidChatPosition } from '../embed/core/optionsValidator';
+
+// Helper function to ensure the position is valid
+function ensureValidPosition(position: unknown): ChatPositionString {
+  if (typeof position === 'string' && isValidChatPosition(position)) {
+    return position as ChatPositionString;
+  }
+  return 'bottom-right';
+}
 
 export function useWidgetPosition(
   config: ChatWidgetConfig,
   isMobile: boolean
 ) {
   const getLauncherPositionStyles = useMemo(() => {
-    // Convert position to a valid ChatPositionString
-    let positionString: ChatPositionString = 'bottom-right';
-    
     // Extract position string from config
-    if (typeof config.position?.placement === 'string') {
-      // Check if the position is valid
-      if (['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(config.position.placement)) {
-        positionString = config.position.placement as ChatPositionString;
-      }
-    }
+    const positionFromConfig = config.position?.placement || 'bottom-right';
+    
+    // Convert position to a valid ChatPositionString
+    const positionString = ensureValidPosition(positionFromConfig);
       
     // Handle offset values correctly
     const offsetX = typeof config.position === 'object' && config.position.offsetX !== undefined
@@ -69,16 +73,11 @@ export function useWidgetPosition(
   }, [config.position, isMobile]);
 
   const getWidgetContainerPositionStyles = useMemo(() => {
-    // Convert position to a valid ChatPositionString
-    let positionString: ChatPositionString = 'bottom-right';
-    
     // Extract position string from config
-    if (typeof config.position?.placement === 'string') {
-      // Check if the position is valid
-      if (['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(config.position.placement)) {
-        positionString = config.position.placement as ChatPositionString;
-      }
-    }
+    const positionFromConfig = config.position?.placement || 'bottom-right';
+    
+    // Convert position to a valid ChatPositionString
+    const positionString = ensureValidPosition(positionFromConfig);
       
     // Handle offset values correctly
     const offsetX = typeof config.position === 'object' && config.position.offsetX !== undefined

@@ -1,7 +1,7 @@
 
 import { PullseChatWidgetOptions } from '../types';
 import { logger } from '@/lib/logger';
-import { ChatPosition, ChatPositionString } from '../../types';
+import { ChatPositionString } from '../../types';
 
 /**
  * Validate and sanitize widget options
