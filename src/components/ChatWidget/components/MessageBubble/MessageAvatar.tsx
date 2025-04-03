@@ -1,45 +1,53 @@
 
 import React from 'react';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { User } from 'lucide-react';
+import { AgentStatus } from '../../types';
 
 interface MessageAvatarProps {
-  sender: 'user' | 'system' | 'status';
-  avatarUrl?: string;
-  isRight?: boolean;
-  status?: 'online' | 'offline' | 'away' | 'busy' | undefined;
+  isUserMessage: boolean;
+  userAvatar?: string;
+  agentAvatar?: string;
+  agentStatus?: AgentStatus;
 }
 
-const MessageAvatar = ({ sender, avatarUrl, isRight = false, status }: MessageAvatarProps) => {
-  const hasAvatar = !!avatarUrl;
-  const initials = sender === 'system' ? 'AI' : 'U';
-  const avatarClass = sender === 'system' ? 'bg-vivid-purple/20 text-vivid-purple' : 'bg-gray-200 text-gray-700';
-  
-  // Status indicator colors
-  const statusColors = {
-    online: 'bg-green-500',
-    offline: 'bg-gray-400',
-    away: 'bg-yellow-500',
-    busy: 'bg-red-500'
+const MessageAvatar: React.FC<MessageAvatarProps> = React.memo(({ 
+  isUserMessage, 
+  userAvatar, 
+  agentAvatar,
+  agentStatus = 'online'
+}) => {
+  const statusColorMap = {
+    'online': 'bg-green-500',
+    'away': 'bg-yellow-500',
+    'offline': 'bg-gray-400',
+    'busy': 'bg-red-500'
   };
-  
-  const statusColor = status ? statusColors[status] : null;
-  
+
   return (
-    <div className={`flex-shrink-0 relative ${isRight ? 'order-last ml-2' : 'mr-2'}`}>
-      <Avatar className="h-8 w-8 rounded-full border border-white/10">
-        {hasAvatar && <AvatarImage src={avatarUrl} alt={sender} className="rounded-full" />}
-        <AvatarFallback className={`${avatarClass} rounded-full`}>{initials}</AvatarFallback>
+    <div className="relative flex-shrink-0 mx-2 mb-1">
+      <Avatar className="h-6 w-6 border border-gray-200">
+        <AvatarImage 
+          src={isUserMessage ? userAvatar : agentAvatar} 
+          alt={isUserMessage ? "User" : "Agent"}
+          className="object-cover"
+          loading="lazy"
+        />
+        <AvatarFallback className="text-[10px] bg-gray-100">
+          <User size={14} />
+        </AvatarFallback>
       </Avatar>
       
-      {/* Status indicator */}
-      {statusColor && (
+      {/* Status indicator for agent */}
+      {!isUserMessage && agentStatus && (
         <span 
-          className={`absolute bottom-0 ${isRight ? 'left-0' : 'right-0'} w-2.5 h-2.5 ${statusColor} rounded-full ring-1 ring-white`}
-          aria-label={`Status: ${status}`}
+          className={`absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full border border-white ${statusColorMap[agentStatus]}`}
         />
       )}
     </div>
   );
-};
+});
+
+MessageAvatar.displayName = 'MessageAvatar';
 
 export default MessageAvatar;

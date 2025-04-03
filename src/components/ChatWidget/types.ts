@@ -25,6 +25,18 @@ export interface Message {
   important?: boolean;
   fileUrl?: string;
   fileName?: string;
+  status?: 'sent' | 'delivered' | 'read';
+  cardData?: {
+    title?: string;
+    description?: string;
+    imageUrl?: string;
+    buttons?: Array<{
+      text: string;
+      url?: string;
+      action?: string;
+    }>;
+  };
+  quickReplies?: string[];
 }
 
 export interface Conversation {
@@ -42,6 +54,7 @@ export interface Conversation {
   contactIdentified?: boolean;
   isResolved?: boolean;
   sessionId?: string;
+  status?: 'active' | 'ended' | 'pending';
   metadata?: {
     ticketProgress?: number;
     [key: string]: any;

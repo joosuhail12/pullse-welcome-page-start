@@ -1,4 +1,3 @@
-
 import React, { useState, lazy, Suspense } from 'react';
 import { Message, MessageType, UserType } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
@@ -9,12 +8,10 @@ import MessageReactionButtons from './MessageReactionButtons';
 import MessageReadReceipt, { MessageReadStatus } from '../MessageReadReceipt';
 import { cn } from '@/lib/utils';
 
-// Lazy load less commonly used message types
 const CardMessage = lazy(() => import('../MessageTypes/CardMessage'));
 const FileMessage = lazy(() => import('../MessageTypes/FileMessage'));
 const QuickReplyMessage = lazy(() => import('../MessageTypes/QuickReplyMessage'));
 
-// Loading fallback for lazy components
 const LazyLoadFallback = () => (
   <div className="w-full h-16 bg-gray-100 animate-pulse rounded-md"></div>
 );
@@ -29,6 +26,17 @@ interface MessageBubbleProps {
     metadata?: Record<string, any>;
     reaction?: 'thumbsUp' | 'thumbsDown' | null;
     reactions?: string[];
+    cardData?: {
+      title?: string;
+      description?: string;
+      imageUrl?: string;
+      buttons?: Array<{
+        text: string;
+        url?: string;
+        action?: string;
+      }>;
+    };
+    quickReplies?: string[];
   };
   highlightText?: string;
   isHighlighted?: boolean;
@@ -68,7 +76,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     }
   };
 
-  // Determine if the message is from the user or the agent
   const isUserMessage = message.sender === 'user';
   const isBotMessage = message.sender === 'bot' || message.sender === 'agent' || message.sender === 'system';
   const isSystemMessage = message.sender === 'status';
@@ -86,14 +93,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     : 'mx-auto max-w-[85%] text-center';
 
   const handleLongPress = (e: React.MouseEvent) => {
-    // Activate reactions on long press
     if (onReaction) {
       e.preventDefault();
       toggleReactions();
     }
   };
 
-  // Render message content based on type
   const renderMessageContent = () => {
     switch (message.type) {
       case 'text':
@@ -155,7 +160,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         {renderMessageContent()}
         <MessageStatus timestamp={message.timestamp} />
         
-        {/* Read receipts - Only show for user messages */}
         {isUserMessage && (
           <div className="absolute -bottom-4 right-1">
             <MessageReadReceipt 
@@ -165,7 +169,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
           </div>
         )}
 
-        {/* Reaction indicator if message has a reaction */}
         {message.reaction && !showReactions && (
           <div className="absolute -bottom-6 left-0">
             <div className={`p-1 rounded-full ${
