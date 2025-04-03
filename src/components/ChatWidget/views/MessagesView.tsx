@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Plus, Trash2, ArrowUp, ArrowDown, Info, Calendar } from 'lucide-react';
+import { MessageSquare, Plus, ArrowUp, ArrowDown, Info, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
@@ -8,7 +8,7 @@ import { Conversation } from '../types';
 import SearchBar from '../components/SearchBar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { loadConversationsFromStorage, deleteConversationFromStorage } from '../utils/storage';
+import { loadConversationsFromStorage } from '../utils/storage';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useUnreadMessages } from '../hooks/useUnreadMessages';
 import { format } from 'date-fns';
@@ -140,27 +140,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   useEffect(() => {
     loadConversationsData();
   }, [loadConversationsData]);
-
-  const handleDeleteConversation = useCallback(async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    setAnimateOut(id);
-    setTimeout(async () => {
-      try {
-        if (useMockData) {
-          setConversations(prev => prev.filter(conv => conv.id !== id));
-          toast.success('Conversation deleted');
-          return;
-        }
-        await deleteConversationFromStorage(id);
-        setConversations(prev => prev.filter(conv => conv.id !== id));
-        toast.success('Conversation deleted');
-      } catch (error) {
-        console.error('Error deleting conversation:', error);
-        toast.error('Failed to delete conversation. Please try again.');
-        setAnimateOut(null);
-      }
-    }, 300);
-  }, [useMockData]);
 
   const formatDateDisplay = useCallback((date: Date): string => {
     return format(date, 'MMM d, yyyy');
@@ -653,23 +632,6 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                             </TooltipContent>
                           </Tooltip>
                         </div>
-                        
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0"
-                              onClick={(e) => handleDeleteConversation(e, conversation.id)}
-                              aria-label={`Delete conversation: ${conversation.title}`}
-                            >
-                              <Trash2 size={14} className="text-gray-400 hover:text-red-500" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            Delete conversation
-                          </TooltipContent>
-                        </Tooltip>
                       </Card>
                     ))}
                   </div>
