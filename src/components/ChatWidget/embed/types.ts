@@ -1,4 +1,3 @@
-
 import { ChatEventType, ChatEventPayload, ChatPosition, ChatBranding } from '../config';
 
 /**

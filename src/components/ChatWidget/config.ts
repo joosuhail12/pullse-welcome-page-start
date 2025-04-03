@@ -143,4 +143,3 @@ export const defaultConfig: ChatWidgetConfig = {
     authEndpoint: '/api/chat-widget/token'
   }
 };
-

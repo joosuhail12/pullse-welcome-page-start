@@ -1,4 +1,3 @@
-
 import { ChatEventType, ChatEventPayload, ChatWidgetConfig } from '../config';
 
 /**
