@@ -5,16 +5,44 @@
 
 @layer components {
   .chat-message-bubble {
-    @apply p-3 mb-2 rounded-lg shadow-sm max-w-xs md:max-w-md;
+    @apply p-3 mb-2 rounded-lg shadow-sm max-w-xs md:max-w-md transition-all duration-200;
   }
   
   .chat-message-system {
-    @apply bg-soft-purple-50 text-system-bubble-foreground rounded-bl-none chat-message-bubble;
+    @apply text-system-bubble-foreground rounded-bl-none chat-message-bubble;
+    background: linear-gradient(145deg, #f0eaff 0%, #e5deff 100%);
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
   }
   
   .chat-message-user {
-    @apply bg-vivid-purple text-white rounded-br-none chat-message-bubble;
+    @apply text-white rounded-br-none chat-message-bubble;
+    background: linear-gradient(145deg, #9672f7 0%, #8b5cf6 100%);
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  }
+
+  /* Hover effect for actionable messages (with quick replies or buttons) */
+  .chat-message-actionable:hover {
+    @apply transform scale-[1.01] shadow-md;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15);
+  }
+  
+  /* Enhanced animation for message appearance */
+  @keyframes message-appear {
+    0% {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+    }
+    70% {
+      opacity: 1;
+      transform: translateY(-2px) scale(1.01);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  .message-animation-enter {
+    animation: message-appear 0.4s ease-out forwards;
   }
 }

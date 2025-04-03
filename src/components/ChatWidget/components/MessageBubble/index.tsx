@@ -19,6 +19,7 @@ interface MessageBubbleProps {
   showAvatar?: boolean;
   isConsecutive?: boolean;
   avatarUrl?: string;
+  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
 }
 
 const MessageBubble = ({ 
@@ -29,7 +30,8 @@ const MessageBubble = ({
   searchTerm,
   showAvatar = true,
   isConsecutive = false,
-  avatarUrl
+  avatarUrl,
+  agentStatus
 }: MessageBubbleProps) => {
   // Sanitize any text content before displaying
   const sanitizedText = message.text ? sanitizeInput(message.text) : '';
@@ -40,6 +42,11 @@ const MessageBubble = ({
       onReact(messageId, reaction);
     }
   };
+
+  // Check if message has actionable content (quick replies or card buttons)
+  const hasActionableContent = 
+    message.type === 'quick_reply' && message.quickReplies && message.quickReplies.length > 0 ||
+    message.type === 'card' && message.cardData && message.cardData.buttons && message.cardData.buttons.length > 0;
 
   // Render text with highlighting when search is active
   const renderText = (text: string) => {
@@ -111,6 +118,7 @@ const MessageBubble = ({
         sender={message.sender} 
         avatarUrl={avatarUrl} 
         isRight={message.sender === 'user'}
+        status={message.sender === 'system' ? agentStatus : undefined}
       />
     );
   };
@@ -131,11 +139,14 @@ const MessageBubble = ({
     : message.sender === 'user'
       ? 'chat-message-user'
       : 'chat-message-system';
+      
+  // Add actionable class if the message has actionable content
+  const actionableClass = hasActionableContent ? 'chat-message-actionable' : '';
 
   return (
     <div className="flex items-start">
       {message.sender === 'system' && renderAvatar()}
-      <div className={`max-w-[80%] ${bubbleClasses}`}>
+      <div className={`max-w-[80%] ${bubbleClasses} ${actionableClass}`}>
         {renderMessage()}
         <div className="flex justify-between items-center">
           <div className={`text-xs mt-2 ${message.sender === 'user' ? 'text-white/70' : 'text-gray-500'}`}>

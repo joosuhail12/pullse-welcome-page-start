@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
@@ -176,12 +177,11 @@ const MessageList = ({
                 : message.sender === 'status' 
                   ? 'justify-center' 
                   : 'justify-start'
-            } animate-fade-in ${isMessageHighlighted(message.id) ? 'bg-yellow-100 p-2 rounded-lg' : ''} ${
+            } message-animation-enter ${isMessageHighlighted(message.id) ? 'bg-yellow-100 p-2 rounded-lg' : ''} ${
               isConsecutiveMessage(index) ? 'mt-1' : 'mt-4'
             }`}
             style={{ 
               animationDelay: `${index * 50}ms`,
-              animationDuration: '300ms',
               opacity: 0 // Start with opacity 0, animation will bring to 1
             }}
             id={message.id}
@@ -197,6 +197,7 @@ const MessageList = ({
                   isConsecutive={isConsecutiveMessage(index)}
                   showAvatar={true}
                   avatarUrl={message.sender === 'system' ? agentAvatar : userAvatar}
+                  agentStatus="online"
                 />
               )}
               
