@@ -1,3 +1,4 @@
+
 /**
  * Error Boundary Component
  * 
@@ -27,6 +28,10 @@ interface ErrorBoundaryState {
 
 /**
  * React Error Boundary component that catches errors in the component tree
+ * 
+ * TODO: Add additional context capture for better debugging
+ * TODO: Implement automatic error reporting to monitoring service
+ * TODO: Consider adding recovery options for specific error types
  */
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {

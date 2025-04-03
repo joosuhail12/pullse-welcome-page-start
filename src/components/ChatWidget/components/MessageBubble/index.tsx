@@ -1,11 +1,12 @@
+
 import React, { useState, lazy, Suspense } from 'react';
-import { Message, MessageReadStatus } from '../../types';
+import { MessageType, UserType } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
 import MessageStatus from './MessageStatus';
 import MessageAvatar from './MessageAvatar';
 import MessageReactionButtons from './MessageReactionButtons';
-import MessageReadReceipt from '../MessageReadReceipt';
+import MessageReadReceipt, { MessageReadStatus } from '../MessageReadReceipt';
 import { cn } from '@/lib/utils';
 
 // Lazy load less commonly used message types
@@ -18,15 +19,23 @@ const LazyLoadFallback = () => (
   <div className="w-full h-16 bg-gray-100 animate-pulse rounded-md"></div>
 );
 
-export interface MessageBubbleProps {
-  message: Message;
-  highlightText?: (text: string) => Array<{ text: string; highlighted: boolean }>;
+interface MessageBubbleProps {
+  message: {
+    id: string;
+    text: string;
+    type: MessageType;
+    sender: UserType;
+    timestamp: Date;
+    metadata?: Record<string, any>;
+    reactions?: string[];
+  };
+  highlightText?: string;
   isHighlighted?: boolean;
   userAvatar?: string;
   agentAvatar?: string;
   onReply?: (text: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
-  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
+  agentStatus?: 'online' | 'away' | 'offline';
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
 }
@@ -62,14 +71,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   const isUserMessage = message.sender === 'user';
   const isBotMessage = message.sender === 'bot' || message.sender === 'agent';
   const isSystemMessage = message.sender === 'system';
-  const isStatusMessage = message.type === 'status';
 
   const messageTypeClass = isUserMessage
     ? 'bg-vivid-purple text-white rounded-t-2xl rounded-bl-2xl rounded-br-sm'
     : isBotMessage
     ? 'bg-system-bubble-bg text-system-bubble-text rounded-t-2xl rounded-br-2xl rounded-bl-sm border border-gray-100'
-    : isStatusMessage
-    ? 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200'
     : 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200';
 
   const messageContainerClass = isUserMessage
@@ -90,17 +96,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   const renderMessageContent = () => {
     switch (message.type) {
       case 'text':
-        return <TextMessage text={message.text} />;
+        return <TextMessage text={message.text} highlightText={highlightText} />;
       case 'card':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata && <CardMessage data={message.metadata} />}
+            {message.metadata && <CardMessage metadata={message.metadata} />}
           </Suspense>
         );
       case 'file':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata && <FileMessage data={message.metadata} />}
+            {message.metadata && <FileMessage metadata={message.metadata} />}
           </Suspense>
         );
       case 'quick_reply':
@@ -108,8 +114,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
           <Suspense fallback={<LazyLoadFallback />}>
             {message.metadata && (
               <QuickReplyMessage
-                data={message.metadata}
-                onSelect={(text) => onReply && onReply(text)}
+                metadata={message.metadata}
+                onReply={(text) => onReply && onReply(text)}
               />
             )}
           </Suspense>
@@ -117,7 +123,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       case 'status':
         return <StatusMessage text={message.text} />;
       default:
-        return <TextMessage text={message.text} />;
+        return <TextMessage text={message.text} highlightText={highlightText} />;
     }
   };
 
@@ -129,10 +135,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       )}
       onContextMenu={handleLongPress}
     >
-      {!isStatusMessage && (
+      {!isSystemMessage && (
         <MessageAvatar
-          sender={message.sender}
-          avatarUrl={isUserMessage ? userAvatar : agentAvatar}
+          isUserMessage={isUserMessage}
+          userAvatar={userAvatar}
+          agentAvatar={agentAvatar}
+          agentStatus={agentStatus}
         />
       )}
 
@@ -141,7 +149,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
           'relative max-w-[80%] sm:max-w-md px-4 py-3',
           messageTypeClass,
           isHighlighted && 'bg-yellow-100 border-yellow-300',
-          isStatusMessage && 'py-2 px-3'
+          isSystemMessage && 'py-2 px-3'
         )}
       >
         {renderMessageContent()}
@@ -160,7 +168,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
 
       {showReactions && onReaction && (
         <MessageReactionButtons
-          onReact={handleReaction}
+          onReaction={handleReaction}
           onClose={() => setShowReactions(false)}
         />
       )}

@@ -63,17 +63,7 @@ export type ChatEventType =
   | 'chat:typingStarted'
   | 'chat:typingStopped'
   | 'message:fileUploaded'
-  | 'chat:ended'
-  | 'chat:error'
-  | 'chat:configUpdated'
-  | 'chat:typing'
-  | 'chat:presence'
-  | 'chat:heartbeat'
-  | 'chat:inlineFormDisplayed'
-  | 'chat:formSubmitted'
-  | 'chat:messageReaction'
-  | 'message:sent'
-  | 'message:reaction';
+  | 'chat:ended';
 
 export interface ChatEventPayload {
   type: ChatEventType;
@@ -95,7 +85,6 @@ export interface ChatWidgetConfig {
   eventHandlers?: {
     [key in ChatEventType]?: (payload: ChatEventPayload) => void;
   };
-  formData?: Record<string, any>;
 }
 
 export const defaultConfig: ChatWidgetConfig = {
@@ -149,3 +138,4 @@ export const defaultConfig: ChatWidgetConfig = {
     authEndpoint: '/api/chat-widget/token'
   }
 };
+

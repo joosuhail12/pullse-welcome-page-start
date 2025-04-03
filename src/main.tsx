@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
@@ -34,12 +33,6 @@ const PullseNamespace = {
         // Create a root in the shadow DOM for isolation
         const root = createRoot(innerContainer as HTMLElement);
         
-        // Check if test mode is enabled
-        const isTestMode = config.testMode === true;
-        if (isTestMode) {
-          console.log('Initializing Chat Widget in TEST MODE');
-        }
-        
         // Use Suspense to handle the loading state
         root.render(
           <React.Suspense fallback={
@@ -49,8 +42,6 @@ const PullseNamespace = {
           }>
             <PullseNamespace.ChatWidget 
               workspaceId={config.workspaceId}
-              previewConfig={config}
-              isTestMode={isTestMode}
             />
           </React.Suspense>
         );
@@ -93,13 +84,8 @@ if (document.currentScript &&
     const rootElement = document.getElementById('root');
     if (!rootElement) throw new Error('Failed to find the root element');
 
-    const root = createRoot(rootElement);
-    
-    // Wrap App with Strict Mode to catch potential issues
-    root.render(
-      <React.StrictMode>
-        <App />
-      </React.StrictMode>
+    createRoot(rootElement).render(
+      <App />
     );
   } catch (error) {
     errorHandler.handle(error instanceof Error ? error : new Error('Failed to initialize application'));

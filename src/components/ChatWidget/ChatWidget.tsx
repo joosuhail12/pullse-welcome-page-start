@@ -1,7 +1,7 @@
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useChatState } from './hooks/useChatState';
-import { useWidgetConfig } from './hooks/useWidgetConfig';
+import useWidgetConfig from './hooks/useWidgetConfig';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -12,16 +12,12 @@ import EnhancedLoadingIndicator from './components/EnhancedLoadingIndicator';
 import ChatWidgetErrorBoundary from './components/ChatWidgetErrorBoundary';
 import ConnectionManager from './components/ConnectionManager';
 import { ConnectionStatus } from './utils/reconnectionManager';
-import { EventManager } from './events';
-import { ChatWidgetConfig } from './config';
 
 export interface ChatWidgetProps {
   workspaceId: string;
-  previewConfig?: ChatWidgetConfig;
-  isTestMode?: boolean;
 }
 
-const ChatWidget = ({ workspaceId, previewConfig, isTestMode = false }: ChatWidgetProps) => {
+const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   const {
     viewState,
     activeConversation,
@@ -34,8 +30,7 @@ const ChatWidget = ({ workspaceId, previewConfig, isTestMode = false }: ChatWidg
     setUserFormData
   } = useChatState();
   
-  const { config, loading, error } = useWidgetConfig(workspaceId, previewConfig);
-  
+  const { config, loading, error } = useWidgetConfig(workspaceId);
   const [isOpen, setIsOpen] = useState(false);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
@@ -60,14 +55,6 @@ const ChatWidget = ({ workspaceId, previewConfig, isTestMode = false }: ChatWidg
     }, isMobile ? 50 : 0);
   }, [isOpen, clearUnreadMessages, isMobile]);
 
-  // Handle test mode as a special case
-  useEffect(() => {
-    if (isTestMode) {
-      // Log test mode activation
-      console.log('Chat Widget running in test mode with custom configuration');
-    }
-  }, [isTestMode]);
-
   if (loading) {
     return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles} config={config} />;
   }
@@ -76,7 +63,7 @@ const ChatWidget = ({ workspaceId, previewConfig, isTestMode = false }: ChatWidg
     <ChatWidgetErrorBoundary workspaceId={workspaceId}>
       <ConnectionManager
         workspaceId={workspaceId}
-        enabled={config.realtime?.enabled && !isTestMode}
+        enabled={config.realtime?.enabled}
         onStatusChange={setConnectionStatus}
       />
       

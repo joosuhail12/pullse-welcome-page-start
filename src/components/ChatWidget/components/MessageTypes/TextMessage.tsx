@@ -1,13 +1,20 @@
 
 import React from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
-export interface TextMessageProps {
+interface TextMessageProps {
   text: string;
+  renderText: (text: string) => React.ReactNode;
 }
 
-const TextMessage: React.FC<TextMessageProps> = ({ text }) => {
+const TextMessage = ({ text, renderText }: TextMessageProps) => {
+  const isMobile = useIsMobile();
+  const textSizeClass = isMobile 
+    ? "text-xs sm:text-sm leading-tight" 
+    : "text-sm sm:text-base leading-relaxed";
+  
   return (
-    <p className="whitespace-pre-wrap break-words">{text}</p>
+    <p className={`${textSizeClass} tracking-wide break-words`}>{renderText(text)}</p>
   );
 };
 

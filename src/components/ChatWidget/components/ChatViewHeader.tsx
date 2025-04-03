@@ -1,28 +1,22 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Conversation } from '../types';
-import { ArrowLeft, Search, X, Info, ChevronDown } from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, Search, X, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { Progress } from '@/components/ui/progress';
+import { Conversation } from '../types';
 import AgentPresence from './AgentPresence';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import TicketProgressBar from './TicketProgressBar';
 
 interface ChatViewHeaderProps {
   conversation: Conversation;
   onBack: () => void;
-  showSearch?: boolean;
-  toggleSearch?: () => void;
-  searchMessages?: (term: string) => void;
-  clearSearch?: () => void;
-  searchResultCount?: number;
-  isSearching?: boolean;
+  showSearch: boolean;
+  toggleSearch: () => void;
+  searchMessages: (term: string) => void;
+  clearSearch: () => void;
+  searchResultCount: number;
+  isSearching: boolean;
   showSearchFeature?: boolean;
   ticketProgress?: number;
 }
@@ -30,173 +24,132 @@ interface ChatViewHeaderProps {
 const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
   conversation,
   onBack,
-  showSearch = false,
+  showSearch,
   toggleSearch,
   searchMessages,
   clearSearch,
-  searchResultCount = 0,
-  isSearching = false,
-  showSearchFeature = false,
-  ticketProgress
+  searchResultCount,
+  isSearching,
+  showSearchFeature = true,
+  ticketProgress,
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  
-  useEffect(() => {
-    if (showSearch && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [showSearch]);
-
-  const handleSearch = () => {
-    if (searchMessages && searchTerm) {
-      searchMessages(searchTerm);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && searchMessages) {
-      searchMessages(searchTerm);
-    } else if (e.key === 'Escape' && toggleSearch) {
-      toggleSearch();
+  // Determine ticket status from conversation.status
+  const getTicketStatus = () => {
+    if (!conversation.status) return 'new';
+    
+    switch (conversation.status) {
+      case 'ended':
+        return 'closed';
+      case 'active':
+        return conversation.isResolved ? 'resolved' : 'in-progress';
+      default:
+        return 'new';
     }
   };
-
-  const handleClearSearch = () => {
-    setSearchTerm('');
-    if (clearSearch) clearSearch();
-  };
-
-  // Agent information from conversation
-  const agentName = conversation.agentInfo?.name || 'Support';
-  const agentStatus = conversation.agentInfo?.status || 'online';
   
   return (
-    <div className="bg-vivid-purple text-white p-2 sm:p-4 shadow-sm z-10">
-      {showSearch ? (
-        <div className="flex items-center gap-2">
+    <div className="bg-vivid-purple text-black shadow-lg z-20 flex flex-col relative chat-header-pattern">
+      {/* Decorative pattern overlay */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none">
+        <div className="absolute inset-0" 
+          style={{
+            backgroundImage: `radial-gradient(circle at 25px 25px, rgba(0, 0, 0, 0.3) 2%, transparent 0%), 
+                              radial-gradient(circle at 75px 75px, rgba(0, 0, 0, 0.3) 2%, transparent 0%)`,
+            backgroundSize: '100px 100px',
+          }}>
+        </div>
+      </div>
+      
+      <div className="p-4 flex items-center justify-between relative z-10">
+        <div className="flex items-center flex-1">
           <Button
             variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-white hover:bg-white/20"
-            onClick={toggleSearch}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          
-          <div className="flex-grow relative">
-            <Input
-              ref={searchInputRef}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search messages..."
-              className="h-8 bg-white/10 border-white/20 text-white placeholder:text-white/50 w-full"
-              onKeyDown={handleKeyDown}
-            />
-            
-            {searchTerm && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 absolute right-1 top-1 text-white/70 hover:text-white hover:bg-white/20"
-                onClick={handleClearSearch}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
-          
-          <Button
-            variant="secondary"
             size="sm"
-            className="h-8 bg-white/20 hover:bg-white/30 text-white border-0"
-            onClick={handleSearch}
-            disabled={isSearching}
+            onClick={onBack}
+            className="p-1.5 mr-3 text-black hover:bg-black/20 hover:text-black rounded-full"
+            aria-label="Back to conversations"
           >
-            {isSearching ? '...' : 'Search'}
+            <ArrowLeft size={18} />
           </Button>
-        </div>
-      ) : (
-        <div className="flex flex-col space-y-1">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-white hover:bg-white/20 flex-shrink-0"
-                onClick={onBack}
-                aria-label="Back"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
-              
-              <div className="flex flex-col text-sm">
-                <h2 className="font-semibold whitespace-nowrap overflow-hidden text-ellipsis max-w-[150px] sm:max-w-[200px]">
-                  {conversation.title || "Support Chat"}
-                </h2>
-                <AgentPresence 
-                  workspaceId={conversation.id.split(':')[0]} 
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-1">
-              {showSearchFeature && toggleSearch && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-white hover:bg-white/20"
-                  onClick={toggleSearch}
-                >
-                  <Search className="h-4 w-4" />
-                </Button>
-              )}
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-white hover:bg-white/20"
-                  >
-                    <Info className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuItem className="flex justify-between">
-                    <span>Status</span>
-                    <span className="text-right font-medium">
-                      {conversation.status === 'ended' || conversation.status === 'closed' ? 'Closed' : 'Active'}
-                    </span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="flex justify-between">
-                    <span>Created</span>
-                    <span className="text-right font-medium">
-                      {conversation.createdAt.toLocaleDateString()}
-                    </span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
           
-          {ticketProgress !== undefined && (
-            <div className="px-2">
-              <div className="flex justify-between text-[10px] sm:text-xs mb-1">
-                <span>Ticket Progress</span>
-                <span>{Math.round(ticketProgress)}%</span>
+          {!showSearch && (
+            <div className="flex-1 flex flex-col justify-center overflow-hidden min-w-0">
+              <div className="flex items-center">
+                <h3 className="font-semibold truncate text-md text-black">
+                  {conversation.title}
+                </h3>
+                
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-1 p-1 h-6 w-6 text-black hover:bg-black/20 hover:text-black rounded-full"
+                    >
+                      <Info size={14} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-64 bg-white text-black border-gray-300">
+                    <div className="text-xs">
+                      <p className="font-medium">Conversation Details</p>
+                      <p className="text-black/80 mt-1">
+                        Started on {conversation.timestamp.toLocaleDateString()} at {conversation.timestamp.toLocaleTimeString()}
+                      </p>
+                      {conversation.status && (
+                        <p className="mt-1">
+                          Status: <span className="font-semibold capitalize">{conversation.status}</span>
+                        </p>
+                      )}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
               </div>
-              <Progress value={ticketProgress} className="h-1.5 sm:h-2 w-full bg-white/30" />
+              
+              {conversation.agentInfo?.name && (
+                <AgentPresence 
+                  agentName={conversation.agentInfo.name} 
+                  status={conversation.agentInfo.status} 
+                />
+              )}
+            </div>
+          )}
+          
+          {showSearch && (
+            <div className="flex-1 flex items-center">
+              <Input
+                type="text"
+                placeholder="Search messages..."
+                className="h-8 bg-black/10 border-0 text-black placeholder:text-black/70 focus-visible:ring-black/30"
+                onChange={(e) => searchMessages(e.target.value)}
+                autoFocus
+              />
+              <span className="mx-2 text-xs text-black/90 font-medium">
+                {isSearching ? 'Searching...' : searchResultCount > 0 ? `${searchResultCount} results` : ''}
+              </span>
             </div>
           )}
         </div>
-      )}
-      
-      {showSearch && searchResultCount > 0 && (
-        <div className="text-xs mt-2 text-white/80">
-          {searchResultCount} {searchResultCount === 1 ? 'result' : 'results'} found
+        
+        <div className="flex items-center">
+          {showSearchFeature && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={showSearch ? clearSearch : toggleSearch}
+              className="p-1.5 text-black hover:bg-black/20 hover:text-black rounded-full"
+              aria-label={showSearch ? 'Close search' : 'Search messages'}
+            >
+              {showSearch ? <X size={16} /> : <Search size={16} />}
+            </Button>
+          )}
         </div>
-      )}
+      </div>
+      
+      {/* Enhanced Ticket Progress Bar */}
+      <TicketProgressBar 
+        status={getTicketStatus()} 
+        className="bg-gradient-to-r from-black/10 to-black/20"
+      />
     </div>
   );
 };

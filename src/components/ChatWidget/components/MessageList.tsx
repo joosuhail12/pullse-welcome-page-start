@@ -1,17 +1,21 @@
 
-import React, { useRef, useEffect, useState } from 'react';
-import { Message, MessageReadStatus } from '../types';
-import { Loader2 } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import MessageBubble from './MessageBubble';
+import TypingIndicator from './TypingIndicator';
+import { Button } from '@/components/ui/button';
+import { ArrowDown, Loader2 } from 'lucide-react';
+import { MessageReadStatus } from './MessageReadReceipt';
+import MessageAvatar from './MessageBubble/MessageAvatar';
 
 interface MessageListProps {
-  messages: Message[];
+  messages: any[];
   isTyping?: boolean;
   setMessageText?: (text: string) => void;
   readReceipts?: Record<string, { status: MessageReadStatus; timestamp?: Date }>;
-  onMessageReaction?: (messageId: string, reaction: string) => void;
+  onMessageReaction?: (messageId: string, emoji: string) => void;
   searchResults?: string[];
-  highlightMessage?: (text: string) => Array<{ text: string; highlighted: boolean }>;
+  highlightMessage?: (text: string) => string[];
   searchTerm?: string;
   agentAvatar?: string;
   userAvatar?: string;
@@ -19,15 +23,14 @@ interface MessageListProps {
   hasMoreMessages?: boolean;
   isLoadingMore?: boolean;
   conversationId?: string;
-  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
-  onToggleHighlight?: (messageId: string) => void;
+  agentStatus?: 'online' | 'away' | 'offline';
 }
 
 const MessageList: React.FC<MessageListProps> = ({
   messages,
   isTyping = false,
   setMessageText,
-  readReceipts,
+  readReceipts = {},
   onMessageReaction,
   searchResults = [],
   highlightMessage,
@@ -38,139 +41,162 @@ const MessageList: React.FC<MessageListProps> = ({
   hasMoreMessages = false,
   isLoadingMore = false,
   conversationId,
-  agentStatus,
-  onToggleHighlight
+  agentStatus = 'online'
 }) => {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const [prevMessagesLength, setPrevMessagesLength] = useState(messages.length);
-  const [hasScrolledToHighlightedMessage, setHasScrolledToHighlightedMessage] = useState(false);
-  
-  // Check if a message is consecutive (same sender as previous)
-  const isConsecutiveMessage = (index: number) => {
-    if (index === 0) return false;
-    return messages[index].sender === messages[index - 1].sender;
-  };
-  
-  // Scroll to the latest message when messages change or typing status changes
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [hasInitiallyScrolled, setHasInitiallyScrolled] = useState(false);
+  const [isScrolledToSearchResult, setIsScrolledToSearchResult] = useState(false);
+
+  const isAutoScrollingRef = useRef(false);
+  const lastScrollTop = useRef(0);
+
   useEffect(() => {
-    // If the user manually scrolled up, don't auto-scroll on new messages
-    if (autoScroll && prevMessagesLength !== messages.length) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+    if (messages.length && !searchResults.length && isAtBottom && !isAutoScrollingRef.current) {
+      scrollToBottom();
     }
-    
-    setPrevMessagesLength(messages.length);
-  }, [messages, isTyping, autoScroll, prevMessagesLength]);
-  
-  // Handle scroll event to check if user has scrolled up
-  const handleScroll = async (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    
-    // If scrolled to the bottom, enable auto-scroll
-    if (scrollTop >= scrollHeight - clientHeight - 10) {
-      setAutoScroll(true);
-    } else {
-      setAutoScroll(false);
-    }
-    
-    // If scrolled to the top, trigger loading more messages
-    if (scrollTop === 0 && hasMoreMessages && onScrollTop && !isLoadingMore) {
-      await onScrollTop();
-    }
-  };
-  
-  // Scroll to highlighted message if there's one
+  }, [messages, isTyping, searchResults.length]);
+
   useEffect(() => {
-    if (searchResults.length > 0 && !hasScrolledToHighlightedMessage) {
-      const firstHighlightedEl = document.getElementById(`message-${searchResults[0]}`);
-      if (firstHighlightedEl) {
-        firstHighlightedEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setHasScrolledToHighlightedMessage(true);
+    if (searchResults.length && !isScrolledToSearchResult) {
+      const firstResultId = searchResults[0];
+      const messageElement = document.getElementById(`message-${firstResultId}`);
+      
+      if (messageElement) {
+        isAutoScrollingRef.current = true;
+        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          isAutoScrollingRef.current = false;
+          setIsScrolledToSearchResult(true);
+        }, 500);
       }
+    } else if (!searchResults.length) {
+      setIsScrolledToSearchResult(false);
     }
-  }, [searchResults, hasScrolledToHighlightedMessage]);
-  
-  // Reset the scroll flag when search changes
+  }, [searchResults, isScrolledToSearchResult]);
+
   useEffect(() => {
-    setHasScrolledToHighlightedMessage(false);
-  }, [searchTerm]);
-  
+    const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    
+    if (!scrollContainer) return;
+    
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      
+      const isScrollingUp = scrollTop < lastScrollTop.current;
+      lastScrollTop.current = scrollTop;
+      
+      const isCloseToBottom = scrollTop + clientHeight >= scrollHeight - 100;
+      setIsAtBottom(isCloseToBottom);
+      
+      setShowScrollButton(!isCloseToBottom && isScrollingUp);
+      
+      if (scrollTop === 0 && onScrollTop && hasMoreMessages && !isLoadingMore) {
+        onScrollTop();
+      }
+    };
+    
+    if (!hasInitiallyScrolled && messages.length > 0) {
+      scrollToBottom();
+      setHasInitiallyScrolled(true);
+    }
+    
+    scrollContainer.addEventListener('scroll', handleScroll);
+    
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, [messages, hasInitiallyScrolled, onScrollTop, hasMoreMessages, isLoadingMore]);
+
+  const scrollToBottom = () => {
+    if (lastMessageRef.current) {
+      isAutoScrollingRef.current = true;
+      lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+      setTimeout(() => {
+        isAutoScrollingRef.current = false;
+        setShowScrollButton(false);
+      }, 500);
+    }
+  };
+
+  const getReadReceipt = (messageId: string) => {
+    return readReceipts[messageId] || { status: 'sent' as MessageReadStatus };
+  };
+
   return (
-    <div 
-      className="flex-1 overflow-y-auto p-4 space-y-4 bg-chat-bg"
-      ref={containerRef}
-      onScroll={handleScroll}
-    >
-      {hasMoreMessages && (
-        <div className="flex justify-center py-2">
-          {isLoadingMore ? (
-            <div className="flex items-center">
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              <span className="text-xs text-gray-500">Loading more messages...</span>
+    <div className="relative h-full">
+      <ScrollArea className="h-full px-4 pt-2 pb-4" ref={scrollAreaRef}>
+        {isLoadingMore && (
+          <div className="flex justify-center py-4">
+            <div className="bg-white/80 backdrop-blur-sm rounded-full p-1.5 shadow-sm">
+              <Loader2 className="w-4 h-4 animate-spin text-vivid-purple" />
             </div>
-          ) : (
+          </div>
+        )}
+        
+        {hasMoreMessages && !isLoadingMore && (
+          <div className="text-center text-xs text-gray-500 py-2">
             <button 
               onClick={onScrollTop} 
-              className="text-xs text-blue-500 hover:text-blue-700"
+              className="px-2 py-1 rounded hover:bg-gray-100 text-vivid-purple"
             >
-              Load Previous Messages
+              Load more messages
             </button>
-          )}
-        </div>
-      )}
-      
-      {messages.map((message, index) => {
-        const isHighlighted = searchResults.includes(message.id);
-        const isConsecutive = isConsecutiveMessage(index);
+          </div>
+        )}
         
-        // Get read status for this message
-        const readStatus = (readReceipts && readReceipts[message.id])
-          ? readReceipts[message.id].status
-          : 'sent';
+        {messages.map((message, index) => {
+          const isLastMessage = index === messages.length - 1;
+          const isHighlighted = searchResults.includes(message.id);
+          const readReceipt = getReadReceipt(message.id);
           
-        const readTimestamp = (readReceipts && readReceipts[message.id])
-          ? readReceipts[message.id].timestamp
-          : undefined;
-          
-        return (
-          <div 
-            key={message.id}
-            id={`message-${message.id}`}
-            onClick={() => onToggleHighlight && onToggleHighlight(message.id)}
-          >
-            <MessageBubble
-              message={message}
-              highlightText={highlightMessage}
-              isHighlighted={isHighlighted}
-              userAvatar={userAvatar}
-              agentAvatar={agentAvatar}
-              onReply={(text) => setMessageText && setMessageText(text)}
-              onReaction={onMessageReaction}
-              agentStatus={agentStatus}
-              readStatus={readStatus}
-              readTimestamp={readTimestamp}
-            />
-          </div>
-        );
-      })}
-      
-      {/* Typing indicator */}
-      {isTyping && (
-        <div className="flex items-end">
-          <div className="max-w-[80%] bg-gray-100 rounded-xl p-3 text-gray-600 ml-2">
-            <div className="flex space-x-1 items-center h-6">
-              <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-              <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-              <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          return (
+            <div 
+              key={message.id} 
+              ref={isLastMessage ? lastMessageRef : undefined}
+              id={`message-${message.id}`}
+            >
+              <MessageBubble
+                message={message}
+                highlightText={searchTerm && highlightMessage ? searchTerm : undefined}
+                isHighlighted={isHighlighted}
+                userAvatar={userAvatar}
+                agentAvatar={agentAvatar}
+                onReply={setMessageText}
+                onReaction={onMessageReaction}
+                agentStatus={message.sender === 'agent' ? agentStatus : undefined}
+                readStatus={readReceipt.status}
+                readTimestamp={readReceipt.timestamp}
+              />
             </div>
+          );
+        })}
+
+        {isTyping && (
+          <div className="flex items-end mb-4">
+            <MessageAvatar 
+              sender={agentStatus ? 'system' : 'system'}
+              avatarUrl={agentAvatar}
+              status={agentStatus}
+            />
+            <TypingIndicator />
           </div>
-        </div>
+        )}
+      </ScrollArea>
+
+      {showScrollButton && (
+        <Button
+          variant="secondary"
+          size="sm"
+          className="absolute bottom-4 right-4 h-8 w-8 rounded-full p-0 shadow-md"
+          onClick={scrollToBottom}
+          aria-label="Scroll to bottom"
+        >
+          <ArrowDown className="h-4 w-4" />
+        </Button>
       )}
-      
-      <div ref={messagesEndRef} />
     </div>
   );
 };

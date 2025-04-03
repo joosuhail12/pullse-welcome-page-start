@@ -1,7 +1,7 @@
 
 import Ably from 'ably';
 import { getReconnectionManager, ConnectionStatus } from './reconnectionManager';
-import { createValidatedEvent } from '../events/validation';
+import { createValidatedEvent } from './eventValidation';
 import { dispatchValidatedEvent, EventPriority } from '../embed/enhancedEvents';
 
 // Client instance to ensure singleton pattern

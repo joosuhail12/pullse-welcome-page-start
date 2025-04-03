@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Agent } from '../types';
 import { getPresence, subscribeToPresence } from '../utils/ably';
-import { useWidgetConfig } from '../hooks/useWidgetConfig';
+import useWidgetConfig from '../hooks/useWidgetConfig';
 
 interface AgentPresenceProps {
   workspaceId?: string;

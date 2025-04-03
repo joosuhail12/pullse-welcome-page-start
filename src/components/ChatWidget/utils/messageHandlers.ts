@@ -1,137 +1,227 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { Message, MessageType, MessageSender } from '../types';
+import { Message } from '../types';
 import { publishToChannel } from './ably';
 import { dispatchChatEvent } from './events';
+import { ChatWidgetConfig } from '../config';
 
 /**
- * Create a message with standard properties
+ * Handles sending a read receipt for a message
  */
-export const createMessage = (messageProps: Partial<Message> & { text: string; sender: MessageSender }): Message => {
-  const now = new Date();
-  
+export const sendReadReceipt = (
+  chatChannelName: string,
+  messageId: string,
+  sessionId: string
+): void => {
+  publishToChannel(chatChannelName, 'read', {
+    messageId,
+    userId: sessionId,
+    timestamp: new Date()
+  });
+};
+
+/**
+ * Handles sending a delivery receipt for a message
+ */
+export const sendDeliveryReceipt = (
+  chatChannelName: string,
+  messageId: string,
+  sessionId: string
+): void => {
+  publishToChannel(chatChannelName, 'delivered', {
+    messageId,
+    userId: sessionId,
+    timestamp: new Date()
+  });
+};
+
+/**
+ * Creates a system response message
+ */
+export const createSystemMessage = (text: string): Message => {
   return {
-    id: messageProps.id || `msg-${uuidv4()}`,
-    text: messageProps.text,
-    sender: messageProps.sender,
-    timestamp: messageProps.timestamp || now,
-    type: messageProps.type || 'text',
-    status: messageProps.status || 'sent',
-    reactions: messageProps.reactions || [],
-    metadata: messageProps.metadata || {},
-    // Optional fields
-    fileName: messageProps.fileName,
-    fileUrl: messageProps.fileUrl,
-    cardData: messageProps.cardData,
-    quickReplies: messageProps.quickReplies
+    id: `msg-${Date.now()}-system`,
+    text,
+    sender: 'system',
+    timestamp: new Date(),
+    type: 'text',
+    status: 'sent'
   };
 };
 
 /**
- * Create a user message
+ * Creates a user message
  */
-export const createUserMessage = (text: string, type: MessageType = 'text', fileDetails?: { fileName: string; fileUrl: string }): Message => {
-  return createMessage({
+export const createUserMessage = (text: string, type: 'text' | 'file' = 'text', fileData?: {
+  fileName: string;
+  fileUrl: string;
+}): Message => {
+  return {
+    id: `msg-${Date.now()}-user${type === 'file' ? '-file' : ''}`,
     text,
     sender: 'user',
+    timestamp: new Date(),
     type,
-    ...(fileDetails && { fileName: fileDetails.fileName, fileUrl: fileDetails.fileUrl })
-  });
+    status: 'sent',
+    ...(fileData && {
+      fileName: fileData.fileName,
+      fileUrl: fileData.fileUrl
+    })
+  };
 };
 
 /**
- * Create a system message
- */
-export const createSystemMessage = (text: string, type: MessageType = 'text'): Message => {
-  return createMessage({
-    text,
-    sender: 'system',
-    type
-  });
-};
-
-/**
- * Process system message (handle notifications, etc)
- */
-export const processSystemMessage = (
-  message: Message, 
-  channelName: string, 
-  sessionId: string
-): void => {
-  // Play sound notification if enabled
-  const audio = new Audio('/message-notification.mp3');
-  audio.volume = 0.5;
-  audio.play().catch(e => console.warn('Could not play notification sound', e));
-  
-  // Dispatch message received event
-  dispatchChatEvent('chat:messageReceived', { message });
-};
-
-/**
- * Send typing indicator to the channel
- */
-export const sendTypingIndicator = (
-  channelName: string, 
-  userId: string, 
-  action: 'start' | 'stop'
-): void => {
-  publishToChannel(channelName, 'typing', {
-    userId,
-    action,
-    timestamp: new Date()
-  });
-};
-
-/**
- * Send delivery receipt
- */
-export const sendDeliveryReceipt = (
-  channelName: string,
-  messageId: string,
-  userId: string
-): void => {
-  publishToChannel(channelName, 'receipt', {
-    messageId,
-    userId,
-    status: 'delivered',
-    timestamp: new Date()
-  });
-};
-
-/**
- * Get a random agent response (for simulating conversations)
+ * Get a random response message for non-realtime mode
  */
 export const getRandomResponse = (): string => {
   const responses = [
-    "How can I assist you further with that?",
-    "Is there anything else you'd like to know about this topic?",
-    "I'm here to help if you have more questions.",
-    "Would you like me to elaborate on any specific aspect?",
-    "Let me know if you need additional information on this.",
-    "Is there something else I can help you with today?",
-    "Please feel free to ask if you have any other questions.",
-    "Is there another topic you'd like to discuss?",
-    "How else can I be of assistance today?",
-    "Do you need help with anything else?"
+    "Thank you for your message. Is there anything else I can help with?",
+    "I appreciate your inquiry. Let me know if you need further assistance.",
+    "I've made a note of your request. Is there any other information you'd like to provide?",
+    "Thanks for sharing that information. Do you have any other questions?"
   ];
   
   return responses[Math.floor(Math.random() * responses.length)];
 };
 
 /**
- * Get message by ID from a conversation
+ * Process system message and handle side effects
  */
-export const getMessage = (messages: Message[], messageId: string): Message | undefined => {
-  return messages.find(message => message.id === messageId);
+export const processSystemMessage = (
+  message: Message,
+  chatChannelName: string,
+  sessionId: string,
+  config?: ChatWidgetConfig,
+  playMessageSound?: () => void
+): void => {
+  // Play sound notification if provided and chat is not visible
+  if (playMessageSound && document.visibilityState !== 'visible') {
+    playMessageSound();
+  }
+  
+  // Dispatch message received event
+  dispatchChatEvent('chat:messageReceived', { message }, config);
+  
+  // Update message status to delivered
+  if (config?.features?.readReceipts) {
+    // Send delivered receipt immediately
+    sendDeliveryReceipt(chatChannelName, message.id, sessionId);
+    
+    // Send read receipt after a short delay
+    setTimeout(() => {
+      sendReadReceipt(chatChannelName, message.id, sessionId);
+    }, 2000);
+  }
 };
 
-export default {
-  createMessage,
-  createUserMessage,
-  createSystemMessage,
-  processSystemMessage,
-  sendTypingIndicator,
-  sendDeliveryReceipt,
-  getRandomResponse,
-  getMessage
+/**
+ * Send typing indicator
+ */
+export const sendTypingIndicator = (
+  chatChannelName: string,
+  sessionId: string,
+  status: 'start' | 'stop'
+): void => {
+  publishToChannel(chatChannelName, 'typing', {
+    status,
+    userId: sessionId
+  });
+};
+
+/**
+ * Send message reaction
+ */
+export const sendMessageReaction = (
+  chatChannelName: string,
+  messageId: string,
+  sessionId: string,
+  reaction: 'thumbsUp' | 'thumbsDown' | null
+): void => {
+  publishToChannel(chatChannelName, 'reaction', {
+    messageId,
+    reaction,
+    userId: sessionId,
+    timestamp: new Date()
+  });
+};
+
+/**
+ * Generate mock conversations when loading fails
+ */
+export const getMockConversations = (): any[] => {
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const twoDaysAgo = new Date(now);
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+  
+  return [
+    {
+      id: 'mock-conv-1',
+      title: 'Technical Support',
+      timestamp: now,
+      lastMessage: 'We\'ll look into your issue right away.',
+      status: 'active',
+      agentInfo: {
+        name: 'Support Agent',
+        avatar: '',
+        status: 'online'
+      },
+      metadata: {
+        ticketProgress: 75
+      },
+      messages: [
+        {
+          id: 'msg-mock-1',
+          text: 'Hello! How can I help you today?',
+          sender: 'system',
+          timestamp: now,
+          status: 'read'
+        },
+        {
+          id: 'msg-mock-2',
+          text: 'I\'m having trouble with my account.',
+          sender: 'user',
+          timestamp: new Date(now.getTime() + 60000),
+          status: 'read'
+        },
+        {
+          id: 'msg-mock-3',
+          text: 'We\'ll look into your issue right away.',
+          sender: 'system',
+          timestamp: new Date(now.getTime() + 120000),
+          status: 'delivered'
+        }
+      ]
+    },
+    {
+      id: 'mock-conv-2',
+      title: 'Billing Support',
+      timestamp: yesterday,
+      lastMessage: 'Your invoice has been updated.',
+      status: 'active',
+      agentInfo: {
+        name: 'Billing Specialist',
+        avatar: '',
+        status: 'away'
+      },
+      metadata: {
+        ticketProgress: 35
+      }
+    },
+    {
+      id: 'mock-conv-3',
+      title: 'Product Inquiry',
+      timestamp: twoDaysAgo,
+      lastMessage: 'Thank you for your interest in our product.',
+      status: 'ended',
+      agentInfo: {
+        name: 'Sales Agent',
+        avatar: '',
+        status: 'offline'
+      },
+      metadata: {
+        ticketProgress: 100
+      }
+    }
+  ];
 };

@@ -1,49 +1,41 @@
 
 import React from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
-export interface MessageAvatarProps {
-  sender: string;
+interface MessageAvatarProps {
+  sender: 'user' | 'system' | 'status';
   avatarUrl?: string;
-  status?: 'online' | 'offline' | 'away' | 'busy';
+  isRight?: boolean;
+  status?: 'online' | 'offline' | 'away' | 'busy' | undefined;
 }
 
-const MessageAvatar: React.FC<MessageAvatarProps> = ({ 
-  sender,
-  avatarUrl,
-  status
-}) => {
-  const initials = sender === 'user' 
-    ? 'U' 
-    : sender === 'system' || sender === 'bot' || sender === 'agent'
-      ? 'A'
-      : 'S';
-      
-  const avatarClass = sender === 'user' 
-    ? 'bg-purple-100 text-purple-800' 
-    : 'bg-blue-100 text-blue-800';
-
+const MessageAvatar = ({ sender, avatarUrl, isRight = false, status }: MessageAvatarProps) => {
+  const hasAvatar = !!avatarUrl;
+  const initials = sender === 'system' ? 'AI' : 'U';
+  const avatarClass = sender === 'system' ? 'bg-vivid-purple/20 text-vivid-purple' : 'bg-gray-200 text-gray-700';
+  
   // Status indicator colors
-  const getStatusColor = () => {
-    switch (status) {
-      case 'online': return 'bg-green-500';
-      case 'away': return 'bg-yellow-500';
-      case 'busy': return 'bg-red-500';
-      case 'offline':
-      default: return 'bg-gray-500';
-    }
+  const statusColors = {
+    online: 'bg-green-500',
+    offline: 'bg-gray-400',
+    away: 'bg-yellow-500',
+    busy: 'bg-red-500'
   };
-
+  
+  const statusColor = status ? statusColors[status] : null;
+  
   return (
-    <div className="relative h-8 w-8">
-      <Avatar className="h-8 w-8">
-        {avatarUrl && <AvatarImage src={avatarUrl} alt={sender} />}
-        <AvatarFallback className={avatarClass}>{initials}</AvatarFallback>
+    <div className={`flex-shrink-0 relative ${isRight ? 'order-last ml-2' : 'mr-2'}`}>
+      <Avatar className="h-8 w-8 rounded-full border border-white/10">
+        {hasAvatar && <AvatarImage src={avatarUrl} alt={sender} className="rounded-full" />}
+        <AvatarFallback className={`${avatarClass} rounded-full`}>{initials}</AvatarFallback>
       </Avatar>
       
-      {status && sender !== 'user' && (
+      {/* Status indicator */}
+      {statusColor && (
         <span 
-          className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full ring-1 ring-white ${getStatusColor()}`}
+          className={`absolute bottom-0 ${isRight ? 'left-0' : 'right-0'} w-2.5 h-2.5 ${statusColor} rounded-full ring-1 ring-white`}
+          aria-label={`Status: ${status}`}
         />
       )}
     </div>

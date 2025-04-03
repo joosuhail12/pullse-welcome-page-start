@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Message, MessageType, MessageReadStatus } from '../types';
+import { Message } from '../types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import PoweredByBar from './PoweredByBar';
@@ -15,7 +15,7 @@ interface ChatBodyProps {
   handleUserTyping: () => void;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
-  readReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }>;
+  readReceipts: Record<string, Date>;
   onMessageReaction?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
   searchTerm: string;
   messageIds: string[];
@@ -58,12 +58,6 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   agentStatus,
   onToggleHighlight
 }) => {
-  // Create a wrapper for highlightText to match MessageList's expected format
-  const highlightWrapper = (text: string) => {
-    if (!searchTerm) return [{ text, highlighted: false }];
-    return highlightText(text, searchTerm);
-  };
-
   return (
     <div className="flex flex-col flex-grow overflow-hidden">
       {inlineFormComponent}
@@ -77,7 +71,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
             readReceipts={readReceipts}
             onMessageReaction={onMessageReaction}
             searchResults={messageIds}
-            highlightMessage={highlightWrapper}
+            highlightMessage={highlightText}
             searchTerm={searchTerm}
             agentAvatar={agentAvatar}
             userAvatar={userAvatar}
@@ -95,7 +89,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
         <MessageInput
           messageText={messageText}
           setMessageText={setMessageText}
-          onSendMessage={handleSendMessage}
+          handleSendMessage={handleSendMessage}
           handleFileUpload={handleFileUpload}
           handleEndChat={handleEndChat}
           hasUserSentMessage={isTyping}

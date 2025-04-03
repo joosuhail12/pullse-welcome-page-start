@@ -1,28 +1,44 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { sanitizeInput } from '../../utils/validation';
 
-export interface QuickReplyMessageProps {
-  data: Record<string, any>;
-  onSelect: (text: string) => void;
+interface QuickReply {
+  text: string;
+  action: string;
 }
 
-const QuickReplyMessage: React.FC<QuickReplyMessageProps> = ({ data, onSelect }) => {
-  const options = data.options || [];
-  
+interface QuickReplyMessageProps {
+  text: string;
+  quickReplies?: QuickReply[];
+  renderText: (text: string) => React.ReactNode;
+  setMessageText?: (text: string) => void;
+}
+
+const QuickReplyMessage = ({ text, quickReplies, renderText, setMessageText }: QuickReplyMessageProps) => {
   return (
-    <div className="flex flex-wrap gap-2 mt-2">
-      {options.map((option: any, index: number) => (
-        <Button
-          key={index}
-          variant="secondary"
-          size="sm"
-          className="text-xs py-1 px-3 h-auto"
-          onClick={() => onSelect(option.text || option.value || option)}
-        >
-          {option.text || option.value || option}
-        </Button>
-      ))}
+    <div className="flex flex-col">
+      {renderText(text)}
+      {quickReplies && quickReplies.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {quickReplies.map((reply, i) => (
+            <Button 
+              key={i} 
+              size="sm" 
+              variant="secondary" 
+              className="text-xs py-1.5 h-auto"
+              onClick={() => {
+                if (setMessageText) {
+                  // Sanitize the quick reply text before setting
+                  setMessageText(sanitizeInput(reply.text));
+                }
+              }}
+            >
+              {sanitizeInput(reply.text)}
+            </Button>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

@@ -1,151 +1,256 @@
 
-import React, { useState, useRef, KeyboardEvent, ChangeEvent } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, Send, Paperclip, X } from 'lucide-react';
-import { Alert } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+import { Send, Paperclip, Smile, X, Image } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
+import { validateMessage, validateFile, sanitizeFileName } from '../utils/validation';
 
 interface MessageInputProps {
   messageText: string;
-  setMessageText: (value: string) => void;
-  onSendMessage: () => void;
-  onUserTyping: () => void;
-  onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  fileError?: string | null;
-  isDisabled?: boolean;
-  placeholder?: string;
-  isLoading?: boolean;
+  setMessageText: (text: string) => void;
+  handleSendMessage: () => void;
+  handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleEndChat: () => void;
+  hasUserSentMessage: boolean;
+  onTyping?: () => void;
+  disabled?: boolean;
 }
 
-const MessageInput: React.FC<MessageInputProps> = ({
-  messageText,
-  setMessageText,
-  onSendMessage,
-  onUserTyping,
-  onFileUpload,
-  fileError,
-  isDisabled = false,
-  placeholder = "Type a message...",
-  isLoading = false
-}) => {
-  const [isDragOver, setIsDragOver] = useState(false);
+const MessageInput = ({ 
+  messageText, 
+  setMessageText, 
+  handleSendMessage, 
+  handleFileUpload,
+  handleEndChat,
+  hasUserSentMessage,
+  onTyping,
+  disabled = false
+}: MessageInputProps) => {
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [filePreview, setFilePreview] = useState<{url: string, type: string, name: string} | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (messageText.trim() && !isDisabled && !isLoading) {
-      onSendMessage();
-    }
-  };
-
-  const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setMessageText(e.target.value);
-    onUserTyping();
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+  const MAX_CHARS = 2000;
+  const charCount = messageText.length;
+  const isNearLimit = charCount > MAX_CHARS * 0.8;
+  const isAtLimit = charCount >= MAX_CHARS;
+  
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      if (messageText.trim() && !isDisabled && !isLoading) {
-        onSendMessage();
-      }
+      handleSendMessage();
     }
   };
 
-  const handleFileButtonClick = () => {
-    fileInputRef.current?.click();
+  const handleEmojiSelect = (emoji: any) => {
+    const sanitized = validateMessage(messageText + emoji.native);
+    setMessageText(sanitized);
+    setShowEmojiPicker(false);
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    // Validate and sanitize input
+    const sanitized = validateMessage(e.target.value);
+    setMessageText(sanitized);
     
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0 && fileInputRef.current) {
-      fileInputRef.current.files = e.dataTransfer.files;
-      onFileUpload({ target: { files: e.dataTransfer.files } } as React.ChangeEvent<HTMLInputElement>);
+    // Trigger typing indicator
+    if (onTyping) {
+      onTyping();
+    }
+  };
+
+  const handleFileValidation = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null);
+    setFilePreview(null);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    
+    // Validate file
+    if (!validateFile(file)) {
+      setFileError("Invalid file. Please upload images, PDFs, or documents under 5MB.");
+      e.target.value = '';
+      return;
+    }
+    
+    // Sanitize filename
+    const sanitizedName = sanitizeFileName(file.name);
+    
+    // Create a new file with sanitized name if name was changed
+    if (sanitizedName !== file.name) {
+      const sanitizedFile = new File([file], sanitizedName, { type: file.type });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(sanitizedFile);
+      e.target.files = dataTransfer.files;
+    }
+    
+    // Generate preview
+    if (file.type.startsWith('image/')) {
+      setFilePreview({
+        url: URL.createObjectURL(file),
+        type: 'image',
+        name: sanitizedName
+      });
+    } else {
+      setFilePreview({
+        url: '',
+        type: file.type,
+        name: sanitizedName
+      });
+    }
+  };
+  
+  const clearFilePreview = () => {
+    setFilePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
+  const submitFile = () => {
+    if (fileInputRef.current && fileInputRef.current.files?.length) {
+      handleFileUpload({ target: fileInputRef.current } as React.ChangeEvent<HTMLInputElement>);
+      clearFilePreview();
     }
   };
 
   return (
-    <div className="border-t border-gray-200 bg-white p-2 sm:p-3">
-      {fileError && (
-        <Alert variant="destructive" className="mb-2 py-1 px-3 text-xs">
-          <div className="flex items-center justify-between">
-            <span>{fileError}</span>
+    <div className="border-t border-gray-100 p-3 bg-white/80 backdrop-blur-sm">
+      <div className="flex flex-col">
+        {fileError && (
+          <div className="mb-2 text-xs text-red-500 p-2 bg-red-50 rounded">
+            {fileError}
+          </div>
+        )}
+        
+        {filePreview && (
+          <div className="mb-3 p-2 bg-gray-50 rounded-lg border border-gray-200 flex items-center">
+            {filePreview.type === 'image' ? (
+              <div className="relative w-14 h-14 mr-2">
+                <img 
+                  src={filePreview.url} 
+                  alt="Preview" 
+                  className="w-full h-full object-cover rounded"
+                />
+              </div>
+            ) : (
+              <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center mr-2">
+                <Image size={20} className="text-gray-500" />
+              </div>
+            )}
+            <div className="flex-grow overflow-hidden">
+              <p className="text-sm font-medium truncate">{filePreview.name}</p>
+              <p className="text-xs text-gray-500">Ready to upload</p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={clearFilePreview}
+                title="Cancel"
+              >
+                <X size={16} />
+              </Button>
+              <Button 
+                size="sm" 
+                className="h-8 chat-widget-button"
+                onClick={submitFile}
+              >
+                Send
+              </Button>
+            </div>
+          </div>
+        )}
+        
+        <div className="flex items-center bg-white rounded-md shadow-sm border border-gray-200 focus-within:ring-1 focus-within:ring-vivid-purple focus-within:border-vivid-purple">
+          <label htmlFor="file-upload" className={`cursor-pointer p-2 ${disabled ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-50'} rounded-l-md transition-colors`}>
+            <Paperclip size={18} className="text-gray-500" />
+            <input 
+              ref={fileInputRef}
+              id="file-upload" 
+              type="file" 
+              className="hidden" 
+              onChange={handleFileValidation}
+              accept="image/jpeg,image/png,image/gif,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              disabled={disabled}
+            />
+          </label>
+          
+          <div className="relative flex-grow">
+            <Textarea 
+              value={messageText}
+              onChange={handleChange}
+              onKeyDown={handleKeyPress}
+              placeholder="Type a message..."
+              className={`min-h-[44px] max-h-[120px] p-2 border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none text-sm
+                ${isAtLimit ? 'text-red-500' : isNearLimit ? 'text-amber-600' : ''}`}
+              rows={1}
+              maxLength={MAX_CHARS}
+              disabled={disabled}
+            />
+            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                  disabled={disabled}
+                >
+                  <Smile size={16} className="text-gray-500" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent side="top" align="end" className="w-auto p-0 border-none">
+                <div className="emoji-picker-container">
+                  <Picker 
+                    data={data} 
+                    onEmojiSelect={handleEmojiSelect}
+                    theme="light"
+                  />
+                </div>
+              </PopoverContent>
+            </Popover>
+            {charCount > 0 && (
+              <div 
+                className={`absolute right-8 bottom-1 text-xs px-1.5 py-0.5 rounded-full
+                  ${isAtLimit ? 'bg-red-100 text-red-700' : 
+                  isNearLimit ? 'bg-amber-100 text-amber-700' : 
+                  'bg-gray-100 text-gray-500'}`}
+              >
+                {charCount}/{MAX_CHARS}
+              </div>
+            )}
+          </div>
+          
+          <Button 
+            onClick={handleSendMessage}
+            disabled={!messageText.trim() || disabled}
+            className="h-auto rounded-r-md chat-widget-button p-2 aspect-square"
+            variant={messageText.trim() ? "default" : "ghost"}
+          >
+            <Send size={18} />
+          </Button>
+        </div>
+        
+        {hasUserSentMessage && (
+          <div className="flex justify-center mt-3">
             <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-5 w-5" 
-              onClick={() => setMessageText("")}
+              variant="outline" 
+              size="sm" 
+              onClick={handleEndChat}
+              className="text-xs text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
+              disabled={disabled}
             >
-              <X className="h-3 w-3" />
+              <X size={14} className="mr-1" /> End chat
             </Button>
           </div>
-        </Alert>
-      )}
-      
-      <form
-        onSubmit={handleSubmit}
-        className={`flex items-end gap-2 rounded-md border ${isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300'}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleFileButtonClick}
-          disabled={isDisabled}
-          className="flex-shrink-0 h-8 w-8 ml-1 mb-1"
-        >
-          <Paperclip className="h-5 w-5 text-gray-500" />
-          <span className="sr-only">Attach file</span>
-        </Button>
-        
-        <textarea
-          value={messageText}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          disabled={isDisabled}
-          placeholder={placeholder}
-          rows={1}
-          className="flex-grow min-h-[40px] max-h-[120px] resize-none border-0 bg-transparent p-2 focus:ring-0 focus:outline-none text-sm"
-          style={{
-            overflowY: "auto"
-          }}
-        />
-        
-        <Button
-          type="submit"
-          size="icon"
-          disabled={!messageText.trim() || isDisabled || isLoading}
-          className="flex-shrink-0 h-8 w-8 mr-1 mb-1"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-          <span className="sr-only">Send message</span>
-        </Button>
-        
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={onFileUpload}
-          className="hidden"
-          accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        />
-      </form>
+        )}
+      </div>
     </div>
   );
 };

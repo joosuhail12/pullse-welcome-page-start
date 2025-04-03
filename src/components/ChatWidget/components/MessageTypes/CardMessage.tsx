@@ -1,43 +1,59 @@
 
 import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { sanitizeInput } from '../../utils/validation';
 
-export interface CardMessageProps {
-  data: Record<string, any>;
+interface CardButton {
+  text: string;
+  action: string;
 }
 
-const CardMessage: React.FC<CardMessageProps> = ({ data }) => {
+interface CardMessageProps {
+  cardData: {
+    title: string;
+    description: string;
+    imageUrl?: string;
+    buttons?: CardButton[];
+  };
+}
+
+const CardMessage = ({ cardData }: CardMessageProps) => {
+  // Sanitize card data
+  const cardTitle = cardData.title ? sanitizeInput(cardData.title) : '';
+  const cardDesc = cardData.description ? sanitizeInput(cardData.description) : '';
+  
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-      {data.imageUrl && (
+    <Card className="w-full max-w-xs mt-2 shadow-sm">
+      {cardData.imageUrl && (
         <div className="aspect-video overflow-hidden">
           <img 
-            src={data.imageUrl} 
-            alt={data.title || "Card"} 
+            src={cardData.imageUrl} 
+            alt={cardTitle} 
             className="w-full h-full object-cover"
           />
         </div>
       )}
-      <div className="p-3">
-        {data.title && <h4 className="font-medium text-gray-900">{data.title}</h4>}
-        {data.description && <p className="text-sm text-gray-600 mt-1">{data.description}</p>}
+      <CardContent className="p-4">
+        <h4 className="font-semibold">{cardTitle}</h4>
+        <p className="text-sm text-gray-600 mt-1">{cardDesc}</p>
         
-        {data.buttons && data.buttons.length > 0 && (
+        {cardData.buttons && cardData.buttons.length > 0 && (
           <div className="mt-3 flex flex-col gap-2">
-            {data.buttons.map((button: any, i: number) => (
+            {cardData.buttons.map((button, i) => (
               <Button 
                 key={i} 
+                size="sm" 
                 variant="outline" 
-                size="sm"
-                className="w-full justify-center"
+                className="w-full"
               >
-                {button.text}
+                {sanitizeInput(button.text)}
               </Button>
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

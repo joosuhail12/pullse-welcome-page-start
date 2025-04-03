@@ -1,103 +1,221 @@
 
+import { EventManager } from './events';
 import { ChatEventType, ChatEventPayload } from '../config';
-import { EventPriority, EventCallback } from '../events/types';
-import { getEventManager } from '../events/eventManager';
-import { validateEventPayload } from '../events/validation';
+import { EventCallback } from './types';
+import { createValidatedEvent, validateEventPayload } from '../utils/eventValidation';
+import { debounce } from './utils';
 
 /**
- * Enhanced event system that integrates with the main event manager
- * but adds additional validation and priority handling.
+ * Event priority levels
  */
+export enum EventPriority {
+  CRITICAL = 0,  // Immediate processing (errors, chat ending)
+  HIGH = 1,      // High priority (messages sent/received)
+  NORMAL = 2,    // Normal events (typing, status changes)
+  LOW = 3        // Background events (analytics, non-critical updates)
+}
 
 /**
- * Dispatch a validated event to the event manager with priority
- * @param eventType The type of event to dispatch
- * @param data Optional data to include with the event
- * @param priority Optional priority level for the event
- * @returns The dispatched event payload
+ * Event with priority information
  */
-export function dispatchValidatedEvent(
-  eventType: ChatEventType | string, 
-  data?: any, 
-  priority: EventPriority = EventPriority.NORMAL
-): ChatEventPayload | null {
-  // Create the event object
-  const event: ChatEventPayload = {
-    type: eventType as ChatEventType,
-    timestamp: new Date(),
-    data: data || {}
-  };
+interface PrioritizedEvent {
+  event: ChatEventPayload;
+  priority: EventPriority;
+}
 
-  // Validate the event before dispatching
-  if (!validateEventPayload(event)) {
-    console.warn('Invalid event payload rejected:', event);
+/**
+ * Mapping of event types to their default priorities
+ */
+const defaultEventPriorities: Record<ChatEventType, EventPriority> = {
+  'chat:open': EventPriority.HIGH,
+  'chat:close': EventPriority.HIGH,
+  'chat:messageSent': EventPriority.HIGH,
+  'chat:messageReceived': EventPriority.HIGH,
+  'contact:initiatedChat': EventPriority.HIGH,
+  'contact:formCompleted': EventPriority.NORMAL,
+  'message:reacted': EventPriority.NORMAL,
+  'chat:typingStarted': EventPriority.LOW,
+  'chat:typingStopped': EventPriority.LOW,
+  'message:fileUploaded': EventPriority.HIGH,
+  'chat:ended': EventPriority.CRITICAL
+};
+
+/**
+ * Enhanced event manager with prioritization and validation
+ */
+export class EnhancedEventManager extends EventManager {
+  private eventQueue: PrioritizedEvent[] = [];
+  private isProcessing: boolean = false;
+  private processingInterval: number | null = null;
+  
+  constructor(processingInterval: number = 50) {
+    super();
+    
+    // Set up regular processing interval
+    if (typeof window !== 'undefined') {
+      this.processingInterval = window.setInterval(() => {
+        this.processEventQueue();
+      }, processingInterval);
+    }
+  }
+  
+  /**
+   * Clean up resources when manager is no longer needed
+   */
+  public dispose(): void {
+    if (this.processingInterval !== null && typeof window !== 'undefined') {
+      window.clearInterval(this.processingInterval);
+      this.processingInterval = null;
+    }
+  }
+  
+  /**
+   * Create and dispatch a validated event
+   */
+  public createEvent(type: ChatEventType, data?: any): ChatEventPayload | null {
+    const event = createValidatedEvent(type, data);
+    if (event) {
+      this.handleEvent(event);
+      return event;
+    }
     return null;
   }
-
-  // Use the event manager to dispatch the event with the specified priority
-  getEventManager().dispatch(event.type, event.data, priority);
   
-  // Also dispatch as DOM event for legacy consumers
-  dispatchDomEvent(event);
-
-  return event;
-}
-
-/**
- * Dispatch a DOM event that can be listened to by external code
- * @param event The event payload to dispatch
- */
-function dispatchDomEvent(event: ChatEventPayload): void {
-  try {
-    const customEvent = new CustomEvent(`pullse:${event.type}`, {
-      detail: event,
-      bubbles: true,
-      cancelable: true
-    });
+  /**
+   * Overridden handleEvent with validation and priority queueing
+   */
+  public handleEvent(event: ChatEventPayload, priority?: EventPriority): void {
+    // Validate event payload
+    if (!validateEventPayload(event)) {
+      console.error('Invalid event payload:', event);
+      return;
+    }
     
-    document.dispatchEvent(customEvent);
+    // Determine priority if not specified
+    const eventPriority = priority !== undefined ? 
+      priority : 
+      (defaultEventPriorities[event.type] || EventPriority.NORMAL);
     
-    // Also dispatch a general event for 'catch-all' listeners
-    const allEvent = new CustomEvent('pullse:all', {
-      detail: event,
-      bubbles: true,
-      cancelable: true
-    });
+    // Add to queue
+    this.queueEvent(event, eventPriority);
+  }
+  
+  /**
+   * Queue an event with priority
+   */
+  private queueEvent(event: ChatEventPayload, priority: EventPriority): void {
+    this.eventQueue.push({ event, priority });
     
-    document.dispatchEvent(allEvent);
-  } catch (error) {
-    console.error('Error dispatching DOM event:', error);
+    // Sort queue by priority (lower number = higher priority)
+    this.eventQueue.sort((a, b) => a.priority - b.priority);
+    
+    // Process immediately for critical events
+    if (priority === EventPriority.CRITICAL) {
+      this.processEventQueue();
+    }
+  }
+  
+  /**
+   * Process events in the queue based on priority
+   */
+  private processEventQueue(): void {
+    if (this.isProcessing || this.eventQueue.length === 0) {
+      return;
+    }
+    
+    this.isProcessing = true;
+    
+    try {
+      // Process up to 5 events at once
+      const batch = this.eventQueue.splice(0, 5);
+      
+      // Dispatch events
+      batch.forEach(({ event }) => {
+        // Special handling for typing events (use debounce from parent class)
+        if (event.type === 'chat:typingStarted' || event.type === 'chat:typingStopped') {
+          super.handleEvent(event);
+        } else {
+          // For other events, dispatch directly
+          this.dispatchToListeners(event);
+        }
+      });
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+  
+  /**
+   * Dispatches to listeners (extracted from parent class for enhancement)
+   */
+  private dispatchToListeners(event: ChatEventPayload): void {
+    // Dispatch to specific event listeners
+    const listeners = this.getListeners(event.type);
+    if (listeners) {
+      listeners.forEach(callback => {
+        try {
+          callback(event);
+        } catch (e) {
+          console.error(`Error in ${event.type} listener:`, e);
+        }
+      });
+    }
+    
+    // Dispatch to 'all' event listeners
+    const allListeners = this.getListeners('all');
+    if (allListeners) {
+      allListeners.forEach(callback => {
+        try {
+          callback(event);
+        } catch (e) {
+          console.error(`Error in 'all' listener:`, e);
+        }
+      });
+    }
+  }
+  
+  /**
+   * Get listeners for a specific event type
+   */
+  private getListeners(eventType: ChatEventType | 'all'): EventCallback[] | undefined {
+    return this.eventListeners.get(eventType);
   }
 }
 
 /**
- * Subscribe to an enhanced event with validation
- * @param eventType The type of event to listen for
- * @param callback Function to call when the event is triggered
- * @returns Cleanup function to remove the event listener
+ * Create a global instance of the enhanced event manager
  */
-export function subscribeToEnhancedEvent(
-  eventType: ChatEventType | 'all',
-  callback: EventCallback
-): () => void {
-  return getEventManager().on(eventType, (event: ChatEventPayload) => {
-    // Extra validation before calling the callback
-    if (validateEventPayload(event)) {
-      callback(event);
-    } else {
-      console.warn('Invalid event payload blocked from callback:', event);
-    }
-  });
+let globalEventManager: EnhancedEventManager | null = null;
+
+/**
+ * Get or create the global event manager instance
+ */
+export function getEventManager(): EnhancedEventManager {
+  if (!globalEventManager) {
+    globalEventManager = new EnhancedEventManager();
+  }
+  return globalEventManager;
 }
 
 /**
- * Re-export EventPriority for consumers
+ * Dispatch an event with validation
  */
-export { EventPriority } from '../events/types';
+export function dispatchValidatedEvent(
+  eventType: ChatEventType, 
+  data?: any, 
+  priority?: EventPriority
+): ChatEventPayload | null {
+  const eventManager = getEventManager();
+  return eventManager.createEvent(eventType, data);
+}
 
-// Add extra function to clean up event handlers for widget cleanup
-export function cleanupEventHandlers(): void {
-  // This is a simple wrapper around the event manager's cleanup method
-  // to make it accessible from the widget loader
-  getEventManager().removeAllListeners();
+/**
+ * Helper function to subscribe to chat events with type safety
+ */
+export function subscribeToEvent(
+  eventType: ChatEventType | 'all',
+  callback: EventCallback,
+  options?: { priority?: boolean }
+): () => void {
+  const eventManager = getEventManager();
+  return eventManager.on(eventType, callback);
 }
