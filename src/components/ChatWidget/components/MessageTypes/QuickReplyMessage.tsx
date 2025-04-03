@@ -14,12 +14,24 @@ interface QuickReplyMessageProps {
   renderText?: (text: string) => React.ReactNode;
   setMessageText?: (text: string) => void;
   metadata?: Record<string, any>;
+  onReply?: (text: string) => void; // Added onReply prop
 }
 
-const QuickReplyMessage = ({ text, quickReplies, renderText, setMessageText, metadata }: QuickReplyMessageProps) => {
+const QuickReplyMessage = ({ text, quickReplies, renderText, setMessageText, metadata, onReply }: QuickReplyMessageProps) => {
   // Process either direct props or metadata
   const textToUse = text || (metadata?.text as string) || '';
   const repliesToUse = quickReplies || (metadata?.quickReplies as QuickReply[]) || [];
+  
+  const handleReplyClick = (replyText: string) => {
+    const sanitizedText = sanitizeInput(replyText);
+    // Call both handlers if provided
+    if (setMessageText) {
+      setMessageText(sanitizedText);
+    }
+    if (onReply) {
+      onReply(sanitizedText);
+    }
+  };
   
   const renderTextContent = () => {
     if (!textToUse) return null;
@@ -38,12 +50,7 @@ const QuickReplyMessage = ({ text, quickReplies, renderText, setMessageText, met
               size="sm" 
               variant="secondary" 
               className="text-xs py-1.5 h-auto"
-              onClick={() => {
-                if (setMessageText) {
-                  // Sanitize the quick reply text before setting
-                  setMessageText(sanitizeInput(reply.text));
-                }
-              }}
+              onClick={() => handleReplyClick(reply.text)}
             >
               {sanitizeInput(reply.text)}
             </Button>

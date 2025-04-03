@@ -25,6 +25,7 @@ interface MessageListProps {
   isLoadingMore?: boolean;
   conversationId?: string;
   agentStatus?: AgentStatus;
+  onToggleHighlight?: (messageId: string) => void;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -42,7 +43,8 @@ const MessageList: React.FC<MessageListProps> = ({
   hasMoreMessages = false,
   isLoadingMore = false,
   conversationId,
-  agentStatus = 'online'
+  agentStatus = 'online',
+  onToggleHighlight
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -178,9 +180,10 @@ const MessageList: React.FC<MessageListProps> = ({
         {isTyping && (
           <div className="flex items-end mb-4">
             <MessageAvatar 
-              sender={agentStatus ? 'system' : 'system'}
-              avatarUrl={agentAvatar}
-              status={agentStatus}
+              isUserMessage={false}
+              userAvatar={userAvatar}
+              agentAvatar={agentAvatar}
+              agentStatus={agentStatus}
             />
             <TypingIndicator />
           </div>

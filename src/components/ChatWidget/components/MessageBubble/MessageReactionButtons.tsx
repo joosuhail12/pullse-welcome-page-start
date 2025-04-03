@@ -3,15 +3,14 @@ import React from 'react';
 import { Smile, ThumbsUp, ThumbsDown, Heart } from 'lucide-react';
 
 export interface MessageReactionButtonsProps {
-  onReact?: (emoji: string) => void;
+  onReaction?: (emoji: string) => void; // Changed from onReact to onReaction
   onClose: () => void;
 }
 
-const MessageReactionButtons = ({ onReact, onClose }: MessageReactionButtonsProps) => {
-  // Alias onReaction to onReact for backward compatibility
+const MessageReactionButtons = ({ onReaction, onClose }: MessageReactionButtonsProps) => {
   const handleReaction = (emoji: string) => {
-    if (onReact) {
-      onReact(emoji);
+    if (onReaction) {
+      onReaction(emoji);
     }
   };
 
