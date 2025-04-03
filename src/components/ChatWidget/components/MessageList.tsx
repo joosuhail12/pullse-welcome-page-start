@@ -163,7 +163,7 @@ const MessageList: React.FC<MessageListProps> = ({
               <MessageBubble
                 message={message}
                 searchTerm={searchTerm}
-                isHighlighted={isHighlighted}
+                highlighted={isHighlighted}
                 userAvatar={userAvatar}
                 agentAvatar={agentAvatar}
                 onReply={setMessageText}

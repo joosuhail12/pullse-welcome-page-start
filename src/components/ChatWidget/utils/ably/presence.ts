@@ -1,3 +1,4 @@
+
 import Ably from 'ably';
 import { v4 as uuidv4 } from 'uuid';
 import { getChatSessionId } from '../cookies';
@@ -8,13 +9,13 @@ export const generatePresenceId = (): string => {
   return uuidv4();
 };
 
-// Function to enter presence on a channel with type assertions to access presence
+// Function to enter presence on a channel with more flexible type casting
 export const enterPresence = async (channel: Ably.Types.RealtimeChannelBase, clientId: string, data?: any): Promise<void> => {
   try {
-    // Cast the channel to include presence property
-    const channelWithPresence = channel as unknown as { presence: Ably.Types.RealtimePresenceBase };
-    if (channelWithPresence && channelWithPresence.presence) {
-      await channelWithPresence.presence.enter(data);
+    // Use any type for better flexibility with Ably's changing API
+    const presenceInterface = (channel as any).presence;
+    if (presenceInterface) {
+      await presenceInterface.enter(data);
       console.log(`Entered presence on channel ${channel.name} with clientId ${clientId}`);
     }
   } catch (error) {
@@ -26,10 +27,10 @@ export const enterPresence = async (channel: Ably.Types.RealtimeChannelBase, cli
 // Function to leave presence on a channel
 export const leavePresence = async (channel: Ably.Types.RealtimeChannelBase, clientId: string): Promise<void> => {
   try {
-    // Cast the channel to include presence property
-    const channelWithPresence = channel as unknown as { presence: Ably.Types.RealtimePresenceBase };
-    if (channelWithPresence && channelWithPresence.presence) {
-      await channelWithPresence.presence.leave();
+    // Use any type for better flexibility with Ably's changing API
+    const presenceInterface = (channel as any).presence;
+    if (presenceInterface) {
+      await presenceInterface.leave();
       console.log(`Left presence on channel ${channel.name} with clientId ${clientId}`);
     }
   } catch (error) {
@@ -41,10 +42,10 @@ export const leavePresence = async (channel: Ably.Types.RealtimeChannelBase, cli
 // Function to get the current presence members on a channel
 export const getPresence = async (channel: Ably.Types.RealtimeChannelBase): Promise<Ably.Types.PresenceMessage[]> => {
   try {
-    // Cast the channel to include presence property
-    const channelWithPresence = channel as unknown as { presence: Ably.Types.RealtimePresenceBase };
-    if (channelWithPresence && channelWithPresence.presence) {
-      const presence = await channelWithPresence.presence.get();
+    // Use any type for better flexibility with Ably's changing API
+    const presenceInterface = (channel as any).presence;
+    if (presenceInterface) {
+      const presence = await presenceInterface.get();
       console.log(`Current presence members on channel ${channel.name}:`, presence);
       return presence;
     }
@@ -62,27 +63,27 @@ export const registerPresenceHandlers = (
   onPresenceLeave?: (member: Ably.Types.PresenceMessage) => void,
   onPresenceUpdate?: (member: Ably.Types.PresenceMessage) => void
 ) => {
-  // Cast the channel to include presence property
-  const channelWithPresence = channel as unknown as { presence: Ably.Types.RealtimePresenceBase };
-  if (channelWithPresence && channelWithPresence.presence) {
+  // Use any type for better flexibility with Ably's changing API
+  const presenceInterface = (channel as any).presence;
+  if (presenceInterface) {
     if (onPresenceJoin) {
-      channelWithPresence.presence.on('enter', onPresenceJoin);
+      presenceInterface.on('enter', onPresenceJoin);
     }
     if (onPresenceLeave) {
-      channelWithPresence.presence.on('leave', onPresenceLeave);
+      presenceInterface.on('leave', onPresenceLeave);
     }
     if (onPresenceUpdate) {
-      channelWithPresence.presence.on('update', onPresenceUpdate);
+      presenceInterface.on('update', onPresenceUpdate);
     }
   }
 };
 
 // Function to clear all presence subscriptions
 export const clearPresenceHandlers = (channel: Ably.Types.RealtimeChannelBase) => {
-  // Cast the channel to include presence property
-  const channelWithPresence = channel as unknown as { presence: Ably.Types.RealtimePresenceBase };
-  if (channelWithPresence && channelWithPresence.presence) {
-    channelWithPresence.presence.off();
+  // Use any type for better flexibility with Ably's changing API
+  const presenceInterface = (channel as any).presence;
+  if (presenceInterface) {
+    presenceInterface.off();
     console.log(`Cleared all presence subscriptions on channel ${channel.name}`);
   }
 };
@@ -102,14 +103,12 @@ export const subscribeToPresence = (
 
   try {
     const channel = client.channels.get(channelName);
-    // Use a more flexible type casting
-    const channelWithPresence = channel as Ably.Types.RealtimeChannel;
     
     // Create handler to get all presence members
     const updatePresence = async () => {
       try {
-        // Use type assertion for presence get method
-        const members = await (channelWithPresence.presence as any).get() as Ably.Types.PresenceMessage[];
+        // Get presence with proper type casting
+        const members = await (channel as any).presence?.get();
         callback(members || []);
       } catch (err) {
         console.error(`Error getting presence members for ${channelName}:`, err);
@@ -117,20 +116,27 @@ export const subscribeToPresence = (
       }
     };
     
-    // Use type assertion for presence events
-    const presenceHandler = channelWithPresence.presence as any;
+    // Get presence interface with any type to avoid API mismatch issues
+    const presenceInterface = (channel as any).presence;
+    
+    if (!presenceInterface) {
+      console.warn(`Presence interface not available for channel ${channelName}`);
+      return () => {};
+    }
     
     // Subscribe to relevant presence events
-    presenceHandler.on('enter', updatePresence);
-    presenceHandler.on('leave', updatePresence);
-    presenceHandler.on('update', updatePresence);
+    presenceInterface.on('enter', updatePresence);
+    presenceInterface.on('leave', updatePresence);
+    presenceInterface.on('update', updatePresence);
     
     // Get initial presence
     updatePresence();
     
     // Return cleanup function
     return () => {
-      presenceHandler.off();
+      if (presenceInterface) {
+        presenceInterface.off();
+      }
     };
   } catch (error) {
     console.error(`Error subscribing to presence on ${channelName}:`, error);
