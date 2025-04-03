@@ -9,13 +9,13 @@
   }
   
   .chat-message-system {
-    @apply text-system-bubble-foreground rounded-bl-none chat-message-bubble;
+    @apply text-system-bubble-foreground rounded-br-none chat-message-bubble;
     background: linear-gradient(145deg, #f5f3ff 0%, #ede9fe 100%);
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.08);
   }
   
   .chat-message-user {
-    @apply text-white rounded-br-none chat-message-bubble;
+    @apply text-white rounded-bl-none chat-message-bubble;
     background: linear-gradient(145deg, #9672f7 0%, #8b5cf6 100%);
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.25);
   }
@@ -158,24 +158,22 @@
 
   /* IMPROVED MESSAGE BUBBLE STYLES */
   .chat-message-user {
-    @apply text-white rounded-br-none chat-message-bubble;
+    @apply text-white chat-message-bubble;
     background: linear-gradient(135deg, #9672f7 0%, #8b5cf6 100%);
     box-shadow: 0 3px 12px rgba(139, 92, 246, 0.3);
-    border-top-right-radius: 20px;
-    border-bottom-left-radius: 20px;
-    border-top-left-radius: 20px;
+    border-radius: 20px;
+    border-bottom-right-radius: 4px;
     padding: 14px 16px;
     position: relative;
     z-index: 1;
   }
   
   .chat-message-system {
-    @apply text-system-bubble-foreground rounded-bl-none chat-message-bubble;
+    @apply text-system-bubble-foreground chat-message-bubble;
     background: linear-gradient(135deg, #f8f7ff 0%, #ede9fe 100%);
     box-shadow: 0 3px 12px rgba(139, 92, 246, 0.1);
-    border-top-right-radius: 20px;
-    border-bottom-right-radius: 20px;
-    border-top-left-radius: 20px;
+    border-radius: 20px;
+    border-bottom-left-radius: 4px;
     padding: 14px 16px;
     position: relative;
     z-index: 1;

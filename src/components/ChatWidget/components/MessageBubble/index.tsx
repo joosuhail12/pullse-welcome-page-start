@@ -168,11 +168,11 @@ const MessageBubble = ({
 
   const bubbleClasses = isConsecutiveMessage
     ? message.sender === 'user'
-      ? 'chat-message-user rounded-tr-sm ml-10'
-      : 'chat-message-system rounded-tl-sm mr-10'
+      ? 'chat-message-user rounded-tr-sm ml-auto'
+      : 'chat-message-system rounded-tl-sm mr-auto'
     : message.sender === 'user'
-      ? 'chat-message-user'
-      : 'chat-message-system';
+      ? 'chat-message-user ml-auto'
+      : 'chat-message-system mr-auto';
       
   const actionableClass = hasActionableContent ? 'chat-message-actionable' : '';
   const sendingClass = message.sender === 'user' && message.status === 'sending' ? 'message-sending' : '';
@@ -180,9 +180,9 @@ const MessageBubble = ({
   const importantClass = isImportant ? 'important-message' : '';
 
   return (
-    <div className="flex items-start">
+    <div className={`flex items-start w-full ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
       {message.sender === 'system' && renderAvatar()}
-      <div className={`max-w-[80%] ${bubbleClasses} ${actionableClass} ${sendingClass} ${fileUploadClass} ${importantClass}`}>
+      <div className={`${bubbleClasses} max-w-[80%] ${actionableClass} ${sendingClass} ${fileUploadClass} ${importantClass}`}>
         {renderMessage()}
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">

@@ -1,10 +1,9 @@
-
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
-import { ArrowDown, Star, StarOff } from 'lucide-react';
+import { ArrowDown } from 'lucide-react';
 import { markConversationAsRead } from '../utils/storage';
 import { Button } from '@/components/ui/button';
 import { format, isToday, isYesterday, isSameDay } from 'date-fns';
@@ -58,7 +57,6 @@ const MessageList = ({
   const [messageStatuses, setMessageStatuses] = useState<Record<string, Message['status']>>({});
   const [unreadDivider, setUnreadDivider] = useState<string | null>(null);
 
-  // Find the first unread message
   useEffect(() => {
     if (!hasViewedMessages && messages.length > 0) {
       const lastReadIndex = messages.findIndex(m => m.unread);
@@ -68,16 +66,13 @@ const MessageList = ({
     }
   }, [messages, hasViewedMessages]);
 
-  // Simulate message status progression for improved UX
   useEffect(() => {
     const statusUpdates: Record<string, NodeJS.Timeout[]> = {};
     
     messages.forEach(message => {
       if (message.sender === 'user' && !messageStatuses[message.id]) {
-        // Start with 'sending' status
         setMessageStatuses(prev => ({...prev, [message.id]: 'sending'}));
         
-        // Create timeouts for status transitions
         const sentTimeout = setTimeout(() => {
           setMessageStatuses(prev => ({...prev, [message.id]: 'sent'}));
         }, 800);
@@ -89,10 +84,8 @@ const MessageList = ({
         statusUpdates[message.id] = [sentTimeout, deliveredTimeout];
       }
       
-      // If there's a read receipt, set status to 'read'
       if (readReceipts[message.id]) {
         setMessageStatuses(prev => ({...prev, [message.id]: 'read'}));
-        // Clear any existing timeouts
         if (statusUpdates[message.id]) {
           statusUpdates[message.id].forEach(timeout => clearTimeout(timeout));
           delete statusUpdates[message.id];
@@ -101,7 +94,6 @@ const MessageList = ({
     });
     
     return () => {
-      // Clear all timeouts on cleanup
       Object.values(statusUpdates).forEach(timeouts => {
         timeouts.forEach(timeout => clearTimeout(timeout));
       });
@@ -158,7 +150,6 @@ const MessageList = ({
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
     setAutoScroll(isNearBottom);
     
-    // Show scroll button when not near bottom and have scrolled up
     setShowScrollButton(!isNearBottom && scrollHeight > clientHeight + 200);
 
     if (scrollTop === 0 && lastScrollTop !== 0 && onScrollTop && hasMoreMessages && !isLoadingMore) {
@@ -206,15 +197,12 @@ const MessageList = ({
     }
   }, [messages, isTyping, autoScroll]);
 
-  // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Alt+End to scroll to bottom
       if (e.altKey && e.key === 'End') {
         scrollToBottom();
       }
       
-      // Alt+Home to scroll to top (load more messages)
       if (e.altKey && e.key === 'Home' && onScrollTop && hasMoreMessages && !isLoadingMore) {
         onScrollTop();
       }
@@ -241,10 +229,8 @@ const MessageList = ({
         )}
         
         {messages.map((message, index) => {
-          // Get the enhanced status from our state, or fall back to the message's status
           const messageStatus = messageStatuses[message.id] || message.status;
           
-          // Create a new message object with the updated status
           const enrichedMessage = {
             ...message,
             status: messageStatus
@@ -252,7 +238,6 @@ const MessageList = ({
           
           const renderedItems = [];
           
-          // Add date divider if needed
           if (shouldShowDateDivider(index)) {
             renderedItems.push(
               <div key={`date-${message.id}`} className="date-separator">
@@ -261,7 +246,6 @@ const MessageList = ({
             );
           }
           
-          // Add unread messages divider if this is the first unread message
           if (unreadDivider === message.id) {
             renderedItems.push(
               <div key="unread-divider" className="w-full flex justify-center my-2">
@@ -272,17 +256,12 @@ const MessageList = ({
             );
           }
           
-          // Then add the message itself
           renderedItems.push(
             <div 
               key={message.id} 
-              className={`flex ${
-                message.sender === 'user' 
-                  ? 'justify-end' 
-                  : message.sender === 'status' 
-                    ? 'justify-center' 
-                    : 'justify-start'
-              } message-animation-enter ${isMessageHighlighted(message.id) ? 'bg-yellow-100 p-2 rounded-lg' : ''} ${
+              className={`w-full message-animation-enter ${
+                isMessageHighlighted(message.id) ? 'bg-yellow-100 p-2 rounded-lg' : ''
+              } ${
                 isConsecutiveMessage(index) ? 'mt-1' : 'mt-4'
               } ${message.important ? 'relative important-message-container' : ''}`}
               style={{ 
@@ -334,7 +313,7 @@ const MessageList = ({
         })}
         
         {isTyping && (
-          <div className="animate-fade-in" style={{ animationDuration: '200ms' }}>
+          <div className="w-full flex justify-start animate-fade-in" style={{ animationDuration: '200ms' }}>
             <TypingIndicator />
           </div>
         )}
