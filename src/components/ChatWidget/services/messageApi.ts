@@ -1,4 +1,3 @@
-
 /**
  * Chat Widget Messaging API Service
  * 
@@ -10,7 +9,7 @@
  */
 
 import { getMessage } from '../utils/messageHandlers';
-import { MESSAGE_CIRCUIT, createSecureHeaders, enforceSecureConnection, checkCircuitStatus, sanitizeApiInputs, verifyResponseIntegrity, validateJsonResponse } from './apiCore';
+import { MESSAGE_CIRCUIT, createSecureHeaders, enforceSecureConnection, checkCircuitStatus, sanitizeApiInputs, verifyResponseIntegrity, validateJsonResponse, handleApiError } from './apiCore';
 import { getChatSessionId, setChatSessionId } from '../utils/cookies';
 import { isRateLimited } from '../utils/security/rateLimit';
 import { validateMessage } from '../utils/validation';
@@ -18,6 +17,7 @@ import { withResilience } from '../utils/resilience';
 import { toast } from '@/components/ui/use-toast';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 import { logger } from '@/lib/logger';
+import { errorHandler } from '@/lib/error-handler';
 
 /**
  * Send a message to the chat API

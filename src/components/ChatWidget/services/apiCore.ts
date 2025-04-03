@@ -14,7 +14,7 @@ import { generateCsrfToken, signMessage, verifyMessageSignature, enforceHttps } 
 import { sanitizeInput } from '../utils/validation';
 import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
-import { errorHandler } from '@/lib/error-handler';
+import { errorHandler, ApiError } from '@/lib/error-handler';
 import { toast } from '@/components/ui/use-toast';
 
 // Circuit names for different API endpoints
@@ -113,6 +113,11 @@ export function handleApiError(error: unknown, errorMessage: string, showToast =
       description: errorMessage,
       variant: "destructive"
     });
+  }
+  
+  // If it's not already an ApiError, create one
+  if (!(error instanceof ApiError)) {
+    throw errorHandler.createApiError(errorMessage);
   }
   
   // Rethrow the error

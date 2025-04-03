@@ -1,9 +1,9 @@
-
 import { getChatSessionId } from '../utils/cookies';
 import { generateCsrfToken, signMessage } from '../utils/security';
 import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 import { auditLogger } from '@/lib/audit-logger';
+import { errorHandler } from '@/lib/error-handler';
 
 interface TokenParams {
   workspaceId: string;

@@ -1,4 +1,3 @@
-
 /**
  * Pullse Chat Widget Loader
  * 
@@ -17,6 +16,7 @@ import { logger } from '@/lib/logger';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 import { enforceHttps } from '../utils/security/sessionManagement';
 import { auditLogger } from '@/lib/audit-logger';
+import { errorHandler } from '@/lib/error-handler';
 
 // Export the main class for direct usage
 export { PullseChatWidgetLoader };
