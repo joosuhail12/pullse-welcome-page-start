@@ -3,6 +3,7 @@ import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Bot } from 'lucide-react';
 import { AgentStatus } from '../../types';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export interface MessageAvatarProps {
   isUserMessage: boolean;
@@ -28,24 +29,48 @@ const MessageAvatar = ({
     }
   };
 
+  // Get human-readable status text
+  const getStatusText = () => {
+    switch (agentStatus) {
+      case 'online': return 'Agent is online and available';
+      case 'away': return 'Agent is away';
+      case 'busy': return 'Agent is busy with another conversation';
+      case 'offline': return 'Agent is offline';
+      default: return 'Status unknown';
+    }
+  };
+
   return (
     <div className={`relative flex-shrink-0 ${isUserMessage ? 'ml-2' : 'mr-2'}`}>
       <Avatar className="h-8 w-8 border border-gray-200">
         <AvatarImage 
           src={isUserMessage ? userAvatar : agentAvatar} 
           alt={isUserMessage ? "User" : "Agent"}
+          onError={(e) => {
+            // Hide the image on error to show fallback
+            e.currentTarget.style.display = 'none';
+          }}
         />
         <AvatarFallback className="bg-gray-100">
           {isUserMessage ? <User size={15} className="text-gray-500" /> : <Bot size={15} className="text-gray-500" />}
         </AvatarFallback>
       </Avatar>
       
-      {/* Status indicator for agent avatar */}
+      {/* Status indicator with tooltip for agent avatar */}
       {!isUserMessage && agentStatus && (
-        <span 
-          className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${getStatusColor()}`}
-          title={`Agent is ${agentStatus}`}
-        />
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span 
+                className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${getStatusColor()} animate-pulse`}
+                aria-label={`Agent is ${agentStatus}`}
+              />
+            </TooltipTrigger>
+            <TooltipContent side="right" className="text-xs">
+              {getStatusText()}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )}
     </div>
   );
