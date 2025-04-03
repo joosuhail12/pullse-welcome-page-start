@@ -1,5 +1,6 @@
 
 import { toast } from "@/hooks/use-toast"
+import { createElement } from "react"
 
 type ToastType = 'info' | 'success' | 'warning' | 'error'
 
@@ -62,18 +63,18 @@ export const retryableToast = (
 ) => {
   const { onRetry, ...toastOptions } = options
   
-  const retryAction = (
-    <button 
-      className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2 py-1 rounded text-xs"
-      onClick={() => {
+  const retryAction = createElement(
+    'button',
+    {
+      className: "bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2 py-1 rounded text-xs",
+      onClick: () => {
         // Dismiss the current toast
         toast.dismiss()
         // Execute the retry action
         onRetry()
-      }}
-    >
-      Retry
-    </button>
+      }
+    },
+    'Retry'
   )
   
   return showToast('error', {
@@ -82,4 +83,3 @@ export const retryableToast = (
     duration: 10000 // Give more time for user to decide to retry
   })
 }
-
