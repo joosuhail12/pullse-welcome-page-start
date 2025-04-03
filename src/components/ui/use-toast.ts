@@ -22,7 +22,7 @@ toast.success = (content, options = {}) => {
     description: content,
     variant: "default",
     ...options,
-  });
+  } as ToastProps); // Cast to ToastProps to fix type issues
 };
 
 toast.error = (content, options = {}) => {
@@ -31,7 +31,7 @@ toast.error = (content, options = {}) => {
     description: content,
     variant: "destructive",
     ...options,
-  });
+  } as ToastProps);
 };
 
 toast.info = (content, options = {}) => {
@@ -40,7 +40,7 @@ toast.info = (content, options = {}) => {
     description: content,
     variant: "default",
     ...options,
-  });
+  } as ToastProps);
 };
 
 toast.warning = (content, options = {}) => {
@@ -49,7 +49,7 @@ toast.warning = (content, options = {}) => {
     description: content,
     variant: "default",
     ...options,
-  });
+  } as ToastProps);
 };
 
 toast.loading = (content, options = {}) => {
@@ -58,7 +58,7 @@ toast.loading = (content, options = {}) => {
     description: content,
     variant: "default",
     ...options,
-  });
+  } as ToastProps);
 };
 
 // Export the extended toast function and the original useToast hook

@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from 'react';
 import { Message } from '../types';
 import { publishToChannel, subscribeToChannel, getConnectionState } from '../utils/ably';
@@ -60,10 +61,13 @@ export function useRealTime(
       } else {
         if (event === 'message') {
           addMessageToQueue(data, channel, event);
-          toast.info('Message saved offline and will send when connection is restored', {
-            id: 'offline-message',
-            duration: 3000,
-          });
+          // Fix: Prevent toast causing re-renders
+          setTimeout(() => {
+            toast.info('Message saved offline and will send when connection is restored', {
+              id: 'offline-message',
+              duration: 3000,
+            } as any);
+          }, 0);
           setPendingCount(getPendingMessageCount());
         }
         return false;
@@ -73,10 +77,13 @@ export function useRealTime(
       
       if (event === 'message') {
         addMessageToQueue(data, channel, event);
-        toast.info('Message will be sent when connection is restored', {
-          id: 'offline-message',
-          duration: 3000,
-        });
+        // Fix: Prevent toast causing re-renders
+        setTimeout(() => {
+          toast.info('Message will be sent when connection is restored', {
+            id: 'offline-message',
+            duration: 3000,
+          } as any);
+        }, 0);
         setPendingCount(getPendingMessageCount());
       }
       return false;
@@ -111,27 +118,41 @@ export function useRealTime(
     setPendingCount(remainingCount);
     
     if (successCount > 0) {
-      toast.success(`Sent ${successCount} queued message${successCount > 1 ? 's' : ''}`, {
-        id: 'sync-success',
-        duration: 3000,
-      });
+      // Fix: Prevent toast causing re-renders
+      setTimeout(() => {
+        toast.success(`Sent ${successCount} queued message${successCount > 1 ? 's' : ''}`, {
+          id: 'sync-success',
+          duration: 3000,
+        } as any);
+      }, 0);
       
       if (remainingCount > 0) {
-        toast.info(`${remainingCount} message${remainingCount > 1 ? 's' : ''} still pending`, {
-          id: 'sync-pending',
-          duration: 3000,
-        });
+        // Fix: Prevent toast causing re-renders
+        setTimeout(() => {
+          toast.info(`${remainingCount} message${remainingCount > 1 ? 's' : ''} still pending`, {
+            id: 'sync-pending',
+            duration: 3000,
+          } as any);
+        }, 0);
       }
     }
     
     setIsBackgroundSyncing(false);
   }, [isConnected, config?.realtime?.enabled]);
 
+  // Fix: Ensure we don't run sync too often
   useEffect(() => {
-    if (isConnected && pendingCount > 0 && config?.realtime?.enabled) {
-      syncOfflineMessages();
+    let shouldSync = isConnected && pendingCount > 0 && config?.realtime?.enabled;
+    
+    if (shouldSync && !isBackgroundSyncing) {
+      // Add a small delay to prevent immediate syncing on mount
+      const timer = setTimeout(() => {
+        syncOfflineMessages();
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
-  }, [isConnected, pendingCount, config?.realtime?.enabled, syncOfflineMessages]);
+  }, [isConnected, pendingCount, config?.realtime?.enabled, syncOfflineMessages, isBackgroundSyncing]);
 
   useEffect(() => {
     if (!config?.realtime?.enabled) return;
@@ -167,9 +188,12 @@ export function useRealTime(
     addMessageToQueue(message, chatChannelName);
     setPendingCount(getPendingMessageCount());
     
-    toast.info('Message will be sent when connection is restored', {
-      duration: 3000,
-    });
+    // Fix: Prevent toast causing re-renders
+    setTimeout(() => {
+      toast.info('Message will be sent when connection is restored', {
+        duration: 3000,
+      } as any);
+    }, 0);
   }, [chatChannelName]);
 
   return {

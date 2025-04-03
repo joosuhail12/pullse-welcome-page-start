@@ -1,4 +1,3 @@
-
 /**
  * Utility for managing offline message queuing
  */
@@ -47,10 +46,13 @@ export function addMessageToQueue(
     // Notify the user visually that the message is queued
     if (queue.length === 1) {
       // Only show toast for first queued message to avoid spam
-      toast({
-        title: "Message queued",
-        description: "Will be sent automatically when connection is restored",
-      });
+      // Fix: Use setTimeout to avoid re-render issues
+      setTimeout(() => {
+        toast({
+          title: "Message queued",
+          description: "Will be sent automatically when connection is restored",
+        } as any);
+      }, 0);
     }
   } catch (error) {
     console.error('Error adding message to offline queue:', error);
@@ -103,11 +105,14 @@ export function removeMessageFromQueue(messageId: string): void {
     
     // If queue is now empty and was previously not, show a toast
     if (queue.length > 0 && updatedQueue.length === 0) {
-      toast({
-        title: "All messages sent",
-        description: "Your queued messages have been delivered",
-        variant: "default"
-      });
+      // Fix: Use setTimeout to avoid re-render issues
+      setTimeout(() => {
+        toast({
+          title: "All messages sent",
+          description: "Your queued messages have been delivered",
+          variant: "default"
+        } as any);
+      }, 0);
     }
   } catch (error) {
     console.error('Error removing message from queue:', error);
@@ -122,10 +127,13 @@ export function clearMessageQueue(): void {
     localStorage.removeItem(OFFLINE_QUEUE_KEY);
     
     // Show a toast when queue is cleared manually
-    toast({
-      title: "Queue cleared",
-      description: "All pending messages have been removed",
-    });
+    // Fix: Use setTimeout to avoid re-render issues
+    setTimeout(() => {
+      toast({
+        title: "Queue cleared",
+        description: "All pending messages have been removed",
+      } as any);
+    }, 0);
   } catch (error) {
     console.error('Error clearing message queue:', error);
   }

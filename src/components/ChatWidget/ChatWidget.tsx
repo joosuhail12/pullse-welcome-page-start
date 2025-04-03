@@ -51,32 +51,36 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
   }, []);
   
   useEffect(() => {
-    if (!loading && config.realtime?.enabled && workspaceId) {
+    if (!loading && config?.realtime?.enabled && workspaceId) {
       const authUrl = getAblyAuthUrl(workspaceId);
       
       initializeAbly(authUrl)
         .then(() => {
           console.log('Ably initialized successfully');
-          toast.success('Chat connection established');
+          setTimeout(() => {
+            toast.success('Chat connection established');
+          }, 0);
         })
         .catch(err => {
           console.error('Failed to initialize Ably:', err);
-          toast.error('Failed to establish chat connection');
+          setTimeout(() => {
+            toast.error('Failed to establish chat connection');
+          }, 0);
         });
       
       return () => {
         cleanupAbly();
       };
     }
-  }, [loading, config.realtime?.enabled, workspaceId]);
+  }, [loading, config?.realtime?.enabled, workspaceId]);
   
   const widgetStyle = useMemo(() => {
     return {
-      ...(config.branding?.primaryColor && {
+      ...(config?.branding?.primaryColor && {
         '--vivid-purple': config.branding.primaryColor,
       } as React.CSSProperties)
     };
-  }, [config.branding?.primaryColor]);
+  }, [config?.branding?.primaryColor]);
 
   useEffect(() => {
     if (isOpen) {
@@ -101,7 +105,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
 
   const handleReconnect = useCallback(() => {
     if (connectionState === 'disconnected' || connectionState === 'suspended' || connectionState === 'failed') {
-      toast.loading('Attempting to reconnect...', { id: 'reconnecting' });
+      setTimeout(() => {
+        toast.loading('Attempting to reconnect...', { id: 'reconnecting' } as any);
+      }, 0);
       
       cleanupAbly();
       
@@ -111,10 +117,14 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
           
           initializeAbly(authUrl)
             .then(() => {
-              toast.success('Successfully reconnected', { id: 'reconnecting' });
+              setTimeout(() => {
+                toast.success('Successfully reconnected', { id: 'reconnecting' } as any);
+              }, 0);
             })
             .catch(err => {
-              toast.error('Failed to reconnect', { id: 'reconnecting' });
+              setTimeout(() => {
+                toast.error('Failed to reconnect', { id: 'reconnecting' } as any);
+              }, 0);
               console.error('Failed to reconnect:', err);
             });
         }
@@ -128,7 +138,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
   }, [handleStartChat, config]);
 
   const renderFooter = useCallback(() => {
-    if (!config.branding?.showBrandingBar) return null;
+    if (!config?.branding?.showBrandingBar) return null;
     
     return (
       <div className="mt-auto border-t border-gray-100 p-2 flex items-center justify-center gap-1 text-xs text-gray-400">
@@ -140,7 +150,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
         />
         <span>Pullse</span>
         
-        {config.realtime?.enabled && (
+        {config?.realtime?.enabled && (
           <div 
             className={`ml-1 w-2 h-2 rounded-full ${
               isConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'
@@ -152,10 +162,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
         )}
       </div>
     );
-  }, [config.branding?.showBrandingBar, config.realtime?.enabled, isConnected, connectionState, handleReconnect]);
+  }, [config?.branding?.showBrandingBar, config?.realtime?.enabled, isConnected, connectionState, handleReconnect]);
 
   const renderLauncher = useCallback(() => {
-    const buttonStyle = config.branding?.primaryColor 
+    const buttonStyle = config?.branding?.primaryColor 
       ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
       : {};
     
@@ -180,7 +190,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
           aria-controls="chat-widget-container"
           aria-haspopup="dialog"
         >
-          {config.realtime?.enabled && !isConnected ? (
+          {config?.realtime?.enabled && !isConnected ? (
             <WifiOff size={24} className="text-white animate-pulse" aria-hidden="true" />
           ) : (
             <MessageSquare size={24} className="text-white" aria-hidden="true" />
@@ -197,7 +207,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
         </Button>
       </div>
     );
-  }, [config.branding?.primaryColor, config.realtime?.enabled, isConnected, isOpen, pendingMessages, toggleChat, unreadCount]);
+  }, [config?.branding?.primaryColor, config?.realtime?.enabled, isConnected, isOpen, pendingMessages, toggleChat, unreadCount]);
 
   if (loading) {
     return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
@@ -247,7 +257,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
               </div>
             )}
             
-            {config.realtime?.enabled && !isConnected && (
+            {config?.realtime?.enabled && !isConnected && (
               <div 
                 className="absolute top-0 left-0 w-full bg-red-500 text-white text-xs py-1 px-2 text-center cursor-pointer"
                 onClick={handleReconnect}
