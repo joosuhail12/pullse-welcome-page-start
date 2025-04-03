@@ -1,3 +1,4 @@
+
 export interface Message {
   id: string;
   text: string;
@@ -31,6 +32,7 @@ export interface Conversation {
   metadata?: any;
   sessionId?: string;
   contactIdentified?: boolean;
+  unread?: boolean; // New property to track unread status
 }
 
 export interface Agent {

@@ -38,6 +38,17 @@ async function withRetry<T>(operation: () => T, maxRetries = MAX_RETRY_ATTEMPTS)
 }
 
 /**
+ * Notify other tabs when storage changes
+ */
+function notifyStorageChange() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('storage-updated', { 
+      detail: { key: STORAGE_KEY, timestamp: new Date() } 
+    }));
+  }
+}
+
+/**
  * Load all conversations from localStorage with decryption
  */
 export function loadConversationsFromStorage(): Conversation[] {
@@ -90,6 +101,54 @@ export function getConversationFromStorage(conversationId: string): Conversation
     console.error('Error getting conversation from storage', error);
     throw new Error('Failed to get conversation from storage');
   }
+}
+
+/**
+ * Mark a conversation as read
+ */
+export async function markConversationAsRead(conversationId: string): Promise<void> {
+  return withRetry(() => {
+    try {
+      const conversations = loadConversationsFromStorage();
+      const updatedConversations = conversations.map(c => 
+        c.id === conversationId ? { ...c, unread: false } : c
+      );
+      
+      // Encrypt data before storing
+      const encryptedData = encryptData(JSON.stringify(updatedConversations));
+      localStorage.setItem(STORAGE_KEY, encryptedData);
+      
+      // Notify other tabs
+      notifyStorageChange();
+    } catch (error) {
+      console.error('Error marking conversation as read', error);
+      throw new Error('Failed to mark conversation as read');
+    }
+  });
+}
+
+/**
+ * Mark a conversation as unread
+ */
+export async function markConversationAsUnread(conversationId: string): Promise<void> {
+  return withRetry(() => {
+    try {
+      const conversations = loadConversationsFromStorage();
+      const updatedConversations = conversations.map(c => 
+        c.id === conversationId ? { ...c, unread: true } : c
+      );
+      
+      // Encrypt data before storing
+      const encryptedData = encryptData(JSON.stringify(updatedConversations));
+      localStorage.setItem(STORAGE_KEY, encryptedData);
+      
+      // Notify other tabs
+      notifyStorageChange();
+    } catch (error) {
+      console.error('Error marking conversation as unread', error);
+      throw new Error('Failed to mark conversation as unread');
+    }
+  });
 }
 
 /**
@@ -151,9 +210,51 @@ export async function saveConversationToStorage(conversation: Conversation): Pro
       // Encrypt data before storing
       const encryptedData = encryptData(JSON.stringify(conversations));
       localStorage.setItem(STORAGE_KEY, encryptedData);
+      
+      // Notify other tabs
+      notifyStorageChange();
     } catch (error) {
       console.error('Error saving conversation to storage', error);
       throw new Error('Failed to save conversation to storage');
+    }
+  });
+}
+
+/**
+ * Save a new message to a conversation and mark as unread
+ */
+export async function saveMessageToConversation(
+  conversationId: string, 
+  message: any, 
+  markUnread = false
+): Promise<void> {
+  return withRetry(() => {
+    try {
+      const conversations = loadConversationsFromStorage();
+      const existingIndex = conversations.findIndex(c => c.id === conversationId);
+      
+      if (existingIndex >= 0) {
+        const conversation = conversations[existingIndex];
+        const messages = [...(conversation.messages || []), message];
+        
+        conversations[existingIndex] = {
+          ...conversation,
+          messages,
+          lastMessage: message.text,
+          timestamp: message.timestamp,
+          unread: markUnread ? true : conversation.unread
+        };
+        
+        // Encrypt data before storing
+        const encryptedData = encryptData(JSON.stringify(conversations));
+        localStorage.setItem(STORAGE_KEY, encryptedData);
+        
+        // Notify other tabs
+        notifyStorageChange();
+      }
+    } catch (error) {
+      console.error('Error saving message to conversation', error);
+      throw new Error('Failed to save message to conversation');
     }
   });
 }
@@ -171,6 +272,9 @@ export async function deleteConversationFromStorage(conversationId: string): Pro
       // Encrypt data before storing
       const encryptedData = encryptData(JSON.stringify(updatedConversations));
       localStorage.setItem(STORAGE_KEY, encryptedData);
+      
+      // Notify other tabs
+      notifyStorageChange();
     } catch (error) {
       console.error('Error deleting conversation from storage', error);
       throw new Error('Failed to delete conversation from storage');
@@ -186,6 +290,9 @@ export async function clearConversationsFromStorage(): Promise<void> {
   return withRetry(() => {
     try {
       localStorage.removeItem(STORAGE_KEY);
+      
+      // Notify other tabs
+      notifyStorageChange();
     } catch (error) {
       console.error('Error clearing conversations from storage', error);
       throw new Error('Failed to clear conversations from storage');

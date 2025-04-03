@@ -5,6 +5,7 @@ import { Message } from '../types';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
 import { Check, CheckCheck } from 'lucide-react';
+import { markConversationAsRead } from '../utils/storage';
 
 interface MessageListProps {
   messages: Message[];
@@ -21,6 +22,7 @@ interface MessageListProps {
   hasMoreMessages?: boolean; // Whether there are more messages to load
   isLoadingMore?: boolean; // Whether we're currently loading more messages
   inlineFormComponent?: React.ReactNode; // New prop for inline form component
+  conversationId?: string; // Add conversation ID to mark as read
 }
 
 const MessageList = ({ 
@@ -37,13 +39,15 @@ const MessageList = ({
   onScrollTop,
   hasMoreMessages = false,
   isLoadingMore = false,
-  inlineFormComponent
+  inlineFormComponent,
+  conversationId
 }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [lastScrollTop, setLastScrollTop] = useState(0);
+  const [hasViewedMessages, setHasViewedMessages] = useState(false);
 
   // Function to check if a message should be grouped with the previous one
   const isConsecutiveMessage = (index: number) => {
@@ -78,8 +82,24 @@ const MessageList = ({
       onScrollTop();
     }
 
+    // Mark messages as viewed when scrolled
+    if (!hasViewedMessages && conversationId) {
+      setHasViewedMessages(true);
+      markConversationAsRead(conversationId)
+        .catch(err => console.error('Failed to mark conversation as read:', err));
+    }
+
     setLastScrollTop(scrollTop);
-  }, [lastScrollTop, onScrollTop, hasMoreMessages, isLoadingMore]);
+  }, [lastScrollTop, onScrollTop, hasMoreMessages, isLoadingMore, hasViewedMessages, conversationId]);
+
+  // Mark messages as viewed when component mounts
+  useEffect(() => {
+    if (conversationId && !hasViewedMessages) {
+      setHasViewedMessages(true);
+      markConversationAsRead(conversationId)
+        .catch(err => console.error('Failed to mark conversation as read:', err));
+    }
+  }, [conversationId, hasViewedMessages]);
 
   // Get the viewport element from ScrollArea and attach scroll event
   useEffect(() => {
@@ -213,4 +233,4 @@ const MessageList = ({
   );
 };
 
-export default MessageList;
+export default React.memo(MessageList);

@@ -6,6 +6,7 @@ import { getChatSessionId } from '../utils/cookies';
 import { useMessageActions } from './useMessageActions';
 import { useRealTime } from './useRealTime';
 import { createSystemMessage } from '../utils/messageHandlers';
+import { markConversationAsRead } from '../utils/storage';
 
 export function useChatMessages(
   conversation: Conversation,
@@ -27,6 +28,14 @@ export function useChatMessages(
   const sessionId = getChatSessionId();
   // Create channel name based on conversation
   const chatChannelName = `conversation:${conversation.id}`;
+  
+  // Mark the conversation as read when opened
+  useEffect(() => {
+    if (conversation.id && conversation.unread) {
+      markConversationAsRead(conversation.id)
+        .catch(err => console.error('Failed to mark conversation as read:', err));
+    }
+  }, [conversation.id, conversation.unread]);
   
   // Use the real-time hook
   const {
@@ -69,7 +78,8 @@ export function useChatMessages(
         messages: messages,
         lastMessage: messages[messages.length - 1].text,
         timestamp: messages[messages.length - 1].timestamp,
-        sessionId: sessionId
+        sessionId: sessionId,
+        unread: false // Mark as read when we update the conversation
       };
       onUpdateConversation(updatedConversation);
     }
