@@ -29,6 +29,7 @@ export const showSuccessToast = (
         {action.label}
       </ToastAction>
     ) : undefined,
+    type: 'success',
   });
 };
 
@@ -46,6 +47,7 @@ export const showErrorToast = (
         {action.label}
       </ToastAction>
     ) : undefined,
+    type: 'error',
   });
 };
 
@@ -64,6 +66,7 @@ export const showWarningToast = (
         {action.label}
       </ToastAction>
     ) : undefined,
+    type: 'warning',
   });
 };
 
@@ -82,6 +85,7 @@ export const showInfoToast = (
         {action.label}
       </ToastAction>
     ) : undefined,
+    type: 'info',
   });
 };
 
@@ -106,6 +110,7 @@ export const showLoadingToast = (
         description: '',
         variant: 'default',
         className: 'bg-green-50 border-green-200',
+        type: 'success',
       });
     })
     .catch((error) => {
@@ -114,6 +119,7 @@ export const showLoadingToast = (
         title: errorMessage,
         description: error.message || 'An error occurred',
         variant: 'destructive',
+        type: 'error',
       });
     });
     
