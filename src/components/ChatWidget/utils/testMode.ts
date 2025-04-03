@@ -1,130 +1,126 @@
 
-/**
- * Test Mode Utilities
- * 
- * This module provides functionality for test mode in the chat widget,
- * allowing customers to preview the widget with sample data.
- */
+import { v4 as uuidv4 } from 'uuid';
+import { Conversation, Message } from '../types';
 
-// Flag to track if test mode is enabled
+// Store the test mode flag
 let testModeEnabled = false;
 
-// Set test mode state
-export function setTestMode(enabled: boolean): void {
+// Check if test mode is enabled
+export const isTestMode = (): boolean => {
+  // Check session storage first
+  try {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      const storedValue = sessionStorage.getItem('pullse_test_mode');
+      if (storedValue === 'enabled') {
+        return true;
+      }
+    }
+  } catch (e) {
+    // Ignore storage errors
+  }
+  
+  // Fall back to our in-memory flag
+  return testModeEnabled;
+};
+
+// Set test mode status
+export const setTestMode = (enabled: boolean): void => {
   testModeEnabled = enabled;
   
-  // Store in sessionStorage so it persists during page refreshes in the same session
-  if (enabled) {
-    try {
-      sessionStorage.setItem('pullse_test_mode', 'enabled');
-    } catch (e) {
-      console.warn('Failed to store test mode setting in sessionStorage');
-    }
-  } else {
-    try {
-      sessionStorage.removeItem('pullse_test_mode');
-    } catch (e) {
-      // Ignore errors
-    }
-  }
-}
-
-// Check if test mode is enabled
-export function isTestMode(): boolean {
-  if (testModeEnabled) return true;
-  
-  // Check sessionStorage as fallback
+  // Also store in session storage for persistence
   try {
-    return sessionStorage.getItem('pullse_test_mode') === 'enabled';
-  } catch (e) {
-    return false;
-  }
-}
-
-// Get sample messages for test mode
-export function getSampleMessages() {
-  return [
-    {
-      id: 'test-msg-1',
-      text: 'Hello! How can I help you today?',
-      sender: 'agent',
-      timestamp: new Date(Date.now() - 300000),
-      status: 'delivered',
-      agentId: 'test-agent'
-    },
-    {
-      id: 'test-msg-2',
-      text: 'I have a question about your services.',
-      sender: 'user',
-      timestamp: new Date(Date.now() - 240000),
-      status: 'delivered'
-    },
-    {
-      id: 'test-msg-3',
-      text: 'Of course! I\'d be happy to help with any questions about our services. What specifically would you like to know?',
-      sender: 'agent',
-      timestamp: new Date(Date.now() - 180000),
-      status: 'delivered',
-      agentId: 'test-agent'
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      if (enabled) {
+        sessionStorage.setItem('pullse_test_mode', 'enabled');
+      } else {
+        sessionStorage.removeItem('pullse_test_mode');
+      }
     }
-  ];
-}
+  } catch (e) {
+    // Ignore storage errors
+  }
+};
 
-// Get sample conversations for test mode
-export function getSampleConversations() {
+// Generate sample conversations for test mode
+export const getSampleConversations = (): Conversation[] => {
   return [
     {
-      id: 'test-convo-1',
-      title: 'Support Inquiry',
-      preview: 'I have a question about your services',
-      timestamp: new Date(Date.now() - 86400000),
-      unreadCount: 0,
+      id: 'test-conversation-1',
+      title: 'Test Conversation 1',
+      preview: 'This is a test conversation',
+      timestamp: new Date(),
+      unreadCount: 2,
       status: 'active',
-      messages: getSampleMessages(),
+      messages: [
+        {
+          id: uuidv4(),
+          text: 'Hello! How can I help you today?',
+          sender: 'agent',
+          timestamp: new Date(Date.now() - 60000),
+          status: 'delivered'
+        },
+        {
+          id: uuidv4(),
+          text: 'I need help with my account',
+          sender: 'user',
+          timestamp: new Date(Date.now() - 30000),
+          status: 'delivered'
+        }
+      ],
       agentInfo: {
-        id: 'test-agent',
         name: 'Test Agent',
         avatar: null,
         status: 'online'
       }
-    },
-    {
-      id: 'test-convo-2',
-      title: 'Billing Question',
-      preview: 'Can you help with my invoice?',
-      timestamp: new Date(Date.now() - 172800000),
-      unreadCount: 0,
-      status: 'closed',
-      messages: [],
-      agentInfo: {
-        id: 'test-agent-2',
-        name: 'Billing Support',
-        avatar: null,
-        status: 'offline'
-      }
     }
   ];
-}
+};
 
-// Simulate typing delay for test mode
-export function simulateAgentTypingInTestMode(callback: () => void): { cancel: () => void } {
-  const timer = setTimeout(() => {
-    callback();
-  }, 2000 + Math.random() * 1000);
+// Simulate typing indicator in test mode
+export const simulateAgentTypingInTestMode = (
+  callback: () => void
+): { cancel: () => void } => {
+  // Random typing time between 1.5 and 4 seconds
+  const typingTime = Math.floor(Math.random() * 2500) + 1500;
   
+  // Set timeout
+  const timeoutId = setTimeout(() => {
+    callback();
+  }, typingTime);
+  
+  // Return object with cancel function
   return {
-    cancel: () => clearTimeout(timer)
+    cancel: () => clearTimeout(timeoutId)
   };
-}
+};
 
 // Simulate agent response in test mode
-export function simulateAgentResponseInTestMode(text: string): { id: string; text: string; sender: string; timestamp: Date; status: string; agentId: string } {
+export const simulateAgentResponseInTestMode = (
+  text: string
+): Message => {
   return {
-    id: 'test-response-' + Date.now(),
+    id: uuidv4(),
     text,
     sender: 'agent',
     timestamp: new Date(),
-    status: 'delivered',
-    agentId: 'test-agent'
+    status: 'delivered'
   };
-}
+};
+
+// Create a test conversation
+export const createTestConversation = (
+  title = 'New Test Conversation'
+): Conversation => {
+  return {
+    id: `test-conversation-${Date.now()}`,
+    title,
+    timestamp: new Date(),
+    status: 'active',
+    messages: [],
+    agentInfo: {
+      name: 'Test Agent',
+      avatar: null,
+      status: 'online'
+    }
+  };
+};

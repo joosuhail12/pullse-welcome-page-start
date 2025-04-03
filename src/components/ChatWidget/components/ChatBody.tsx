@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Message } from '../types';
+import { Message, MessageReadStatus } from '../types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import PoweredByBar from './PoweredByBar';
@@ -15,7 +15,7 @@ interface ChatBodyProps {
   handleUserTyping: () => void;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
-  readReceipts: Record<string, Date>;
+  readReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }>;
   onMessageReaction?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
   searchTerm: string;
   messageIds: string[];
@@ -30,6 +30,7 @@ interface ChatBodyProps {
   conversationId: string;
   agentStatus?: 'online' | 'offline' | 'away' | 'busy';
   onToggleHighlight?: (messageId: string) => void;
+  testMode?: boolean;
 }
 
 const ChatBody: React.FC<ChatBodyProps> = ({
@@ -56,7 +57,8 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   inlineFormComponent,
   conversationId,
   agentStatus,
-  onToggleHighlight
+  onToggleHighlight,
+  testMode
 }) => {
   return (
     <div className="flex flex-col flex-grow overflow-hidden">
@@ -71,7 +73,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
             readReceipts={readReceipts}
             onMessageReaction={onMessageReaction}
             searchResults={messageIds}
-            highlightMessage={highlightText}
+            highlightMessage={(text) => highlightText(text, searchTerm)}
             searchTerm={searchTerm}
             agentAvatar={agentAvatar}
             userAvatar={userAvatar}
@@ -81,6 +83,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
             conversationId={conversationId}
             agentStatus={agentStatus}
             onToggleHighlight={onToggleHighlight}
+            testMode={testMode}
           />
         </div>
       )}
@@ -92,9 +95,11 @@ const ChatBody: React.FC<ChatBodyProps> = ({
           handleSendMessage={handleSendMessage}
           handleFileUpload={handleFileUpload}
           handleEndChat={handleEndChat}
-          hasUserSentMessage={isTyping}
+          hasUserSentMessage={messages.length > 0}
           onTyping={handleUserTyping}
           disabled={showInlineForm}
+          testMode={testMode}
+          onFileUpload={handleFileUpload}
         />
         
         <PoweredByBar />

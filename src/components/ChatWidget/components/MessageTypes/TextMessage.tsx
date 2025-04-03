@@ -1,20 +1,45 @@
 
 import React from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface TextMessageProps {
   text: string;
-  renderText: (text: string) => React.ReactNode;
+  highlightText?: string;
+  className?: string;
 }
 
-const TextMessage = ({ text, renderText }: TextMessageProps) => {
-  const isMobile = useIsMobile();
-  const textSizeClass = isMobile 
-    ? "text-xs sm:text-sm leading-tight" 
-    : "text-sm sm:text-base leading-relaxed";
-  
+const TextMessage: React.FC<TextMessageProps> = ({
+  text,
+  highlightText,
+  className
+}) => {
+  // Function to highlight part of the text
+  const highlightMatches = () => {
+    if (!highlightText?.trim()) {
+      return <span>{text}</span>;
+    }
+
+    const regex = new RegExp(`(${highlightText})`, 'gi');
+    const parts = text.split(regex);
+    
+    return (
+      <>
+        {parts.map((part, index) => {
+          const isMatch = part.toLowerCase() === highlightText.toLowerCase();
+          return isMatch ? (
+            <mark key={index} className="bg-yellow-200 rounded px-0.5">{part}</mark>
+          ) : (
+            <React.Fragment key={index}>{part}</React.Fragment>
+          );
+        })}
+      </>
+    );
+  };
+
   return (
-    <p className={`${textSizeClass} tracking-wide break-words`}>{renderText(text)}</p>
+    <div className={cn("whitespace-pre-wrap break-words", className)}>
+      {highlightText ? highlightMatches() : text}
+    </div>
   );
 };
 

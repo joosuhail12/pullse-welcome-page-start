@@ -1,4 +1,3 @@
-
 /**
  * Chat Widget Configuration Types
  */
@@ -13,10 +12,43 @@ export interface PreChatFormField {
   options?: { value: string; label: string }[];
 }
 
-export interface PreChatForm {
-  enabled: boolean;
-  title?: string;
-  fields: PreChatFormField[];
+export type ChatEventType = 
+  | 'typing'
+  | 'message:sent'
+  | 'message:delivered'
+  | 'message:read'
+  | 'message:received'
+  | 'message:fileUploaded'
+  | 'chat:started'
+  | 'chat:ended'
+  | 'chat:agentJoined'
+  | 'chat:agentLeft'
+  | 'chat:messageReceived'
+  | 'chat:messageSent'
+  | 'contact:initiatedChat'
+  | 'contact:formCompleted'
+  | 'error'
+  | 'chat:connectionChange'
+  | 'chat:error'
+  | 'versionUpdate';
+
+export type SecurityEventType =
+  | 'authentication'
+  | 'authorization'
+  | 'rateLimit'
+  | 'validation'
+  | 'session'
+  | 'csrf'
+  | 'xss'
+  | 'dataAccess'
+  | 'apiAccess'
+  | 'embedding'
+  | 'userAction';
+
+export interface ChatEventPayload {
+  type: ChatEventType;
+  timestamp: Date;
+  [key: string]: any;
 }
 
 export interface ChatBranding {
@@ -50,25 +82,6 @@ export interface ChatRealtime {
   enabled: boolean;
   // No longer storing API key directly here
   authEndpoint?: string;
-}
-
-export type ChatEventType = 
-  | 'chat:open'
-  | 'chat:close'
-  | 'chat:messageSent'
-  | 'chat:messageReceived'
-  | 'contact:initiatedChat'
-  | 'contact:formCompleted'
-  | 'message:reacted'
-  | 'chat:typingStarted'
-  | 'chat:typingStopped'
-  | 'message:fileUploaded'
-  | 'chat:ended';
-
-export interface ChatEventPayload {
-  type: ChatEventType;
-  timestamp: Date;
-  data?: any;
 }
 
 export interface ChatWidgetConfig {
@@ -138,4 +151,3 @@ export const defaultConfig: ChatWidgetConfig = {
     authEndpoint: '/api/chat-widget/token'
   }
 };
-

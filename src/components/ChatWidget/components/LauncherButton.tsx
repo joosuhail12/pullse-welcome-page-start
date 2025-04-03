@@ -12,6 +12,7 @@ interface LauncherButtonProps {
   onClick: () => void;
   config: ChatWidgetConfig;
   positionStyles: React.CSSProperties;
+  testMode?: boolean;
 }
 
 const LauncherButton: React.FC<LauncherButtonProps> = ({
@@ -19,7 +20,8 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
   unreadCount,
   onClick,
   config,
-  positionStyles
+  positionStyles,
+  testMode
 }) => {
   const isMobile = useIsMobile();
   
@@ -46,6 +48,12 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
           >
             {unreadCount}
           </Badge>
+        )}
+        
+        {testMode && (
+          <div className="absolute -top-2 -right-2 bg-orange-500 text-white text-[8px] px-1 py-0.5 rounded-full">
+            TEST
+          </div>
         )}
       </Button>
     </div>
