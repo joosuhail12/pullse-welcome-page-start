@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Message, AgentStatus } from '../../types';
+import { Message, AgentStatus, MessageReadStatus } from '../../types';
 import MessageReadReceipt from '../MessageReadReceipt';
 import MessageContent from './MessageContent';
 import MessageAvatar from './MessageAvatar';
@@ -8,29 +8,37 @@ import { cn } from '@/lib/utils';
 
 interface MessageBubbleProps {
   message: Message;
-  isLast: boolean;
+  isLast?: boolean;
   showReadReceipt?: boolean;
-  readStatus?: { status: 'sent' | 'delivered' | 'read'; timestamp?: Date };
-  highlightText?: (text: string) => string[];
+  readStatus?: MessageReadStatus;
+  readTimestamp?: Date;
   searchTerm?: string;
+  isHighlighted?: boolean;
   agentAvatar?: string;
   userAvatar?: string;
-  showEnhancedUI?: boolean;
+  showAvatar?: boolean;
+  isConsecutive?: boolean;
   agentStatus?: AgentStatus;
-  onToggleHighlight?: (messageId: string) => void;
+  onReply?: (text: string) => void;
+  onReaction?: (messageId: string, emoji: string) => void;
+  onToggleHighlight?: () => void;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ 
   message, 
-  isLast, 
+  isLast = false, 
   showReadReceipt = false,
   readStatus,
-  highlightText,
+  readTimestamp,
   searchTerm,
+  isHighlighted,
   agentAvatar,
   userAvatar,
-  showEnhancedUI = true,
+  showAvatar = true,
+  isConsecutive = false,
   agentStatus,
+  onReply,
+  onReaction,
   onToggleHighlight
 }) => {
   const isUserMessage = message.role === 'user' || message.sender === 'user';
@@ -57,12 +65,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       data-status={message.status}
     >
       {/* Show avatar for system messages on the left */}
-      {!isUserMessage && (
+      {!isUserMessage && showAvatar && (
         <MessageAvatar 
           isUserMessage={false}
+          userAvatar={userAvatar}
           agentAvatar={agentAvatar}
           agentStatus={agentStatus}
-          agentName={getDisplayName()}
         />
       )}
       
@@ -77,27 +85,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         {/* Message Content */}
         <MessageContent 
           message={message} 
-          highlightText={highlightText}
           searchTerm={searchTerm}
-          isLast={isLast}
-          onToggleHighlight={onToggleHighlight ? () => onToggleHighlight(message.id) : undefined}
+          onToggleHighlight={onToggleHighlight}
         />
         
         {/* Show read receipt for user messages */}
         {isUserMessage && isLast && showReadReceipt && readStatus && (
           <MessageReadReceipt 
-            status={readStatus.status} 
-            timestamp={readStatus.timestamp}
+            status={readStatus}
+            timestamp={readTimestamp}
           />
         )}
       </div>
       
       {/* Show avatar for user messages on the right */}
-      {isUserMessage && (
+      {isUserMessage && showAvatar && (
         <MessageAvatar 
           isUserMessage={true}
           userAvatar={userAvatar}
-          userName={getDisplayName()}
+          agentAvatar={agentAvatar}
         />
       )}
     </div>
