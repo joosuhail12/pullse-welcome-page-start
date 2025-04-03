@@ -7,6 +7,7 @@ import { validateField, validateFormData, sanitizeInput } from '../utils/validat
 import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig } from '../config';
 import { User, AtSign } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface PreChatFormProps {
   config: ChatWidgetConfig;
@@ -18,6 +19,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formValid, setFormValid] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const isMobile = useIsMobile();
 
   // Handle input change for form
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,17 +93,17 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mb-4 border border-gray-100 animate-fade-in">
-      <h3 className="text-center font-semibold mb-4 text-gray-700">
+    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 border border-gray-100 animate-fade-in w-full max-w-full sm:max-w-md mx-auto">
+      <h3 className="text-center font-semibold mb-3 sm:mb-4 text-gray-700 text-sm sm:text-base">
         {config.preChatForm.title || 'Please provide your information to continue'}
       </h3>
       
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {config.preChatForm.fields.map((field) => (
           <div key={field.id} className="space-y-1">
             <Label 
               htmlFor={field.id} 
-              className="text-sm font-medium flex items-center gap-1"
+              className="text-xs sm:text-sm font-medium flex items-center gap-1"
             >
               {field.label}
               {field.required && <span className="text-red-500 ml-1">*</span>}
@@ -121,7 +123,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
                 value={formData[field.name] || ''}
                 onChange={handleInputChange}
                 onBlur={() => handleBlur(field.name)}
-                className={`pl-10 h-10 transition-all ${
+                className={`pl-10 h-9 sm:h-10 transition-all text-xs sm:text-sm ${
                   touched[field.name] && formErrors[field.name] 
                     ? 'border-red-500 bg-red-50' 
                     : touched[field.name] && !formErrors[field.name]
@@ -135,7 +137,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
             {touched[field.name] && formErrors[field.name] && (
               <p 
                 id={`${field.id}-error`} 
-                className="text-xs text-red-500 mt-1 animate-fade-in"
+                className="text-2xs sm:text-xs text-red-500 mt-1 animate-fade-in"
               >
                 {formErrors[field.name]}
               </p>
@@ -144,11 +146,11 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
         ))}
       </div>
       
-      <div className="mt-6">
+      <div className="mt-4 sm:mt-6">
         <Button 
           onClick={submitForm} 
           disabled={!formValid}
-          className="w-full h-11 text-white transition-all"
+          className="w-full h-9 sm:h-11 text-white transition-all text-xs sm:text-sm"
           style={{
             backgroundColor: primaryColor,
             opacity: formValid ? 1 : 0.7
@@ -157,7 +159,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
           Start Chat
         </Button>
         
-        <p className="text-xs text-center text-gray-500 mt-3">
+        <p className="text-2xs sm:text-xs text-center text-gray-500 mt-2 sm:mt-3">
           Your information helps us provide better assistance
         </p>
       </div>

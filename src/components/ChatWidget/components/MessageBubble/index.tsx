@@ -12,6 +12,7 @@ import StatusMessage from '../MessageTypes/StatusMessage';
 import TextMessage from '../MessageTypes/TextMessage';
 import { Star, StarOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MessageBubbleProps {
   message: Message;
@@ -47,6 +48,7 @@ const MessageBubble = ({
      (message.status !== 'delivered' && message.status !== 'read' && message.status !== 'sent'))
   );
   const [animateReaction, setAnimateReaction] = useState(false);
+  const isMobile = useIsMobile();
   
   // Simulate file upload completion after a short delay
   React.useEffect(() => {
@@ -125,7 +127,7 @@ const MessageBubble = ({
           onClick={onToggleHighlight}
           title={isImportant ? "Remove highlight" : "Highlight message"}
         >
-          {isImportant ? <Star size={14} /> : <StarOff size={14} />}
+          {isImportant ? <Star size={isMobile ? 12 : 14} /> : <StarOff size={isMobile ? 12 : 14} />}
         </Button>
       );
     }
@@ -178,14 +180,15 @@ const MessageBubble = ({
   const sendingClass = message.sender === 'user' && message.status === 'sending' ? 'message-sending' : '';
   const fileUploadClass = message.type === 'file' && !fileUploading ? 'file-upload-success' : '';
   const importantClass = isImportant ? 'important-message' : '';
+  const responsiveClass = isMobile ? 'text-xs sm:text-sm max-w-[85%]' : 'max-w-[80%]';
 
   return (
     <div className={`flex items-start w-full ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
       {message.sender === 'system' && renderAvatar()}
-      <div className={`${bubbleClasses} max-w-[80%] ${actionableClass} ${sendingClass} ${fileUploadClass} ${importantClass}`}>
+      <div className={`${bubbleClasses} ${responsiveClass} ${actionableClass} ${sendingClass} ${fileUploadClass} ${importantClass}`}>
         {renderMessage()}
         <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             {message.sender === 'user' ? (
               <MessageStatus 
                 status={message.status} 
@@ -194,7 +197,7 @@ const MessageBubble = ({
                 fileUploading={fileUploading}
               />
             ) : (
-              <div className={`text-xs mt-2 text-gray-600`}>
+              <div className={`text-2xs sm:text-xs mt-1 sm:mt-2 text-gray-600`}>
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}

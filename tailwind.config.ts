@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -20,6 +21,10 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+      },
+      fontSize: {
+        '2xs': '0.625rem',  // 10px
+        '3xs': '0.5625rem', // 9px
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -202,6 +207,9 @@ export default {
       boxShadow: {
         'chat-bubble': '0 2px 8px rgba(0, 0, 0, 0.05)',
         'chat-widget': '0 4px 20px rgba(0, 0, 0, 0.1)'
+      },
+      screens: {
+        'xs': '480px',
       }
     }
   },

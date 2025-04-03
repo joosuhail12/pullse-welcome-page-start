@@ -7,6 +7,7 @@ import PreChatForm from '../../components/PreChatForm';
 import KeyboardShortcutsInfo from '../../components/KeyboardShortcutsInfo';
 import ChatKeyboardHandler from '../../components/ChatKeyboardHandler';
 import ChatBody from '../../components/ChatBody';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ChatViewPresentationProps {
   conversation: Conversation;
@@ -84,10 +85,12 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
   config,
   onToggleMessageImportance
 }) => {
+  const isMobile = useIsMobile();
+  
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
       return (
-        <div className="mb-4">
+        <div className="mb-2 sm:mb-4 px-2 sm:px-4">
           <PreChatForm config={config} onFormComplete={handleFormComplete} />
         </div>
       );
@@ -104,7 +107,7 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
       showSearchFeature={showSearchFeature}
     >
       <div 
-        className="flex flex-col h-[600px] bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 rounded-lg shadow-lg"
+        className="flex flex-col h-[600px] sm:h-[600px] max-h-[85vh] w-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 rounded-lg shadow-lg"
         style={chatViewStyle}
         role="region" 
         aria-label="Chat conversation"

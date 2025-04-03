@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TextMessageProps {
   text: string;
@@ -7,8 +8,11 @@ interface TextMessageProps {
 }
 
 const TextMessage = ({ text, renderText }: TextMessageProps) => {
+  const isMobile = useIsMobile();
+  const textSizeClass = isMobile ? "text-xs sm:text-sm" : "text-sm sm:text-base";
+  
   return (
-    <p className="text-base leading-relaxed tracking-wide">{renderText(text)}</p>
+    <p className={`${textSizeClass} leading-relaxed tracking-wide`}>{renderText(text)}</p>
   );
 };
 
