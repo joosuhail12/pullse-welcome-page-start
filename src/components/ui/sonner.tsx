@@ -4,7 +4,6 @@ import { Toaster as Sonner } from "sonner"
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  // Simplified version without theme handling to avoid potential circular dependencies
   return (
     <Sonner
       theme="system"
