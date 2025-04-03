@@ -1,4 +1,3 @@
-
 import React, { useState, lazy, Suspense } from 'react';
 import { MessageType, UserType } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
@@ -11,12 +10,10 @@ import { cn } from '@/lib/utils';
 import { Paperclip, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { sanitizeInput } from '../../utils/validation';
 
-// Lazy load less commonly used message types
 const CardMessage = lazy(() => import('../MessageTypes/CardMessage'));
 const FileMessage = lazy(() => import('../MessageTypes/FileMessage'));
 const QuickReplyMessage = lazy(() => import('../MessageTypes/QuickReplyMessage'));
 
-// Loading fallback for lazy components
 const LazyLoadFallback = () => (
   <div className="w-full h-16 bg-gray-100 animate-pulse rounded-md"></div>
 );
@@ -87,7 +84,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     }
   };
 
-  // Determine if the message is from the user or the agent
   const isUserMessage = message.sender === 'user';
   const isBotMessage = message.sender === 'bot' || message.sender === 'agent';
   const isSystemMessage = message.sender === 'system';
@@ -105,17 +101,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     : 'mx-auto max-w-[85%] text-center';
 
   const handleLongPress = (e: React.MouseEvent) => {
-    // Activate reactions on long press
     if (onReaction) {
       e.preventDefault();
       toggleReactions();
     }
   };
 
-  // Sanitize any text content before displaying
   const sanitizedText = message.text ? sanitizeInput(message.text) : '';
 
-  // Render text with highlighting when search is active
   const renderText = (text: string) => {
     if (searchTerm && searchTerm.length > 0) {
       const regex = new RegExp(`(${searchTerm})`, 'gi');
@@ -135,7 +128,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     return text;
   };
 
-  // Render message content based on type
   const renderMessageContent = () => {
     switch (message.type) {
       case 'text':
@@ -197,7 +189,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     }
   };
 
-  // Render reaction buttons for system messages
   const renderReactionButtons = () => {
     if (message.sender === 'system' && onReaction) {
       return (
@@ -246,6 +237,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
           userAvatar={userAvatar}
           agentAvatar={agentAvatar}
           agentStatus={agentStatus}
+          userName={message.metadata?.userName || ''}
+          agentName={message.metadata?.agentName || ''}
         />
       )}
 
@@ -261,7 +254,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         {renderMessageContent()}
         <MessageStatus timestamp={message.timestamp} />
         
-        {/* Read receipts - Only show for user messages */}
         {isUserMessage && (
           <div className="absolute -bottom-4 right-1">
             <MessageReadReceipt 

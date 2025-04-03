@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Bot } from 'lucide-react';
 import { AgentStatus } from '../../types';
@@ -10,14 +10,20 @@ export interface MessageAvatarProps {
   userAvatar?: string;
   agentAvatar?: string;
   agentStatus?: AgentStatus;
+  userName?: string;
+  agentName?: string;
 }
 
 const MessageAvatar = ({ 
   isUserMessage, 
   userAvatar, 
   agentAvatar,
-  agentStatus 
+  agentStatus,
+  userName = '', 
+  agentName = ''
 }: MessageAvatarProps) => {
+  const [imageError, setImageError] = useState(false);
+  
   // Determine status indicator color
   const getStatusColor = () => {
     switch (agentStatus) {
@@ -40,19 +46,70 @@ const MessageAvatar = ({
     }
   };
 
+  // Get initials for avatar fallback
+  const getInitials = () => {
+    const name = isUserMessage ? userName : agentName;
+    if (!name || name.trim() === '') return '';
+    
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  // Get fallback background color based on name
+  const getFallbackColor = () => {
+    const name = isUserMessage ? userName : agentName;
+    const colorOptions = [
+      'bg-blue-100 text-blue-600', 
+      'bg-green-100 text-green-600',
+      'bg-purple-100 text-purple-600',
+      'bg-amber-100 text-amber-600',
+      'bg-pink-100 text-pink-600',
+      'bg-indigo-100 text-indigo-600',
+      'bg-rose-100 text-rose-600'
+    ];
+    
+    if (!name || name.trim() === '') {
+      return isUserMessage ? 
+        'bg-gray-100 text-gray-500' : 
+        'bg-violet-100 text-violet-600';
+    }
+    
+    // Deterministic color selection based on name
+    const charSum = name
+      .split('')
+      .reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    
+    return colorOptions[charSum % colorOptions.length];
+  };
+
+  // Check if we should show initials fallback
+  const showInitials = getInitials().length > 0 && (imageError || (!userAvatar && !agentAvatar));
+  
   return (
     <div className={`relative flex-shrink-0 ${isUserMessage ? 'ml-2' : 'mr-2'}`}>
       <Avatar className="h-8 w-8 border border-gray-200">
-        <AvatarImage 
-          src={isUserMessage ? userAvatar : agentAvatar} 
-          alt={isUserMessage ? "User" : "Agent"}
-          onError={(e) => {
-            // Hide the image on error to show fallback
-            e.currentTarget.style.display = 'none';
-          }}
-        />
-        <AvatarFallback className="bg-gray-100">
-          {isUserMessage ? <User size={15} className="text-gray-500" /> : <Bot size={15} className="text-gray-500" />}
+        {(!imageError && (isUserMessage ? userAvatar : agentAvatar)) && (
+          <AvatarImage 
+            src={isUserMessage ? userAvatar : agentAvatar} 
+            alt={isUserMessage ? userName || "User" : agentName || "Agent"}
+            onError={(e) => {
+              setImageError(true);
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        )}
+        <AvatarFallback className={showInitials ? getFallbackColor() : 'bg-gray-100'}>
+          {showInitials ? (
+            <span className="text-xs font-medium">{getInitials()}</span>
+          ) : (
+            isUserMessage ? 
+              <User size={15} className="text-gray-500" /> : 
+              <Bot size={15} className="text-gray-500" />
+          )}
         </AvatarFallback>
       </Avatar>
       
