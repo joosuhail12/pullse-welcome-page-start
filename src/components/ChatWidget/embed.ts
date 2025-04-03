@@ -16,8 +16,8 @@ import {
 import { PullseChatWidgetOptions, EventCallback } from './embed/types';
 import { ChatEventType, ChatEventPayload } from './config';
 import { WIDGET_VERSION, checkForUpdates } from './embed/api';
-import { getEventManager, EventPriority } from './embed/enhancedEvents';
-import { validateEventPayload } from './utils/eventValidation';
+import { getEventManager, EventPriority } from './events';
+import { validateEventPayload } from './events';
 
 // Create global Pullse object
 (window as any).Pullse = (window as any).Pullse || {};

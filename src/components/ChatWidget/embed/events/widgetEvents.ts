@@ -7,8 +7,8 @@
 
 import { ChatEventType, ChatEventPayload } from '../../config';
 import { EventCallback } from '../types';
-import { getEventManager, EventPriority } from '../enhancedEvents';
-import { validateEventPayload } from '../../utils/eventValidation';
+import { EventPriority, getEventManager } from '../../events';
+import { validateEventPayload } from '../../events';
 import { logger } from '@/lib/logger';
 
 /**

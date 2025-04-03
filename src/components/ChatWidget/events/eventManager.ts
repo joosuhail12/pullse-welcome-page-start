@@ -1,27 +1,8 @@
 
-import { EventManager } from './events';
 import { ChatEventType, ChatEventPayload } from '../config';
-import { EventCallback } from './types';
-import { createValidatedEvent, validateEventPayload } from '../utils/eventValidation';
-import { debounce } from './utils';
-
-/**
- * Event priority levels
- */
-export enum EventPriority {
-  CRITICAL = 0,  // Immediate processing (errors, chat ending)
-  HIGH = 1,      // High priority (messages sent/received)
-  NORMAL = 2,    // Normal events (typing, status changes)
-  LOW = 3        // Background events (analytics, non-critical updates)
-}
-
-/**
- * Event with priority information
- */
-interface PrioritizedEvent {
-  event: ChatEventPayload;
-  priority: EventPriority;
-}
+import { EventCallback, EventPriority, PrioritizedEvent, IEventManager } from './types';
+import { createValidatedEvent, validateEventPayload } from './validation';
+import { logger } from '@/lib/logger';
 
 /**
  * Mapping of event types to their default priorities
@@ -41,16 +22,20 @@ const defaultEventPriorities: Record<ChatEventType, EventPriority> = {
 };
 
 /**
- * Enhanced event manager with prioritization and validation
+ * Core event manager with prioritization and validation
  */
-export class EnhancedEventManager extends EventManager {
+export class EventManager implements IEventManager {
+  protected eventListeners: Map<string, EventCallback[]> = new Map();
   private eventQueue: PrioritizedEvent[] = [];
   private isProcessing: boolean = false;
   private processingInterval: number | null = null;
+  private debouncedEvents: Set<ChatEventType> = new Set([
+    'chat:typingStarted',
+    'chat:typingStopped'
+  ]);
+  private debounceTimers: Map<ChatEventType, number> = new Map();
   
   constructor(processingInterval: number = 50) {
-    super();
-    
     // Set up regular processing interval
     if (typeof window !== 'undefined') {
       this.processingInterval = window.setInterval(() => {
@@ -67,6 +52,58 @@ export class EnhancedEventManager extends EventManager {
       window.clearInterval(this.processingInterval);
       this.processingInterval = null;
     }
+    
+    // Clean up any debounce timers
+    this.debounceTimers.forEach((timerId) => {
+      if (typeof window !== 'undefined') {
+        window.clearTimeout(timerId);
+      }
+    });
+    
+    // Clear all listeners
+    this.eventListeners.clear();
+  }
+  
+  /**
+   * Subscribe to widget events
+   */
+  public on(eventType: ChatEventType | 'all', callback: EventCallback): () => void {
+    const key = eventType;
+    
+    if (!this.eventListeners.has(key)) {
+      this.eventListeners.set(key, []);
+    }
+    
+    logger.debug(`Adding listener for ${eventType} events`, 'EventManager');
+    this.eventListeners.get(key)!.push(callback);
+    
+    // Return unsubscribe function
+    return () => this.off(eventType, callback);
+  }
+  
+  /**
+   * Unsubscribe from widget events
+   */
+  public off(eventType: ChatEventType | 'all', callback?: EventCallback): void {
+    const key = eventType;
+    
+    if (!this.eventListeners.has(key)) {
+      return;
+    }
+    
+    if (callback) {
+      // Remove specific callback
+      const listeners = this.eventListeners.get(key)!;
+      const index = listeners.indexOf(callback);
+      if (index !== -1) {
+        listeners.splice(index, 1);
+      }
+    } else {
+      // Remove all callbacks for this event
+      this.eventListeners.delete(key);
+    }
+    
+    logger.debug(`Removed listener(s) for ${eventType} events`, 'EventManager');
   }
   
   /**
@@ -82,12 +119,18 @@ export class EnhancedEventManager extends EventManager {
   }
   
   /**
-   * Overridden handleEvent with validation and priority queueing
+   * Handle widget events with validation and priority queueing
    */
   public handleEvent(event: ChatEventPayload, priority?: EventPriority): void {
     // Validate event payload
     if (!validateEventPayload(event)) {
-      console.error('Invalid event payload:', event);
+      logger.error('Invalid event payload rejected', 'EventManager', { event });
+      return;
+    }
+    
+    // Handle debounced events
+    if (this.debouncedEvents.has(event.type)) {
+      this.handleDebouncedEvent(event, priority);
       return;
     }
     
@@ -98,6 +141,32 @@ export class EnhancedEventManager extends EventManager {
     
     // Add to queue
     this.queueEvent(event, eventPriority);
+    
+    // For debugging
+    logger.debug(`Event queued: ${event.type}`, 'EventManager', 
+      { priority: eventPriority, queueLength: this.eventQueue.length });
+  }
+  
+  /**
+   * Handle debounced events (like typing indicators)
+   */
+  private handleDebouncedEvent(event: ChatEventPayload, priority?: EventPriority): void {
+    // Clear existing timer
+    const existingTimer = this.debounceTimers.get(event.type);
+    if (existingTimer) {
+      window.clearTimeout(existingTimer);
+    }
+    
+    // Set new timer
+    const timerId = window.setTimeout(() => {
+      const eventPriority = priority !== undefined ? 
+        priority : (defaultEventPriorities[event.type] || EventPriority.LOW);
+      
+      this.queueEvent(event, eventPriority);
+      this.debounceTimers.delete(event.type);
+    }, 300); // 300ms debounce
+    
+    this.debounceTimers.set(event.type, timerId);
   }
   
   /**
@@ -131,13 +200,7 @@ export class EnhancedEventManager extends EventManager {
       
       // Dispatch events
       batch.forEach(({ event }) => {
-        // Special handling for typing events (use debounce from parent class)
-        if (event.type === 'chat:typingStarted' || event.type === 'chat:typingStopped') {
-          super.handleEvent(event);
-        } else {
-          // For other events, dispatch directly
-          this.dispatchToListeners(event);
-        }
+        this.dispatchToListeners(event);
       });
     } finally {
       this.isProcessing = false;
@@ -145,53 +208,44 @@ export class EnhancedEventManager extends EventManager {
   }
   
   /**
-   * Dispatches to listeners (extracted from parent class for enhancement)
+   * Dispatch to registered listeners
    */
-  private dispatchToListeners(event: ChatEventPayload): void {
-    // Dispatch to specific event listeners
-    const listeners = this.getListeners(event.type);
+  protected dispatchToListeners(event: ChatEventPayload): void {
+    // Get specific event listeners
+    const listeners = this.eventListeners.get(event.type);
     if (listeners) {
       listeners.forEach(callback => {
         try {
           callback(event);
         } catch (e) {
-          console.error(`Error in ${event.type} listener:`, e);
+          logger.error(`Error in ${event.type} event listener`, 'EventManager', e);
         }
       });
     }
     
-    // Dispatch to 'all' event listeners
-    const allListeners = this.getListeners('all');
+    // Get 'all' event listeners
+    const allListeners = this.eventListeners.get('all');
     if (allListeners) {
       allListeners.forEach(callback => {
         try {
           callback(event);
         } catch (e) {
-          console.error(`Error in 'all' listener:`, e);
+          logger.error(`Error in 'all' event listener`, 'EventManager', e);
         }
       });
     }
   }
-  
-  /**
-   * Get listeners for a specific event type
-   */
-  private getListeners(eventType: ChatEventType | 'all'): EventCallback[] | undefined {
-    return this.eventListeners.get(eventType);
-  }
 }
 
-/**
- * Create a global instance of the enhanced event manager
- */
-let globalEventManager: EnhancedEventManager | null = null;
+// Singleton instance management
+let globalEventManager: EventManager | null = null;
 
 /**
  * Get or create the global event manager instance
  */
-export function getEventManager(): EnhancedEventManager {
+export function getEventManager(): EventManager {
   if (!globalEventManager) {
-    globalEventManager = new EnhancedEventManager();
+    globalEventManager = new EventManager();
   }
   return globalEventManager;
 }
@@ -213,8 +267,7 @@ export function dispatchValidatedEvent(
  */
 export function subscribeToEvent(
   eventType: ChatEventType | 'all',
-  callback: EventCallback,
-  options?: { priority?: boolean }
+  callback: EventCallback
 ): () => void {
   const eventManager = getEventManager();
   return eventManager.on(eventType, callback);
