@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Message } from '../../types';
 import { sanitizeInput } from '../../utils/validation';
@@ -33,22 +32,18 @@ const MessageBubble = ({
   avatarUrl,
   agentStatus
 }: MessageBubbleProps) => {
-  // Sanitize any text content before displaying
   const sanitizedText = message.text ? sanitizeInput(message.text) : '';
   
-  // Handle message reaction
   const handleReaction = (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => {
     if (onReact) {
       onReact(messageId, reaction);
     }
   };
 
-  // Check if message has actionable content (quick replies or card buttons)
   const hasActionableContent = 
     message.type === 'quick_reply' && message.quickReplies && message.quickReplies.length > 0 ||
     message.type === 'card' && message.cardData && message.cardData.buttons && message.cardData.buttons.length > 0;
 
-  // Render text with highlighting when search is active
   const renderText = (text: string) => {
     if (highlightSearchTerm && searchTerm) {
       const parts = highlightSearchTerm(text, searchTerm);
@@ -65,7 +60,6 @@ const MessageBubble = ({
     return text;
   };
   
-  // Render the appropriate message type component
   const renderMessage = () => {
     switch (message.type) {
       case 'file':
@@ -96,7 +90,6 @@ const MessageBubble = ({
     }
   };
 
-  // Render reaction buttons for system messages only
   const renderReactionButtons = () => {
     if (message.sender === 'system' && onReact) {
       return (
@@ -110,7 +103,6 @@ const MessageBubble = ({
     return null;
   };
 
-  // Render avatar for the system messages
   const renderAvatar = () => {
     if (!showAvatar || message.sender === 'status' || isConsecutive) return null;
     return (
@@ -131,7 +123,6 @@ const MessageBubble = ({
     );
   }
 
-  // Apply different styling for consecutive messages vs. first in group
   const bubbleClasses = isConsecutive
     ? message.sender === 'user'
       ? 'chat-message-user rounded-tr-sm ml-10'
@@ -140,7 +131,6 @@ const MessageBubble = ({
       ? 'chat-message-user'
       : 'chat-message-system';
       
-  // Add actionable class if the message has actionable content
   const actionableClass = hasActionableContent ? 'chat-message-actionable' : '';
 
   return (
