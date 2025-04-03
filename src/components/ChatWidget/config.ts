@@ -1,5 +1,6 @@
 
-import { AgentStatus } from "./types";
+
+import { AgentStatus, ChatPositionString } from "./types";
 
 export type ChatEventType = 
   | 'chat:open'
@@ -30,7 +31,8 @@ export type ChatBranding = {
   showBrandingBar?: boolean;
 };
 
-export type ChatPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+// Use the ChatPositionString type from types.ts
+export type ChatPosition = ChatPositionString;
 
 export enum ChatWidgetViews {
   HOME = 'home',
@@ -109,3 +111,4 @@ export const defaultConfig: ChatWidgetConfig = {
     typing: true
   }
 };
+

@@ -1,7 +1,7 @@
 
 import { PullseChatWidgetOptions } from '../types';
 import { logger } from '@/lib/logger';
-import { ChatPosition } from '../../config';
+import { ChatPosition, ChatPositionString } from '../../types';
 
 /**
  * Validate and sanitize widget options
@@ -56,14 +56,15 @@ export function validateWidgetOptions(options: PullseChatWidgetOptions): PullseC
 }
 
 /**
- * Check if a position value is valid and narrows the type
- * This is a type guard function for ChatPosition
+ * Check if a position value is valid and narrows the type to ChatPositionString
+ * This is a type guard function for ChatPositionString
  */
-export function isValidChatPosition(position: any): position is ChatPosition {
+export function isValidChatPosition(position: any): position is ChatPositionString {
   if (typeof position !== 'string') {
     return false;
   }
   
+  // Check if the position matches one of our valid position strings
   return ['bottom-right', 'bottom-left', 'top-right', 'top-left'].includes(position);
 }
 

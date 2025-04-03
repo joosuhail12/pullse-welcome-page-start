@@ -114,13 +114,14 @@ export interface QuickReplyMessageProps {
   onReply: (text: string) => void;
 }
 
-export type ChatPosition = 
+export type ChatPositionString = 
   | 'bottom-right' 
   | 'bottom-left' 
   | 'top-right' 
-  | 'top-left'
-  | {
-      placement: string;
-      offsetX: number;
-      offsetY: number;
-    };
+  | 'top-left';
+
+export type ChatPosition = ChatPositionString | {
+  placement: string;
+  offsetX: number;
+  offsetY: number;
+};

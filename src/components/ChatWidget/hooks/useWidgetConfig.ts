@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { fetchChatWidgetConfig } from '../services/api';
-import { ChatWidgetConfig, defaultConfig, ChatPosition } from '../config';
+import { ChatWidgetConfig, defaultConfig } from '../config';
 import { getDefaultConfig } from '../embed/api';
 import { logger } from '@/lib/logger';
 import { isValidChatPosition } from '../embed/core/optionsValidator';
+import { ChatPositionString } from '../types';
 
 export function useWidgetConfig(workspaceId?: string) {
   const [config, setConfig] = useState<ChatWidgetConfig>(defaultConfig);
@@ -56,7 +57,7 @@ export function useWidgetConfig(workspaceId?: string) {
           const defaultPlacementValue = defaultConfig.position?.placement || 'bottom-right';
           
           // We need to verify and ensure type safety for ChatPosition
-          let validatedPlacement: ChatPosition;
+          let validatedPlacement: ChatPositionString;
           
           // Use our type guard to verify the position is valid
           if (isValidChatPosition(defaultPlacementValue)) {
@@ -95,7 +96,7 @@ export function useWidgetConfig(workspaceId?: string) {
         const fetchedPlacementValue = fetchedConfig.position?.placement || 'bottom-right';
         
         // We need to verify and ensure type safety for ChatPosition
-        let validatedPlacement: ChatPosition;
+        let validatedPlacement: ChatPositionString;
         
         // Use our type guard to verify the position is valid
         if (isValidChatPosition(fetchedPlacementValue)) {
@@ -122,7 +123,7 @@ export function useWidgetConfig(workspaceId?: string) {
         const defaultPlacementValue = defaultConfig.position?.placement || 'bottom-right';
         
         // We need to verify and ensure type safety for ChatPosition
-        let validatedPlacement: ChatPosition;
+        let validatedPlacement: ChatPositionString;
         
         // Use our type guard to verify the position is valid
         if (isValidChatPosition(defaultPlacementValue)) {
