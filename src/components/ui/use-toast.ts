@@ -1,11 +1,11 @@
 
 import { useState, useEffect, useCallback } from "react";
-import { toast } from "@/hooks/use-toast";
+import { toast as originalToast } from "@/hooks/use-toast";
 
-export type ToastProps = React.ComponentPropsWithoutRef<typeof toast>;
+export type ToastProps = Parameters<typeof originalToast>[0];
 
 // Re-export the toast from hooks for convenience
-export { toast };
+export { toast } from "@/hooks/use-toast";
 
 // Add any additional toast utility functions here
 export const useToast = () => {
@@ -13,7 +13,8 @@ export const useToast = () => {
 
   const addToast = useCallback((props: ToastProps) => {
     const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prevToasts) => [...prevToasts, { ...props, id }]);
+    const toastWithId = { ...props, id };
+    setToasts((prevToasts) => [...prevToasts, toastWithId]);
     return id;
   }, []);
 
@@ -25,6 +26,6 @@ export const useToast = () => {
     toasts,
     addToast,
     removeToast,
-    toast // Re-export the toast function for convenience
+    toast: originalToast // Re-export the toast function for convenience
   };
 };

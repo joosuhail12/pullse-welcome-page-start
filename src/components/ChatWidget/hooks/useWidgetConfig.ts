@@ -42,20 +42,12 @@ export const useWidgetConfig = (workspaceId: string, initialConfig?: Partial<Cha
   
   // Create a derived, normalized config with defaults for any missing properties
   const mergedConfig = useMemo(() => {
-    // Ensure preChatForm exists with default values
-    const preChatForm = config.preChatForm || defaultConfig.preChatForm;
-    
-    // Ensure features exist with default values
-    const features = { ...defaultConfig.features, ...config.features };
-    const realtime = { ...defaultConfig.realtime, ...config.realtime };
-    const sessionId = config.sessionId || undefined;
-    
     return {
       ...config,
-      preChatForm,
-      features,
-      realtime,
-      sessionId
+      preChatForm: config.preChatForm || defaultConfig.preChatForm,
+      features: { ...defaultConfig.features, ...config.features },
+      realtime: { ...defaultConfig.realtime, ...config.realtime },
+      sessionId: config.sessionId || undefined
     };
   }, [config]);
   
@@ -66,3 +58,5 @@ export const useWidgetConfig = (workspaceId: string, initialConfig?: Partial<Cha
     setConfig
   };
 };
+
+export default useWidgetConfig; // Add default export for backward compatibility

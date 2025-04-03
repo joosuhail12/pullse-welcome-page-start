@@ -1,94 +1,163 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { Message, MessageType, MessageSender } from '../types';
-import { sanitizeInput } from './validation';
+import { Message, MessageSender, MessageType } from '../types';
+import { publishToChannel } from './ably';
+import { logger } from '@/lib/logger';
+import { SecurityEventType } from './security/types';
+import { securityLogger } from './security';
 
 /**
- * Creates a new message object with the specified text and sender
+ * Create a message with the given parameters
  */
 export const createMessage = (
-  text: string,
+  text: string, 
   sender: MessageSender,
   type: MessageType = 'text',
-  metadata?: Record<string, any>
+  metadata?: any
 ): Message => {
   return {
     id: uuidv4(),
-    text: sanitizeInput(text),
+    text,
     sender,
     timestamp: new Date(),
     type,
     metadata,
+    reactions: []
   };
 };
 
 /**
- * Get message object by ID from the API or fallback
+ * Create a user message
  */
-export const getMessage = async (messageId: string): Promise<Message | null> => {
-  try {
-    // In a real implementation, this would fetch from API
-    // For now, we'll just return a mock message
-    return {
-      id: messageId,
-      text: 'Message content not available',
-      sender: 'system',
-      timestamp: new Date(),
-      type: 'text'
-    };
-  } catch (error) {
-    console.error('Failed to fetch message:', error);
-    return null;
+export const createUserMessage = (text: string, metadata?: any): Message => {
+  return createMessage(text, 'user', 'text', metadata);
+};
+
+/**
+ * Create a system message
+ */
+export const createSystemMessage = (text: string, metadata?: any): Message => {
+  return createMessage(text, 'system', 'status', metadata);
+};
+
+/**
+ * Process a system message
+ */
+export const processSystemMessage = (
+  message: Message, 
+  channelName: string, 
+  sessionId: string,
+  config?: any,
+  playMessageSound?: () => void
+) => {
+  // Play sound for system messages if enabled
+  if (config?.sounds?.enabled !== false && playMessageSound) {
+    playMessageSound();
+  }
+
+  // Send read receipt for system messages
+  sendReadReceipt(message.id, channelName, sessionId);
+
+  // Log system messages
+  logger.info(`System message received: ${message.text}`, 'MessageHandler');
+
+  // Track security-related messages
+  if (message.text.toLowerCase().includes('security') || 
+      message.text.toLowerCase().includes('blocked') ||
+      message.text.toLowerCase().includes('suspicious')) {
+    securityLogger.logSecurityEvent(
+      SecurityEventType.SECURITY_NOTIFICATION,
+      'SUCCESS',
+      { messageId: message.id, text: message.text },
+      'MEDIUM'
+    );
   }
 };
 
 /**
- * Process system message with templating
+ * Send a typing indicator
  */
-export const processSystemMessage = (template: string, data: Record<string, any>): string => {
-  let processed = template;
-  
-  // Simple template replacement
-  Object.entries(data).forEach(([key, value]) => {
-    const placeholder = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
-    processed = processed.replace(placeholder, String(value));
+export const sendTypingIndicator = (
+  isTyping: boolean, 
+  channelName: string, 
+  sessionId: string
+) => {
+  publishToChannel(channelName, 'typing', {
+    status: isTyping ? 'start' : 'stop',
+    userId: sessionId,
+    timestamp: new Date()
   });
+
+  logger.debug(
+    `Typing indicator sent: ${isTyping ? 'start' : 'stop'}`, 
+    'MessageHandler',
+    { channelName, sessionId }
+  );
+};
+
+/**
+ * Send a delivery receipt
+ */
+export const sendDeliveryReceipt = (
+  messageId: string, 
+  channelName: string, 
+  sessionId: string
+) => {
+  publishToChannel(channelName, 'delivered', {
+    messageId,
+    userId: sessionId,
+    timestamp: new Date()
+  });
+
+  logger.debug(
+    `Delivery receipt sent for message: ${messageId}`, 
+    'MessageHandler',
+    { channelName, sessionId }
+  );
+};
+
+/**
+ * Send a read receipt
+ */
+export const sendReadReceipt = (
+  messageId: string, 
+  channelName: string, 
+  sessionId: string
+) => {
+  publishToChannel(channelName, 'read', {
+    messageId,
+    userId: sessionId,
+    timestamp: new Date()
+  });
+
+  logger.debug(
+    `Read receipt sent for message: ${messageId}`, 
+    'MessageHandler',
+    { channelName, sessionId }
+  );
+};
+
+/**
+ * Get a random response for simulation purposes
+ */
+export const getRandomResponse = (): string => {
+  const responses = [
+    "Thank you for your message. How else can I help you today?",
+    "I understand. Let me check that for you.",
+    "That's a good question. Let me find the answer for you.",
+    "I appreciate your patience. I'm working on resolving that issue.",
+    "Is there anything else you'd like to know about this topic?",
+    "Thank you for providing that information. Let me process this for you.",
+    "I'll need a bit more information to help you with this request.",
+    "I'm happy to assist with that. Let me guide you through the process."
+  ];
   
-  return processed;
+  return responses[Math.floor(Math.random() * responses.length)];
 };
 
 /**
- * Send a message delivery receipt
+ * Get a message by ID from an array of messages
  */
-export const sendDeliveryReceipt = async (messageId: string, status: 'delivered' | 'read'): Promise<boolean> => {
-  try {
-    // In a real implementation, this would send to API
-    console.log(`Sending ${status} receipt for message ${messageId}`);
-    return true;
-  } catch (error) {
-    console.error('Failed to send delivery receipt:', error);
-    return false;
-  }
-};
-
-/**
- * Get random response for simulation purposes
- */
-export const getRandomResponse = (messages: string[]): string => {
-  if (!messages.length) {
-    return "I'm not sure how to respond to that.";
-  }
-  const randomIndex = Math.floor(Math.random() * messages.length);
-  return messages[randomIndex];
-};
-
-/**
- * Format message for display
- */
-export const formatMessageForDisplay = (message: Message): Message => {
-  // Apply any formatting rules needed
-  return {
-    ...message,
-    text: message.text || ''
-  };
+export const getMessage = (messageId: string, messages: Message[]): Message | undefined => {
+  return messages.find(msg => msg.id === messageId);
 };

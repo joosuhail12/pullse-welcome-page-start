@@ -22,3 +22,8 @@ export {
   validateEventData,
   sanitizeEventData
 } from './validation';
+
+// Export additional utility functions
+export {
+  dispatchValidatedEvent
+} from './eventUtils';

@@ -1,7 +1,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useChatState } from './hooks/useChatState';
-import useWidgetConfig from './hooks/useWidgetConfig';
+import { useWidgetConfig } from './hooks/useWidgetConfig';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -12,7 +12,7 @@ import EnhancedLoadingIndicator from './components/EnhancedLoadingIndicator';
 import ChatWidgetErrorBoundary from './components/ChatWidgetErrorBoundary';
 import ConnectionManager from './components/ConnectionManager';
 import { ConnectionStatus } from './utils/reconnectionManager';
-import { EventManager, getEventManager } from './events/eventManager';
+import { EventManager } from './events';
 import { ChatWidgetConfig } from './config';
 
 export interface ChatWidgetProps {
@@ -34,19 +34,7 @@ const ChatWidget = ({ workspaceId, previewConfig, isTestMode = false }: ChatWidg
     setUserFormData
   } = useChatState();
   
-  const configFromHook = useWidgetConfig(workspaceId);
-  
-  // Use previewConfig if in test mode, otherwise use config from hook
-  const { config, loading, error } = useMemo(() => {
-    if (isTestMode && previewConfig) {
-      return { 
-        config: previewConfig, 
-        loading: false, 
-        error: null 
-      };
-    }
-    return configFromHook;
-  }, [isTestMode, previewConfig, configFromHook]);
+  const { config, loading, error } = useWidgetConfig(workspaceId, previewConfig);
   
   const [isOpen, setIsOpen] = useState(false);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();

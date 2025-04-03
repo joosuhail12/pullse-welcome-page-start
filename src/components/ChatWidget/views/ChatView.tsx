@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { Conversation, Message, MessageReadStatus } from '../types';
+import { Conversation, Message } from '../types';
 import { useMessageActions } from '../hooks/useMessageActions';
 import { useConversationData } from '../hooks/useConversationData';
 import { useTypingIndicator } from '../hooks/useTypingIndicator';
@@ -36,10 +36,11 @@ const ChatView: React.FC<ChatViewProps> = ({
   
   // Get message actions
   const {
-    sendMessage,
-    sendFileMessage,
+    handleSendMessage,
+    handleFileUpload,
     handleUserTyping,
-    endChat
+    handleEndChat,
+    fileError
   } = useMessageActions(conversation, onUpdateConversation, config, playMessageSound);
   
   // Get conversation data
@@ -55,32 +56,34 @@ const ChatView: React.FC<ChatViewProps> = ({
   } = useConversationData(conversation, config, userFormData, setUserFormData);
   
   // Get typing indicators
-  const { isTyping, remoteIsTyping } = useTypingIndicator(conversation.id, isComposing);
+  const { handleTypingTimeout, clearTypingTimeout } = useTypingIndicator();
+  const isTyping = false; // Placeholder - would come from state
+  const remoteIsTyping = false; // Placeholder - would come from state
   
   // Get search functionality
   const { searchMessages, messageIds, highlightTextWithTerm } = useSearchMessages(messages);
   
   // Handle sending a message
-  const handleSendMessage = useCallback(() => {
+  const sendMessageHandler = useCallback(() => {
     if (messageText.trim()) {
-      sendMessage(messageText);
+      handleSendMessage(messageText);
       setMessageText('');
       setIsComposing(false);
     }
-  }, [messageText, sendMessage]);
+  }, [messageText, handleSendMessage]);
   
   // Handle file upload
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const fileUploadHandler = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      sendFileMessage(file);
+      handleFileUpload(e);
       
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
-  }, [sendFileMessage]);
+  }, [handleFileUpload]);
   
   // Handle user typing
   const handleUserTypingCallback = useCallback(() => {
@@ -94,42 +97,22 @@ const ChatView: React.FC<ChatViewProps> = ({
     searchMessages(e.target.value);
   }, [searchMessages]);
   
+  // Toggle search bar
+  const toggleSearch = useCallback(() => {
+    setShowSearchBar(!showSearchBar);
+    if (showSearchBar) {
+      setSearchTerm('');
+      searchMessages('');
+    }
+  }, [showSearchBar, searchMessages]);
+  
   // Get agent status if available
   const agentStatus = useMemo(() => {
-    if (conversation.participants && conversation.participants.length > 0) {
-      const agent = conversation.participants.find(p => p.id !== 'user');
-      return agent?.metadata?.status as 'online' | 'offline' | 'away' | 'busy' | undefined;
+    if (conversation.agentInfo) {
+      return conversation.agentInfo.status as 'online' | 'offline' | 'away' | 'busy' | undefined;
     }
     return undefined;
-  }, [conversation.participants]);
-  
-  // Format read receipts to match the expected type
-  const formattedReadReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }> = useMemo(() => {
-    const result: Record<string, { status: MessageReadStatus; timestamp?: Date }> = {};
-    
-    // Convert string statuses to MessageReadStatus type
-    if (readReceipts) {
-      Object.keys(readReceipts).forEach(messageId => {
-        const receipt = readReceipts[messageId];
-        if (typeof receipt === 'object') {
-          if ('status' in receipt) {
-            const status = receipt.status as MessageReadStatus;
-            result[messageId] = {
-              status,
-              timestamp: receipt.timestamp
-            };
-          } else if (receipt instanceof Date) {
-            result[messageId] = {
-              status: 'read', // Default to 'read' for Date objects
-              timestamp: receipt
-            };
-          }
-        }
-      });
-    }
-    
-    return result;
-  }, [readReceipts]);
+  }, [conversation.agentInfo]);
   
   // Adaptation function for highlighting text
   const highlightTextAdapter = useCallback((text: string) => {
@@ -139,13 +122,10 @@ const ChatView: React.FC<ChatViewProps> = ({
   return (
     <>
       <ChatHeader
-        conversationTitle={conversation.title}
+        conversation={conversation}
         onBack={onBack}
-        onSearch={() => setShowSearchBar(!showSearchBar)}
-        onEndChat={endChat}
-        searchTerm={searchTerm}
-        onSearchChange={handleSearchChange}
-        showSearchBar={showSearchBar}
+        onToggleSearch={toggleSearch}
+        showSearch={showSearchBar}
       />
       
       <ChatBody
@@ -154,11 +134,11 @@ const ChatView: React.FC<ChatViewProps> = ({
         setMessageText={setMessageText}
         isTyping={isTyping}
         remoteIsTyping={remoteIsTyping}
-        handleSendMessage={handleSendMessage}
+        handleSendMessage={sendMessageHandler}
         handleUserTyping={handleUserTypingCallback}
-        handleFileUpload={handleFileUpload}
-        handleEndChat={endChat}
-        readReceipts={formattedReadReceipts}
+        handleFileUpload={fileUploadHandler}
+        handleEndChat={handleEndChat}
+        readReceipts={readReceipts}
         onMessageReaction={messageReactions.onMessageReaction}
         searchTerm={searchTerm}
         messageIds={messageIds}

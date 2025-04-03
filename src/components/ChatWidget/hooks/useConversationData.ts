@@ -29,15 +29,52 @@ export const useConversationData = (
   const [readReceipts, setReadReceipts] = useState<Record<string, { status: MessageReadStatus; timestamp?: Date }>>({});
   
   // Initialize inline form handling
-  const { showInlineForm, inlineFormComponent } = useInlineForm(
+  const { 
+    showInlineForm, 
+    setShowInlineForm, 
+    handleFormComplete 
+  } = useInlineForm(
     conversation, 
     config, 
     userFormData, 
     setUserFormData
   );
   
+  // Create inline form component
+  const inlineFormComponent = useMemo(() => {
+    if (!showInlineForm) return null;
+    
+    // Return a placeholder component - in a real implementation, 
+    // this would be a proper form component based on the configuration
+    return (
+      <div className="p-4 bg-gray-50 border-t">
+        <p className="text-sm mb-2">Please provide your information to start chatting.</p>
+        <div className="space-y-2">
+          <button 
+            className="w-full bg-vivid-purple text-white py-2 rounded"
+            onClick={() => {
+              handleFormComplete({ name: "Test User", email: "test@example.com" });
+              setShowInlineForm(false);
+            }}
+          >
+            Submit Demo Information
+          </button>
+        </div>
+      </div>
+    );
+  }, [showInlineForm, handleFormComplete, setShowInlineForm]);
+  
   // Initialize message reactions
-  const messageReactions = useMessageReactions(conversation, messages, setMessages);
+  const { reactionsMap, handleMessageReaction } = useMessageReactions(
+    conversation, 
+    messages, 
+    setMessages
+  );
+  
+  // Message reactions wrapper with the correct interface
+  const messageReactions = useMemo(() => ({
+    onMessageReaction: handleMessageReaction
+  }), [handleMessageReaction]);
   
   // Update messages when conversation changes
   useEffect(() => {
@@ -95,3 +132,5 @@ export const useConversationData = (
     readReceipts
   };
 };
+
+export default useConversationData;

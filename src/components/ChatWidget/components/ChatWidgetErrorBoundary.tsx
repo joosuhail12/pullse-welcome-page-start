@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import ErrorBoundary from '@/components/ui/error-boundary';
 import ErrorFallback from './ErrorFallback';
-import useWidgetConfig from '../hooks/useWidgetConfig';
+import { useWidgetConfig } from '../hooks/useWidgetConfig';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWidgetPosition } from '../hooks/useWidgetPosition';
 import { dispatchChatEvent } from '../utils/events';

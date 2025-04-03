@@ -1,99 +1,125 @@
 
-import { AppError, NetworkError, ValidationError, AuthError, ServiceUnavailableError, ErrorSeverity } from './errorTypes';
+import { AppError, NetworkError, ValidationError, SecurityError, ErrorSeverity } from './types';
 
 /**
- * Error factory to create standardized error objects
+ * Create an application error
  */
-const errorFactory = {
-  /**
-   * Create a standard application error
-   */
-  createError: (
-    message: string,
-    code: string,
-    details?: Record<string, any>,
-    severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-    retryable: boolean = false
-  ): AppError => {
-    return new AppError(message, code, details, severity, retryable);
-  },
-
-  /**
-   * Create a network error for API and service communication issues
-   */
-  createNetworkError: (
-    message: string = 'Network request failed',
-    details?: Record<string, any>,
-    retryable: boolean = true,
-    retry?: () => void,
-    statusCode?: number
-  ): NetworkError => {
-    return new NetworkError(message, details, ErrorSeverity.MEDIUM, retryable, retry, statusCode);
-  },
-
-  /**
-   * Create an API error based on status code
-   */
-  createApiError: (
-    statusCode: number,
-    message?: string,
-    details?: Record<string, any>
-  ) => {
-    // Determine error severity and retryability based on status code
-    let severity: ErrorSeverity;
-    let retryable: boolean;
-    
-    if (statusCode >= 500) {
-      severity = ErrorSeverity.HIGH;
-      retryable = true;
-    } else if (statusCode === 429) {
-      severity = ErrorSeverity.MEDIUM;
-      retryable = true;
-      message = message || 'Too many requests. Please try again later.';
-    } else if (statusCode === 401 || statusCode === 403) {
-      severity = ErrorSeverity.HIGH;
-      retryable = false;
-      message = message || 'Authentication failed or access denied';
-    } else {
-      severity = ErrorSeverity.MEDIUM;
-      retryable = false;
-    }
-    
-    const finalMessage = message || `API error with status code ${statusCode}`;
-    const finalDetails = details ? { ...details, statusCode } : { statusCode };
-    
-    return new NetworkError(finalMessage, finalDetails, severity, retryable);
-  },
-
-  /**
-   * Create a validation error for form validation failures
-   */
-  createValidationError: (
-    message: string = 'Validation failed',
-    fieldErrors?: Record<string, string[]>
-  ): ValidationError => {
-    return new ValidationError(message, fieldErrors);
-  },
-
-  /**
-   * Create an authentication error
-   */
-  createAuthError: (
-    message: string = 'Authentication failed',
-    details?: Record<string, any>
-  ): AuthError => {
-    return new AuthError(message, details);
-  },
-
-  /**
-   * Create an error for when a service is unavailable
-   */
-  createServiceUnavailableError: (
-    service: string,
-    details?: Record<string, any>
-  ): ServiceUnavailableError => {
-    return new ServiceUnavailableError(service, details);
+export const createAppError = (
+  message: string, 
+  code: string, 
+  options?: {
+    details?: Record<string, any>;
+    severity?: ErrorSeverity;
+    userFacing?: boolean;
+    retryable?: boolean;
   }
+): AppError => {
+  const error = new Error(message) as AppError;
+  
+  error.name = 'AppError';
+  error.code = code;
+  error.details = options?.details || {};
+  error.timestamp = new Date();
+  error.severity = options?.severity || ErrorSeverity.MEDIUM;
+  error.userFacing = options?.userFacing !== undefined ? options.userFacing : true;
+  error.retryable = options?.retryable !== undefined ? options.retryable : false;
+  
+  return error;
 };
 
-export default errorFactory;
+/**
+ * Create a network error
+ */
+export const createNetworkError = (
+  message: string,
+  options?: {
+    statusCode?: number;
+    retryable?: boolean;
+    retry?: () => void;
+    details?: Record<string, any>;
+    severity?: ErrorSeverity;
+  }
+): NetworkError => {
+  const error = new Error(message) as NetworkError;
+  
+  error.name = 'NetworkError';
+  error.statusCode = options?.statusCode;
+  error.retryable = options?.retryable !== undefined ? options.retryable : true;
+  error.retry = options?.retry;
+  error.details = options?.details || {};
+  error.timestamp = new Date();
+  error.severity = options?.severity || ErrorSeverity.MEDIUM;
+  
+  return error;
+};
+
+/**
+ * Create a validation error
+ */
+export const createValidationError = (
+  message: string,
+  options?: {
+    field?: string;
+    value?: any;
+    constraints?: Record<string, string>;
+    details?: Record<string, any>;
+    severity?: ErrorSeverity;
+  }
+): ValidationError => {
+  const error = new Error(message) as ValidationError;
+  
+  error.name = 'ValidationError';
+  error.field = options?.field;
+  error.value = options?.value;
+  error.constraints = options?.constraints;
+  error.details = options?.details || {};
+  error.timestamp = new Date();
+  error.severity = options?.severity || ErrorSeverity.LOW;
+  
+  return error;
+};
+
+/**
+ * Create a security error
+ */
+export const createSecurityError = (
+  message: string,
+  threatLevel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL',
+  options?: {
+    mitigationApplied?: boolean;
+    details?: Record<string, any>;
+  }
+): SecurityError => {
+  const error = new Error(message) as SecurityError;
+  
+  error.name = 'SecurityError';
+  error.threatLevel = threatLevel;
+  error.mitigationApplied = options?.mitigationApplied !== undefined ? options.mitigationApplied : false;
+  error.details = options?.details || {};
+  error.timestamp = new Date();
+  
+  // Map threat level to error severity
+  switch (threatLevel) {
+    case 'LOW':
+      error.severity = ErrorSeverity.LOW;
+      break;
+    case 'MEDIUM':
+      error.severity = ErrorSeverity.MEDIUM;
+      break;
+    case 'HIGH':
+      error.severity = ErrorSeverity.HIGH;
+      break;
+    case 'CRITICAL':
+      error.severity = ErrorSeverity.CRITICAL;
+      break;
+  }
+  
+  return error;
+};
+
+export default {
+  createAppError,
+  createNetworkError,
+  createValidationError,
+  createSecurityError
+};

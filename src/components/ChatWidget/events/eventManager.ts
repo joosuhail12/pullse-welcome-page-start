@@ -1,144 +1,135 @@
 
 import { ChatEventType, ChatEventPayload } from '../config';
-import { EventCallback, EventPriority } from './types';
+import { EventCallback, EventPriority, IEventManager } from './types';
 import { logger } from '@/lib/logger';
 
-export class EventManager {
-  private eventListeners: Map<ChatEventType | 'all', Map<EventCallback, { priority: EventPriority }>>;
+// Global event manager instance
+let eventManagerInstance: EventManager | null = null;
+
+export class EventManager implements IEventManager {
+  private listeners: {
+    [key in ChatEventType | 'all']?: Array<{
+      callback: EventCallback;
+      priority: EventPriority;
+    }>;
+  } = {};
   
-  constructor() {
-    this.eventListeners = new Map();
-  }
+  private globalHandlers: Array<(eventType: ChatEventType, payload: ChatEventPayload) => void> = [];
   
-  /**
-   * Register an event handler
-   */
-  public on(eventType: ChatEventType | 'all', callback: EventCallback): () => void {
-    if (!this.eventListeners.has(eventType)) {
-      this.eventListeners.set(eventType, new Map());
+  on(
+    eventType: ChatEventType | 'all',
+    callback: EventCallback,
+    options?: { priority?: EventPriority }
+  ): () => void {
+    const priority = options?.priority || EventPriority.NORMAL;
+    
+    if (!this.listeners[eventType]) {
+      this.listeners[eventType] = [];
     }
     
-    const listeners = this.eventListeners.get(eventType)!;
-    listeners.set(callback, { priority: EventPriority.NORMAL });
+    this.listeners[eventType]?.push({ callback, priority });
     
-    // Return function to unsubscribe
-    return () => {
-      this.off(eventType, callback);
-    };
-  }
-  
-  /**
-   * Unregister an event handler
-   */
-  public off(eventType: ChatEventType | 'all', callback?: EventCallback): void {
-    if (!this.eventListeners.has(eventType)) {
-      return;
-    }
-    
-    const listeners = this.eventListeners.get(eventType)!;
-    
-    if (callback) {
-      listeners.delete(callback);
-    } else {
-      listeners.clear();
-    }
-    
-    // If no more listeners for this event type, remove it from the map
-    if (listeners.size === 0) {
-      this.eventListeners.delete(eventType);
-    }
-  }
-  
-  /**
-   * Handle an event
-   */
-  public handleEvent(event: ChatEventPayload, priority: EventPriority = EventPriority.NORMAL): void {
-    logger.debug(`Handling event: ${event.type}`, 'EventManager', {
-      timestamp: event.timestamp,
-      data: import.meta.env.DEV ? event.data : undefined
+    // Sort listeners by priority
+    this.listeners[eventType]?.sort((a, b) => {
+      const priorities = {
+        [EventPriority.CRITICAL]: 0,
+        [EventPriority.HIGH]: 1,
+        [EventPriority.NORMAL]: 2,
+        [EventPriority.LOW]: 3
+      };
+      
+      return priorities[a.priority] - priorities[b.priority];
     });
     
-    // Call specific event listeners
-    this.notifyListeners(event, event.type, priority);
-    
-    // Call global 'all' event listeners
-    this.notifyListeners(event, 'all', priority);
+    // Return unsubscribe function
+    return () => this.off(eventType, callback);
   }
   
-  /**
-   * Notify listeners for a specific event type
-   */
-  private notifyListeners(event: ChatEventPayload, eventType: ChatEventType | 'all', priority: EventPriority): void {
-    const listeners = this.eventListeners.get(eventType);
-    if (!listeners) {
+  off(eventType: ChatEventType | 'all', callback?: EventCallback): void {
+    if (!callback) {
+      // Remove all listeners for this event type
+      delete this.listeners[eventType];
       return;
     }
     
-    // Create a new array from the listeners and sort by priority
-    Array.from(listeners.entries())
-      .filter(([_, details]) => {
-        // Convert string priority to number for comparison
-        const detailPriority = this.getPriorityValue(details.priority);
-        const currentPriority = this.getPriorityValue(priority);
-        return detailPriority >= currentPriority;
-      })
-      .sort(([_, a], [__, b]) => {
-        // Convert string priority to number for comparison
-        const priorityA = this.getPriorityValue(a.priority);
-        const priorityB = this.getPriorityValue(b.priority);
-        return priorityB - priorityA;
-      })
-      .forEach(([callback, _]) => {
-        try {
-          callback(event);
-        } catch (error) {
-          logger.error(`Error in event listener for ${eventType}`, 'EventManager', error);
-        }
-      });
-  }
-
-  /**
-   * Convert string priority to numeric value for comparison
-   */
-  private getPriorityValue(priority: EventPriority): number {
-    switch (priority) {
-      case EventPriority.CRITICAL:
-        return 4;
-      case EventPriority.HIGH:
-        return 3;
-      case EventPriority.NORMAL:
-        return 2;
-      case EventPriority.LOW:
-        return 1;
-      default:
-        return 0;
+    if (!this.listeners[eventType]) {
+      return;
+    }
+    
+    this.listeners[eventType] = this.listeners[eventType]?.filter(
+      listener => listener.callback !== callback
+    );
+    
+    if (this.listeners[eventType]?.length === 0) {
+      delete this.listeners[eventType];
     }
   }
   
-  /**
-   * Remove all event listeners
-   */
-  public removeAllListeners(): void {
-    this.eventListeners.clear();
+  removeAllListeners(): void {
+    this.listeners = {};
+    this.globalHandlers = [];
   }
   
-  /**
-   * Clean up all resources
-   */
-  public dispose(): void {
-    this.removeAllListeners();
+  dispatch(eventType: ChatEventType, data?: any, priority: EventPriority = EventPriority.NORMAL): void {
+    const payload: ChatEventPayload = {
+      type: eventType,
+      timestamp: new Date(),
+      data: data || {}
+    };
+    
+    // Call specific event listeners
+    this.listeners[eventType]?.forEach(listener => {
+      try {
+        listener.callback(payload);
+      } catch (error) {
+        logger.error(`Error in event listener for ${eventType}`, 'EventManager', error);
+      }
+    });
+    
+    // Call 'all' event listeners
+    this.listeners['all']?.forEach(listener => {
+      try {
+        listener.callback(payload);
+      } catch (error) {
+        logger.error(`Error in 'all' event listener for ${eventType}`, 'EventManager', error);
+      }
+    });
+    
+    // Call global handlers
+    this.globalHandlers.forEach(handler => {
+      try {
+        handler(eventType, payload);
+      } catch (error) {
+        logger.error(`Error in global handler for ${eventType}`, 'EventManager', error);
+      }
+    });
+    
+    // Debug log the event if not a high-frequency event
+    if (
+      eventType !== 'chat:typing' &&
+      eventType !== 'chat:presence' &&
+      eventType !== 'chat:heartbeat'
+    ) {
+      logger.debug(`Event dispatched: ${eventType}`, 'EventManager', { payload });
+    }
+  }
+  
+  registerGlobalHandler(handler: (eventType: ChatEventType, payload: ChatEventPayload) => void): void {
+    this.globalHandlers.push(handler);
+  }
+  
+  unregisterGlobalHandler(handler: (eventType: ChatEventType, payload: ChatEventPayload) => void): void {
+    this.globalHandlers = this.globalHandlers.filter(h => h !== handler);
   }
 }
 
-// Singleton instance
-let eventManagerInstance: EventManager | null = null;
-
 /**
- * Get the event manager instance
+ * Get the global event manager instance
  */
-export function getEventManager(): EventManager {
+export function getEventManager(): IEventManager {
   if (!eventManagerInstance) {
     eventManagerInstance = new EventManager();
   }
+  
   return eventManagerInstance;
 }

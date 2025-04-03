@@ -1,92 +1,101 @@
 
-import { useState, useCallback } from 'react';
-import { Message, MessageSearchResult } from '../types';
+import { useState, useCallback, useMemo } from 'react';
+import { Message } from '../types';
 
-interface SearchMessagesReturn {
-  searchMessages: (term: string, highlightIds?: string[]) => void;
-  messageIds: string[];
-  highlightTextWithTerm: (text: string, term: string) => Array<{ text: string; highlighted: boolean }>;
+export interface MessageSearchResult {
+  messageId: string;
+  matchIndex: number;
 }
 
-export const useSearchMessages = (messages: Message[]): SearchMessagesReturn => {
+export const useSearchMessages = (messages: Message[]) => {
+  const [searchTerm, setSearchTerm] = useState('');
   const [messageIds, setMessageIds] = useState<string[]>([]);
-
-  // Search messages by term
-  const searchMessages = useCallback((term: string, highlightIds: string[] = []) => {
-    if (!term.trim() && !highlightIds.length) {
+  
+  // Search messages for a term
+  const searchMessages = useCallback((term: string, specificIds?: string[]) => {
+    if (!term) {
       setMessageIds([]);
+      setSearchTerm('');
       return;
     }
     
-    // If specific IDs are provided, use those
-    if (highlightIds.length > 0) {
-      setMessageIds(highlightIds);
-      return;
-    }
+    setSearchTerm(term);
     
-    // Search in messages
+    const lowerTerm = term.toLowerCase();
     const results: MessageSearchResult[] = [];
-    const searchTerm = term.toLowerCase().trim();
     
-    messages.forEach(message => {
-      if (message.text && message.text.toLowerCase().includes(searchTerm)) {
+    // If specific IDs are provided, only search those messages
+    const messagesToSearch = specificIds 
+      ? messages.filter(msg => specificIds.includes(msg.id))
+      : messages;
+    
+    messagesToSearch.forEach(message => {
+      const lowerText = message.text.toLowerCase();
+      const matchIndex = lowerText.indexOf(lowerTerm);
+      
+      if (matchIndex !== -1) {
         results.push({
           messageId: message.id,
-          conversationId: '', // Not needed for single conversation search
-          score: 1,
-          matchText: message.text,
+          matchIndex
         });
       }
     });
     
-    // Sort by score and extract message IDs
-    const sortedIds = results
-      .sort((a, b) => b.score - a.score)
-      .map(result => result.messageId);
-      
-    setMessageIds(sortedIds);
+    // Sort by match index to prioritize matches at the beginning of messages
+    results.sort((a, b) => a.matchIndex - b.matchIndex);
+    
+    // Extract just the message IDs for the result
+    setMessageIds(results.map(result => result.messageId));
+    
   }, [messages]);
-
-  // Highlight text based on search term
-  const highlightTextWithTerm = useCallback((text: string, term: string): Array<{ text: string; highlighted: boolean }> => {
-    if (!term.trim()) {
-      return [{ text, highlighted: false }];
-    }
-
-    const parts: Array<{ text: string; highlighted: boolean }> = [];
-    const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  
+  // Highlight text with search term
+  const highlightTextWithTerm = useCallback((text: string, term: string) => {
+    if (!term) return [{ text, highlighted: false }];
+    
+    const parts: { text: string; highlighted: boolean }[] = [];
+    const lowerText = text.toLowerCase();
+    const lowerTerm = term.toLowerCase();
+    
     let lastIndex = 0;
-    let match;
-
-    while ((match = regex.exec(text)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push({
-          text: text.substring(lastIndex, match.index),
-          highlighted: false,
+    let index = lowerText.indexOf(lowerTerm, lastIndex);
+    
+    while (index !== -1) {
+      // Add non-highlighted part
+      if (index > lastIndex) {
+        parts.push({ 
+          text: text.substring(lastIndex, index), 
+          highlighted: false 
         });
       }
-
-      parts.push({
-        text: match[0],
-        highlighted: true,
+      
+      // Add highlighted part
+      parts.push({ 
+        text: text.substring(index, index + term.length), 
+        highlighted: true 
       });
-
-      lastIndex = match.index + match[0].length;
+      
+      lastIndex = index + term.length;
+      index = lowerText.indexOf(lowerTerm, lastIndex);
     }
-
+    
+    // Add remaining text
     if (lastIndex < text.length) {
-      parts.push({
-        text: text.substring(lastIndex),
-        highlighted: false,
+      parts.push({ 
+        text: text.substring(lastIndex), 
+        highlighted: false 
       });
     }
-
-    return parts;
+    
+    return parts.length > 0 ? parts : [{ text, highlighted: false }];
   }, []);
-
+  
   return {
-    searchMessages,
+    searchTerm,
     messageIds,
-    highlightTextWithTerm,
+    searchMessages,
+    highlightTextWithTerm
   };
 };
+
+export default useSearchMessages;
