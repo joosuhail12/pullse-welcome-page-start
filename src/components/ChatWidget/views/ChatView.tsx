@@ -1,5 +1,5 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageInputSection from '../components/MessageInputSection';
@@ -8,7 +8,6 @@ import MessagesSection from '../components/MessagesSection';
 import { useChatMessages } from '../hooks/useChatMessages';
 import { useMessageReactions } from '../hooks/useMessageReactions';
 import { useMessageSearch } from '../hooks/useMessageSearch';
-import { dispatchChatEvent } from '../utils/events';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -71,7 +70,7 @@ const ChatView = ({
   } = useMessageSearch(messages);
 
   // Function to share messages state with parent components
-  const setMessages = (updatedMessages: React.SetStateAction<typeof messages>) => {
+  const setMessages = useCallback((updatedMessages: React.SetStateAction<typeof messages>) => {
     if (typeof updatedMessages === 'function') {
       const newMessages = updatedMessages(messages);
       onUpdateConversation({
@@ -84,15 +83,16 @@ const ChatView = ({
         messages: updatedMessages
       });
     }
-  };
+  }, [conversation, messages, onUpdateConversation]);
 
   // Toggle search bar
-  const toggleSearch = () => {
+  const toggleSearch = useCallback(() => {
     setShowSearch(prev => !prev);
+    // Only clear search when closing the search bar
     if (showSearch) {
       clearSearch();
     }
-  };
+  }, [showSearch, clearSearch]);
 
   // Handle loading previous messages for infinite scroll
   const handleLoadMoreMessages = useCallback(async () => {
@@ -106,9 +106,11 @@ const ChatView = ({
   }, [loadPreviousMessages]);
 
   // Get avatar URLs from config
-  const agentAvatar = conversation.agentInfo?.avatar || config?.branding?.avatarUrl;
-  const userAvatar = undefined; // Could be set from user profile if available
-
+  const agentAvatar = useMemo(() => 
+    conversation.agentInfo?.avatar || config?.branding?.avatarUrl,
+    [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]
+  );
+  
   // Determine if there could be more messages to load
   const hasMoreMessages = messages.length >= 20; // Simplified check for more messages
 
@@ -151,7 +153,7 @@ const ChatView = ({
         highlightMessage={highlightText}
         searchTerm={searchTerm}
         agentAvatar={agentAvatar}
-        userAvatar={userAvatar}
+        userAvatar={undefined}
         onScrollTop={handleLoadMoreMessages}
         hasMoreMessages={hasMoreMessages}
         isLoadingMore={isLoadingMore}
@@ -171,4 +173,4 @@ const ChatView = ({
   );
 };
 
-export default ChatView;
+export default React.memo(ChatView);

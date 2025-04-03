@@ -16,7 +16,7 @@ interface ChatViewHeaderProps {
   showSearchFeature: boolean;
 }
 
-const ChatViewHeader = React.memo(({ 
+const ChatViewHeader = ({ 
   conversation, 
   onBack, 
   showSearch, 

@@ -4,7 +4,7 @@ import { dispatchChatEvent } from './events';
 import { ChatWidgetConfig } from '../config';
 import { addMessageToQueue } from './offlineQueue';
 import { saveOfflineMessage } from './storage';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 
 /**
  * Handles sending a read receipt for a message
@@ -245,20 +245,14 @@ export const sendMessageReaction = (
         addMessageToQueue(reactionData as any, chatChannelName, 'reaction');
         
         // Show toast notification
-        toast({
-          title: "Reaction queued",
-          description: "Your reaction will be sent when you're back online",
-        });
+        toast('Reaction queued. Your reaction will be sent when you\'re back online');
       });
   } else {
     // Queue reaction for when connection is restored
     addMessageToQueue(reactionData as any, chatChannelName, 'reaction');
     
     // Show toast notification
-    toast({
-      title: "Reaction queued",
-      description: "Your reaction will be sent when you're back online",
-    });
+    toast('Reaction queued. Your reaction will be sent when you\'re back online');
   }
 };
 

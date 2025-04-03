@@ -24,9 +24,7 @@ export function useConnectionState() {
     // Get current state and update if it exists
     const currentState = getConnectionState();
     if (currentState) {
-      const typedCurrentState = currentState as ConnectionState;
-      setConnectionState(typedCurrentState);
-      setIsConnected(typedCurrentState === 'connected');
+      handleConnectionChange(currentState);
     }
     
     // Subscribe to state changes
