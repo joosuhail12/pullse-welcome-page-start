@@ -6,7 +6,7 @@
  * with customizable configuration options.
  */
 
-import { PullseChatWidgetLoader } from './embed/widget-loader';
+import { PullseChatWidgetLoader, initializeWidget } from './embed/widget-loader';
 import { PullseChatWidgetOptions, EventCallback } from './embed/types';
 import { ChatEventType, ChatEventPayload } from './config';
 import { WIDGET_VERSION, checkForUpdates } from './embed/api';
@@ -16,7 +16,7 @@ import { validateEventPayload } from './utils/eventValidation';
 // Create global Pullse object
 (window as any).Pullse = (window as any).Pullse || {};
 (window as any).Pullse.initChatWidget = (options: PullseChatWidgetOptions) => {
-  return new PullseChatWidgetLoader(options);
+  return initializeWidget(options);
 };
 
 // Add version information
