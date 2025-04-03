@@ -68,4 +68,34 @@
   .animate-typing-bounce {
     animation: typing-bounce 0.8s ease-in-out infinite;
   }
+  
+  /* Improved focus states for keyboard navigation */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-vivid-purple;
+    outline-style: solid;
+  }
+  
+  /* Higher contrast colors for better accessibility */
+  .text-gray-500 {
+    @apply text-gray-600;  /* Darker gray for better contrast */
+  }
+  
+  .text-gray-400 {
+    @apply text-gray-600;  /* Darker gray for better contrast */
+  }
+  
+  /* Accessible button focus styles */
+  button:focus-visible {
+    @apply ring-2 ring-offset-2 ring-vivid-purple;
+  }
+}
+
+/* Enhanced keyboard navigation indicators for chat components */
+.chat-widget-container:focus-within {
+  @apply ring-1 ring-vivid-purple/30;
+}
+
+/* Keyboard accessible elements */
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  @apply ring-2 ring-vivid-purple ring-offset-2;
 }

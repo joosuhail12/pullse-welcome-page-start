@@ -6,6 +6,8 @@ import MessageList from '../../components/MessageList';
 import MessageInput from '../../components/MessageInput';
 import ChatViewHeader from '../../components/ChatViewHeader';
 import PreChatForm from '../../components/PreChatForm';
+import { Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ChatViewPresentationProps {
   conversation: Conversation;
@@ -82,6 +84,41 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
   config
 }) => {
 
+  // Keyboard shortcuts help
+  const keyboardShortcuts = [
+    { key: 'Alt + /', description: 'Focus search' },
+    { key: 'Alt + End', description: 'Scroll to latest messages' },
+    { key: 'Alt + Home', description: 'Load older messages' },
+    { key: 'Alt + Enter', description: 'Send message' },
+    { key: 'Esc', description: 'Close search' }
+  ];
+
+  // Effect to add keyboard shortcuts
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Alt+/ to focus search
+      if (e.altKey && e.key === '/' && showSearchFeature) {
+        e.preventDefault();
+        toggleSearch();
+      }
+      
+      // Alt+Enter to send message
+      if (e.altKey && e.key === 'Enter' && messageText.trim().length > 0) {
+        e.preventDefault();
+        handleSendMessage();
+      }
+      
+      // Escape to close search
+      if (e.key === 'Escape' && showSearch) {
+        e.preventDefault();
+        toggleSearch();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [messageText, handleSendMessage, toggleSearch, showSearch, showSearchFeature]);
+
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
       return (
@@ -97,6 +134,8 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
     <div 
       className="flex flex-col h-[600px] bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 rounded-lg shadow-lg"
       style={chatViewStyle}
+      role="region" 
+      aria-label="Chat conversation"
     >
       <ChatViewHeader 
         conversation={conversation} 
@@ -109,6 +148,34 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
         isSearching={isSearching}
         showSearchFeature={showSearchFeature}
       />
+      
+      <div className="flex justify-end pr-3" aria-hidden="true">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button 
+                className="text-gray-500 p-1 hover:text-vivid-purple focus:outline-none focus-visible:ring-2 focus-visible:ring-vivid-purple"
+                aria-label="Keyboard shortcuts"
+              >
+                <Info size={16} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left" className="p-2 max-w-xs">
+              <div className="text-sm">
+                <h3 className="font-semibold mb-1">Keyboard Shortcuts</h3>
+                <ul className="space-y-1">
+                  {keyboardShortcuts.map((shortcut, i) => (
+                    <li key={i} className="flex justify-between gap-2">
+                      <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs font-mono">{shortcut.key}</kbd>
+                      <span>{shortcut.description}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
       
       {inlineFormComponent}
       
@@ -127,6 +194,8 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
           onScrollTop={handleLoadMoreMessages}
           hasMoreMessages={hasMoreMessages}
           isLoadingMore={isLoadingMore}
+          conversationId={conversation.id}
+          agentStatus={conversation.agentInfo?.status}
         />
       )}
       

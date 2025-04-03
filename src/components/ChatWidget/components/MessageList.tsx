@@ -1,10 +1,12 @@
+
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
-import { Check, CheckCheck } from 'lucide-react';
+import { Check, CheckCheck, ArrowDown } from 'lucide-react';
 import { markConversationAsRead } from '../utils/storage';
+import { Button } from '@/components/ui/button';
 
 interface MessageListProps {
   messages: Message[];
@@ -49,6 +51,7 @@ const MessageList = ({
   const [autoScroll, setAutoScroll] = useState(true);
   const [lastScrollTop, setLastScrollTop] = useState(0);
   const [hasViewedMessages, setHasViewedMessages] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
 
   const isConsecutiveMessage = (index: number) => {
     if (index === 0) return false;
@@ -65,6 +68,13 @@ const MessageList = ({
     return searchResults?.includes(messageId) || false;
   };
 
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      setShowScrollButton(false);
+    }
+  };
+
   const handleScroll = useCallback(() => {
     if (!scrollViewportRef.current) return;
 
@@ -72,6 +82,9 @@ const MessageList = ({
     
     const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
     setAutoScroll(isNearBottom);
+    
+    // Show scroll button when not near bottom and have scrolled up
+    setShowScrollButton(!isNearBottom && scrollHeight > clientHeight + 200);
 
     if (scrollTop === 0 && lastScrollTop !== 0 && onScrollTop && hasMoreMessages && !isLoadingMore) {
       onScrollTop();
@@ -118,6 +131,24 @@ const MessageList = ({
     }
   }, [messages, isTyping, autoScroll]);
 
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Alt+End to scroll to bottom
+      if (e.altKey && e.key === 'End') {
+        scrollToBottom();
+      }
+      
+      // Alt+Home to scroll to top (load more messages)
+      if (e.altKey && e.key === 'Home' && onScrollTop && hasMoreMessages && !isLoadingMore) {
+        onScrollTop();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onScrollTop, hasMoreMessages, isLoadingMore]);
+
   const renderReadReceipt = (message: Message) => {
     if (message.sender !== 'user') return null;
     
@@ -146,7 +177,11 @@ const MessageList = ({
   };
 
   return (
-    <ScrollArea className="flex-grow p-4 bg-chat-bg" ref={scrollAreaRef}>
+    <ScrollArea 
+      className="flex-grow p-4 bg-chat-bg" 
+      ref={scrollAreaRef}
+      aria-label="Message conversation history"
+    >
       <div className="space-y-4">
         {isLoadingMore && (
           <div className="w-full text-center py-2 text-sm text-gray-500">
@@ -214,8 +249,20 @@ const MessageList = ({
           </div>
         )}
         
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} aria-hidden="true" />
       </div>
+      
+      {showScrollButton && (
+        <Button 
+          onClick={scrollToBottom}
+          className="fixed bottom-24 right-8 rounded-full shadow-md bg-vivid-purple hover:bg-vivid-purple/80 text-white"
+          size="sm"
+          aria-label="Scroll to latest messages"
+          title="Scroll to latest messages (Alt+End)"
+        >
+          <ArrowDown size={16} />
+        </Button>
+      )}
     </ScrollArea>
   );
 };
