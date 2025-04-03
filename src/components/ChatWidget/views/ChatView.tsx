@@ -31,31 +31,17 @@ const ChatView = ({
   setUserFormData
 }: ChatViewProps) => {
   const [showSearch, setShowSearch] = useState(false);
-  
-  // Check if pre-chat form should be shown based on config and conversation state
-  const [showPreChatForm, setShowPreChatForm] = useState(
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [showInlineForm, setShowInlineForm] = useState(
     config?.preChatForm?.enabled && !conversation.contactIdentified && !userFormData
   );
 
-  // Effect to update the showPreChatForm state when userFormData changes
+  // Effect to update the showInlineForm state when userFormData changes
   useEffect(() => {
     if (userFormData || conversation.contactIdentified) {
-      setShowPreChatForm(false);
-    } else if (config?.preChatForm?.enabled && !conversation.contactIdentified) {
-      // Ensure form shows when conditions are met
-      setShowPreChatForm(true);
+      setShowInlineForm(false);
     }
-  }, [userFormData, conversation.contactIdentified, config?.preChatForm?.enabled]);
-
-  // Debug log for form visibility state
-  useEffect(() => {
-    console.log('Pre-chat form visibility:', { 
-      showPreChatForm,
-      formEnabled: config?.preChatForm?.enabled,
-      contactIdentified: conversation.contactIdentified,
-      hasUserFormData: !!userFormData
-    });
-  }, [showPreChatForm, config?.preChatForm?.enabled, conversation.contactIdentified, userFormData]);
+  }, [userFormData, conversation.contactIdentified]);
 
   // Chat messages hook
   const {
@@ -70,8 +56,7 @@ const ChatView = ({
     handleEndChat,
     remoteIsTyping,
     readReceipts,
-    loadPreviousMessages,
-    isLoadingMore
+    loadPreviousMessages
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
 
   // Message reactions hook
@@ -124,16 +109,17 @@ const ChatView = ({
   const handleLoadMoreMessages = useCallback(async () => {
     if (!loadPreviousMessages) return;
     
+    setIsLoadingMore(true);
     try {
       await loadPreviousMessages();
-    } catch (error) {
-      console.error("Error loading more messages:", error);
+    } finally {
+      setIsLoadingMore(false);
     }
   }, [loadPreviousMessages]);
 
   // Handle form submission
   const handleFormComplete = (formData: Record<string, string>) => {
-    setShowPreChatForm(false);
+    setShowInlineForm(false);
     
     // Update the parent form data if callback exists
     if (setUserFormData) {
@@ -154,12 +140,24 @@ const ChatView = ({
   const agentAvatar = conversation.agentInfo?.avatar || config?.branding?.avatarUrl;
   const userAvatar = undefined; // Could be set from user profile if available
 
-  // Determine if there could be more messages to load - fixed by removing page reference
-  const hasMoreMessages = messages.length >= 20; // Simplified check for more messages
+  // Determine if there could be more messages to load
+  const hasMoreMessages = messages.length >= 20; // Assuming we load 20 messages at a time
+
+  // Handle creating inline form component when needed
+  const getInlineFormComponent = () => {
+    if (showInlineForm) {
+      return (
+        <div className="mb-4">
+          <PreChatForm config={config} onFormComplete={handleFormComplete} />
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div 
-      className="flex flex-col h-[600px] bg-gradient-to-b from-gray-50 to-white"
+      className="flex flex-col h-[600px]"
       style={{
         // Apply custom theme variables if available from config
         ...(config?.branding?.primaryColor && {
@@ -185,45 +183,34 @@ const ChatView = ({
         showSearchFeature={!!config?.features?.searchMessages}
       />
       
-      <div className="flex-1 overflow-y-auto px-4 py-2 bg-opacity-50">
-        {showPreChatForm ? (
-          <div className="mb-4 p-4 bg-white rounded-lg shadow-sm animate-fade-in">
-            <PreChatForm 
-              config={config} 
-              onFormComplete={handleFormComplete} 
-            />
-          </div>
-        ) : (
-          <MessageList 
-            messages={messages}
-            isTyping={isTyping || remoteIsTyping}
-            setMessageText={setMessageText}
-            readReceipts={readReceipts}
-            onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
-            searchResults={messageIds}
-            highlightMessage={highlightText}
-            searchTerm={searchTerm}
-            agentAvatar={agentAvatar}
-            userAvatar={userAvatar}
-            onScrollTop={handleLoadMoreMessages}
-            hasMoreMessages={hasMoreMessages}
-            isLoadingMore={isLoadingMore}
-          />
-        )}
-      </div>
+      {getInlineFormComponent()}
       
-      <div className="border-t border-gray-100 bg-white bg-opacity-70 backdrop-blur-sm">
-        <MessageInput
-          messageText={messageText}
-          setMessageText={setMessageText}
-          handleSendMessage={handleSendMessage}
-          handleFileUpload={handleFileUpload}
-          handleEndChat={handleEndChat}
-          hasUserSentMessage={hasUserSentMessage}
-          onTyping={handleUserTyping}
-          disabled={showPreChatForm}
-        />
-      </div>
+      <MessageList 
+        messages={messages}
+        isTyping={isTyping || remoteIsTyping}
+        setMessageText={setMessageText}
+        readReceipts={readReceipts}
+        onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
+        searchResults={messageIds}
+        highlightMessage={highlightText}
+        searchTerm={searchTerm}
+        agentAvatar={agentAvatar}
+        userAvatar={userAvatar}
+        onScrollTop={handleLoadMoreMessages}
+        hasMoreMessages={hasMoreMessages}
+        isLoadingMore={isLoadingMore}
+      />
+      
+      <MessageInput
+        messageText={messageText}
+        setMessageText={setMessageText}
+        handleSendMessage={handleSendMessage}
+        handleFileUpload={handleFileUpload}
+        handleEndChat={handleEndChat}
+        hasUserSentMessage={hasUserSentMessage}
+        onTyping={handleUserTyping}
+        disabled={showInlineForm}
+      />
     </div>
   );
 };
