@@ -12,10 +12,16 @@ import { ChatEventType, ChatEventPayload } from './config';
 import { WIDGET_VERSION, checkForUpdates } from './embed/api';
 import { getEventManager, EventPriority, dispatchValidatedEvent } from './embed/enhancedEvents';
 import { validateEventPayload } from './utils/eventValidation';
+import { isTestMode, setTestMode } from './utils/testMode';
 
 // Create global Pullse object
 (window as any).Pullse = (window as any).Pullse || {};
 (window as any).Pullse.initChatWidget = (options: PullseChatWidgetOptions) => {
+  // Check for test mode flag
+  if (options.testMode) {
+    setTestMode(true);
+    console.info('[Pullse] Running in test mode');
+  }
   return initializeWidget(options);
 };
 

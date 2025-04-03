@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
@@ -5,6 +6,7 @@ import './index.css';
 import PullseChatWidgetLoader from './components/ChatWidget/embed';
 import { initializeEmbedSecurity } from './components/ChatWidget/utils/embedSecurity';
 import { errorHandler } from '@/lib/error-handler';
+import { isTestMode, setTestMode } from './components/ChatWidget/utils/testMode';
 
 // Create PullseNamespace to contain all global functions and variables
 const PullseNamespace = {
@@ -17,6 +19,12 @@ const PullseNamespace = {
       const config = (window as any).__PULLSE_CHAT_CONFIG__;
       
       if (config && document.getElementById('pullse-chat-widget-container')) {
+        // Check for test mode in config
+        if (config.testMode) {
+          setTestMode(true);
+          console.info('[Pullse] Running in test mode');
+        }
+        
         // Initialize with enhanced security features
         const { container, shadowRoot } = initializeEmbedSecurity('pullse-chat-widget-container');
         
@@ -62,6 +70,33 @@ const PullseNamespace = {
         `;
       }
     }
+  },
+  
+  // Refresh the widget (useful for applying test mode changes)
+  refreshWidget: () => {
+    try {
+      const container = document.getElementById('pullse-chat-widget-container');
+      if (container) {
+        // Re-initialize the widget
+        PullseNamespace.initChatWidget();
+        console.info('[Pullse] Widget refreshed');
+      }
+    } catch (error) {
+      errorHandler.handle(error instanceof Error ? error : new Error('Failed to refresh widget'));
+    }
+  },
+  
+  // Toggle test mode
+  setTestMode: (enabled: boolean) => {
+    setTestMode(enabled);
+    
+    // Refresh the widget to apply test mode changes
+    PullseNamespace.refreshWidget();
+  },
+  
+  // Get test mode status
+  isTestMode: () => {
+    return isTestMode();
   },
   
   // Other namespace functions can be added here

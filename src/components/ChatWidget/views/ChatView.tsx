@@ -20,6 +20,7 @@ interface ChatViewProps {
   playMessageSound?: () => void;
   userFormData?: Record<string, string>;
   setUserFormData?: (data: Record<string, string>) => void;
+  testMode?: boolean;
 }
 
 const ChatView = React.memo(({ 
@@ -29,7 +30,8 @@ const ChatView = React.memo(({
   config = defaultConfig,
   playMessageSound,
   userFormData,
-  setUserFormData
+  setUserFormData,
+  testMode
 }: ChatViewProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -124,10 +126,10 @@ const ChatView = React.memo(({
   // Render pre-chat form component when needed
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
-      return <PreChatForm config={config} onFormComplete={handleFormComplete} />;
+      return <PreChatForm config={config} onFormComplete={handleFormComplete} testMode={testMode} />;
     }
     return null;
-  }, [showInlineForm, config, handleFormComplete]);
+  }, [showInlineForm, config, handleFormComplete, testMode]);
 
   const chatViewStyle = useMemo(() => {
     return {
@@ -158,6 +160,7 @@ const ChatView = React.memo(({
         searchResultCount={messageIds.length}
         isSearching={isSearching}
         showSearchFeature={!!config?.features?.searchMessages}
+        testMode={testMode}
       />
       
       <div className="flex-grow overflow-hidden flex flex-col">
@@ -184,6 +187,7 @@ const ChatView = React.memo(({
             isLoadingMore={isLoadingMore}
             conversationId={conversation.id}
             agentStatus={conversation.agentInfo?.status}
+            testMode={testMode}
           />
         )}
       </div>
@@ -192,11 +196,12 @@ const ChatView = React.memo(({
         messageText={messageText}
         setMessageText={setMessageText}
         handleSendMessage={handleSendMessage}
-        handleFileUpload={handleFileUpload}
+        onFileUpload={handleFileUpload}
         handleEndChat={handleEndChat}
         hasUserSentMessage={hasUserSentMessage}
         onTyping={handleUserTyping}
         disabled={showInlineForm}
+        testMode={testMode}
       />
     </div>
   );

@@ -24,6 +24,7 @@ interface WidgetContainerProps {
   handleStartChat: (formData?: Record<string, string>) => void;
   setUserFormData: (data: Record<string, string>) => void;
   playMessageSound: () => void;
+  testMode?: boolean;
 }
 
 const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
@@ -40,7 +41,8 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
   handleBackToMessages,
   handleStartChat,
   setUserFormData,
-  playMessageSound
+  playMessageSound,
+  testMode
 }) => {
   if (!isOpen) return null;
   
@@ -74,6 +76,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
             playMessageSound={playMessageSound}
             userFormData={userFormData}
             setUserFormData={setUserFormData}
+            testMode={testMode}
           />
         </div>
       );
@@ -86,10 +89,14 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
             <HomeView 
               onStartChat={handleStartChat} 
               config={config}
+              testMode={testMode}
             />
           )}
           {viewState === 'messages' && (
-            <MessagesView onSelectConversation={handleSelectConversation} />
+            <MessagesView 
+              onSelectConversation={handleSelectConversation}
+              testMode={testMode} 
+            />
           )}
         </div>
         
@@ -107,7 +114,8 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
     setUserFormData,
     handleStartChat,
     handleSelectConversation,
-    handleChangeView
+    handleChangeView,
+    testMode
   ]);
 
   // Memoize the branding bar to prevent unnecessary re-renders
@@ -117,9 +125,15 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
 
   return (
     <div 
-      className={`fixed ${widgetClasses} z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden`}
+      className={`fixed ${widgetClasses} z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden relative`}
       style={{...widgetStyle, ...containerStyles}}
     >
+      {testMode && (
+        <div className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg z-10 font-medium">
+          TEST MODE
+        </div>
+      )}
+      
       <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden">
         {currentView}
       </div>
