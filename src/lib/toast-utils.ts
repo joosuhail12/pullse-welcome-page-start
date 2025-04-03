@@ -26,25 +26,25 @@ export function showToast(
 ) {
   const { title, action, duration = 5000, onDismiss, ...rest } = options;
 
+  // Create icon elements using React.createElement instead of JSX
   const icons = {
-    [ToastType.SUCCESS]: <Check className="h-4 w-4 text-green-500" />,
-    [ToastType.ERROR]: <X className="h-4 w-4 text-red-500" />,
-    [ToastType.WARNING]: <AlertCircle className="h-4 w-4 text-amber-500" />,
-    [ToastType.INFO]: <Info className="h-4 w-4 text-blue-500" />
+    [ToastType.SUCCESS]: React.createElement(Check, { className: "h-4 w-4 text-green-500" }),
+    [ToastType.ERROR]: React.createElement(X, { className: "h-4 w-4 text-red-500" }),
+    [ToastType.WARNING]: React.createElement(AlertCircle, { className: "h-4 w-4 text-amber-500" }),
+    [ToastType.INFO]: React.createElement(Info, { className: "h-4 w-4 text-blue-500" })
   };
 
   const toastAction = action as ReactElement | undefined;
 
   const toastInstance = toast({
     title: title || getTitleFromType(type),
-    description: (
-      <div className="flex items-start">
-        <span className="flex-shrink-0 mr-2 mt-0.5">{icons[type]}</span>
-        <span className="font-normal">{message}</span>
-      </div>
+    description: React.createElement("div", { className: "flex items-start" }, 
+      React.createElement("span", { className: "flex-shrink-0 mr-2 mt-0.5" }, icons[type]),
+      React.createElement("span", { className: "font-normal" }, message)
     ),
     action: toastAction,
     duration,
+    type,  // Pass the type to use with the Toaster component
     ...rest
   });
   
