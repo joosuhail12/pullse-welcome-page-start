@@ -11,6 +11,7 @@ import { PullseChatWidgetOptions, EventCallback } from './types';
 import { ChatEventType } from '../config';
 import { validateEventPayload } from '../utils/eventValidation';
 import { logger } from '@/lib/logger';
+import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 
 // Export the main class for direct usage
 export { PullseChatWidgetLoader };
@@ -20,7 +21,9 @@ export function initializeWidget(options: PullseChatWidgetOptions): PullseChatWi
   try {
     return new PullseChatWidgetLoader(options);
   } catch (error) {
-    logger.error('Failed to initialize widget', 'WidgetLoader', error);
+    // Sanitize error message before logging
+    const safeErrorMessage = sanitizeErrorMessage(error);
+    logger.error('Failed to initialize widget', 'WidgetLoader', { error: safeErrorMessage });
     throw error;
   }
 }

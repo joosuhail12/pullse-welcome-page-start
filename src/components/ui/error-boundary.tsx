@@ -3,6 +3,7 @@ import React, { ErrorInfo, ReactNode } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { errorHandler } from '@/lib/error-handler'
 import { logger } from '@/lib/logger'
+import { getSafeErrorDetails, sanitizeErrorMessage } from '@/lib/error-sanitizer'
 
 interface ErrorBoundaryProps {
   children: ReactNode
@@ -26,13 +27,17 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log the error with structured logger
+    // Create sanitized version of error details for logging
+    const safeDetails = getSafeErrorDetails(error);
+    const sanitizedStack = sanitizeErrorMessage(errorInfo.componentStack);
+    
+    // Log the error with structured logger and sanitized details
     logger.error(
-      `Error caught by boundary: ${error.message}`, 
+      `Error caught by boundary: ${sanitizeErrorMessage(error.message)}`, 
       'ErrorBoundary', 
       { 
-        error,
-        componentStack: errorInfo.componentStack 
+        ...safeDetails,
+        componentStack: sanitizedStack
       }
     );
     
@@ -60,7 +65,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
             Something went wrong
           </h1>
           <p className="text-red-600 mb-4">
-            {this.state.error?.message || 'An unexpected error occurred'}
+            {this.state.error ? sanitizeErrorMessage(this.state.error.message) : 'An unexpected error occurred'}
           </p>
           <button 
             onClick={this.handleReset}

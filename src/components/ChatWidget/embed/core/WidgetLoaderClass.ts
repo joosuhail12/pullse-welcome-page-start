@@ -6,6 +6,7 @@ import { validateEventPayload } from '../../utils/eventValidation';
 import { logger } from '@/lib/logger';
 import { initializeWidgetDOM } from './domManager';
 import { validateWidgetOptions } from './optionsValidator';
+import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 
 export class PullseChatWidgetLoader {
   private options: PullseChatWidgetOptions;
@@ -46,13 +47,19 @@ export class PullseChatWidgetLoader {
       this.isInitialized = true;
       logger.info('Widget initialized successfully', 'WidgetLoader');
     } catch (error) {
-      logger.error('Failed to initialize Pullse Chat Widget', 'WidgetLoader', error);
+      // Sanitize the error message before logging or dispatching events
+      const safeErrorMessage = sanitizeErrorMessage(error);
+      
+      logger.error('Failed to initialize Pullse Chat Widget', 'WidgetLoader', {
+        error: safeErrorMessage
+      });
+      
       this.dispatchEvent({
         type: 'chat:error',
         timestamp: new Date(),
         data: {
           error: 'initialization_failed',
-          message: error instanceof Error ? error.message : 'Unknown error'
+          message: safeErrorMessage
         }
       } as ChatEventPayload);
     }

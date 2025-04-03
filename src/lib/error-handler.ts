@@ -2,6 +2,7 @@
 import { toasts } from '@/lib/toast-utils'
 import { getCircuitState } from '@/components/ChatWidget/utils/resilience'
 import { logger } from '@/lib/logger'
+import { sanitizeErrorMessage, getSafeErrorDetails } from '@/lib/error-sanitizer'
 
 // Error severity levels
 export enum ErrorSeverity {
@@ -25,7 +26,8 @@ export class AppError extends Error {
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     retryable: boolean = false
   ) {
-    super(message)
+    // Sanitize the error message before creating the Error instance
+    super(sanitizeErrorMessage(message));
     this.name = 'AppError'
     this.code = code
     this.details = details
@@ -40,7 +42,7 @@ export class NetworkError extends AppError {
     message: string = 'Network connection issue',
     details?: Record<string, any>
   ) {
-    super(message, 'ERR_NETWORK', details, ErrorSeverity.MEDIUM, true)
+    super(sanitizeErrorMessage(message), 'ERR_NETWORK', details, ErrorSeverity.MEDIUM, true)
     this.name = 'NetworkError'
   }
 }
@@ -58,7 +60,7 @@ export class ApiError extends AppError {
     const retryable = !status || status >= 500 || status === 429
     const severity = status && status >= 500 ? ErrorSeverity.HIGH : ErrorSeverity.MEDIUM
     
-    super(message, `ERR_API_${status || 'UNKNOWN'}`, details, severity, retryable)
+    super(sanitizeErrorMessage(message), `ERR_API_${status || 'UNKNOWN'}`, details, severity, retryable)
     this.name = 'ApiError'
     this.status = status
   }
@@ -70,7 +72,7 @@ export class ServiceUnavailableError extends AppError {
   
   constructor(serviceName: string) {
     super(
-      `Service ${serviceName} is currently unavailable`,
+      sanitizeErrorMessage(`Service ${serviceName} is currently unavailable`),
       'ERR_SERVICE_UNAVAILABLE',
       { serviceName, circuitState: getCircuitState(`${serviceName}`) },
       ErrorSeverity.HIGH,
@@ -105,19 +107,22 @@ export const errorHandler = {
         ? 'warning' 
         : 'default'
     
+    // Always use sanitized message for user-facing toast
+    const safeMessage = sanitizeErrorMessage(error.message);
+    
     toasts.error({
       title: error.code || 'Application Error',
-      description: error.message,
+      description: safeMessage,
     })
     
-    // Log with appropriate severity level
+    // Log with appropriate severity level using safe details
     logger.error(
-      `${error.name} [${error.severity}]: ${error.message}`, 
+      `${error.name} [${error.severity}]: ${safeMessage}`, 
       'ErrorHandler', 
       {
         code: error.code,
-        details: error.details,
-        stack: error.stack
+        details: error.details ? getSafeErrorDetails(error.details) : undefined,
+        stack: error.stack ? sanitizeErrorMessage(error.stack) : undefined
       }
     )
     
@@ -130,26 +135,27 @@ export const errorHandler = {
 
   // Standard JavaScript Error handling
   handleStandardError: (error: Error) => {
+    // Sanitize the message for user-facing toast
+    const safeMessage = sanitizeErrorMessage(error.message);
+    
     toasts.error({
       title: 'Unexpected Error',
-      description: error.message,
+      description: safeMessage,
     })
     
-    logger.error('Standard Error', 'ErrorHandler', {
-      name: error.name,
-      message: error.message,
-      stack: error.stack
-    })
+    logger.error('Standard Error', 'ErrorHandler', getSafeErrorDetails(error))
   },
 
   // Catch-all for unknown error types
   handleUnknownError: (error: unknown) => {
+    // For unknown errors, use a generic message for the user
     toasts.error({
       title: 'Unknown Error',
       description: 'An unexpected error occurred',
     })
     
-    logger.error('Unknown Error', 'ErrorHandler', { error })
+    // But log as much safe detail as we can gather
+    logger.error('Unknown Error', 'ErrorHandler', getSafeErrorDetails(error))
   },
 
   // Create a custom application error
@@ -159,7 +165,7 @@ export const errorHandler = {
     details?: Record<string, any>,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     retryable: boolean = false
-  ) => new AppError(message, code, details, severity, retryable),
+  ) => new AppError(sanitizeErrorMessage(message), code, details, severity, retryable),
   
   // Create network error
   createNetworkError: (
@@ -182,11 +188,5 @@ export const errorHandler = {
 
 // Error logging utility - replace with structured logging
 export const logError = (error: unknown) => {
-  if (error instanceof Error) {
-    logger.error(`${error.name}: ${error.message}`, 'ErrorLogger', { 
-      stack: error.stack 
-    })
-  } else {
-    logger.error('An unknown error occurred', 'ErrorLogger', { error })
-  }
+  logger.error('An error occurred', 'ErrorLogger', getSafeErrorDetails(error))
 }

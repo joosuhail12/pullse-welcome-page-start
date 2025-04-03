@@ -1,4 +1,3 @@
-
 /**
  * Chat Widget API Service
  * Provides methods to interact with the chat widget API
@@ -11,6 +10,7 @@ import { withResilience, withRetry, isCircuitOpen } from '../utils/resilience';
 import { toast } from '@/components/ui/use-toast';
 import { getDefaultConfig } from '../embed/api';
 import { errorHandler } from '@/lib/error-handler';
+import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 
 // Circuit names for different API endpoints
 const CONFIG_CIRCUIT = 'chat-widget-config';
@@ -136,8 +136,11 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
       }
     );
   } catch (error) {
-    // Log the error for troubleshooting
-    errorHandler.handleStandardError(error instanceof Error ? error : new Error('Failed to fetch config'));
+    // Log the error with sanitized details
+    errorHandler.handleStandardError(error instanceof Error 
+      ? new Error(sanitizeErrorMessage(error.message))
+      : new Error('Failed to fetch config')
+    );
     
     // Always fall back to default config for reliability
     return { 
@@ -268,7 +271,8 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
       }
     );
   } catch (error) {
-    console.error('Error sending chat message:', error);
+    // Get sanitized error message for logging and display
+    const safeErrorMessage = sanitizeErrorMessage(error);
     
     // Show appropriate error message based on error type
     if (error instanceof Error) {
@@ -279,7 +283,7 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
         // Rate limit error (already handled above)
         // Just rethrow
       } else {
-        // Generic error
+        // Generic error with sanitized message
         toast({
           title: "Failed to send message",
           description: "Please check your connection and try again",
@@ -291,4 +295,3 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
     throw error;
   }
 };
-

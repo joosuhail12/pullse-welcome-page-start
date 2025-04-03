@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { ChatWidgetConfig } from '../config';
+import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 
 interface ErrorFallbackProps {
   error: Error | null;
@@ -33,6 +34,9 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
     }, 1000);
   };
   
+  // Get sanitized error message
+  const safeErrorMessage = error ? sanitizeErrorMessage(error.message) : "We're having trouble loading the chat widget at the moment.";
+  
   return (
     <div 
       className="fixed bottom-16 sm:bottom-24 right-4 w-[90vw] sm:w-80 md:w-96 h-[300px] max-h-[50vh] rounded-lg shadow-lg bg-white dark:bg-gray-800 p-6 font-sans"
@@ -49,7 +53,7 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
         </h3>
         
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 max-w-[90%]">
-          {error?.message || "We're having trouble loading the chat widget at the moment."}
+          {safeErrorMessage}
         </p>
         
         {resetErrorBoundary && (

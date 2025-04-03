@@ -8,6 +8,7 @@ import { useWidgetPosition } from '../hooks/useWidgetPosition';
 import { dispatchChatEvent } from '../utils/events';
 import { errorHandler } from '@/lib/error-handler';
 import { logger } from '@/lib/logger';
+import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 
 interface ChatWidgetErrorBoundaryProps {
   children: React.ReactNode;
@@ -21,16 +22,21 @@ const ChatWidgetErrorBoundary = ({ children, workspaceId }: ChatWidgetErrorBound
   const { getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   
   const handleError = (err: Error) => {
+    // Use error handler for consistent error processing
     errorHandler.handle(err);
     setError(err);
+    
+    // Use sanitized error message for logging
+    const safeErrorMessage = sanitizeErrorMessage(err.message);
     
     logger.error(
       'Chat widget encountered an error', 
       'ChatWidgetErrorBoundary', 
-      { error: err.message, workspaceId }
+      { error: safeErrorMessage, workspaceId }
     );
     
-    dispatchChatEvent('error', { error: err.message }, undefined);
+    // Dispatch event with sanitized error message
+    dispatchChatEvent('error', { error: safeErrorMessage }, undefined);
   };
   
   return (
