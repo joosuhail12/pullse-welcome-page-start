@@ -3,13 +3,7 @@ import { SecurityEventType, SecurityEventOutcome, SecurityEventSeverity } from '
 
 // Simple audit logger implementation
 class AuditLogger {
-  // Add direct property for SecurityEventType for easier access
-  SecurityEventType: typeof SecurityEventType;
-  
-  constructor() {
-    // Initialize SecurityEventType
-    this.SecurityEventType = SecurityEventType as any;
-  }
+  // No need to add direct property for SecurityEventType
   
   logSecurityEvent(
     eventType: SecurityEventType,

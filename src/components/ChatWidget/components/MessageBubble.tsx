@@ -125,12 +125,12 @@ const MessageBubble = ({
                     className="text-xs py-1.5 h-auto"
                     onClick={() => {
                       if (setMessageText) {
-                        // Sanitize the quick reply text before setting
-                        setMessageText(sanitizeInput(reply.text));
+                        // Each quickReply is already a string in this context
+                        setMessageText(sanitizeInput(reply));
                       }
                     }}
                   >
-                    {sanitizeInput(reply.text)}
+                    {sanitizeInput(reply)}
                   </Button>
                 ))}
               </div>

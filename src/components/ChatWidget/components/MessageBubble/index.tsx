@@ -1,5 +1,6 @@
+
 import React, { useState, lazy, Suspense } from 'react';
-import { Message, MessageType, UserType } from '../../types';
+import { Message, MessageType, UserType, AgentStatus } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
 import MessageStatus from './MessageStatus';
@@ -44,7 +45,7 @@ interface MessageBubbleProps {
   agentAvatar?: string;
   onReply?: (text: string) => void;
   onReaction?: (messageId: string, emoji: 'thumbsUp' | 'thumbsDown') => void;
-  agentStatus?: 'online' | 'away' | 'offline' | 'busy';
+  agentStatus?: AgentStatus;
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
 }
@@ -143,7 +144,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     >
       {!isSystemMessage && (
         <MessageAvatar
-          sender={isUserMessage ? 'user' : 'system'}
+          sender={message.sender}
           avatarUrl={isUserMessage ? userAvatar : agentAvatar}
           status={isUserMessage ? undefined : agentStatus}
         />
