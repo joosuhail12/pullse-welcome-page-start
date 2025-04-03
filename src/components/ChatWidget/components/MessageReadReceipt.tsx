@@ -20,12 +20,12 @@ const MessageReadReceipt: React.FC<MessageReadReceiptProps> = ({ status, timesta
   const getStatusStyle = () => {
     switch (status) {
       case 'read':
-        return 'text-green-600';
+        return 'text-green-500';
       case 'delivered':
-        return 'text-blue-600';
+        return 'text-blue-500';
       case 'sent':
       default:
-        return 'text-gray-600';
+        return 'text-gray-400';
     }
   };
 
@@ -56,20 +56,20 @@ const MessageReadReceipt: React.FC<MessageReadReceiptProps> = ({ status, timesta
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex items-center space-x-1 transition-opacity duration-300">
+          <div className="flex items-center space-x-1">
             {status === 'read' ? (
               <div className="flex">
-                <Check className={`h-3 w-3 ${getStatusStyle()} transition-transform duration-300 hover:scale-110`} />
-                <Check className={`h-3 w-3 -ml-1 ${getStatusStyle()} transition-transform duration-300 hover:scale-110`} />
+                <Check className={`h-3 w-3 ${getStatusStyle()}`} />
+                <Check className={`h-3 w-3 -ml-1 ${getStatusStyle()}`} />
               </div>
             ) : status === 'delivered' ? (
-              <Check className={`h-3 w-3 ${getStatusStyle()} transition-transform duration-300 hover:scale-110`} />
+              <Check className={`h-3 w-3 ${getStatusStyle()}`} />
             ) : (
-              <div className={`h-2 w-2 rounded-full ${getStatusStyle()} transition-transform duration-300 hover:scale-110`} />
+              <div className={`h-2 w-2 rounded-full ${getStatusStyle()}`} />
             )}
           </div>
         </TooltipTrigger>
-        <TooltipContent side="bottom" sideOffset={5} className="text-xs font-medium bg-white border border-gray-200 shadow-md">
+        <TooltipContent side="bottom" sideOffset={5} className="text-xs">
           {getLabel()}{timestamp ? ` at ${getTimeString()}` : ''}
         </TooltipContent>
       </Tooltip>

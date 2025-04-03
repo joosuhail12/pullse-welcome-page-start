@@ -76,7 +76,7 @@ export default {
           DEFAULT: '#E5DEFF'
         },
         'vivid-purple': {
-          DEFAULT: 'hsl(var(--vivid-purple, 256 96% 67%))', // Allow CSS variable override
+          DEFAULT: 'hsl(var(--vivid-purple))',
           50: '#F5F3FF',
           100: '#EDE9FE',
           200: '#DDD6FE',
@@ -89,18 +89,18 @@ export default {
           900: '#4C1D95'
         },
         'chat-header': {
-          DEFAULT: 'hsl(var(--chat-header-bg, 256 96% 67%))',
-          foreground: 'hsl(var(--chat-header-text, 0 0% 100%))'
+          DEFAULT: 'hsl(var(--chat-header-bg))',
+          foreground: 'hsl(var(--chat-header-text))'
         },
         'user-bubble': {
-          DEFAULT: 'hsl(var(--user-bubble-bg, 256 96% 67%))',
-          foreground: 'hsl(var(--user-bubble-text, 0 0% 100%))'
+          DEFAULT: 'hsl(var(--user-bubble-bg))',
+          foreground: 'hsl(var(--user-bubble-text))'
         },
         'system-bubble': {
-          DEFAULT: 'hsl(var(--system-bubble-bg, 270 100% 98%))',
-          foreground: 'hsl(var(--system-bubble-text, 222 47% 11%))'
+          DEFAULT: 'hsl(var(--system-bubble-bg))',
+          foreground: 'hsl(var(--system-bubble-text))'
         },
-        'chat-bg': 'hsl(var(--chat-bg, 0 0% 100%))'
+        'chat-bg': 'hsl(var(--chat-bg))'
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -191,19 +191,6 @@ export default {
             opacity: '1',
             transform: 'scale(1)' 
           }
-        },
-        'message-pop': {
-          '0%': {
-            opacity: '0.8',
-            transform: 'scale(0.95)'
-          },
-          '50%': {
-            transform: 'scale(1.02)'
-          },
-          '100%': {
-            opacity: '1',
-            transform: 'scale(1)'
-          }
         }
       },
       animation: {
@@ -215,50 +202,16 @@ export default {
         'scale-in': 'scale-in 0.4s ease-out',
         'subtle-fade-in': 'subtle-fade-in 0.4s ease-out forwards',
         'subtle-slide-in': 'subtle-slide-in 0.4s ease-out',
-        'subtle-scale': 'subtle-scale 0.3s ease-out',
-        'message-pop': 'message-pop 0.3s ease-out'
+        'subtle-scale': 'subtle-scale 0.3s ease-out'
       },
       boxShadow: {
         'chat-bubble': '0 2px 8px rgba(0, 0, 0, 0.05)',
-        'chat-widget': '0 4px 20px rgba(0, 0, 0, 0.1)',
-        'message': '0 2px 10px rgba(139, 92, 246, 0.1)',
-        'message-hover': '0 4px 15px rgba(139, 92, 246, 0.15)'
+        'chat-widget': '0 4px 20px rgba(0, 0, 0, 0.1)'
       },
       screens: {
         'xs': '480px',
       }
     }
   },
-  plugins: [
-    require("tailwindcss-animate"),
-    // Add plugin to enable opacity modifiers for custom colors
-    function({ addBase, addUtilities, theme }) {
-      const customUtilities = {};
-      const colors = theme('colors');
-      
-      // Generate utilities for "ring-{color}/{opacity}" format
-      Object.entries(colors).forEach(([colorName, colorValue]) => {
-        if (typeof colorValue === 'object' && colorValue !== null) {
-          Object.entries(colorValue).forEach(([shade, value]) => {
-            if (shade !== 'DEFAULT') return;
-            // Create utilities for each opacity value from 10 to 90
-            [10, 20, 30, 40, 50, 60, 70, 80, 90].forEach(opacity => {
-              customUtilities[`.ring-${colorName}\\/${opacity}`] = {
-                '--tw-ring-color': `rgb(var(--${colorName}-rgb) / ${opacity}%)`,
-              };
-            });
-          });
-        }
-      });
-
-      addUtilities(customUtilities);
-
-      // Add CSS variable for vivid-purple RGB values to be used with opacity
-      addBase({
-        ':root': {
-          '--vivid-purple-rgb': '139, 92, 246',  // RGB for #8B5CF6
-        },
-      });
-    }
-  ],
+  plugins: [require("tailwindcss-animate")],
 } satisfies Config;

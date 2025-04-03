@@ -11,7 +11,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageReadStatus } from '../../components/MessageReadReceipt';
 import MessageInput from '../../components/MessageInput';
 import PoweredByBar from '../../components/PoweredByBar';
-import DateSeparator from '../../components/DateSeparator';
 
 interface ChatViewPresentationProps {
   conversation: Conversation;
@@ -136,27 +135,8 @@ const ChatViewPresentation = ({
     { key: 'Esc', description: 'Close search/popups', category: 'general' },
   ];
 
-  // Generate CSS variables for branding
-  const generateBrandStyles = useMemo(() => {
-    const brandColor = config?.branding?.primaryColor || '#8B5CF6';
-    
-    // Parse the brand color to create a color scheme
-    let style: React.CSSProperties = {
-      '--vivid-purple': brandColor,
-      '--chat-header-bg': brandColor,
-      '--chat-header-text': '#ffffff',
-      '--user-bubble-bg': brandColor,
-      '--user-bubble-text': '#ffffff',
-      '--system-bubble-bg': '#F8F7FF',
-      '--system-bubble-text': '#1f2937',
-    } as React.CSSProperties;
-    
-    // Merge with any existing styles
-    return { ...chatViewStyle, ...style };
-  }, [config?.branding?.primaryColor, chatViewStyle]);
-
   return (
-    <div className="h-full flex flex-col chat-scroll-area" style={generateBrandStyles}>
+    <div className="h-full flex flex-col" style={chatViewStyle}>
       <ChatKeyboardHandler
         handleSendMessage={handleSendMessage}
         toggleSearch={toggleSearch}

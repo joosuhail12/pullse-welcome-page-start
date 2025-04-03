@@ -71,7 +71,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   isConsecutive = false
 }) => {
   const [showReactions, setShowReactions] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   const toggleReactions = () => {
     if (onReaction) {
@@ -89,7 +88,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   const isUserMessage = message.sender === 'user';
   const isBotMessage = message.sender === 'bot' || message.sender === 'agent';
   const isSystemMessage = message.sender === 'system';
-  const isActionableMessage = (message.type === 'quick_reply' || message.type === 'card' || message.quickReplies?.length) && isBotMessage;
 
   // Get status-based colors for agent message bubbles
   const getStatusBasedClasses = () => {
@@ -204,7 +202,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
                     {message.quickReplies.map((reply, i) => (
                       <button 
                         key={i} 
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs py-1.5 px-3 rounded-full transition-colors duration-200"
+                        className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs py-1.5 px-3 rounded-full"
                         onClick={() => onReply && onReply(sanitizeInput(reply.text))}
                       >
                         {sanitizeInput(reply.text)}
@@ -228,18 +226,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       return (
         <div className="flex gap-2 mt-1.5">
           <button
-            className={`p-1.5 rounded-full transition-all duration-200 ${message.reaction === 'thumbsUp' ? 'bg-green-100' : 'hover:bg-gray-100'}`}
+            className={`p-1 rounded ${message.reaction === 'thumbsUp' ? 'bg-green-100' : 'hover:bg-gray-100'}`}
             onClick={() => handleReaction('thumbsUp')}
             aria-label="Thumbs up"
           >
-            <ThumbsUp size={14} className={`transition-colors duration-200 ${message.reaction === 'thumbsUp' ? 'text-green-600' : 'text-gray-600'}`} />
+            <ThumbsUp size={14} className={message.reaction === 'thumbsUp' ? 'text-green-600' : 'text-gray-500'} />
           </button>
           <button
-            className={`p-1.5 rounded-full transition-all duration-200 ${message.reaction === 'thumbsDown' ? 'bg-red-100' : 'hover:bg-gray-100'}`}
+            className={`p-1 rounded ${message.reaction === 'thumbsDown' ? 'bg-red-100' : 'hover:bg-gray-100'}`}
             onClick={() => handleReaction('thumbsDown')}
             aria-label="Thumbs down"
           >
-            <ThumbsDown size={14} className={`transition-colors duration-200 ${message.reaction === 'thumbsDown' ? 'text-red-600' : 'text-gray-600'}`} />
+            <ThumbsDown size={14} className={message.reaction === 'thumbsDown' ? 'text-red-600' : 'text-gray-500'} />
           </button>
         </div>
       );
@@ -250,7 +248,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   if (message.sender === 'status') {
     return (
       <div className="w-full flex justify-center my-2">
-        <div className="bg-gray-100 py-1.5 px-4 rounded-full text-xs text-gray-600 text-center shadow-sm">
+        <div className="bg-gray-100 py-1.5 px-4 rounded-full text-xs text-gray-500 text-center shadow-sm">
           {renderText(sanitizedText)}
         </div>
       </div>
@@ -262,14 +260,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   return (
     <div
       className={cn(
-        'group flex items-end relative',
+        'group flex items-end relative animate-fade-in',
         messageContainerClass,
-        isConsecutive ? 'mb-1' : 'mb-4', // Less margin between consecutive messages
-        isActionableMessage ? 'chat-message-actionable' : ''
+        isConsecutive ? 'mb-1' : 'mb-4' // Less margin between consecutive messages
       )}
       onContextMenu={handleLongPress}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {!isSystemMessage && showAvatar && (
         <MessageAvatar
@@ -289,15 +284,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
 
       <div
         className={cn(
-          'relative max-w-[80%] sm:max-w-md py-3 px-4',
+          'relative max-w-[80%] sm:max-w-md px-4 py-3',
           messageTypeClass,
           isHighlighted && 'bg-yellow-100 border-yellow-300',
           isSystemMessage && 'py-2 px-3',
-          avatarSpacing,
-          'transition-all duration-200',
-          isHovered && isActionableMessage && 'transform scale-[1.01] shadow-md',
-          readStatus === 'read' ? 'delivery-animation' : '',
-          isUserMessage ? 'chat-message-user' : 'chat-message-system',
+          avatarSpacing
         )}
         onClick={onToggleHighlight}
       >
@@ -307,7 +298,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         {!isConsecutive && <MessageStatus timestamp={message.timestamp} />}
         
         {isUserMessage && !isConsecutive && (
-          <div className={`absolute -bottom-4 right-1 ${readStatus === 'read' ? 'status-icon-animation' : ''}`}>
+          <div className="absolute -bottom-4 right-1">
             <MessageReadReceipt 
               status={readStatus} 
               timestamp={readTimestamp} 
@@ -316,11 +307,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         )}
         
         {renderReactionButtons()}
-
-        {/* Subtle highlight effect for actionable messages on hover */}
-        {isActionableMessage && isHovered && (
-          <div className="absolute inset-0 bg-white/5 rounded-2xl pointer-events-none"></div>
-        )}
       </div>
 
       {showReactions && onReaction && (
