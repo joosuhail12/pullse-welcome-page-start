@@ -1,42 +1,40 @@
 
 import React from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TextMessageProps {
   text: string;
-  renderText?: (text: string) => React.ReactNode;
   highlightText?: string;
 }
 
-const TextMessage = ({ text, renderText, highlightText }: TextMessageProps) => {
-  const isMobile = useIsMobile();
-  const textSizeClass = isMobile 
-    ? "text-xs sm:text-sm leading-tight" 
-    : "text-sm sm:text-base leading-relaxed";
+const TextMessage: React.FC<TextMessageProps> = ({ text, highlightText }) => {
+  // If no highlight needed, just return the text
+  if (!highlightText || !highlightText.trim()) {
+    return <div className="whitespace-pre-wrap">{text}</div>;
+  }
   
-  // Handle text highlighting internally if renderText isn't provided
-  const renderTextContent = () => {
-    if (renderText) {
-      return renderText(text);
-    }
+  // Function to find text to highlight
+  const getHighlightedText = () => {
+    if (!highlightText || !text) return text;
     
-    if (highlightText && highlightText.trim() !== '') {
-      // Split by highlight term and render with highlighting
+    try {
       const regex = new RegExp(`(${highlightText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
       const parts = text.split(regex);
-      return parts.map((part, i) => 
-        regex.test(part) 
-          ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark>
-          : <React.Fragment key={i}>{part}</React.Fragment>
-      );
+      
+      return parts.map((part, i) => {
+        // Check if this part matches the highlight text (case insensitive)
+        const isMatch = part.toLowerCase() === highlightText.toLowerCase();
+        
+        return isMatch ? 
+          <mark key={i} className="bg-yellow-200">{part}</mark> : 
+          <React.Fragment key={i}>{part}</React.Fragment>;
+      });
+    } catch (error) {
+      console.error("Error highlighting text:", error);
+      return text;
     }
-    
-    return text;
   };
   
-  return (
-    <p className={`${textSizeClass} tracking-wide break-words`}>{renderTextContent()}</p>
-  );
+  return <div className="whitespace-pre-wrap">{getHighlightedText()}</div>;
 };
 
 export default TextMessage;

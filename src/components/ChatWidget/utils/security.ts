@@ -1,427 +1,370 @@
 
 /**
- * Security utilities for chat widget
- * 
- * This module provides core security functions for the Pullse Chat Widget
- * including CSRF protection, message integrity, encryption, and rate limiting.
- * 
- * SECURITY NOTICE: Some functions in this file are placeholder implementations
- * that should be replaced with proper server-side implementations in production.
+ * Security-related utilities for the chat widget
  */
 
-import { getChatSessionId, invalidateSession, refreshSessionExpiry } from './cookies';
-import { serverSideEncrypt, serverSideDecrypt } from '../services/api';
-import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
-import { logger } from '@/lib/logger';
-import { 
-  requiresServerImplementation, 
-  signMessageServerSide, 
-  verifySignatureServerSide
-} from './serverSideAuth';
-import { auditLogger } from '@/lib/audit-logger';
+import { v4 as uuidv4 } from 'uuid';
+import { dispatchChatEvent } from './events';
+import { logger, auditLogger } from '@/lib/audit-logger';
+import { EventPriority } from './eventValidation';
 
-// Store rate limiting data in memory
-const rateLimitStore: Record<string, { count: number; resetTime: number }> = {};
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-const MAX_REQUESTS_PER_WINDOW = 10;     // 10 messages per minute
+// Constants
+const TOKEN_STORAGE_KEY = 'pullse_secure_token';
+const SESSION_STORAGE_KEY = 'pullse_session_id';
+const RATE_LIMIT_STORAGE_KEY = 'pullse_rate_limit';
+const TOKEN_VERSION = 'v1';
+const TOKEN_EXPIRY_DAYS = 14; // Two weeks
+
+// Rate limiting defaults
+const DEFAULT_MAX_MESSAGES_PER_MINUTE = 30;
+const DEFAULT_MESSAGE_COOLDOWN_MS = 500; // 500ms between messages
+
+// Internal state
+let lastMessageTimestamp = 0;
 
 /**
- * Check if the current request exceeds rate limits
- * @returns True if rate limit is exceeded, false otherwise
- * 
- * TODO: Implement server-side rate limiting with IP tracking and persistent storage
- * TODO: Add exponential back-off for repeated abuse
+ * Generate secure token for client authentication
  */
-export function isRateLimited(): boolean {
-  const sessionId = getChatSessionId();
-  if (!sessionId) return false; // No session, can't rate limit
-  
-  const now = Date.now();
-  
-  // Initialize or reset expired entry
-  if (!rateLimitStore[sessionId] || rateLimitStore[sessionId].resetTime < now) {
-    rateLimitStore[sessionId] = {
-      count: 0,
-      resetTime: now + RATE_LIMIT_WINDOW_MS
+export function generateSecureToken(): string {
+  try {
+    const timestamp = Date.now();
+    const randomPart = uuidv4();
+    
+    // Browser fingerprinting would ideally be added here
+    // for additional security in a production environment
+    
+    // Create token payload
+    const payload = {
+      id: randomPart,
+      created: timestamp,
+      expires: timestamp + (TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
+      version: TOKEN_VERSION
     };
-  }
-  
-  // Increment the counter
-  rateLimitStore[sessionId].count++;
-  
-  // Check if limit is exceeded
-  const isLimited = rateLimitStore[sessionId].count > MAX_REQUESTS_PER_WINDOW;
-  
-  // Log rate limiting events
-  if (isLimited) {
+    
+    // Encode and store the token
+    const token = btoa(JSON.stringify(payload));
+    localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    
+    // Log security event
     auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.SUSPICIOUS_ACTIVITY,
-      'FAILURE',
-      { 
-        action: 'rate_limit_exceeded', 
-        sessionId, 
-        requestCount: rateLimitStore[sessionId].count,
-        windowMs: RATE_LIMIT_WINDOW_MS
-      },
-      'MEDIUM'
-    );
-  }
-  
-  return isLimited;
-}
-
-/**
- * Generate a cryptographically secure random string
- * @param length Length of the string to generate
- * @returns Random string
- * 
- * TODO: Consider using a more specialized crypto library in production
- */
-function generateSecureRandom(length: number = 32): string {
-  const array = new Uint8Array(length);
-  
-  try {
-    crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-  } catch (error) {
-    logger.error(
-      'Could not generate secure random value', 
-      'security.generateSecureRandom', 
-      { error: sanitizeErrorMessage(error) }
+      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
+      'SUCCESS',
+      { action: 'token_generated', tokenId: randomPart.substring(0, 8) },
+      'LOW'
     );
     
-    // Fallback for environments without crypto
-    let result = '';
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < length; i++) {
-      result += characters.charAt(Math.floor(Math.random() * characters.length));
-    }
-    return result;
+    return token;
+  } catch (err) {
+    logger.error('Failed to generate secure token', 'security.generateSecureToken', err);
+    
+    // Return a basic token as fallback
+    return `${TOKEN_VERSION}.fallback.${Date.now()}`;
   }
 }
 
 /**
- * Generate a CSRF token based on the session ID and a secure nonce
- * @returns CSRF token string and nonce object
- * 
- * TODO: Move token generation to server-side in production
- * TODO: Use HMAC or similar cryptographic algorithm for token generation
+ * Validate a secure token
  */
-export function generateCsrfToken(): { token: string, nonce: string } {
-  const sessionId = getChatSessionId();
-  if (!sessionId) return { token: '', nonce: '' };
-  
-  // Refresh session expiry on token generation
-  refreshSessionExpiry();
-  
-  // Generate a cryptographically secure nonce
-  const nonce = generateSecureRandom(16);
-  
-  // Generate timestamp for token freshness
-  const timestamp = Date.now().toString(36);
-  
-  // Create token using session ID, nonce and timestamp
-  const tokenData = `${sessionId}:${nonce}:${timestamp}`;
-  
-  // Encode token - in production this would be signed on the server
-  const token = btoa(tokenData);
-  
-  // Log token creation
-  auditLogger.logSecurityEvent(
-    auditLogger.SecurityEventType.TOKEN_ISSUED,
-    'SUCCESS',
-    { 
-      tokenType: 'CSRF', 
-      sessionId: sessionId,
-      maskedNonce: `${nonce.substring(0,4)}...`
-    },
-    'LOW'
-  );
-  
-  return { token, nonce };
-}
-
-/**
- * Verify if the provided CSRF token is valid
- * @param token The token to verify
- * @param expectedNonce The nonce that was used to generate the token
- * @returns True if token is valid, false otherwise
- * 
- * TODO: Implement server-side verification with constant-time comparison
- * TODO: Add additional context binding (e.g., action-specific tokens)
- */
-export function verifyCsrfToken(token: string, expectedNonce: string): boolean {
+export function validateToken(token: string): boolean {
   try {
-    // Decode the token
-    const decoded = atob(token);
-    const [sessionId, nonce, timestampStr] = decoded.split(':');
+    // Parse the token
+    const payload = JSON.parse(atob(token));
     
-    // Verify session ID
-    if (sessionId !== getChatSessionId()) {
+    // Check if token has expired
+    if (payload.expires < Date.now()) {
       auditLogger.logSecurityEvent(
-        auditLogger.SecurityEventType.TOKEN_REJECTED,
+        auditLogger.SecurityEventType.AUTH_FAILURE,
         'FAILURE',
-        { tokenType: 'CSRF', reason: 'session_mismatch' },
-        'HIGH'
-      );
-      return false;
-    }
-    
-    // Verify nonce
-    if (nonce !== expectedNonce) {
-      auditLogger.logSecurityEvent(
-        auditLogger.SecurityEventType.TOKEN_REJECTED,
-        'FAILURE',
-        { tokenType: 'CSRF', reason: 'nonce_mismatch' },
-        'HIGH'
-      );
-      return false;
-    }
-    
-    // Check token freshness (10 minute expiry)
-    const timestamp = parseInt(timestampStr, 36);
-    const now = Date.now();
-    if (now - timestamp > 600000) {
-      auditLogger.logSecurityEvent(
-        auditLogger.SecurityEventType.TOKEN_REJECTED,
-        'FAILURE',
-        { tokenType: 'CSRF', reason: 'token_expired', ageMs: now - timestamp },
+        { reason: 'token_expired', tokenId: payload.id.substring(0, 8) },
         'MEDIUM'
       );
       return false;
     }
     
-    // Log successful validation
-    auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.TOKEN_VALIDATED,
-      'SUCCESS',
-      { tokenType: 'CSRF', sessionId },
-      'LOW'
-    );
+    // Check token version
+    if (payload.version !== TOKEN_VERSION) {
+      auditLogger.logSecurityEvent(
+        auditLogger.SecurityEventType.AUTH_FAILURE,
+        'FAILURE',
+        { reason: 'token_version_mismatch', tokenVersion: payload.version },
+        'MEDIUM'
+      );
+      return false;
+    }
     
     return true;
-  } catch (e) {
-    logger.error(
-      'CSRF token verification failed', 
-      'security.verifyCsrfToken', 
-      { error: sanitizeErrorMessage(e) }
-    );
-    
+  } catch (err) {
     auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.TOKEN_REJECTED,
+      auditLogger.SecurityEventType.AUTH_FAILURE,
       'FAILURE',
-      { tokenType: 'CSRF', reason: 'invalid_format', error: sanitizeErrorMessage(e) },
-      'HIGH'
-    );
-    
-    return false;
-  }
-}
-
-/**
- * Client-side encryption placeholder - delegates to server-side encryption
- * @param data Data to encrypt
- * @returns Encrypted data from server, or placeholder
- * 
- * SECURITY NOTICE: Never implement encryption in client-side code for production.
- * This function should always delegate to a secure server-side implementation.
- */
-export function encryptData(data: string): string {
-  if (import.meta.env.DEV) {
-    // For development only, return a mock encrypted value
-    logger.debug('Using mock encryption in development mode', 'security.encryptData');
-    return `SERVER_ENCRYPT:${btoa(data)}`;
-  }
-  
-  // In production, we'll make an API call to encrypt server-side
-  return serverSideEncrypt(data);
-}
-
-/**
- * Client-side decryption placeholder - delegates to server-side decryption
- * @param encryptedData Data to decrypt
- * @returns Decrypted data from server, or original if not encrypted
- * 
- * SECURITY NOTICE: Never implement decryption in client-side code for production.
- * This function should always delegate to a secure server-side implementation.
- */
-export function decryptData(encryptedData: string): string {
-  if (!encryptedData || !encryptedData.startsWith('SERVER_ENCRYPT:')) {
-    return encryptedData;
-  }
-  
-  if (import.meta.env.DEV) {
-    // For development only, simulate decryption
-    logger.debug('Using mock decryption in development mode', 'security.decryptData');
-    try {
-      return atob(encryptedData.substring(14));
-    } catch (error) {
-      logger.error(
-        'Failed to process development data', 
-        'security.decryptData', 
-        { error: sanitizeErrorMessage(error) }
-      );
-      return '';
-    }
-  }
-  
-  // In production, we'll make an API call to decrypt server-side
-  return serverSideDecrypt(encryptedData);
-}
-
-/**
- * Enforce HTTPS by redirecting HTTP requests to HTTPS
- * @returns True if already on HTTPS, false if redirection occurred
- * 
- * TODO: Implement strict HSTS headers on server-side
- * TODO: Consider preload list submission for production domains
- */
-export function enforceHttps(): boolean {
-  if (
-    typeof window !== 'undefined' && 
-    window.location.protocol === 'http:' &&
-    !window.location.hostname.includes('localhost') &&
-    !window.location.hostname.includes('127.0.0.1')
-  ) {
-    // Log security event for HTTP access attempt
-    auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
-      'ATTEMPT',
-      { 
-        action: 'enforce_https', 
-        from: window.location.protocol,
-        to: 'https:',
-        host: window.location.hostname
-      },
+      { reason: 'token_validation_error', error: String(err) },
       'MEDIUM'
     );
     
-    window.location.href = window.location.href.replace('http:', 'https:');
     return false;
   }
+}
+
+/**
+ * Check if the current session is valid
+ */
+export function isSessionValid(): boolean {
+  // Check if token exists
+  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+  if (!token) {
+    // No token found, create a new one
+    generateSecureToken();
+    return true;
+  }
+  
+  // Validate the token
+  const isValid = validateToken(token);
+  
+  if (!isValid) {
+    // Token invalid, generate a new one
+    generateSecureToken();
+    
+    // Dispatch security event
+    dispatchChatEvent('chat:error', {
+      error: 'session_expired',
+      message: 'Your session has expired. A new session has been created.'
+    }, EventPriority.HIGH);
+  }
+  
   return true;
 }
 
 /**
- * Generate a signature string for message integrity validation
- * Delegates to server-side implementation in production
- * @param message The message to sign
- * @param timestamp Timestamp when the message was created
- * @returns Signature for the message
- * 
- * SECURITY NOTICE: Client-side signatures provide minimal security.
- * Production code should use server-side signing with proper key management.
+ * Generate a client ID for real-time communication
  */
-export function signMessage(message: string, timestamp: number): string {
-  const sessionId = getChatSessionId() || '';
+export function generateClientId(): string {
+  // Get or create session ID
+  const sessionId = getOrCreateSessionId();
   
-  if (import.meta.env.DEV) {
-    // For development only, return a mock signature
-    logger.debug('Using mock signature in development mode', 'security.signMessage');
-    return `SERVER_SIGN:${sessionId}:${timestamp}:${message.length}`;
-  }
-  
-  // In production, we'll make an API call to sign server-side
-  return signMessageServerSide(message, timestamp);
+  // Return the session ID as the client ID
+  return sessionId;
 }
 
 /**
- * Verify message signature to ensure data integrity
- * Delegates to server-side implementation in production
- * @param message Original message
- * @param timestamp Original timestamp
- * @param signature Signature to verify
- * @returns True if signature is valid, false otherwise
- * 
- * SECURITY NOTICE: Client-side verification is insecure and easily bypassed.
- * Production code should use server-side verification with proper key management.
+ * Get or create a session ID
  */
-export function verifyMessageSignature(message: string, timestamp: number, signature: string): boolean {
-  if (import.meta.env.DEV) {
-    // For development only, simulate verification
-    const expectedSignature = signMessage(message, timestamp);
-    logger.debug('Using mock signature verification in development mode', 'security.verifyMessageSignature');
-    return signature === expectedSignature;
-  }
+export function getOrCreateSessionId(): string {
+  // Check if session ID exists
+  let sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
   
-  // In production, we'll make an API call to verify server-side
-  return verifySignatureServerSide(message, timestamp, signature);
-}
-
-/**
- * Logout user and invalidate session
- * 
- * TODO: Implement server-side session invalidation
- * TODO: Add token revocation for all authentication tokens
- */
-export function logout(): void {
-  // Log logout event
-  const sessionId = getChatSessionId();
-  if (sessionId) {
+  if (!sessionId) {
+    // Create a new session ID
+    sessionId = `session-${uuidv4()}`;
+    
+    // Store the session ID
+    sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+    
+    // Log security event
     auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.LOGOUT,
+      auditLogger.SecurityEventType.AUTH_SUCCESS,
       'SUCCESS',
-      { sessionId },
+      { action: 'session_created', sessionId: sessionId.substring(0, 16) },
       'LOW'
     );
-  
-    // Clear rate limiting data for the current session
-    if (rateLimitStore[sessionId]) {
-      delete rateLimitStore[sessionId];
-    }
+    
+    // Trigger security check
+    isSessionValid();
   }
   
-  // Invalidate the session
-  invalidateSession();
+  return sessionId;
 }
 
 /**
- * Check if the session has expired and needs renewal
- * @returns True if session is valid, false otherwise
- * 
- * TODO: Implement token rotation and refresh tokens
+ * Get CSRF token for API requests
+ * Note: This is a simplified implementation.
+ * In a production environment, this should be replaced with a more robust implementation.
  */
-export function checkSessionValidity(): boolean {
-  const sessionId = getChatSessionId();
-  return !!sessionId;
+export async function getCsrfToken(): Promise<string> {
+  // In a real implementation, this would fetch a CSRF token from the server
+  // For this simplified version, we'll generate a local token
+  
+  return `csrf-${uuidv4()}-${Date.now()}`;
 }
 
 /**
- * Generate Content-Security-Policy directives for the chat widget
- * @returns CSP directives as a string
- * 
- * TODO: Review and update CSP rules regularly
- * TODO: Implement nonce-based CSP for inline scripts if needed
- * TODO: Consider implementing Report-Only mode during testing
+ * Validate CSRF token
+ * Note: This is a simplified implementation.
  */
-export function generateCSPDirectives(): string {
-  return [
-    // Define allowed sources for various content types
-    "default-src 'self' https://cdn.pullse.io",
-    "script-src 'self' https://cdn.pullse.io https://unpkg.com",
-    "style-src 'self' 'unsafe-inline' https://cdn.pullse.io https://unpkg.com",
-    "img-src 'self' data: https://cdn.pullse.io https://*.githubusercontent.com",
-    "connect-src 'self' https://*.pullse.io https://api.pullse.io",
-    "font-src 'self' https://cdn.pullse.io",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'self'",
-    // Report violations to our endpoint
-    "report-uri https://pullse.io/csp-report"
-  ].join('; ');
+export function validateCsrfToken(token: string): boolean {
+  // In a real implementation, this would validate the token against the server
+  // For this simplified version, we'll just check if it exists and has the expected format
+  
+  if (!token || !token.startsWith('csrf-')) {
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.CSRF_VALIDATION_FAILURE,
+      'FAILURE',
+      { reason: 'invalid_csrf_token' },
+      'HIGH'
+    );
+    return false;
+  }
+  
+  return true;
 }
 
 /**
- * Generate Subresource Integrity (SRI) attributes for script tags
- * Note: In production, these would be pre-computed and stored
- * @returns SRI hash attributes
- * 
- * TODO: Implement automated SRI hash generation during build process
- * TODO: Validate all third-party resources with SRI
+ * Generate an API signature for request validation
+ * Note: This is a simplified implementation.
  */
-export function getScriptIntegrityHash(): string {
-  // In a real implementation, this would return the pre-computed hash
-  // For this demo, we return a placeholder
-  return 'sha384-placeholder-hash-would-be-here-in-production';
+export async function generateApiSignature(payload: any): Promise<string> {
+  // In a real implementation, this would use a secure hashing algorithm
+  // with a shared secret to generate a signature
+  
+  return `signature-${uuidv4()}-${Date.now()}`;
+}
+
+/**
+ * Check if the user is being rate limited
+ */
+export function isRateLimited(): boolean {
+  // Get current time
+  const now = Date.now();
+  
+  // Check if enough time has passed since the last message
+  if (now - lastMessageTimestamp < DEFAULT_MESSAGE_COOLDOWN_MS) {
+    // Log rate limit event
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.RATE_LIMIT_EXCEEDED,
+      'ATTEMPT',
+      { cooldownMs: DEFAULT_MESSAGE_COOLDOWN_MS },
+      'LOW'
+    );
+    
+    return true;
+  }
+  
+  // Check rate limit data from storage
+  const rateLimitData = getRateLimitData();
+  
+  // Update timestamp of last message
+  lastMessageTimestamp = now;
+  
+  // Check if the user has exceeded the rate limit
+  if (rateLimitData.messageCount >= DEFAULT_MAX_MESSAGES_PER_MINUTE) {
+    // Log rate limit event
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.RATE_LIMIT_EXCEEDED,
+      'FAILURE',
+      { 
+        messageCount: rateLimitData.messageCount,
+        maxMessagesPerMinute: DEFAULT_MAX_MESSAGES_PER_MINUTE
+      },
+      'MEDIUM'
+    );
+    
+    return true;
+  }
+  
+  // Increment message count
+  updateRateLimitData({
+    ...rateLimitData,
+    messageCount: rateLimitData.messageCount + 1
+  });
+  
+  return false;
+}
+
+/**
+ * Get rate limit data from storage
+ */
+function getRateLimitData() {
+  // Initialize with defaults
+  const defaultData = {
+    messageCount: 0,
+    lastReset: Date.now()
+  };
+  
+  try {
+    // Get data from session storage
+    const data = sessionStorage.getItem(RATE_LIMIT_STORAGE_KEY);
+    
+    if (data) {
+      const parsedData = JSON.parse(data);
+      
+      // Check if we need to reset the counter (after 1 minute)
+      if (Date.now() - parsedData.lastReset > 60000) {
+        return {
+          messageCount: 0,
+          lastReset: Date.now()
+        };
+      }
+      
+      return parsedData;
+    }
+    
+    return defaultData;
+  } catch (err) {
+    logger.error('Failed to get rate limit data', 'security.getRateLimitData', err);
+    return defaultData;
+  }
+}
+
+/**
+ * Update rate limit data in storage
+ */
+function updateRateLimitData(data: { messageCount: number; lastReset: number }) {
+  try {
+    // Store data in session storage
+    sessionStorage.setItem(RATE_LIMIT_STORAGE_KEY, JSON.stringify(data));
+  } catch (err) {
+    logger.error('Failed to update rate limit data', 'security.updateRateLimitData', err);
+  }
+}
+
+/**
+ * Enforce HTTPS connection
+ */
+export function enforceHttps(): boolean {
+  // Skip in development
+  if (
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname.includes('.local')
+  ) {
+    return true;
+  }
+  
+  // Check if the connection is secure
+  if (window.location.protocol !== 'https:') {
+    // Log security event
+    auditLogger.logSecurityEvent(
+      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
+      'ATTEMPT',
+      { action: 'enforce_https', currentProtocol: window.location.protocol },
+      'HIGH'
+    );
+    
+    // Redirect to HTTPS
+    window.location.href = window.location.href.replace('http:', 'https:');
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Clear security data (for logout)
+ */
+export function logout() {
+  // Clear token
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  
+  // Clear session ID
+  sessionStorage.removeItem(SESSION_STORAGE_KEY);
+  
+  // Clear rate limit data
+  sessionStorage.removeItem(RATE_LIMIT_STORAGE_KEY);
+  
+  // Log security event
+  auditLogger.logSecurityEvent(
+    auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
+    'SUCCESS',
+    { action: 'logout' },
+    'LOW'
+  );
 }

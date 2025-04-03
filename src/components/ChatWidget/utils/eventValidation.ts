@@ -25,7 +25,7 @@ export function validateEventPayload(payload: any): payload is ChatEventPayload 
 }
 
 // Type-specific validators for event data
-const eventValidators: Record<string, Record<ChatEventType, (data: any) => boolean>> = {
+const eventValidators: Record<string, Record<string, (data: any) => boolean>> = {
   validationMap: {
     'chat:open': (data: any) => true, // No specific validation needed
     'chat:close': (data: any) => true, // No specific validation needed
@@ -67,3 +67,25 @@ const eventValidators: Record<string, Record<ChatEventType, (data: any) => boole
       typeof data.status === 'string'
   }
 };
+
+// Create a validated event
+export function createValidatedEvent(type: string, data?: any): ChatEventPayload | null {
+  const event = {
+    type: type as ChatEventType,
+    timestamp: new Date(),
+    data: data || {}
+  };
+  
+  if (validateEventPayload(event)) {
+    return event;
+  }
+  
+  return null;
+}
+
+// Define EventPriority as an enum with values
+export enum EventPriority {
+  HIGH = 'high',
+  NORMAL = 'normal',
+  LOW = 'low'
+}

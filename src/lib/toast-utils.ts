@@ -1,12 +1,15 @@
-import React, { ReactElement } from 'react';
+
+import React from 'react';
 import { Check, X, AlertCircle, Info } from 'lucide-react';
-import { Toast, ToastProps } from '@/components/ui/toast';
-import { useToast } from '@/hooks/use-toast';
+import { toast as useToast } from '@/components/ui/use-toast';
 import { ToastAction, ToastActionElement } from '@/components/ui/toast';
 
-interface ToastOptions extends Omit<ToastProps, 'action'> {
+interface ToastOptions {
+  title?: string;
   action?: ToastActionElement;
+  duration?: number;
   onDismiss?: () => void;
+  variant?: "default" | "destructive" | "success" | "warning" | "info";
 }
 
 export enum ToastType {
@@ -15,6 +18,17 @@ export enum ToastType {
   WARNING = 'warning',
   INFO = 'info'
 }
+
+// Export toast for direct usage
+export const toast = useToast;
+
+// Map from ToastType to variant
+const variantMap: Record<ToastType, "default" | "destructive" | "success" | "warning" | "info"> = {
+  [ToastType.SUCCESS]: "success",
+  [ToastType.ERROR]: "destructive",
+  [ToastType.WARNING]: "warning",
+  [ToastType.INFO]: "info"
+};
 
 /**
  * Show a toast notification with icon
@@ -26,7 +40,7 @@ export function showToast(
 ) {
   const { title, action, duration = 5000, onDismiss, ...rest } = options;
 
-  // Create icon elements using React.createElement instead of JSX
+  // Create icon elements using React.createElement
   const icons = {
     [ToastType.SUCCESS]: React.createElement(Check, { className: "h-4 w-4 text-green-500" }),
     [ToastType.ERROR]: React.createElement(X, { className: "h-4 w-4 text-red-500" }),
@@ -34,19 +48,17 @@ export function showToast(
     [ToastType.INFO]: React.createElement(Info, { className: "h-4 w-4 text-blue-500" })
   };
 
-  const toastAction = action as ReactElement | undefined;
+  const toastAction = action as React.ReactElement | undefined;
 
-  // Use the imported toast function from useToast hook
-  const { toast } = useToast();
-  const toastInstance = toast({
+  const toastInstance = useToast({
     title: title || getTitleFromType(type),
-    description: React.createElement("div", { className: "flex items-start" }, 
+    description: React.createElement("div", { className: "flex items-start" },
       React.createElement("span", { className: "flex-shrink-0 mr-2 mt-0.5" }, icons[type]),
       React.createElement("span", { className: "font-normal" }, message)
     ),
     action: toastAction,
     duration,
-    variant: type,  // Use variant instead of type for the Toaster component
+    variant: variantMap[type],
     ...rest
   });
   
@@ -58,30 +70,6 @@ export function showToast(
 
   return toastInstance;
 }
-
-// Export a toasts object for convenient access to the toast functions
-export const toasts = {
-  success: (options: ToastOptions = {}, message?: string) => {
-    return typeof message === 'string' 
-      ? showSuccessToast(message, options) 
-      : showToast('', options, ToastType.SUCCESS);
-  },
-  error: (options: ToastOptions = {}, message?: string) => {
-    return typeof message === 'string' 
-      ? showErrorToast(message, options) 
-      : showToast('', options, ToastType.ERROR);
-  },
-  warning: (options: ToastOptions = {}, message?: string) => {
-    return typeof message === 'string' 
-      ? showWarningToast(message, options) 
-      : showToast('', options, ToastType.WARNING);
-  },
-  info: (options: ToastOptions = {}, message?: string) => {
-    return typeof message === 'string' 
-      ? showInfoToast(message, options) 
-      : showToast('', options, ToastType.INFO);
-  }
-};
 
 /**
  * Show a success toast
@@ -128,3 +116,12 @@ function getTitleFromType(type: ToastType): string {
       return 'Notification';
   }
 }
+
+// Export for convenience
+export const toasts = {
+  success: showSuccessToast,
+  error: showErrorToast,
+  warning: showWarningToast,
+  info: showInfoToast,
+  show: showToast
+};

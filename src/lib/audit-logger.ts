@@ -3,6 +3,9 @@ import { SecurityEventType, SecurityEventOutcome, SecurityEventSeverity } from '
 
 // Simple audit logger implementation
 class AuditLogger {
+  // Add direct property for SecurityEventType for easier access
+  SecurityEventType = SecurityEventType;
+  
   logSecurityEvent(
     eventType: SecurityEventType,
     outcome: SecurityEventOutcome,
@@ -64,4 +67,4 @@ class AuditLogger {
 
 // Create and export a singleton instance
 export const logger = new AuditLogger();
-export const auditLogger = new AuditLogger(); // Add this export
+export const auditLogger = logger; // Export the same instance as auditLogger
