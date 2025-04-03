@@ -1,10 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
-import { Message } from '../types';
+import { Message, AgentStatus } from '../types';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import PoweredByBar from './PoweredByBar';
 import { MessageReadStatus } from './MessageReadReceipt';
+import StatusChangeNotification from './StatusChangeNotification';
+import EstimatedResponseTime from './EstimatedResponseTime';
 
 interface ChatBodyProps {
   messages: Message[];
@@ -29,9 +31,10 @@ interface ChatBodyProps {
   showInlineForm: boolean;
   inlineFormComponent: React.ReactNode;
   conversationId: string;
-  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
+  agentStatus?: AgentStatus;
   onToggleHighlight?: (messageId: string) => void;
   typingDuration?: number; // Added typingDuration prop
+  previousAgentStatus?: AgentStatus; // Added to track status changes
 }
 
 const ChatBody: React.FC<ChatBodyProps> = ({
@@ -57,12 +60,14 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   showInlineForm,
   inlineFormComponent,
   conversationId,
-  agentStatus,
+  agentStatus = 'online',
   onToggleHighlight,
-  typingDuration = 0 // Default value for typingDuration
+  typingDuration = 0, // Default value for typingDuration
+  previousAgentStatus
 }) => {
   const [typingStartTime, setTypingStartTime] = useState<number | null>(null);
   const [calculatedTypingDuration, setCalculatedTypingDuration] = useState(typingDuration);
+  const [lastStatusChange, setLastStatusChange] = useState<Date | null>(null);
   
   // Track how long typing has been active
   useEffect(() => {
@@ -85,12 +90,38 @@ const ChatBody: React.FC<ChatBodyProps> = ({
     return () => clearInterval(intervalId);
   }, [typingStartTime]);
 
+  // Track agent status changes
+  useEffect(() => {
+    if (previousAgentStatus && previousAgentStatus !== agentStatus) {
+      setLastStatusChange(new Date());
+    }
+  }, [agentStatus, previousAgentStatus]);
+
   return (
     <div className="flex flex-col flex-grow overflow-hidden">
       {inlineFormComponent}
       
       {(!showInlineForm || conversationId) && (
         <div className="flex-grow flex flex-col">
+          {/* Status indicators */}
+          <div className="px-4 pt-2">
+            {lastStatusChange && previousAgentStatus && (
+              <div className="mb-2">
+                <StatusChangeNotification
+                  previousStatus={previousAgentStatus}
+                  currentStatus={agentStatus}
+                  timestamp={lastStatusChange}
+                  autoHideDuration={10}
+                />
+              </div>
+            )}
+            
+            {/* Estimated response time indicator */}
+            <div className="flex justify-center mb-3">
+              <EstimatedResponseTime agentStatus={agentStatus} />
+            </div>
+          </div>
+        
           <MessageList 
             messages={messages}
             isTyping={isTyping || remoteIsTyping}

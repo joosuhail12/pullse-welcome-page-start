@@ -1,5 +1,6 @@
+
 import React, { useState, lazy, Suspense } from 'react';
-import { MessageType, UserType } from '../../types';
+import { MessageType, UserType, AgentStatus } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
 import MessageStatus from './MessageStatus';
@@ -43,7 +44,7 @@ interface MessageBubbleProps {
   agentAvatar?: string;
   onReply?: (text: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
-  agentStatus?: 'online' | 'away' | 'offline' | 'busy';
+  agentStatus?: AgentStatus;
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
   searchTerm?: string;
@@ -88,10 +89,28 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   const isBotMessage = message.sender === 'bot' || message.sender === 'agent';
   const isSystemMessage = message.sender === 'system';
 
+  // Get status-based colors for agent message bubbles
+  const getStatusBasedClasses = () => {
+    if (!isBotMessage || !agentStatus) return '';
+    
+    switch (agentStatus) {
+      case 'online':
+        return 'border-l-4 border-l-green-500';
+      case 'busy':
+        return 'border-l-4 border-l-amber-500';
+      case 'away':
+        return 'border-l-4 border-l-yellow-400';
+      case 'offline':
+        return 'border-l-4 border-l-gray-400';
+      default:
+        return '';
+    }
+  };
+
   const messageTypeClass = isUserMessage
     ? 'bg-vivid-purple text-white rounded-t-2xl rounded-bl-2xl rounded-br-sm'
     : isBotMessage
-    ? 'bg-system-bubble-bg text-system-bubble-text rounded-t-2xl rounded-br-2xl rounded-bl-sm border border-gray-100'
+    ? `bg-system-bubble-bg text-system-bubble-text rounded-t-2xl rounded-br-2xl rounded-bl-sm border border-gray-100 ${getStatusBasedClasses()}`
     : 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200';
 
   const messageContainerClass = isUserMessage

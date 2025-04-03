@@ -1,6 +1,6 @@
 
-import React, { useMemo } from 'react';
-import { Conversation, Message } from '../../types';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Conversation, Message, AgentStatus } from '../../types';
 import { ChatWidgetConfig } from '../../config';
 import ChatViewHeader from '../../components/ChatViewHeader';
 import PreChatForm from '../../components/PreChatForm';
@@ -86,6 +86,7 @@ const ChatViewPresentation = ({
   ticketProgress,
 }: ChatViewPresentationProps) => {
   const isMobile = useIsMobile();
+  const [previousAgentStatus, setPreviousAgentStatus] = useState<AgentStatus | undefined>(conversation.agentInfo?.status);
 
   // Function to scroll to bottom - will be passed to keyboard handler
   const scrollToBottom = () => {
@@ -101,6 +102,15 @@ const ChatViewPresentation = ({
     // This is a simplified version since we just need to pass this to ChatBody
     return [text];
   };
+
+  // Track agent status changes
+  useEffect(() => {
+    const currentStatus = conversation.agentInfo?.status;
+    
+    if (currentStatus && currentStatus !== previousAgentStatus) {
+      setPreviousAgentStatus(currentStatus);
+    }
+  }, [conversation.agentInfo?.status, previousAgentStatus]);
 
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm && config?.preChatForm) {
@@ -175,6 +185,7 @@ const ChatViewPresentation = ({
           agentStatus={conversation.agentInfo?.status}
           onToggleHighlight={onToggleMessageImportance}
           typingDuration={3000} // Add smart typing duration
+          previousAgentStatus={previousAgentStatus} // Pass previous agent status
         />
       </ChatKeyboardHandler>
 
