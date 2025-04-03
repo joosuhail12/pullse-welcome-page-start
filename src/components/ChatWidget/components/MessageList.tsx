@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
-import { Check, CheckCheck, ArrowDown } from 'lucide-react';
+import { ArrowDown } from 'lucide-react';
 import { markConversationAsRead } from '../utils/storage';
 import { Button } from '@/components/ui/button';
 
@@ -52,6 +52,47 @@ const MessageList = ({
   const [lastScrollTop, setLastScrollTop] = useState(0);
   const [hasViewedMessages, setHasViewedMessages] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  const [messageStatuses, setMessageStatuses] = useState<Record<string, string>>({});
+
+  // Simulate message status progression for improved UX
+  useEffect(() => {
+    const statusUpdates: Record<string, NodeJS.Timeout[]> = {};
+    
+    messages.forEach(message => {
+      if (message.sender === 'user' && !messageStatuses[message.id]) {
+        // Start with 'sending' status
+        setMessageStatuses(prev => ({...prev, [message.id]: 'sending'}));
+        
+        // Create timeouts for status transitions
+        const sentTimeout = setTimeout(() => {
+          setMessageStatuses(prev => ({...prev, [message.id]: 'sent'}));
+        }, 800);
+        
+        const deliveredTimeout = setTimeout(() => {
+          setMessageStatuses(prev => ({...prev, [message.id]: 'delivered'}));
+        }, 1500);
+        
+        statusUpdates[message.id] = [sentTimeout, deliveredTimeout];
+      }
+      
+      // If there's a read receipt, set status to 'read'
+      if (readReceipts[message.id]) {
+        setMessageStatuses(prev => ({...prev, [message.id]: 'read'}));
+        // Clear any existing timeouts
+        if (statusUpdates[message.id]) {
+          statusUpdates[message.id].forEach(timeout => clearTimeout(timeout));
+          delete statusUpdates[message.id];
+        }
+      }
+    });
+    
+    return () => {
+      // Clear all timeouts on cleanup
+      Object.values(statusUpdates).forEach(timeouts => {
+        timeouts.forEach(timeout => clearTimeout(timeout));
+      });
+    };
+  }, [messages, readReceipts, messageStatuses]);
 
   const isConsecutiveMessage = (index: number) => {
     if (index === 0) return false;
@@ -149,33 +190,6 @@ const MessageList = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onScrollTop, hasMoreMessages, isLoadingMore]);
 
-  const renderReadReceipt = (message: Message) => {
-    if (message.sender !== 'user') return null;
-    
-    const hasReadReceipt = readReceipts[message.id] !== undefined;
-    
-    return (
-      <div className="flex justify-end mt-1 text-xs text-gray-500">
-        {message.status === 'read' || hasReadReceipt ? (
-          <div className="flex items-center text-vivid-purple">
-            <CheckCheck size={12} />
-            <span className="ml-1 text-[10px]">Read</span>
-          </div>
-        ) : message.status === 'delivered' ? (
-          <div className="flex items-center">
-            <CheckCheck size={12} />
-            <span className="ml-1 text-[10px]">Delivered</span>
-          </div>
-        ) : (
-          <div className="flex items-center">
-            <Check size={12} />
-            <span className="ml-1 text-[10px]">Sent</span>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <ScrollArea 
       className="flex-grow p-4 bg-chat-bg" 
@@ -185,63 +199,72 @@ const MessageList = ({
       <div className="space-y-4">
         {isLoadingMore && (
           <div className="w-full text-center py-2 text-sm text-gray-500">
-            Loading previous messages...
+            <div className="inline-flex items-center gap-2">
+              <div className="loading-pulse">Loading previous messages</div>
+              <div className="w-4 h-4 rounded-full border-2 border-t-transparent border-vivid-purple animate-spin"></div>
+            </div>
           </div>
         )}
         
-        {messages.map((message, index) => (
-          <div 
-            key={message.id} 
-            className={`flex ${
-              message.sender === 'user' 
-                ? 'justify-end' 
-                : message.sender === 'status' 
-                  ? 'justify-center' 
-                  : 'justify-start'
-            } message-animation-enter ${isMessageHighlighted(message.id) ? 'bg-yellow-100 p-2 rounded-lg' : ''} ${
-              isConsecutiveMessage(index) ? 'mt-1' : 'mt-4'
-            }`}
-            style={{ 
-              animationDelay: `${index * 50}ms`,
-              opacity: 0
-            }}
-            id={message.id}
-          >
-            <div className="flex flex-col w-full">
-              {message.sender !== 'status' && (
-                <MessageBubble 
-                  message={message} 
-                  setMessageText={setMessageText} 
-                  onReact={onMessageReaction}
-                  highlightSearchTerm={highlightMessage}
-                  searchTerm={searchTerm}
-                  isConsecutive={isConsecutiveMessage(index)}
-                  showAvatar={true}
-                  avatarUrl={message.sender === 'system' ? agentAvatar : userAvatar}
-                  agentStatus={agentStatus}
-                />
-              )}
-              
-              {message.sender === 'status' && (
-                <div className="w-full flex justify-center">
+        {messages.map((message, index) => {
+          // Merge the message status with our animated status
+          const enrichedMessage = {
+            ...message,
+            status: messageStatuses[message.id] || message.status
+          };
+          
+          return (
+            <div 
+              key={message.id} 
+              className={`flex ${
+                message.sender === 'user' 
+                  ? 'justify-end' 
+                  : message.sender === 'status' 
+                    ? 'justify-center' 
+                    : 'justify-start'
+              } message-animation-enter ${isMessageHighlighted(message.id) ? 'bg-yellow-100 p-2 rounded-lg' : ''} ${
+                isConsecutiveMessage(index) ? 'mt-1' : 'mt-4'
+              }`}
+              style={{ 
+                animationDelay: `${index * 50}ms`,
+                opacity: 0
+              }}
+              id={message.id}
+            >
+              <div className="flex flex-col w-full">
+                {message.sender !== 'status' && (
                   <MessageBubble 
-                    message={message}
+                    message={enrichedMessage}
+                    setMessageText={setMessageText} 
+                    onReact={onMessageReaction}
                     highlightSearchTerm={highlightMessage}
                     searchTerm={searchTerm}
+                    isConsecutive={isConsecutiveMessage(index)}
+                    showAvatar={true}
+                    avatarUrl={message.sender === 'system' ? agentAvatar : userAvatar}
+                    agentStatus={agentStatus}
                   />
-                </div>
-              )}
-              
-              {inlineFormComponent && index === 0 && message.sender === 'system' && (
-                <div className="mt-3 w-full">
-                  {inlineFormComponent}
-                </div>
-              )}
-              
-              {renderReadReceipt(message)}
+                )}
+                
+                {message.sender === 'status' && (
+                  <div className="w-full flex justify-center">
+                    <MessageBubble 
+                      message={message}
+                      highlightSearchTerm={highlightMessage}
+                      searchTerm={searchTerm}
+                    />
+                  </div>
+                )}
+                
+                {inlineFormComponent && index === 0 && message.sender === 'system' && (
+                  <div className="mt-3 w-full">
+                    {inlineFormComponent}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         
         {isTyping && (
           <div className="animate-fade-in" style={{ animationDuration: '200ms' }}>

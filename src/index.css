@@ -88,6 +88,73 @@
   button:focus-visible {
     @apply ring-2 ring-offset-2 ring-vivid-purple;
   }
+
+  /* NEW ANIMATIONS AND MICRO-INTERACTIONS */
+  
+  /* Message status animations */
+  @keyframes status-change {
+    0% { transform: scale(0.8); opacity: 0; }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  
+  .status-icon-animation {
+    animation: status-change 0.3s ease-out forwards;
+  }
+  
+  /* Message sending animation */
+  @keyframes message-sending {
+    0% { opacity: 0.7; }
+    50% { opacity: 0.5; }
+    100% { opacity: 0.7; }
+  }
+  
+  .message-sending {
+    animation: message-sending 1.2s infinite;
+  }
+  
+  /* File upload micro-interactions */
+  @keyframes file-upload-success {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); background-color: rgba(139, 92, 246, 0.15); }
+    100% { transform: scale(1); }
+  }
+  
+  .file-upload-success {
+    animation: file-upload-success 0.5s ease-out;
+  }
+  
+  /* Reaction micro-interactions */
+  @keyframes reaction-selected {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.3); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+  }
+  
+  .reaction-selected {
+    animation: reaction-selected 0.4s ease-out;
+  }
+  
+  /* Message delivery confirmation */
+  @keyframes delivery-confirmation {
+    0% { opacity: 0; transform: translateY(4px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  
+  .delivery-animation {
+    animation: delivery-confirmation 0.3s ease-out;
+  }
+
+  /* Loading state pulse effect */
+  @keyframes loading-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  
+  .loading-pulse {
+    animation: loading-pulse 1.5s infinite ease-in-out;
+  }
 }
 
 /* Enhanced keyboard navigation indicators for chat components */

@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Message } from '../../types';
 import { sanitizeInput } from '../../utils/validation';
 import MessageAvatar from './MessageAvatar';
 import MessageReactionButtons from './MessageReactionButtons';
+import MessageStatus from './MessageStatus';
 import FileMessage from '../MessageTypes/FileMessage';
 import CardMessage from '../MessageTypes/CardMessage';
 import QuickReplyMessage from '../MessageTypes/QuickReplyMessage';
@@ -34,9 +35,23 @@ const MessageBubble = ({
   agentStatus
 }: MessageBubbleProps) => {
   const sanitizedText = message.text ? sanitizeInput(message.text) : '';
+  const [fileUploading, setFileUploading] = useState(
+    message.type === 'file' && !message.status
+  );
+  const [animateReaction, setAnimateReaction] = useState(false);
+  
+  // Simulate file upload completion after a short delay
+  React.useEffect(() => {
+    if (fileUploading) {
+      const timer = setTimeout(() => setFileUploading(false), 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [fileUploading]);
   
   const handleReaction = (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => {
     if (onReact) {
+      setAnimateReaction(true);
+      setTimeout(() => setAnimateReaction(false), 400);
       onReact(messageId, reaction);
     }
   };
@@ -68,6 +83,7 @@ const MessageBubble = ({
           text={sanitizedText} 
           fileName={message.fileName}
           renderText={renderText}
+          uploading={fileUploading}
         />;
       
       case 'card':
@@ -98,6 +114,7 @@ const MessageBubble = ({
           messageId={message.id}
           currentReaction={message.reaction}
           onReact={handleReaction}
+          animate={animateReaction}
         />
       );
     }
@@ -133,16 +150,27 @@ const MessageBubble = ({
       : 'chat-message-system';
       
   const actionableClass = hasActionableContent ? 'chat-message-actionable' : '';
+  const sendingClass = message.sender === 'user' && message.status === 'sending' ? 'message-sending' : '';
+  const fileUploadClass = message.type === 'file' && !fileUploading ? 'file-upload-success' : '';
 
   return (
     <div className="flex items-start">
       {message.sender === 'system' && renderAvatar()}
-      <div className={`max-w-[80%] ${bubbleClasses} ${actionableClass}`}>
+      <div className={`max-w-[80%] ${bubbleClasses} ${actionableClass} ${sendingClass} ${fileUploadClass}`}>
         {renderMessage()}
         <div className="flex justify-between items-center">
-          <div className={`text-xs mt-2 ${message.sender === 'user' ? 'text-white/50' : 'text-gray-400'}`}>
-            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </div>
+          {message.sender === 'user' ? (
+            <MessageStatus 
+              status={message.status} 
+              timestamp={message.timestamp}
+              isFileMessage={message.type === 'file'}
+              fileUploading={fileUploading}
+            />
+          ) : (
+            <div className={`text-xs mt-2 text-gray-600`}>
+              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </div>
+          )}
           {renderReactionButtons()}
         </div>
       </div>
