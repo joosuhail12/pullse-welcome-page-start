@@ -26,7 +26,7 @@ interface PrioritizedEvent {
 /**
  * Mapping of event types to their default priorities
  */
-const defaultEventPriorities: Partial<Record<ChatEventType, EventPriority>> = {
+const defaultEventPriorities: Record<ChatEventType, EventPriority> = {
   'chat:open': EventPriority.HIGH,
   'chat:close': EventPriority.HIGH,
   'chat:messageSent': EventPriority.HIGH,
@@ -142,6 +142,42 @@ export class EnhancedEventManager extends EventManager {
     } finally {
       this.isProcessing = false;
     }
+  }
+  
+  /**
+   * Dispatches to listeners (extracted from parent class for enhancement)
+   */
+  private dispatchToListeners(event: ChatEventPayload): void {
+    // Dispatch to specific event listeners
+    const listeners = this.getListeners(event.type);
+    if (listeners) {
+      listeners.forEach(callback => {
+        try {
+          callback(event);
+        } catch (e) {
+          console.error(`Error in ${event.type} listener:`, e);
+        }
+      });
+    }
+    
+    // Dispatch to 'all' event listeners
+    const allListeners = this.getListeners('all');
+    if (allListeners) {
+      allListeners.forEach(callback => {
+        try {
+          callback(event);
+        } catch (e) {
+          console.error(`Error in 'all' listener:`, e);
+        }
+      });
+    }
+  }
+  
+  /**
+   * Get listeners for a specific event type
+   */
+  private getListeners(eventType: ChatEventType | 'all'): EventCallback[] | undefined {
+    return this.eventListeners.get(eventType);
   }
 }
 

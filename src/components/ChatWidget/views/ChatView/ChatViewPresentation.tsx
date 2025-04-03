@@ -1,6 +1,5 @@
-
 import React, { useMemo } from 'react';
-import { Conversation, Message } from '../../types';
+import { Conversation } from '../../types';
 import { ChatWidgetConfig } from '../../config';
 import ChatViewHeader from '../../components/ChatViewHeader';
 import PreChatForm from '../../components/PreChatForm';
@@ -21,7 +20,7 @@ interface ChatViewPresentationProps {
   handleUserTyping: () => void;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
-  readReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }>;
+  readReceipts: Record<string, Date>;
   onBack: () => void;
   showSearch: boolean;
   toggleSearch: () => void;
@@ -44,7 +43,6 @@ interface ChatViewPresentationProps {
   config: ChatWidgetConfig;
   onToggleMessageImportance?: (messageId: string) => void;
   ticketProgress?: number;
-  testMode?: boolean;
 }
 
 /**
@@ -86,8 +84,7 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
   handleFormComplete,
   config,
   onToggleMessageImportance,
-  ticketProgress = 50,
-  testMode
+  ticketProgress = 50
 }) => {
   const isMobile = useIsMobile();
   
@@ -100,16 +97,12 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
     if (showInlineForm) {
       return (
         <div className="mb-2 sm:mb-4 px-2 sm:px-4">
-          <PreChatForm 
-            config={config} 
-            onFormComplete={handleFormComplete}
-            testMode={testMode}
-          />
+          <PreChatForm config={config} onFormComplete={handleFormComplete} />
         </div>
       );
     }
     return null;
-  }, [showInlineForm, config, handleFormComplete, testMode]);
+  }, [showInlineForm, config, handleFormComplete]);
 
   return (
     <ChatKeyboardHandler
@@ -136,7 +129,6 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
           isSearching={isSearching}
           showSearchFeature={showSearchFeature}
           ticketProgress={ticketProgress}
-          testMode={testMode}
         />
         
         <KeyboardShortcutsInfo />
@@ -166,7 +158,6 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
           conversationId={conversation.id}
           agentStatus={conversation.agentInfo?.status}
           onToggleHighlight={onToggleMessageImportance}
-          testMode={testMode}
         />
       </div>
     </ChatKeyboardHandler>

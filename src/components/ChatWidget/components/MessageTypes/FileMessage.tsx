@@ -1,76 +1,92 @@
 
 import React from 'react';
-import { FileIcon, Download } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Paperclip, Loader2, CheckCircle2, FileIcon, ImageIcon } from 'lucide-react';
 
 interface FileMessageProps {
-  fileName: string;
-  fileUrl: string;
-  fileType?: string;
-  fileSize?: number;
-  metadata?: Record<string, any>;
+  text: string;
+  fileName?: string;
+  fileUrl?: string;
+  renderText: (text: string) => React.ReactNode;
+  uploading?: boolean;
 }
 
-const FileMessage: React.FC<FileMessageProps> = ({
-  fileName,
-  fileUrl,
-  fileType = 'application/octet-stream',
-  fileSize = 0,
-  metadata
-}) => {
-  const isImage = fileType.startsWith('image/');
-  const isPDF = fileType === 'application/pdf';
+const FileMessage = ({ text, fileName, fileUrl, renderText, uploading = false }: FileMessageProps) => {
+  const [uploaded, setUploaded] = React.useState(false);
+  const [imageError, setImageError] = React.useState(false);
   
-  // Format file size
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  // Determine if the file is an image by checking the filename extension
+  const isImage = fileUrl && 
+    fileName?.match(/\.(jpeg|jpg|gif|png|webp)$/i) !== null && 
+    !imageError;
+  
+  // Simulate successful upload after uploading state completes
+  React.useEffect(() => {
+    if (!uploading && fileName && !uploaded) {
+      setTimeout(() => setUploaded(true), 500);
+      
+      // Reset animation after it plays
+      const timer = setTimeout(() => setUploaded(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [uploading, fileName, uploaded]);
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  // Choose appropriate icon based on file type
+  const getFileIcon = () => {
+    if (uploading) {
+      return <Loader2 size={18} className="mr-2 text-vivid-purple animate-spin" />;
+    } else if (uploaded) {
+      return <CheckCircle2 size={18} className="mr-2 text-green-500 animate-bounce" />;
+    } else {
+      return <Paperclip size={18} className="mr-2 text-vivid-purple/80" />;
+    }
   };
 
   return (
-    <div className="file-message">
-      {isImage ? (
-        <div className="max-w-xs">
-          <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="block">
-            <img 
-              src={fileUrl} 
-              alt={fileName} 
-              className="max-w-full rounded-lg object-cover border border-gray-100 shadow-sm" 
-            />
-          </a>
-          <div className="mt-1 flex items-center justify-between text-xs text-gray-500">
-            <span>{fileName}</span>
-            <span>{formatFileSize(fileSize)}</span>
+    <div className="flex flex-col">
+      {renderText(text)}
+      
+      <div 
+        className={`mt-2 p-3 rounded-lg transition-all duration-300
+          ${uploading ? 'bg-gray-100/80 animate-pulse' : 'bg-gray-100/90 hover:bg-gray-200/80'} 
+          ${uploaded ? 'file-upload-success' : ''}
+          border border-gray-200/80 shadow-sm`}
+      >
+        {isImage && fileUrl ? (
+          <div className="space-y-2">
+            <div className="flex items-center">
+              {getFileIcon()}
+              <span className="text-sm font-medium text-blue-600 truncate max-w-[200px] hover:underline">
+                {fileName || 'Image'}
+              </span>
+              {uploading && (
+                <span className="ml-2 text-xs text-gray-600 font-medium">Uploading...</span>
+              )}
+            </div>
+            <div className="relative rounded-md overflow-hidden bg-white border border-gray-200">
+              <img 
+                src={fileUrl} 
+                alt={fileName || 'Uploaded image'} 
+                className="max-w-full max-h-[200px] object-contain"
+                onError={handleImageError}
+              />
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className={cn(
-          "flex items-center bg-white p-2 rounded-md border border-gray-200",
-          isPDF ? "max-w-full" : "max-w-[250px]"
-        )}>
-          <div className="mr-3 text-gray-500">
-            <FileIcon size={24} />
+        ) : (
+          <div className="flex items-center">
+            {getFileIcon()}
+            <span className="text-sm font-medium text-blue-600 truncate max-w-[200px] hover:underline">
+              {fileName || 'File'}
+            </span>
+            {uploading && (
+              <span className="ml-2 text-xs text-gray-600 font-medium">Uploading...</span>
+            )}
           </div>
-          
-          <div className="flex-grow overflow-hidden">
-            <div className="text-sm font-medium truncate">{fileName}</div>
-            <div className="text-xs text-gray-500">{formatFileSize(fileSize)}</div>
-          </div>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className="ml-2 h-8 w-8"
-            onClick={() => window.open(fileUrl, '_blank')}
-          >
-            <Download size={16} />
-          </Button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

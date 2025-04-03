@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Message } from '../types';
-import { MessageReadStatus } from './MessageReadReceipt';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import PoweredByBar from './PoweredByBar';
@@ -14,13 +13,13 @@ interface ChatBodyProps {
   remoteIsTyping: boolean;
   handleSendMessage: () => void;
   handleUserTyping: () => void;
-  handleFileUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
-  readReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }>;
+  readReceipts: Record<string, Date>;
   onMessageReaction?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
   searchTerm: string;
   messageIds: string[];
-  highlightText?: (text: string, term: string) => any;
+  highlightText: (text: string, term: string) => { text: string; highlighted: boolean }[];
   agentAvatar?: string;
   userAvatar?: string;
   handleLoadMoreMessages: () => Promise<void>;
@@ -31,8 +30,6 @@ interface ChatBodyProps {
   conversationId: string;
   agentStatus?: 'online' | 'offline' | 'away' | 'busy';
   onToggleHighlight?: (messageId: string) => void;
-  testMode?: boolean;
-  onFileUpload?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const ChatBody: React.FC<ChatBodyProps> = ({
@@ -43,6 +40,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   remoteIsTyping,
   handleSendMessage,
   handleUserTyping,
+  handleFileUpload,
   handleEndChat,
   readReceipts,
   onMessageReaction,
@@ -58,9 +56,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   inlineFormComponent,
   conversationId,
   agentStatus,
-  onToggleHighlight,
-  testMode,
-  onFileUpload
+  onToggleHighlight
 }) => {
   return (
     <div className="flex flex-col flex-grow overflow-hidden">
@@ -75,6 +71,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
             readReceipts={readReceipts}
             onMessageReaction={onMessageReaction}
             searchResults={messageIds}
+            highlightMessage={highlightText}
             searchTerm={searchTerm}
             agentAvatar={agentAvatar}
             userAvatar={userAvatar}
@@ -83,6 +80,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
             isLoadingMore={isLoadingMore}
             conversationId={conversationId}
             agentStatus={agentStatus}
+            onToggleHighlight={onToggleHighlight}
           />
         </div>
       )}
@@ -92,12 +90,11 @@ const ChatBody: React.FC<ChatBodyProps> = ({
           messageText={messageText}
           setMessageText={setMessageText}
           handleSendMessage={handleSendMessage}
+          handleFileUpload={handleFileUpload}
           handleEndChat={handleEndChat}
-          hasUserSentMessage={messages.length > 0}
+          hasUserSentMessage={isTyping}
           onTyping={handleUserTyping}
           disabled={showInlineForm}
-          testMode={testMode}
-          onFileUpload={onFileUpload}
         />
         
         <PoweredByBar />

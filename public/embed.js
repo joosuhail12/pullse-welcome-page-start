@@ -1,4 +1,3 @@
-
 /**
  * Pullse Chat Widget Embed Script
  * Version 1.0.0
@@ -57,41 +56,11 @@
     } else if (command === 'checkVersion') {
       // New command to manually check for updates
       checkForUpdates(true);
-    } else if (command === 'setTestMode') {
-      // New command to enable/disable test mode
-      var enabled = args.length >= 1 ? Boolean(args[0]) : true;
-      setTestMode(enabled);
     } else {
       // Queue commands for later execution
       pullseChatQueue.push([command].concat(args));
     }
   };
-
-  /**
-   * Set test mode for the chat widget
-   */
-  function setTestMode(enabled) {
-    if (enabled) {
-      try {
-        sessionStorage.setItem('pullse_test_mode', 'enabled');
-        console.info('[Pullse] Test mode enabled');
-      } catch (e) {
-        console.warn('[Pullse] Could not store test mode in sessionStorage');
-      }
-    } else {
-      try {
-        sessionStorage.removeItem('pullse_test_mode');
-        console.info('[Pullse] Test mode disabled');
-      } catch (e) {
-        // Ignore errors
-      }
-    }
-    
-    // If widget is already loaded, refresh it
-    if (widgetScriptLoaded && w.PullseSDK && typeof w.PullseSDK.refreshWidget === 'function') {
-      w.PullseSDK.refreshWidget();
-    }
-  }
 
   /**
    * Check for script updates from CDN
@@ -258,22 +227,6 @@
     var svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: white"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
     button.innerHTML = svgIcon;
     
-    // Add test mode indicator if applicable
-    if (isTestMode()) {
-      var testBadge = document.createElement('div');
-      testBadge.style.position = 'absolute';
-      testBadge.style.top = '-5px';
-      testBadge.style.right = '-5px';
-      testBadge.style.backgroundColor = '#f97316'; // Orange color
-      testBadge.style.color = 'white';
-      testBadge.style.fontSize = '10px';
-      testBadge.style.padding = '2px 4px';
-      testBadge.style.borderRadius = '10px';
-      testBadge.style.fontWeight = 'bold';
-      testBadge.textContent = 'TEST';
-      button.appendChild(testBadge);
-    }
-    
     // Add hover effect
     button.onmouseover = function() {
       button.style.transform = 'scale(1.05)';
@@ -292,17 +245,6 @@
     document.body.appendChild(launcherContainer);
     
     return launcherContainer;
-  }
-  
-  /**
-   * Check if test mode is enabled
-   */
-  function isTestMode() {
-    try {
-      return sessionStorage.getItem('pullse_test_mode') === 'enabled';
-    } catch (e) {
-      return false;
-    }
   }
   
   /**
@@ -347,18 +289,10 @@
       document.head.appendChild(cssLink);
     }
     
-    // Check for test mode
-    var testMode = isTestMode() || config.testMode;
-    
-    if (testMode) {
-      setTestMode(true);
-    }
-    
     // Set global config object with version stamp for cache busting
     w.__PULLSE_CHAT_CONFIG__ = {
       ...config,
       version: currentVersion,
-      testMode: testMode,
       onEvent: function(event) {
         handleWidgetEvent(event);
       }
@@ -427,11 +361,6 @@
     var offsetX = options.offsetX !== undefined ? options.offsetX : 20;
     var offsetY = options.offsetY !== undefined ? options.offsetY : 20;
     
-    // Check for test mode
-    if (options.testMode) {
-      setTestMode(true);
-    }
-    
     // Set default options with function references removed (for serialization)
     var config = {
       position: {
@@ -449,8 +378,7 @@
         showBrandingBar: !options.hideBranding
       },
       autoOpen: !!options.autoOpen,
-      eventHandlers: options.eventHandlers || {},
-      testMode: options.testMode || isTestMode() // Include test mode flag
+      eventHandlers: options.eventHandlers || {}
     };
     
     // Check if we should implement lazy loading via scroll
@@ -623,7 +551,6 @@
       autoOpen: currentScript.hasAttribute('data-auto-open'),
       lazyLoadScroll: currentScript.hasAttribute('data-lazy-load'),
       scrollThreshold: currentScript.getAttribute('data-scroll-threshold') ? parseFloat(currentScript.getAttribute('data-scroll-threshold')) : undefined,
-      testMode: currentScript.hasAttribute('data-test-mode'), // New test mode data attribute
       checkUpdates: !currentScript.hasAttribute('data-disable-updates')
     });
   }

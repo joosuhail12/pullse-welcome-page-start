@@ -7,7 +7,7 @@ import { debounce } from './utils';
  * Event management for the chat widget
  */
 export class EventManager {
-  protected eventListeners: Map<string, EventCallback[]> = new Map(); // Changed private to protected
+  private eventListeners: Map<string, EventCallback[]> = new Map();
   private debouncedDispatch: (event: ChatEventPayload) => void;
   
   constructor() {
@@ -69,18 +69,11 @@ export class EventManager {
   }
   
   /**
-   * Get listeners for a specific event type - make this protected for inheritance
+   * Dispatch event to registered listeners
    */
-  protected getListeners(eventType: ChatEventType | 'all'): EventCallback[] | undefined {
-    return this.eventListeners.get(eventType);
-  }
-  
-  /**
-   * Dispatch event to registered listeners - made protected so subclasses can use it
-   */
-  protected dispatchToListeners(event: ChatEventPayload): void {
+  private dispatchToListeners(event: ChatEventPayload): void {
     // Dispatch to specific event listeners
-    const listeners = this.getListeners(event.type as ChatEventType);
+    const listeners = this.eventListeners.get(event.type as ChatEventType);
     if (listeners) {
       listeners.forEach(callback => {
         try {
@@ -92,7 +85,7 @@ export class EventManager {
     }
     
     // Dispatch to 'all' event listeners
-    const allListeners = this.getListeners('all');
+    const allListeners = this.eventListeners.get('all');
     if (allListeners) {
       allListeners.forEach(callback => {
         try {

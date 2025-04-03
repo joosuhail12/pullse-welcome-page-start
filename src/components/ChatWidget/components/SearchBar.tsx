@@ -11,7 +11,7 @@ interface SearchBarProps {
   isSearching: boolean;
 }
 
-export const SearchBar: React.FC<SearchBarProps> = ({ onSearch, onClear, resultCount, isSearching }) => {
+const SearchBar = ({ onSearch, onClear, resultCount, isSearching }: SearchBarProps) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [debouncedTerm, setDebouncedTerm] = useState<string>('');
 

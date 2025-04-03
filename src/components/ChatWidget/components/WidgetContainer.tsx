@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
@@ -6,7 +7,6 @@ import MessagesView from '../views/MessagesView';
 import ChatView from '../views/ChatView';
 import TabBar from './TabBar';
 import PoweredByBar from './PoweredByBar';
-import TestBadge from './TestBadge';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WidgetContainerProps {
@@ -24,7 +24,6 @@ interface WidgetContainerProps {
   handleStartChat: (formData?: Record<string, string>) => void;
   setUserFormData: (data: Record<string, string>) => void;
   playMessageSound: () => void;
-  testMode?: boolean;
 }
 
 const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
@@ -41,13 +40,13 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
   handleBackToMessages,
   handleStartChat,
   setUserFormData,
-  playMessageSound,
-  testMode
+  playMessageSound
 }) => {
   if (!isOpen) return null;
   
   const isMobile = useIsMobile();
   
+  // Enhanced responsive width and height classes - memoized to prevent recalculation
   const widgetClasses = useMemo(() => {
     const widgetWidth = isMobile 
       ? "w-[95vw] max-w-[100vw]" // Nearly full width on very small screens
@@ -62,6 +61,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
     return `${widgetWidth} ${widgetHeight} ${widgetMaxHeight}`;
   }, [isMobile]);
 
+  // Memoize view components to prevent unnecessary re-renders
   const currentView = useMemo(() => {
     if (viewState === 'chat') {
       return (
@@ -74,7 +74,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
             playMessageSound={playMessageSound}
             userFormData={userFormData}
             setUserFormData={setUserFormData}
-            testMode={testMode}
           />
         </div>
       );
@@ -87,14 +86,10 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
             <HomeView 
               onStartChat={handleStartChat} 
               config={config}
-              testMode={testMode}
             />
           )}
           {viewState === 'messages' && (
-            <MessagesView 
-              onSelectConversation={handleSelectConversation}
-              testMode={testMode} 
-            />
+            <MessagesView onSelectConversation={handleSelectConversation} />
           )}
         </div>
         
@@ -112,21 +107,19 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
     setUserFormData,
     handleStartChat,
     handleSelectConversation,
-    handleChangeView,
-    testMode
+    handleChangeView
   ]);
 
+  // Memoize the branding bar to prevent unnecessary re-renders
   const brandingBar = useMemo(() => {
     return config.branding?.showBrandingBar !== false ? <PoweredByBar /> : null;
   }, [config.branding?.showBrandingBar]);
 
   return (
     <div 
-      className={`fixed ${widgetClasses} z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden relative`}
+      className={`fixed ${widgetClasses} z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden`}
       style={{...widgetStyle, ...containerStyles}}
     >
-      {testMode && <TestBadge />}
-      
       <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden">
         {currentView}
       </div>

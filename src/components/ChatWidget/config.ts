@@ -1,125 +1,141 @@
 
 /**
- * Chat Widget Configuration
- * 
- * This file defines the configuration types and default values for the Chat Widget
+ * Chat Widget Configuration Types
  */
 
-// Import types to avoid circular dependencies
-import type { MessageReadStatus } from './components/MessageReadReceipt';
-
-// Chat Widget Configuration Interface
-export interface ChatWidgetConfig {
-  workspaceId: string;
-  position?: {
-    placement?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
-    offsetX?: number;
-    offsetY?: number;
-  };
-  branding?: {
-    primaryColor?: string;
-    logoUrl?: string;
-    avatarUrl?: string;
-    widgetTitle?: string;
-    showBrandingBar?: boolean;
-  };
-  realtime?: {
-    enabled?: boolean;
-    connectionTimeout?: number;
-    reconnectAttempts?: number;
-  };
-  features?: {
-    searchMessages?: boolean;
-    messageReactions?: boolean;
-    fileUploads?: boolean;
-    readReceipts?: boolean;
-    typing?: boolean;
-    cardMessages?: boolean;
-    quickReplies?: boolean;
-  };
-  onEvent?: (event: ChatEventPayload) => void;
-  autoOpen?: boolean;
-  welcomeMessage?: string;
-  sessionId?: string;
-  preChatForm?: {
-    enabled: boolean;
-    title: string;
-    description?: string;
-    fields: Array<{
-      id: string;
-      name: string;
-      label: string;
-      type: 'text' | 'email' | 'phone' | 'select' | 'textarea';
-      required: boolean;
-      options?: string[];
-      placeholder?: string;
-    }>;
-    submitButtonText?: string;
-  };
-  testMode?: boolean;
+export interface PreChatFormField {
+  id: string;
+  name: string;
+  type: 'text' | 'email' | 'tel' | 'select';
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: { value: string; label: string }[];
 }
 
-// Default configuration
-export const defaultConfig: ChatWidgetConfig = {
-  workspaceId: '',
-  position: {
-    placement: 'bottom-right',
-    offsetX: 20,
-    offsetY: 20
-  },
-  branding: {
-    primaryColor: '#6366f1',
-    showBrandingBar: true,
-    widgetTitle: 'Chat with us'
-  },
-  realtime: {
-    enabled: false,
-    connectionTimeout: 30000,
-    reconnectAttempts: 5
-  },
-  features: {
-    searchMessages: true,
-    messageReactions: true,
-    fileUploads: true,
-    readReceipts: true,
-    typing: true,
-    cardMessages: true,
-    quickReplies: true
-  },
-  welcomeMessage: 'How can we help you today?',
-  preChatForm: {
-    enabled: false,
-    title: 'Start a conversation',
-    fields: []
-  }
-};
+export interface PreChatForm {
+  enabled: boolean;
+  title?: string;
+  fields: PreChatFormField[];
+}
 
-// Chat Event Types
-export type ChatEventType =
+export interface ChatBranding {
+  primaryColor?: string;
+  fontFamily?: string;
+  avatarUrl?: string;
+  logoUrl?: string;
+  showBrandingBar?: boolean;
+  widgetTitle?: string;
+}
+
+export interface ChatPosition {
+  placement?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  offsetX?: number;
+  offsetY?: number;
+}
+
+export interface ChatFeatures {
+  fileUpload?: boolean;
+  messageRating?: boolean;
+  readReceipts?: boolean;
+  quickReplies?: boolean;
+  cards?: boolean;
+  chatSuggestions?: boolean;
+  messageReactions?: boolean;
+  typingIndicators?: boolean;
+  searchMessages?: boolean;
+}
+
+export interface ChatRealtime {
+  enabled: boolean;
+  // No longer storing API key directly here
+  authEndpoint?: string;
+}
+
+export type ChatEventType = 
   | 'chat:open'
   | 'chat:close'
   | 'chat:messageSent'
   | 'chat:messageReceived'
+  | 'contact:initiatedChat'
+  | 'contact:formCompleted'
+  | 'message:reacted'
   | 'chat:typingStarted'
   | 'chat:typingStopped'
-  | 'contact:initiatedChat'
-  | 'contact:identified'
-  | 'chat:ended'
-  | 'message:sent'
-  | 'message:delivered'
-  | 'message:read'
-  | 'message:reacted'
   | 'message:fileUploaded'
-  | 'error'
-  | 'chat:connectionChange'
-  | string; // Allow string extension for dynamic events
+  | 'chat:ended';
 
-// Chat Event Payload Interface
 export interface ChatEventPayload {
   type: ChatEventType;
   timestamp: Date;
   data?: any;
 }
 
-// Import and re-export security event types
-export { SecurityEventType, SecurityEventOutcome } from './utils/security/types';
+export interface ChatWidgetConfig {
+  workspaceId: string;
+  welcomeMessage: string;
+  preChatForm: PreChatForm;
+  branding?: ChatBranding;
+  position?: ChatPosition;
+  features?: ChatFeatures;
+  realtime?: ChatRealtime;
+  sessionId?: string;
+  onEvent?: (event: ChatEventPayload) => void;
+  // Added to support advanced event subscription
+  eventHandlers?: {
+    [key in ChatEventType]?: (payload: ChatEventPayload) => void;
+  };
+}
+
+export const defaultConfig: ChatWidgetConfig = {
+  workspaceId: 'default',
+  welcomeMessage: 'Welcome! How can we help you today?',
+  preChatForm: {
+    enabled: true,
+    title: 'Start a Conversation',
+    fields: [
+      {
+        id: 'name-field',
+        name: 'name',
+        type: 'text',
+        label: 'Name',
+        placeholder: 'Enter your name',
+        required: true
+      },
+      {
+        id: 'email-field',
+        name: 'email',
+        type: 'email',
+        label: 'Email',
+        placeholder: 'Enter your email',
+        required: true
+      }
+    ]
+  },
+  branding: {
+    primaryColor: '#8B5CF6',
+    showBrandingBar: true
+  },
+  position: {
+    placement: 'bottom-right',
+    offsetX: 4,
+    offsetY: 4
+  },
+  features: {
+    fileUpload: true,
+    messageRating: false,
+    readReceipts: true,
+    quickReplies: true,
+    cards: true,
+    chatSuggestions: false,
+    messageReactions: true,
+    typingIndicators: true,
+    searchMessages: true
+  },
+  realtime: {
+    enabled: false,
+    // Using auth endpoint instead of direct API key
+    authEndpoint: '/api/chat-widget/token'
+  }
+};
+

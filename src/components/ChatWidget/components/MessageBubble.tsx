@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { sanitizeInput } from '../utils/validation';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MessageReadStatus } from './MessageReadReceipt';
 
 interface MessageBubbleProps {
   message: Message;
@@ -14,18 +13,10 @@ interface MessageBubbleProps {
   onReact?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
   highlightSearchTerm?: (text: string, term: string) => { text: string; highlighted: boolean }[];
   searchTerm?: string;
-  highlightText?: string;  // Added for MessageList compatibility
-  isHighlighted?: boolean; // Added for MessageList compatibility
   showAvatar?: boolean;
   isConsecutive?: boolean;
   avatarUrl?: string;
   agentStatus?: 'online' | 'offline' | 'away' | 'busy';
-  userAvatar?: string;     // Added for MessageList compatibility
-  agentAvatar?: string;    // Added for MessageList compatibility
-  onReply?: (text: string) => void; // Added for MessageList compatibility
-  onReaction?: (messageId: string, emoji: string) => void; // Added for MessageList compatibility
-  readStatus?: MessageReadStatus; // Added for MessageList compatibility
-  readTimestamp?: Date;    // Added for MessageList compatibility
 }
 
 const MessageBubble = ({ 
@@ -34,11 +25,9 @@ const MessageBubble = ({
   onReact,
   highlightSearchTerm,
   searchTerm,
-  highlightText = '',
   showAvatar = true,
   isConsecutive = false,
-  avatarUrl,
-  agentStatus
+  avatarUrl
 }: MessageBubbleProps) => {
   // Sanitize any text content before displaying
   const sanitizedText = message.text ? sanitizeInput(message.text) : '';
@@ -64,23 +53,6 @@ const MessageBubble = ({
         </>
       );
     }
-    
-    // Use highlightText if provided as a fallback
-    if (highlightText && text.includes(highlightText)) {
-      const regex = new RegExp(`(${highlightText})`, 'gi');
-      const parts = text.split(regex);
-      
-      return (
-        <>
-          {parts.map((part, i) => 
-            regex.test(part) 
-              ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark> 
-              : <React.Fragment key={i}>{part}</React.Fragment>
-          )}
-        </>
-      );
-    }
-    
     return text;
   };
   

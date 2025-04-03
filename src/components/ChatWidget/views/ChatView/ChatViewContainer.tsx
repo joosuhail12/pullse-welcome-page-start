@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Conversation } from '../../types';
 import { ChatWidgetConfig, defaultConfig } from '../../config';
@@ -17,7 +16,6 @@ interface ChatViewContainerProps {
   playMessageSound?: () => void;
   userFormData?: Record<string, string>;
   setUserFormData?: (data: Record<string, string>) => void;
-  testMode?: boolean;
 }
 
 /**
@@ -32,8 +30,7 @@ const ChatViewContainer = ({
   config = defaultConfig,
   playMessageSound,
   userFormData,
-  setUserFormData,
-  testMode = false
+  setUserFormData
 }: ChatViewContainerProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -44,7 +41,7 @@ const ChatViewContainer = ({
   // Use the new inline form hook
   const {
     showInlineForm,
-    handleFormComplete: inlineFormComplete
+    handleFormComplete
   } = useInlineForm(
     conversation,
     config,
@@ -122,6 +119,8 @@ const ChatViewContainer = ({
   }, [loadPreviousMessages]);
 
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
+    setShowInlineForm(false);
+    
     if (setUserFormData) {
       setUserFormData(formData);
     }
@@ -131,11 +130,8 @@ const ChatViewContainer = ({
       contactIdentified: true
     });
     
-    // Call the inline form complete handler as well
-    inlineFormComplete(formData);
-    
     dispatchChatEvent('contact:formCompleted', { formData }, config);
-  }, [setUserFormData, onUpdateConversation, conversation, config, inlineFormComplete]);
+  }, [setUserFormData, onUpdateConversation, conversation, config]);
 
   // Handler for toggling message importance
   const handleToggleMessageImportance = useCallback((messageId: string) => {
@@ -178,14 +174,6 @@ const ChatViewContainer = ({
     };
   }, [config?.branding?.primaryColor]);
 
-  const readReceiptsWithStatus = useMemo(() => {
-    const result: Record<string, { status: string; timestamp?: Date }> = {};
-    for (const key in readReceipts) {
-      result[key] = { status: 'read', timestamp: readReceipts[key] };
-    }
-    return result;
-  }, [readReceipts]);
-
   return (
     <ChatViewPresentation 
       conversation={conversation}
@@ -199,7 +187,7 @@ const ChatViewContainer = ({
       handleUserTyping={handleUserTyping}
       handleFileUpload={handleFileUpload}
       handleEndChat={handleEndChat}
-      readReceipts={readReceiptsWithStatus}
+      readReceipts={readReceipts}
       onBack={onBack}
       showSearch={showSearch}
       toggleSearch={toggleSearch}
@@ -222,7 +210,6 @@ const ChatViewContainer = ({
       config={config}
       onToggleMessageImportance={handleToggleMessageImportance}
       ticketProgress={ticketProgress}
-      testMode={testMode}
     />
   );
 };

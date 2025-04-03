@@ -4,35 +4,25 @@ import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface MessageReactionButtonsProps {
-  messageId?: string;
+  messageId: string;
   currentReaction?: 'thumbsUp' | 'thumbsDown' | null;
-  onReact?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
-  onClose?: () => void;
+  onReact: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
+  animate?: boolean;
 }
 
 const MessageReactionButtons = ({
   messageId,
   currentReaction,
   onReact,
-  onClose
+  animate = false
 }: MessageReactionButtonsProps) => {
-  const handleReact = (reaction: 'thumbsUp' | 'thumbsDown') => {
-    if (onReact && messageId) {
-      onReact(messageId, reaction);
-    }
-    
-    if (onClose) {
-      onClose();
-    }
-  };
-  
   return (
     <div className="flex gap-2 mt-1.5">
       <Button
         variant="ghost"
         size="sm"
-        className={`p-1 h-auto transition-all ${currentReaction === 'thumbsUp' ? 'bg-green-100' : ''} ${currentReaction === 'thumbsUp' ? 'reaction-selected' : ''}`}
-        onClick={() => handleReact('thumbsUp')}
+        className={`p-1 h-auto transition-all ${currentReaction === 'thumbsUp' ? 'bg-green-100' : ''} ${currentReaction === 'thumbsUp' && animate ? 'reaction-selected' : ''}`}
+        onClick={() => onReact(messageId, 'thumbsUp')}
         aria-label="Thumbs up"
       >
         <ThumbsUp 
@@ -43,8 +33,8 @@ const MessageReactionButtons = ({
       <Button
         variant="ghost"
         size="sm"
-        className={`p-1 h-auto transition-all ${currentReaction === 'thumbsDown' ? 'bg-red-100' : ''} ${currentReaction === 'thumbsDown' ? 'reaction-selected' : ''}`}
-        onClick={() => handleReact('thumbsDown')}
+        className={`p-1 h-auto transition-all ${currentReaction === 'thumbsDown' ? 'bg-red-100' : ''} ${currentReaction === 'thumbsDown' && animate ? 'reaction-selected' : ''}`}
+        onClick={() => onReact(messageId, 'thumbsDown')}
         aria-label="Thumbs down"
       >
         <ThumbsDown 

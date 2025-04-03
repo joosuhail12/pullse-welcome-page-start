@@ -1,55 +1,59 @@
 
 import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { sanitizeInput } from '../../utils/validation';
 
-interface CardMessageProps {
-  title: string;
-  description: string;
-  imageUrl?: string;
-  buttons?: Array<{ text: string; action: string }>;
-  metadata?: Record<string, any>;
+interface CardButton {
+  text: string;
+  action: string;
 }
 
-const CardMessage: React.FC<CardMessageProps> = ({
-  title,
-  description,
-  imageUrl,
-  buttons = [],
-  metadata
-}) => {
+interface CardMessageProps {
+  cardData: {
+    title: string;
+    description: string;
+    imageUrl?: string;
+    buttons?: CardButton[];
+  };
+}
+
+const CardMessage = ({ cardData }: CardMessageProps) => {
+  // Sanitize card data
+  const cardTitle = cardData.title ? sanitizeInput(cardData.title) : '';
+  const cardDesc = cardData.description ? sanitizeInput(cardData.description) : '';
+  
   return (
-    <div className="card-message bg-white border border-gray-200 rounded-lg overflow-hidden">
-      {imageUrl && (
-        <div className="h-40 overflow-hidden">
+    <Card className="w-full max-w-xs mt-2 shadow-sm">
+      {cardData.imageUrl && (
+        <div className="aspect-video overflow-hidden">
           <img 
-            src={imageUrl} 
-            alt={title} 
+            src={cardData.imageUrl} 
+            alt={cardTitle} 
             className="w-full h-full object-cover"
           />
         </div>
       )}
-      
-      <div className="p-3">
-        <h4 className="font-medium text-sm mb-1">{title}</h4>
-        <p className="text-xs text-gray-600 mb-3">{description}</p>
+      <CardContent className="p-4">
+        <h4 className="font-semibold">{cardTitle}</h4>
+        <p className="text-sm text-gray-600 mt-1">{cardDesc}</p>
         
-        {buttons.length > 0 && (
-          <div className="flex flex-col gap-2">
-            {buttons.map((button, index) => (
+        {cardData.buttons && cardData.buttons.length > 0 && (
+          <div className="mt-3 flex flex-col gap-2">
+            {cardData.buttons.map((button, i) => (
               <Button 
-                key={index} 
-                variant="outline" 
+                key={i} 
                 size="sm" 
-                onClick={() => window.open(button.action, '_blank')}
-                className="text-xs justify-start"
+                variant="outline" 
+                className="w-full"
               >
-                {button.text}
+                {sanitizeInput(button.text)}
               </Button>
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

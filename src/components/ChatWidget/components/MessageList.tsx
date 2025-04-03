@@ -23,7 +23,7 @@ interface MessageListProps {
   hasMoreMessages?: boolean;
   isLoadingMore?: boolean;
   conversationId?: string;
-  agentStatus?: 'online' | 'away' | 'offline' | 'busy';
+  agentStatus?: 'online' | 'away' | 'offline';
 }
 
 const MessageList: React.FC<MessageListProps> = ({

@@ -1,132 +1,126 @@
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Message } from '../types';
-import { v4 as uuidv4 } from 'uuid';
+import { useState, useEffect, useCallback } from 'react';
+import { Message, Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
-import { MessageReadStatus } from '../components/MessageReadReceipt';
+import { getChatSessionId } from '../utils/cookies';
+import { useMessageActions } from './useMessageActions';
+import { useRealTime } from './useRealTime';
+import { createSystemMessage } from '../utils/messageHandlers';
+import { markConversationAsRead } from '../utils/storage';
 
 export function useChatMessages(
-  initialMessages: Message[] = [],
-  config?: ChatWidgetConfig
+  conversation: Conversation,
+  config?: ChatWidgetConfig,
+  onUpdateConversation?: (updatedConversation: Conversation) => void,
+  playMessageSound?: () => void
 ) {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  // Initialize with conversation messages or a welcome message
+  const [messages, setMessages] = useState<Message[]>(
+    conversation.messages || [
+      createSystemMessage('Hello! How can I help you today?')
+    ]
+  );
   const [isTyping, setIsTyping] = useState(false);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Sending a message
-  const sendMessage = useCallback((text: string) => {
-    if (!text.trim()) return;
-    
-    // Create a new message
-    const newMessage: Message = {
-      id: uuidv4(),
-      text,
-      sender: 'user',
-      timestamp: new Date(),
-      type: 'text',
-      status: 'sent'
-    };
-    
-    // Add to messages
-    setMessages(prevMessages => [...prevMessages, newMessage]);
-    
-    // Simulate typing indicator
-    simulateTypingIndicator();
-    
-    // Return the new message ID
-    return newMessage.id;
-  }, []);
-
-  // Clear typing indicator
-  const clearTypingIndicator = useCallback(() => {
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = null;
+  const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
+  const [page, setPage] = useState(1);
+  
+  // Get session ID
+  const sessionId = getChatSessionId();
+  // Create channel name based on conversation
+  const chatChannelName = `conversation:${conversation.id}`;
+  
+  // Mark the conversation as read when opened
+  useEffect(() => {
+    if (conversation.id && conversation.unread) {
+      markConversationAsRead(conversation.id)
+        .catch(err => console.error('Failed to mark conversation as read:', err));
     }
-    setIsTyping(false);
-  }, []);
+  }, [conversation.id, conversation.unread]);
+  
+  // Use the real-time hook
+  const {
+    remoteIsTyping,
+    readReceipts,
+    handleTypingTimeout
+  } = useRealTime(
+    messages,
+    setMessages,
+    conversation,
+    hasUserSentMessage,
+    setIsTyping,
+    config,
+    playMessageSound
+  );
+  
+  // Use the message actions hook
+  const {
+    messageText,
+    setMessageText,
+    handleSendMessage,
+    handleUserTyping: baseHandleUserTyping,
+    handleFileUpload,
+    handleEndChat
+  } = useMessageActions(
+    messages,
+    setMessages,
+    chatChannelName,
+    sessionId,
+    config,
+    setHasUserSentMessage,
+    setIsTyping
+  );
 
-  // Simulate typing indicator
-  const simulateTypingIndicator = useCallback(() => {
-    setIsTyping(true);
-    
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    
-    // Clear typing indicator after a delay
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-      typingTimeoutRef.current = null;
-      
-      // For demo purposes, simulate a response
-      const responseText = "Thanks for your message! This is a simulated response.";
-      const responseMessage: Message = {
-        id: uuidv4(),
-        text: responseText,
-        sender: 'system',
-        timestamp: new Date(),
-        type: 'text',
-        status: 'sent'
+  // Update conversation in parent component when messages change
+  useEffect(() => {
+    if (messages.length > 0 && onUpdateConversation) {
+      const updatedConversation = {
+        ...conversation,
+        messages: messages,
+        lastMessage: messages[messages.length - 1].text,
+        timestamp: messages[messages.length - 1].timestamp,
+        sessionId: sessionId,
+        unread: false // Mark as read when we update the conversation
       };
-      
-      setMessages(prevMessages => [...prevMessages, responseMessage]);
-    }, 2000);
-  }, []);
-
-  // Add a system message
-  const addSystemMessage = useCallback((text: string) => {
-    const newMessage: Message = {
-      id: uuidv4(),
-      text,
-      sender: 'system',
-      timestamp: new Date(),
-      type: 'text',
-      status: 'sent' as MessageReadStatus
-    };
-    
-    setMessages(prevMessages => [...prevMessages, newMessage]);
-    
-    return newMessage.id;
-  }, []);
-
-  // Update a message's status
-  const updateMessageStatus = useCallback((messageId: string, status: MessageReadStatus) => {
-    setMessages(prevMessages => 
-      prevMessages.map(msg => 
-        msg.id === messageId ? { ...msg, status } : msg
-      )
-    );
-  }, []);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      onUpdateConversation(updatedConversation);
     }
-  }, [messages]);
+  }, [messages, conversation, onUpdateConversation, sessionId]);
 
-  // Cleanup typing timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, []);
+  // Wrap the handleUserTyping function to also handle typing timeout
+  const handleUserTyping = () => {
+    baseHandleUserTyping();
+    if (config?.realtime?.enabled) {
+      handleTypingTimeout();
+    }
+  };
+
+  // Function to load previous messages (for infinite scroll)
+  const loadPreviousMessages = useCallback(async () => {
+    // Simulate loading previous messages with a delay
+    // In a real implementation, this would make an API call with pagination
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        setPage(prevPage => prevPage + 1);
+        // In a real implementation, you would fetch more messages here
+        // and prepend them to the messages array
+        
+        // For now, we'll just resolve the Promise
+        resolve();
+      }, 1000);
+    });
+  }, [page]);
 
   return {
     messages,
-    setMessages,
+    messageText,
+    setMessageText,
     isTyping,
-    setIsTyping,
-    sendMessage,
-    addSystemMessage,
-    updateMessageStatus,
-    clearTypingIndicator,
-    messagesEndRef
+    remoteIsTyping,
+    hasUserSentMessage,
+    handleSendMessage,
+    handleUserTyping,
+    handleFileUpload,
+    handleEndChat,
+    readReceipts,
+    loadPreviousMessages
   };
 }
-
-export default useChatMessages;
