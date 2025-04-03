@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Message, Conversation } from '../types';
 
@@ -165,20 +164,6 @@ export function createTestSystemMessage(text: string): Message {
     type: 'text',
     status: 'sent'
   };
-}
-
-/**
- * Create a test tag for UI components in test mode
- * @returns A React element for the test tag or null
- */
-export function createTestBadge(): React.ReactElement | null {
-  if (!isTestMode()) return null;
-  
-  return (
-    <div className="absolute top-1 right-1 bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded-full font-semibold">
-      TEST
-    </div>
-  );
 }
 
 /**

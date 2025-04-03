@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
@@ -7,6 +6,7 @@ import MessagesView from '../views/MessagesView';
 import ChatView from '../views/ChatView';
 import TabBar from './TabBar';
 import PoweredByBar from './PoweredByBar';
+import TestBadge from './TestBadge';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WidgetContainerProps {
@@ -48,7 +48,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
   
   const isMobile = useIsMobile();
   
-  // Enhanced responsive width and height classes - memoized to prevent recalculation
   const widgetClasses = useMemo(() => {
     const widgetWidth = isMobile 
       ? "w-[95vw] max-w-[100vw]" // Nearly full width on very small screens
@@ -63,7 +62,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
     return `${widgetWidth} ${widgetHeight} ${widgetMaxHeight}`;
   }, [isMobile]);
 
-  // Memoize view components to prevent unnecessary re-renders
   const currentView = useMemo(() => {
     if (viewState === 'chat') {
       return (
@@ -118,7 +116,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
     testMode
   ]);
 
-  // Memoize the branding bar to prevent unnecessary re-renders
   const brandingBar = useMemo(() => {
     return config.branding?.showBrandingBar !== false ? <PoweredByBar /> : null;
   }, [config.branding?.showBrandingBar]);
@@ -128,11 +125,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
       className={`fixed ${widgetClasses} z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden relative`}
       style={{...widgetStyle, ...containerStyles}}
     >
-      {testMode && (
-        <div className="absolute top-0 right-0 bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg z-10 font-medium">
-          TEST MODE
-        </div>
-      )}
+      {testMode && <TestBadge />}
       
       <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden">
         {currentView}

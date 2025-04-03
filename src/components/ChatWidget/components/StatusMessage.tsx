@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { isTestMode } from '../utils/testMode';
+import TestBadge from './TestBadge';
 
 interface StatusMessageProps {
   text: string;
