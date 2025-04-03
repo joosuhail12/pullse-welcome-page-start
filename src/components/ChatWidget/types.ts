@@ -70,4 +70,3 @@ export interface MessageSearchResult {
 // Event types and other configurations
 export type ChatEventLevel = 'debug' | 'info' | 'warning' | 'error';
 export type ChatEventSource = 'user' | 'system' | 'ably' | 'internal';
-

@@ -47,6 +47,7 @@ export interface ChatBranding {
 export interface PreChatForm {
   enabled: boolean;
   fields?: Array<{
+    id: string;
     name: string;
     label: string;
     type: 'text' | 'email' | 'phone' | 'select';
@@ -123,6 +124,7 @@ export const defaultConfig: ChatWidgetConfig = {
     enabled: false,
     fields: [
       {
+        id: 'name',
         name: 'name',
         label: 'Name',
         type: 'text',
@@ -130,6 +132,7 @@ export const defaultConfig: ChatWidgetConfig = {
         placeholder: 'Enter your name'
       },
       {
+        id: 'email',
         name: 'email',
         label: 'Email',
         type: 'email',

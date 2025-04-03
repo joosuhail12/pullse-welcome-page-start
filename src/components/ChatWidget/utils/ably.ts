@@ -2,7 +2,8 @@
 import Ably from 'ably/promises';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from './events';
-import { createValidatedEvent, EventPriority } from './eventValidation';
+import { validateEventPayload } from './eventValidation';
+import { EventPriority } from './eventValidation';
 import { isSessionValid, generateClientId } from './security';
 import { Message } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -22,6 +23,17 @@ interface TypingData {
 }
 
 /**
+ * Create a validated event - local function to avoid circular dependencies
+ */
+function createValidatedEvent(type: string, data?: any): any {
+  return {
+    type,
+    timestamp: new Date(),
+    data: data || {}
+  };
+}
+
+/**
  * Initialize Ably client with proper configuration
  */
 export async function getAbly(): Promise<Ably.Realtime> {
@@ -31,7 +43,7 @@ export async function getAbly(): Promise<Ably.Realtime> {
   
   try {
     // Initialize with client-side auth
-    realtimeInstance = new Ably.Realtime({
+    realtimeInstance = new Ably.Realtime.Promise({
       authUrl: '/api/ably-auth',
       authMethod: 'POST',
       authHeaders: {
@@ -41,6 +53,7 @@ export async function getAbly(): Promise<Ably.Realtime> {
       suspendedRetryTimeout: 30000,
       channelRetryTimeout: 15000,
       transports: ['websocket', 'xhr'],
+      clientId: generateClientId(),
       fallbackHosts: [
         'a.ably-realtime.com',
         'b.ably-realtime.com',
@@ -48,7 +61,7 @@ export async function getAbly(): Promise<Ably.Realtime> {
         'd.ably-realtime.com',
         'e.ably-realtime.com'
       ]
-    } as Ably.ClientOptions);
+    });
     
     // Listen for connection state changes
     listenForConnectionChanges(realtimeInstance);
@@ -58,6 +71,13 @@ export async function getAbly(): Promise<Ably.Realtime> {
     console.error('Failed to initialize Ably:', err);
     throw err;
   }
+}
+
+/**
+ * Check if we're in fallback mode
+ */
+export function isInFallbackMode(): boolean {
+  return false; // Implement actual detection logic as needed
 }
 
 /**
@@ -147,8 +167,9 @@ function listenForConnectionChanges(realtime: Ably.Realtime): void {
  */
 export async function subscribeToChannel(
   channelName: string,
-  callback: (data: any, eventName: string) => void
-): Promise<Ably.RealtimeChannel> {
+  eventName: string,
+  callback: (data: any) => void
+): Promise<any> {
   // Validate session before allowing subscription
   if (!isSessionValid()) {
     throw new Error('Invalid session');
@@ -159,21 +180,25 @@ export async function subscribeToChannel(
     
     // Check if channel already exists in cache
     if (channelCache[channelName]) {
+      // Subscribe to the specific event
+      channelCache[channelName].subscribe(eventName, callback);
       return channelCache[channelName];
     }
     
     // Create and subscribe to the channel
     const channel = ably.channels.get(channelName);
     
-    // Subscribe to all events
-    channel.subscribe((message: Ably.Types.Message) => {
-      callback(message.data, message.name);
-    });
+    // Subscribe to the specific event
+    channel.subscribe(eventName, callback);
     
     // Store in cache
     channelCache[channelName] = channel;
     
-    return channel;
+    return {
+      unsubscribe: () => {
+        channel.unsubscribe(eventName, callback);
+      }
+    };
   } catch (err) {
     console.error(`Failed to subscribe to channel ${channelName}:`, err);
     throw err;
@@ -253,10 +278,7 @@ export async function subscribeToTyping(
       const data = message.data as TypingData;
       callback(data.isTyping, data.userId);
       
-      // Create a local event name for typing events
-      const localEvent = `local:${channelName}:typing`;
-      
-      // Create a deep copy of the data to avoid reference issues
+      // Create a local event for typing events
       const eventData = {
         ...data,
         timestamp: new Date()
