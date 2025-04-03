@@ -1,5 +1,62 @@
 
-import { AgentStatus, ChatPositionString } from "./types";
+/**
+ * Chat Widget Configuration Types
+ */
+
+export interface PreChatFormField {
+  id: string;
+  name: string;
+  type: 'text' | 'email' | 'tel' | 'select';
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  options?: { value: string; label: string }[];
+}
+
+export interface PreChatForm {
+  enabled: boolean;
+  title?: string;
+  fields: PreChatFormField[];
+}
+
+export interface ChatBranding {
+  primaryColor?: string;
+  fontFamily?: string;
+  avatarUrl?: string;
+  logoUrl?: string;
+  showBrandingBar?: boolean;
+  widgetTitle?: string;
+}
+
+// Update the ChatPosition type to include both string literals and object type
+export type ChatPosition = 
+  | 'bottom-right' 
+  | 'bottom-left' 
+  | 'top-right' 
+  | 'top-left'
+  | {
+      placement: string;
+      offsetX: number;
+      offsetY: number;
+    };
+
+export interface ChatFeatures {
+  fileUpload?: boolean;
+  messageRating?: boolean;
+  readReceipts?: boolean;
+  quickReplies?: boolean;
+  cards?: boolean;
+  chatSuggestions?: boolean;
+  messageReactions?: boolean;
+  typingIndicators?: boolean;
+  searchMessages?: boolean;
+}
+
+export interface ChatRealtime {
+  enabled: boolean;
+  // No longer storing API key directly here
+  authEndpoint?: string;
+}
 
 export type ChatEventType = 
   | 'chat:open'
@@ -13,8 +70,8 @@ export type ChatEventType =
   | 'chat:typingStopped'
   | 'message:fileUploaded'
   | 'chat:ended'
-  | 'chat:connectionChange'
-  | 'chat:error';
+  | 'chat:connectionChange' // Add connection change event type
+  | 'chat:error';          // Add error event type
 
 export interface ChatEventPayload {
   type: ChatEventType;
@@ -22,88 +79,66 @@ export interface ChatEventPayload {
   data?: any;
 }
 
-export type ChatBranding = {
-  primaryColor?: string;
-  logoUrl?: string;
-  avatarUrl?: string;
-  widgetTitle?: string;
-  showBrandingBar?: boolean;
-};
-
-// Export ChatPosition type as a union of ChatPositionString or the placement object
-export type ChatPosition = ChatPositionString | {
-  placement: ChatPositionString;
-  offsetX?: number;
-  offsetY?: number;
-};
-
 export interface ChatWidgetConfig {
-  workspaceId?: string;
+  workspaceId: string;
+  welcomeMessage: string;
+  preChatForm: PreChatForm;
   branding?: ChatBranding;
-  position?: {
-    placement: ChatPositionString;
-    offsetX?: number;
-    offsetY?: number;
-  };
-  features?: {
-    searchMessages?: boolean;
-    fileUploads?: boolean;
-    messageReactions?: boolean;
-    readReceipts?: boolean;
-    typing?: boolean;
-  };
-  preChatForm?: {
-    enabled: boolean;
-    requiredFields: string[];
-    optionalFields?: string[];
-    title?: string;
-    subtitle?: string;
-    fields?: Array<{
-      name: string;
-      type: string;
-      label: string;
-      required: boolean;
-      placeholder?: string;
-      id?: string;
-    }>;
-  };
-  realtime?: {
-    enabled?: boolean;
-    serverUrl?: string;
-    apiKey?: string;
-  };
-  appearance?: {
-    theme?: 'light' | 'dark' | 'auto';
-    chatBubbleColor?: string;
-    userBubbleColor?: string;
-    fontSize?: 'small' | 'medium' | 'large';
-    roundedCorners?: boolean;
-  };
-  welcomeMessage?: string;
+  position?: ChatPosition;
+  features?: ChatFeatures;
+  realtime?: ChatRealtime;
+  sessionId?: string;
   onEvent?: (event: ChatEventPayload) => void;
-  eventHandlers?: Record<string, (payload: ChatEventPayload) => void>;
-  messages?: {
-    emptyStateText?: string;
-    loadMoreText?: string;
+  // Added to support advanced event subscription
+  eventHandlers?: {
+    [key in ChatEventType]?: (payload: ChatEventPayload) => void;
   };
 }
 
 export const defaultConfig: ChatWidgetConfig = {
+  workspaceId: 'default',
+  welcomeMessage: 'Welcome! How can we help you today?',
+  preChatForm: {
+    enabled: true,
+    title: 'Start a Conversation',
+    fields: [
+      {
+        id: 'name-field',
+        name: 'name',
+        type: 'text',
+        label: 'Name',
+        placeholder: 'Enter your name',
+        required: true
+      },
+      {
+        id: 'email-field',
+        name: 'email',
+        type: 'email',
+        label: 'Email',
+        placeholder: 'Enter your email',
+        required: true
+      }
+    ]
+  },
   branding: {
     primaryColor: '#8B5CF6',
-    widgetTitle: 'Support Chat',
     showBrandingBar: true
   },
-  position: {
-    placement: 'bottom-right',
-    offsetX: 20,
-    offsetY: 20
-  },
+  position: 'bottom-right',
   features: {
-    searchMessages: true,
-    fileUploads: true,
-    messageReactions: false,
+    fileUpload: true,
+    messageRating: false,
     readReceipts: true,
-    typing: true
+    quickReplies: true,
+    cards: true,
+    chatSuggestions: false,
+    messageReactions: true,
+    typingIndicators: true,
+    searchMessages: true
+  },
+  realtime: {
+    enabled: false,
+    // Using auth endpoint instead of direct API key
+    authEndpoint: '/api/chat-widget/token'
   }
 };

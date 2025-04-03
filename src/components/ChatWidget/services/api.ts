@@ -1,3 +1,4 @@
+
 /**
  * Chat Widget API Service
  * 
@@ -19,8 +20,6 @@ import { errorHandler } from '@/lib/error-handler';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 import { logger } from '@/lib/logger';
 import { requiresServerImplementation } from '../utils/serverSideAuth';
-import { isValidChatPosition } from '../embed/core/optionsValidator';
-import { ChatPositionString } from '../types';
 
 // Circuit names for different API endpoints
 const CONFIG_CIRCUIT = 'chat-widget-config';
@@ -154,16 +153,17 @@ export async function serverSideDecrypt(encryptedData: string): Promise<string> 
  * Fetch chat widget configuration from the API
  * @param workspaceId The workspace ID to fetch configuration for
  * @returns Promise resolving to the chat widget configuration
+ * 
+ * TODO: Implement full signature verification for all responses
+ * TODO: Add caching with security headers for performance
+ * TODO: Implement tiered fallbacks for critical configuration
  */
 export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWidgetConfig> => {
   try {
     // Enforce HTTPS for security
     if (!enforceHttps()) {
       // If redirecting to HTTPS, return default config temporarily
-      return { 
-        ...defaultConfig, 
-        workspaceId: sanitizeInput(workspaceId) 
-      };
+      return { ...defaultConfig, workspaceId: sanitizeInput(workspaceId) };
     }
     
     // Validate and sanitize workspaceId
@@ -173,49 +173,21 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
     // since the API may not be available or may return HTML instead of JSON
     if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
       console.log(`Using default config for workspace ${sanitizedWorkspaceId} in development mode`);
-      const defaultDevConfig = getDefaultConfig(sanitizedWorkspaceId);
-      
-      // Ensure position.placement is a valid ChatPositionString
-      const placementFromDefault = isValidChatPosition(defaultDevConfig.position?.placement || 'bottom-right') 
-        ? (defaultDevConfig.position?.placement as ChatPositionString) 
-        : ('bottom-right' as ChatPositionString);
-      
-      const devConfig: ChatWidgetConfig = {
+      return {
         ...defaultConfig,
         workspaceId: sanitizedWorkspaceId,
-        ...defaultDevConfig,
-        position: {
-          ...defaultConfig.position,
-          ...(defaultDevConfig.position || {}),
-          placement: placementFromDefault
-        }
+        ...getDefaultConfig(sanitizedWorkspaceId)
       };
-      
-      return devConfig;
     }
     
     // Check if circuit is already open (too many failures)
     if (isCircuitOpen(CONFIG_CIRCUIT)) {
       console.warn('Config API circuit is open, using default config');
-      const defaultFallbackConfig = getDefaultConfig(sanitizedWorkspaceId);
-      
-      // Ensure position.placement is a valid ChatPositionString
-      const placementFromFallback = isValidChatPosition(defaultFallbackConfig.position?.placement || 'bottom-right')
-        ? (defaultFallbackConfig.position?.placement as ChatPositionString)
-        : ('bottom-right' as ChatPositionString);
-      
-      const fallbackConfig: ChatWidgetConfig = {
-        ...defaultConfig,
+      return { 
+        ...defaultConfig, 
         workspaceId: sanitizedWorkspaceId,
-        ...defaultFallbackConfig,
-        position: {
-          ...defaultConfig.position,
-          ...(defaultFallbackConfig.position || {}),
-          placement: placementFromFallback
-        }
+        ...getDefaultConfig(sanitizedWorkspaceId)
       };
-      
-      return fallbackConfig;
     }
     
     return await withResilience(
@@ -307,25 +279,12 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
       : new Error('Failed to fetch config')
     );
     
-    const defaultFallbackConfig = getDefaultConfig(sanitizeInput(workspaceId));
-      
-    // Ensure position.placement is a valid ChatPositionString
-    const placementFromFallback = isValidChatPosition(defaultFallbackConfig.position?.placement || 'bottom-right')
-      ? (defaultFallbackConfig.position?.placement as ChatPositionString)
-      : ('bottom-right' as ChatPositionString);
-      
-    const fallbackConfig: ChatWidgetConfig = {
-      ...defaultConfig,
+    // Always fall back to default config for reliability
+    return { 
+      ...defaultConfig, 
       workspaceId: sanitizeInput(workspaceId),
-      ...defaultFallbackConfig,
-      position: {
-        ...defaultConfig.position,
-        ...(defaultFallbackConfig.position || {}),
-        placement: placementFromFallback
-      }
+      ...getDefaultConfig(sanitizeInput(workspaceId))
     };
-    
-    return fallbackConfig;
   }
 };
 

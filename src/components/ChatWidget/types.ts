@@ -2,14 +2,11 @@ export interface Message {
   id: string;
   text: string;
   sender: UserType;
-  role?: 'user' | 'system' | 'bot' | 'agent' | 'status';
   timestamp: Date;
   type?: MessageType;
   fileUrl?: string;
   fileName?: string;
-  fileSize?: number;
-  mediaUrl?: string;
-  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'error';
+  status?: 'sending' | 'sent' | 'delivered' | 'read';
   reaction?: 'thumbsUp' | 'thumbsDown' | null;
   cardData?: {
     title: string;
@@ -18,11 +15,12 @@ export interface Message {
     buttons?: Array<{ text: string; action: string }>;
   };
   quickReplies?: Array<{ text: string; action: string }>;
-  important?: boolean;
-  unread?: boolean;
-  metadata?: Record<string, any>;
+  important?: boolean; // New field to mark important messages
+  unread?: boolean;    // New field to mark unread messages
+  metadata?: Record<string, any>; // Add metadata field for flexibility
 }
 
+// Standardized agent status type
 export type AgentStatus = 'online' | 'offline' | 'away' | 'busy';
 
 export interface Conversation {
@@ -40,8 +38,8 @@ export interface Conversation {
   metadata?: any;
   sessionId?: string;
   contactIdentified?: boolean;
-  unread?: boolean;
-  isResolved?: boolean;
+  unread?: boolean; // New property to track unread status
+  isResolved?: boolean; // Property to track if conversation is resolved
 }
 
 export interface Agent {
@@ -64,29 +62,27 @@ export interface MessageSearchResult {
   timestamp: Date;
 }
 
-export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status' | 'image';
+// Define standard message types
+export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
 
-export interface UserInfo {
-  id?: string;
-  name?: string;
-  avatar?: string;
-  status?: AgentStatus;
-}
+// Define standard user types
+export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status';
 
-export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status' | UserInfo;
-
-export type MessageReadStatus = 'unread' | 'delivered' | 'read' | 'sent';
+// Define MessageReadStatus type 
+export type MessageReadStatus = 'unread' | 'delivered' | 'read';
 
 export interface MessageReadReceipt {
   status: MessageReadStatus;
   timestamp?: Date;
 }
 
+// Define MessageReaction types
 export interface MessageReactionButtonsProps {
   onReact: (emoji: string) => void;
   onClose: () => void;
 }
 
+// Define MessageAvatar props
 export interface MessageAvatarProps {
   isUserMessage: boolean;
   userAvatar: string;
@@ -94,6 +90,7 @@ export interface MessageAvatarProps {
   agentStatus?: AgentStatus;
 }
 
+// Update MessageBubbleProps with the missing properties
 export interface MessageBubbleProps {
   message: Message;
   highlightText?: string;
@@ -105,23 +102,24 @@ export interface MessageBubbleProps {
   agentStatus?: AgentStatus;
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
-  searchTerm?: string;
-  onToggleHighlight?: () => void;
+  searchTerm?: string; // Added searchTerm property
+  onToggleHighlight?: () => void; // Added onToggleHighlight property
 }
 
+// Define QuickReplyMessage props
 export interface QuickReplyMessageProps {
   metadata: Record<string, any>;
   onReply: (text: string) => void;
 }
 
-export type ChatPositionString = 
+// Fixed ChatPosition type
+export type ChatPosition = 
   | 'bottom-right' 
   | 'bottom-left' 
   | 'top-right' 
-  | 'top-left';
-
-export type ChatPosition = ChatPositionString | {
-  placement: string;
-  offsetX: number;
-  offsetY: number;
-};
+  | 'top-left'
+  | {
+      placement: string;
+      offsetX: number;
+      offsetY: number;
+    };

@@ -9,35 +9,22 @@ import { ChatWidgetConfig } from '../config';
 import { User, AtSign } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-export interface PreChatFormField {
-  id?: string;
-  name: string;
-  type: string;
-  label: string;
-  required: boolean;
-  placeholder?: string;
-}
-
 interface PreChatFormProps {
   config: ChatWidgetConfig;
   onFormComplete: (formData: Record<string, string>) => void;
-  onSubmit?: (formData: Record<string, string>) => void;
-  fields?: PreChatFormField[];
 }
 
-const PreChatForm = ({ config, onFormComplete, onSubmit, fields }: PreChatFormProps) => {
+const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formValid, setFormValid] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const isMobile = useIsMobile();
-  
-  const formFields = fields || config.preChatForm?.fields || [];
 
   // Handle input change for form
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const field = formFields.find(f => f.name === name);
+    const field = config.preChatForm.fields.find(f => f.name === name);
     
     // Mark field as touched
     setTouched(prev => ({
@@ -65,7 +52,7 @@ const PreChatForm = ({ config, onFormComplete, onSubmit, fields }: PreChatFormPr
 
   // Validate if the form is complete and valid
   const validateFormCompletion = (data: Record<string, string>) => {
-    const requiredFields = formFields.filter(field => field.required);
+    const requiredFields = config.preChatForm.fields.filter(field => field.required);
     const allRequiredFilled = requiredFields.every(field => {
       const fieldValue = data[field.name];
       return fieldValue && fieldValue.trim() !== '' && !validateField(field.name, fieldValue, true);
@@ -83,12 +70,8 @@ const PreChatForm = ({ config, onFormComplete, onSubmit, fields }: PreChatFormPr
     // Dispatch form completion event
     dispatchChatEvent('contact:formCompleted', { formData: sanitizedData }, config);
     
-    // Pass data back to parent using appropriate callback
-    if (onSubmit) {
-      onSubmit(sanitizedData);
-    } else {
-      onFormComplete(sanitizedData);
-    }
+    // Pass data back to parent
+    onFormComplete(sanitizedData);
   };
 
   // Compute primary color based on config or fallback
@@ -112,14 +95,14 @@ const PreChatForm = ({ config, onFormComplete, onSubmit, fields }: PreChatFormPr
   return (
     <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 border border-gray-100 animate-fade-in w-full max-w-full sm:max-w-md mx-auto">
       <h3 className="text-center font-semibold mb-3 sm:mb-4 text-gray-700 text-sm sm:text-base">
-        {config.preChatForm?.title || 'Please provide your information to continue'}
+        {config.preChatForm.title || 'Please provide your information to continue'}
       </h3>
       
       <div className="space-y-3 sm:space-y-4">
-        {formFields.map((field) => (
-          <div key={field.id || field.name} className="space-y-1">
+        {config.preChatForm.fields.map((field) => (
+          <div key={field.id} className="space-y-1">
             <Label 
-              htmlFor={field.id || field.name} 
+              htmlFor={field.id} 
               className="text-xs sm:text-sm font-medium flex items-center gap-1"
             >
               {field.label}
@@ -132,7 +115,7 @@ const PreChatForm = ({ config, onFormComplete, onSubmit, fields }: PreChatFormPr
               </div>
               
               <Input
-                id={field.id || field.name}
+                id={field.id}
                 name={field.name}
                 type={field.type}
                 required={field.required}
@@ -147,13 +130,13 @@ const PreChatForm = ({ config, onFormComplete, onSubmit, fields }: PreChatFormPr
                     ? 'border-green-500 bg-green-50'
                     : 'border-gray-200'
                 }`}
-                aria-describedby={formErrors[field.name] ? `${field.id || field.name}-error` : undefined}
+                aria-describedby={formErrors[field.name] ? `${field.id}-error` : undefined}
               />
             </div>
             
             {touched[field.name] && formErrors[field.name] && (
               <p 
-                id={`${field.id || field.name}-error`} 
+                id={`${field.id}-error`} 
                 className="text-2xs sm:text-xs text-red-500 mt-1 animate-fade-in"
               >
                 {formErrors[field.name]}

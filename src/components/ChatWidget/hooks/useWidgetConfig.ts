@@ -4,20 +4,6 @@ import { fetchChatWidgetConfig } from '../services/api';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import { getDefaultConfig } from '../embed/api';
 import { logger } from '@/lib/logger';
-import { isValidChatPosition } from '../embed/core/optionsValidator';
-import { ChatPositionString } from '../types';
-
-/**
- * Helper function to ensure the returned value is a valid ChatPositionString
- * This adds type safety by ensuring we only return valid position values
- */
-function ensureValidPosition(position: unknown): ChatPositionString {
-  if (typeof position === 'string' && isValidChatPosition(position)) {
-    return position as ChatPositionString;
-  }
-  // Default to 'bottom-right' as the fallback position
-  return 'bottom-right' as ChatPositionString;
-}
 
 export function useWidgetConfig(workspaceId?: string) {
   const [config, setConfig] = useState<ChatWidgetConfig>(defaultConfig);
@@ -58,25 +44,18 @@ export function useWidgetConfig(workspaceId?: string) {
       try {
         setLoading(true);
         
-        // Development mode handling
+        // Log that we're in development mode
         if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
           logger.debug(
             `Using default config for workspace ${workspaceId} in development mode`, 
             'useWidgetConfig'
           );
           
-          // Get the default placement value and ensure it's valid
-          const defaultPlacementValue = defaultConfig.position?.placement || 'bottom-right';
-          // Ensure we're using a validated ChatPositionString type
-          const validatedPlacement = ensureValidPosition(defaultPlacementValue);
-          
-          const devConfig: ChatWidgetConfig = {
+          // Use the default config for development mode
+          const devConfig = {
             ...defaultConfig,
             workspaceId,
-            position: {
-              ...defaultConfig.position,
-              placement: validatedPlacement
-            },
+            // Merge with our simple default config
             ...getDefaultConfig(workspaceId)
           };
           
@@ -85,7 +64,6 @@ export function useWidgetConfig(workspaceId?: string) {
           return;
         }
         
-        // Production mode handling
         logger.info(`Fetching config for workspace ${workspaceId}`, 'useWidgetConfig');
         const fetchedConfig = await fetchChatWidgetConfig(workspaceId);
         
@@ -94,38 +72,20 @@ export function useWidgetConfig(workspaceId?: string) {
           hasBranding: !!fetchedConfig.branding
         });
         
-        // Get the fetched placement value and ensure it's valid
-        const fetchedPlacementValue = fetchedConfig.position?.placement || 'bottom-right';
-        // Ensure we're using a validated ChatPositionString type
-        const validatedPlacement = ensureValidPosition(fetchedPlacementValue);
-        
-        setConfig({
-          ...fetchedConfig,
-          position: {
-            ...fetchedConfig.position,
-            placement: validatedPlacement
-          }
-        });
+        setConfig(fetchedConfig);
         setError(null);
       } catch (err) {
         const errorInstance = err instanceof Error ? err : new Error('Failed to fetch config');
         logger.error('Failed to fetch widget config', 'useWidgetConfig', errorInstance);
         
-        // Get the default placement value for error fallback
-        const defaultPlacementValue = defaultConfig.position?.placement || 'bottom-right';
-        // Ensure we're using a validated ChatPositionString type
-        const validatedPlacement = ensureValidPosition(defaultPlacementValue);
-        
+        setError(errorInstance);
+        // Still use default config as fallback
         setConfig({
           ...defaultConfig,
           workspaceId,
-          position: {
-            ...defaultConfig.position,
-            placement: validatedPlacement
-          },
+          // Merge with our simple default config
           ...getDefaultConfig(workspaceId)
         });
-        setError(errorInstance);
       } finally {
         setLoading(false);
       }

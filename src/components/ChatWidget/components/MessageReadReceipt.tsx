@@ -8,10 +8,9 @@ export type MessageReadStatus = 'unread' | 'delivered' | 'read' | 'sent';
 interface MessageReadReceiptProps {
   status: MessageReadStatus;
   timestamp?: Date;
-  showEnhancedUI?: boolean;
 }
 
-const MessageReadReceipt: React.FC<MessageReadReceiptProps> = ({ status, timestamp, showEnhancedUI = true }) => {
+const MessageReadReceipt: React.FC<MessageReadReceiptProps> = ({ status, timestamp }) => {
   // Don't render anything for unread status
   if (status === 'unread') {
     return null;

@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState, useEffect } from 'react';
 import { Conversation, Message, AgentStatus } from '../../types';
 import { ChatWidgetConfig } from '../../config';
@@ -98,12 +99,9 @@ const ChatViewPresentation = ({
 
   // Helper function to adapt highlightText for use in ChatBody
   const adaptHighlightTextForChatBody = (text: string): string[] => {
-    if (!text) return [''];
-    if (!searchTerm) return [text];
-    
-    // Simple implementation that returns string array for highlighted parts
-    const regex = new RegExp(`(${searchTerm})`, 'gi');
-    return text.split(regex).filter(Boolean);
+    // Just return the text as an array with one element
+    // This is a simplified version since we just need to pass this to ChatBody
+    return [text];
   };
 
   // Track agent status changes

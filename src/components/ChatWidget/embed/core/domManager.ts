@@ -1,8 +1,6 @@
 
 import { PullseChatWidgetOptions } from '../types';
 import { logger } from '@/lib/logger';
-import { ChatPositionString } from '../../types';
-import { isValidChatPosition } from './optionsValidator';
 
 /**
  * Initialize widget DOM elements and scripts
@@ -46,16 +44,9 @@ export function initializeWidgetDOM(options: PullseChatWidgetOptions): void {
 
 /**
  * Apply position styles based on configuration
- * Ensures that position is a valid ChatPositionString
  */
 export function getPositionStyles(position: string, offsetX: number, offsetY: number): string {
-  // Validate the position or use default
-  const validPosition: ChatPositionString = isValidChatPosition(position) 
-    ? position as ChatPositionString
-    : 'bottom-right';
-    
-  // Apply appropriate CSS based on the position
-  switch (validPosition) {
+  switch (position) {
     case 'bottom-left':
       return `bottom: ${offsetY}px; left: ${offsetX}px;`;
     case 'top-right':

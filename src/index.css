@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -157,12 +156,12 @@
     animation: loading-pulse 1.5s infinite ease-in-out;
   }
 
-  /* IMPROVED MESSAGE BUBBLE STYLES - REDESIGNED */
+  /* IMPROVED MESSAGE BUBBLE STYLES */
   .chat-message-user {
     @apply text-white chat-message-bubble;
     background: linear-gradient(135deg, #8B5CF6 0%, #7c3aed 100%);
     box-shadow: 0 3px 12px rgba(139, 92, 246, 0.3);
-    border-radius: 18px;
+    border-radius: 20px;
     border-bottom-right-radius: 4px;
     padding: 16px 18px;
     position: relative;
@@ -175,7 +174,7 @@
     @apply text-gray-800 chat-message-bubble;
     background: linear-gradient(135deg, #f8f7ff 0%, #f1effe 100%);
     box-shadow: 0 3px 12px rgba(139, 92, 246, 0.1);
-    border-radius: 18px;
+    border-radius: 20px;
     border-bottom-left-radius: 4px;
     padding: 16px 18px;
     position: relative;
@@ -184,36 +183,11 @@
     margin-left: 0;
   }
   
-  /* Enhanced Bubble Tail Design */
-  .chat-message-user:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: -8px;
-    width: 16px;
-    height: 16px;
-    background: linear-gradient(225deg, #7c3aed 0%, #7c3aed 100%);
-    border-bottom-left-radius: 16px;
-    z-index: -1;
-  }
-  
-  .chat-message-system:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: -8px;
-    width: 16px;
-    height: 16px;
-    background: linear-gradient(135deg, #f1effe 0%, #f1effe 100%);
-    border-bottom-right-radius: 16px;
-    z-index: -1;
-  }
-  
   /* Bubble hover effects */
   .chat-message-bubble:hover {
     transform: translateY(-1px);
-    transition: transform 0.3s ease;
-    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.2);
+    transition: transform 0.2s ease;
+    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.15);
   }
 
   /* NEW HEADER STYLES */
@@ -265,7 +239,7 @@
   }
   
   .important-message-container {
-    @apply bg-violet-50 rounded-lg p-1;
+    @apply bg-vivid-purple/5 rounded-lg p-1;
   }
   
   /* UNREAD MESSAGES DIVIDER */

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Info } from 'lucide-react';
 import { 
@@ -16,7 +17,7 @@ import {
 export interface KeyboardShortcutProps {
   key: string;
   description: string;
-  category?: "search" | "messages" | "navigation" | "general" | string;
+  category?: 'navigation' | 'messages' | 'search' | 'general';
 }
 
 interface KeyboardShortcutsInfoProps {
@@ -37,6 +38,7 @@ const KeyboardShortcutsInfo: React.FC<KeyboardShortcutsInfoProps> = ({ shortcuts
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const shortcutsToShow = shortcuts.length > 0 ? shortcuts : DEFAULT_SHORTCUTS;
   
+  // For compact mode, only show a subset of shortcuts
   const compactShortcuts = compact 
     ? shortcutsToShow.slice(0, 3) 
     : shortcutsToShow;
@@ -80,6 +82,7 @@ const KeyboardShortcutsInfo: React.FC<KeyboardShortcutsInfoProps> = ({ shortcuts
         </Tooltip>
       </TooltipProvider>
 
+      {/* Full keyboard shortcuts dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger className="hidden">Open</DialogTrigger>
         <DialogContent className="sm:max-w-md">
