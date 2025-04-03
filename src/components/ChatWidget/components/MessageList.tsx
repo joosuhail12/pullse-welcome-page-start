@@ -1,6 +1,5 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
@@ -49,9 +48,6 @@ const MessageList = React.memo(({
   inlineFormComponent,
   conversationId
 }: MessageListProps) => {
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const scrollViewportRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<List>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [lastScrollTop, setLastScrollTop] = useState(0);
@@ -181,7 +177,12 @@ const MessageList = React.memo(({
     
     return (
       <div 
-        style={style} 
+        style={{
+          ...style,
+          paddingLeft: '16px',
+          paddingRight: '16px',
+          paddingTop: isConsecutiveMessage(messageIndex) ? '4px' : '16px'
+        }} 
         key={message.id} 
         className={`flex ${
           message.sender === 'user' 
@@ -189,9 +190,7 @@ const MessageList = React.memo(({
             : message.sender === 'status' 
               ? 'justify-center' 
               : 'justify-start'
-        } animate-fade-in ${isMessageHighlighted(message.id) ? 'bg-yellow-100 p-2 rounded-lg' : ''} ${
-          isConsecutiveMessage(messageIndex) ? 'mt-1' : 'mt-4'
-        }`}
+        } animate-fade-in ${isMessageHighlighted(message.id) ? 'bg-yellow-100 rounded-lg' : ''}`}
         id={message.id}
       >
         <div className="flex flex-col w-full">
@@ -248,6 +247,15 @@ const MessageList = React.memo(({
 
   // Calculate the total number of items to render
   const itemCount = messages.length + (isTyping ? 1 : 0) + (isLoadingMore ? 1 : 0);
+
+  // Check if there are messages to show
+  if (messages.length === 0 && !isTyping) {
+    return (
+      <div className="flex-grow flex items-center justify-center p-4 bg-chat-bg h-full text-gray-500">
+        No messages yet. Start a conversation!
+      </div>
+    );
+  }
 
   return (
     <div className="flex-grow p-4 bg-chat-bg h-full">

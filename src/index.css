@@ -9,12 +9,42 @@
   }
   
   .chat-message-system {
-    @apply bg-soft-purple-50 text-system-bubble-foreground rounded-bl-none chat-message-bubble;
+    @apply bg-soft-purple-50 text-system-bubble-foreground rounded-2xl rounded-bl-none chat-message-bubble;
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.1);
   }
   
   .chat-message-user {
-    @apply bg-vivid-purple text-white rounded-br-none chat-message-bubble;
+    @apply bg-vivid-purple text-white rounded-2xl rounded-br-none chat-message-bubble;
     box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3);
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+  }
+
+  .animate-fade-out {
+    animation: fade-out 0.3s ease-out;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(10px);
   }
 }
