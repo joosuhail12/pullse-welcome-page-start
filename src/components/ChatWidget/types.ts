@@ -1,7 +1,8 @@
+
 export interface Message {
   id: string;
   text: string;
-  sender: 'user' | 'system' | 'status';
+  sender: 'user' | 'system' | 'status' | 'agent' | 'bot';
   timestamp: Date;
   type?: MessageType;
   fileUrl?: string;
@@ -37,7 +38,7 @@ export interface Conversation {
   messages?: Message[];
   timestamp: Date;
   lastMessage?: string;
-  status?: 'active' | 'ended';
+  status?: 'active' | 'ended' | string;
   agentInfo?: {
     id?: string;
     name?: string;
@@ -57,7 +58,7 @@ export interface Agent {
   id: string;
   name: string;
   avatar?: string;
-  status?: 'online' | 'away' | 'offline';
+  status?: 'online' | 'away' | 'offline' | 'busy';
 }
 
 export interface MessageReaction {

@@ -79,8 +79,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
             placeholder="Type a message..."
             className="w-full resize-none bg-gray-50 border-gray-100 focus:bg-white pr-8"
             rows={1}
-            maxRows={5}
-            autoGrow
             disabled={disabled}
           />
           

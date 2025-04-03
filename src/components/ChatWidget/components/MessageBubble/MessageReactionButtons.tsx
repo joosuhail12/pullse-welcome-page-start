@@ -7,8 +7,6 @@ interface MessageReactionButtonsProps {
   messageId?: string;
   currentReaction?: 'thumbsUp' | 'thumbsDown' | null;
   onReact?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
-  onReaction?: (emoji: string) => void;
-  animate?: boolean;
   onClose?: () => void;
 }
 
@@ -16,16 +14,11 @@ const MessageReactionButtons = ({
   messageId,
   currentReaction,
   onReact,
-  onReaction,
-  animate = false,
   onClose
 }: MessageReactionButtonsProps) => {
-  // Handle both old and new reaction APIs
   const handleReact = (reaction: 'thumbsUp' | 'thumbsDown') => {
     if (onReact && messageId) {
       onReact(messageId, reaction);
-    } else if (onReaction) {
-      onReaction(reaction);
     }
     
     if (onClose) {
@@ -38,7 +31,7 @@ const MessageReactionButtons = ({
       <Button
         variant="ghost"
         size="sm"
-        className={`p-1 h-auto transition-all ${currentReaction === 'thumbsUp' ? 'bg-green-100' : ''} ${currentReaction === 'thumbsUp' && animate ? 'reaction-selected' : ''}`}
+        className={`p-1 h-auto transition-all ${currentReaction === 'thumbsUp' ? 'bg-green-100' : ''} ${currentReaction === 'thumbsUp' ? 'reaction-selected' : ''}`}
         onClick={() => handleReact('thumbsUp')}
         aria-label="Thumbs up"
       >
@@ -50,7 +43,7 @@ const MessageReactionButtons = ({
       <Button
         variant="ghost"
         size="sm"
-        className={`p-1 h-auto transition-all ${currentReaction === 'thumbsDown' ? 'bg-red-100' : ''} ${currentReaction === 'thumbsDown' && animate ? 'reaction-selected' : ''}`}
+        className={`p-1 h-auto transition-all ${currentReaction === 'thumbsDown' ? 'bg-red-100' : ''} ${currentReaction === 'thumbsDown' ? 'reaction-selected' : ''}`}
         onClick={() => handleReact('thumbsDown')}
         aria-label="Thumbs down"
       >

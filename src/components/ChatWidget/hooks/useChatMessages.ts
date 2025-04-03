@@ -7,6 +7,13 @@ import { dispatchChatEvent } from '../utils/events';
 import { v4 as uuidv4 } from 'uuid';
 import { isTestMode, simulateAgentTypingInTestMode, simulateAgentResponseInTestMode } from '../utils/testMode';
 
+interface TypingIndicatorHook {
+  handleTypingTimeout: () => void;
+  clearTypingTimeout: () => void;
+  sendTypingIndicator?: () => void;
+  stopTypingIndicator?: () => void;
+}
+
 export const useChatMessages = (
   conversation: Conversation,
   config: ChatWidgetConfig,
@@ -17,15 +24,14 @@ export const useChatMessages = (
   const [isTyping, setIsTyping] = useState(false);
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(conversation?.messages?.length > 0);
-  const [readReceipts, setReadReceipts] = useState<Record<string, boolean>>({});
+  const [readReceipts, setReadReceipts] = useState<Record<string, { status: string; timestamp?: Date }>>({});
   
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const testModeTypingRef = useRef<{ cancel: () => void } | null>(null);
   
   // Track typing state
-  const { sendTypingIndicator, stopTypingIndicator } = useTypingIndicator(
-    conversation?.id || '',
-    config
+  const { handleTypingTimeout, clearTypingTimeout } = useTypingIndicator(
+    conversation?.id || ''
   );
   
   // Handle user typing
@@ -33,7 +39,10 @@ export const useChatMessages = (
     if (!isTyping) {
       setIsTyping(true);
       if (!isTestMode()) {
-        sendTypingIndicator();
+        // Call typing indicator functions if they exist
+        if (typeof handleTypingTimeout === 'function') {
+          handleTypingTimeout();
+        }
       }
     }
     
@@ -44,10 +53,12 @@ export const useChatMessages = (
     typingTimerRef.current = setTimeout(() => {
       setIsTyping(false);
       if (!isTestMode()) {
-        stopTypingIndicator();
+        if (typeof clearTypingTimeout === 'function') {
+          clearTypingTimeout();
+        }
       }
     }, 1500);
-  }, [isTyping, sendTypingIndicator, stopTypingIndicator]);
+  }, [isTyping, handleTypingTimeout, clearTypingTimeout]);
 
   // Send message
   const handleSendMessage = useCallback(() => {
@@ -71,7 +82,7 @@ export const useChatMessages = (
       timestamp: new Date()
     };
     
-    onUpdateConversation(updatedConversation);
+    onUpdateConversation(updatedConversation as Conversation);
     setMessageText('');
     setHasUserSentMessage(true);
     
@@ -121,7 +132,7 @@ export const useChatMessages = (
           timestamp: new Date()
         };
         
-        onUpdateConversation(conversationWithAgentResponse);
+        onUpdateConversation(conversationWithAgentResponse as Conversation);
         
         // Play sound for new message
         if (playMessageSound) {
@@ -136,7 +147,7 @@ export const useChatMessages = (
         });
       });
     }
-  }, [messageText, conversation, onUpdateConversation, playMessageSound, sendTypingIndicator, stopTypingIndicator]);
+  }, [messageText, conversation, onUpdateConversation, playMessageSound, handleTypingTimeout, clearTypingTimeout]);
 
   // Handle file upload
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -151,6 +162,7 @@ export const useChatMessages = (
       sender: 'user',
       timestamp: new Date(),
       status: 'sending',
+      text: `File: ${file.name}`,
       fileInfo: {
         name: file.name,
         size: file.size,
@@ -168,7 +180,7 @@ export const useChatMessages = (
       preview: `Sent a file: ${file.name}`
     };
     
-    onUpdateConversation(updatedConversation);
+    onUpdateConversation(updatedConversation as Conversation);
     setHasUserSentMessage(true);
     
     // If in test mode, simulate file upload and response
@@ -182,12 +194,12 @@ export const useChatMessages = (
         
         const updatedMessagesWithProgress = updatedMessages.map(msg => 
           msg.id === fileId ? updatedFileMessage : msg
-        );
+        ) as Message[];
         
         onUpdateConversation({
           ...updatedConversation,
           messages: updatedMessagesWithProgress
-        });
+        } as Conversation);
         
         // Dispatch event
         dispatchChatEvent('message:fileUploaded', {
@@ -213,7 +225,7 @@ export const useChatMessages = (
             messages: messagesWithAgentResponse,
             preview: agentResponse.text,
             timestamp: new Date()
-          });
+          } as Conversation);
           
           // Play sound for new message
           if (playMessageSound) {
@@ -240,7 +252,6 @@ export const useChatMessages = (
         sender: 'system',
         timestamp: new Date(),
         status: 'delivered',
-        systemMessage: true,
         text: 'Chat ended in test mode.'
       };
       
@@ -248,11 +259,11 @@ export const useChatMessages = (
       const updatedConversation = {
         ...conversation,
         messages: updatedMessages,
-        status: 'closed',
+        status: 'ended',
         timestamp: new Date()
       };
       
-      onUpdateConversation(updatedConversation);
+      onUpdateConversation(updatedConversation as Conversation);
       
       // Dispatch event
       dispatchChatEvent('chat:ended', {
@@ -270,7 +281,6 @@ export const useChatMessages = (
       sender: 'system',
       timestamp: new Date(),
       status: 'delivered',
-      systemMessage: true,
       text: 'Chat ended.'
     };
     
@@ -278,11 +288,11 @@ export const useChatMessages = (
     const updatedConversation = {
       ...conversation,
       messages: updatedMessages,
-      status: 'closed',
+      status: 'ended',
       timestamp: new Date()
     };
     
-    onUpdateConversation(updatedConversation);
+    onUpdateConversation(updatedConversation as Conversation);
     
     // Dispatch event
     dispatchChatEvent('chat:ended', {

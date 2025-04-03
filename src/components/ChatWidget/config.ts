@@ -1,3 +1,4 @@
+
 /**
  * Chat Widget Configuration Types
  */
@@ -12,6 +13,12 @@ export interface PreChatFormField {
   options?: { value: string; label: string }[];
 }
 
+export interface PreChatForm {
+  enabled: boolean;
+  title: string;
+  fields: PreChatFormField[];
+}
+
 export type ChatEventType = 
   | 'typing'
   | 'message:sent'
@@ -19,17 +26,22 @@ export type ChatEventType =
   | 'message:read'
   | 'message:received'
   | 'message:fileUploaded'
+  | 'message:reacted'
   | 'chat:started'
   | 'chat:ended'
   | 'chat:agentJoined'
   | 'chat:agentLeft'
   | 'chat:messageReceived'
   | 'chat:messageSent'
+  | 'chat:connectionChange'
+  | 'chat:open'
+  | 'chat:close'
+  | 'chat:error'
+  | 'chat:typingStarted'
+  | 'chat:typingStopped'
   | 'contact:initiatedChat'
   | 'contact:formCompleted'
   | 'error'
-  | 'chat:connectionChange'
-  | 'chat:error'
   | 'versionUpdate';
 
 export type SecurityEventType =

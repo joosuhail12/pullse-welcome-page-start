@@ -1,6 +1,6 @@
 
 import React, { useState, lazy, Suspense } from 'react';
-import { MessageType, UserType, MessageReadStatus } from '../../types';
+import { MessageReadStatus } from '../MessageReadReceipt';
 import TextMessage from '../MessageTypes/TextMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
 import MessageStatus from './MessageStatus';
@@ -8,6 +8,7 @@ import MessageAvatar from './MessageAvatar';
 import MessageReactionButtons from './MessageReactionButtons';
 import MessageReadReceipt from '../MessageReadReceipt';
 import { cn } from '@/lib/utils';
+import { Message, MessageType, UserType } from '../../types';
 
 // Lazy load less commonly used message types
 const CardMessage = lazy(() => import('../MessageTypes/CardMessage'));
@@ -35,7 +36,7 @@ interface MessageBubbleProps {
   agentAvatar?: string;
   onReply?: (text: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
-  agentStatus?: 'online' | 'away' | 'offline' | 'busy';
+  agentStatus?: 'online' | 'offline' | 'away' | 'busy';
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
 }
@@ -98,10 +99,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     
     switch (type) {
       case 'text':
-        return <TextMessage 
-                 text={message.text} 
-                 highlightText={highlightText} 
-               />;
+        return <TextMessage text={message.text} />
       case 'card':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
@@ -110,7 +108,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
                                    description={message.metadata.description || ""}
                                    imageUrl={message.metadata.imageUrl}
                                    buttons={message.metadata.buttons}
-                                   metadata={message.metadata}
                                  />}
           </Suspense>
         );
@@ -122,7 +119,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
                                    fileUrl={message.metadata.fileUrl || "#"}
                                    fileType={message.metadata.fileType || "application/octet-stream"}
                                    fileSize={message.metadata.fileSize || 0}
-                                   metadata={message.metadata}
                                  />}
           </Suspense>
         );
@@ -133,7 +129,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
               <QuickReplyMessage
                 options={message.metadata.options || []}
                 onSelect={(text) => onReply && onReply(text)}
-                metadata={message.metadata}
                 onReply={(text) => onReply && onReply(text)}
               />
             )}
@@ -141,14 +136,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         );
       case 'status':
         return <StatusMessage 
-                text={message.text} 
-                renderText={(text) => <span>{text}</span>}
+                 text={message.text} 
+                 renderText={(text) => <span>{text}</span>}
                />;
       default:
-        return <TextMessage 
-                 text={message.text} 
-                 highlightText={highlightText} 
-               />;
+        return <TextMessage text={message.text} />;
     }
   };
 
@@ -163,10 +155,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       {!isSystemMessage && (
         <MessageAvatar
           sender={message.sender}
-          isUserMessage={isUserMessage}
-          userAvatar={userAvatar}
-          agentAvatar={agentAvatar}
-          agentStatus={agentStatus}
+          avatarUrl={isUserMessage ? userAvatar : agentAvatar}
+          status={agentStatus}
         />
       )}
 
@@ -196,7 +186,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         <MessageReactionButtons
           messageId={message.id}
           onReact={onReaction}
-          onReaction={handleReaction}
           onClose={() => setShowReactions(false)}
         />
       )}

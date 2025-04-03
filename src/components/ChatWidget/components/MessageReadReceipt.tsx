@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { Check, CheckCheck } from 'lucide-react';
-import { MessageReadStatus } from '../types';
+
+export type MessageReadStatus = 'sent' | 'delivered' | 'read';
 
 interface MessageReadReceiptProps {
   status: MessageReadStatus;
