@@ -72,6 +72,7 @@ export default {
         },
         'vivid-purple': {
           DEFAULT: 'hsl(var(--vivid-purple))',
+          50: '#F5F3FF',
           100: '#EDE9FE',
           200: '#DDD6FE',
           300: '#C4B5FD',
