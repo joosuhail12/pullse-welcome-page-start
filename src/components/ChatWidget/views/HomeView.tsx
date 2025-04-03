@@ -66,14 +66,14 @@ const HomeView = React.memo(({
           <div className="h-px flex-grow bg-gray-100"></div>
         </div>
         
-        <div className="grid grid-cols-1 gap-2 sm:gap-3">
-          <div className="bg-white/60 backdrop-blur-sm p-2 sm:p-3 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-1 sm:gap-2 mb-1">
-              <Clock size={isMobile ? 14 : 16} className="text-vivid-purple-500" />
-              <span className="text-2xs sm:text-sm font-medium text-gray-700">Office Hours</span>
+        <div className="bg-white/70 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-sm border border-white/50 hover:shadow-md transition-all duration-300 hover:bg-white/80">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="bg-soft-purple-100 p-2 rounded-full">
+              <Clock size={isMobile ? 16 : 18} className="text-vivid-purple-600" />
             </div>
-            <p className="text-3xs sm:text-xs text-gray-500">Mon-Fri: 9 AM - 5 PM EST</p>
+            <span className="text-xs sm:text-sm font-medium text-gray-700">Office Hours</span>
           </div>
+          <p className="text-3xs sm:text-xs text-gray-600 pl-9">Mon-Fri: 9 AM - 5 PM EST</p>
         </div>
       </div>
       
@@ -84,7 +84,7 @@ const HomeView = React.memo(({
           <div className="h-px flex-grow bg-gray-100"></div>
         </div>
         
-        <div className="bg-white/70 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-sm">
+        <div className="bg-white/70 backdrop-blur-sm p-3 sm:p-4 rounded-lg shadow-sm border border-white/50 hover:shadow-md transition-all duration-300 hover:bg-white/80">
           <AgentPresence />
         </div>
       </div>
@@ -92,10 +92,10 @@ const HomeView = React.memo(({
       <div className="mt-auto animate-subtle-fade-in">
         <Button 
           onClick={handleStartChatClick}
-          className="chat-widget-button flex items-center gap-2 w-full py-2 sm:py-3 shadow-md transition-all hover:shadow-lg hover:scale-[1.02] rounded-lg text-xs sm:text-sm"
+          className="chat-widget-button flex items-center justify-center gap-2 w-full py-5 sm:py-6 shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] rounded-lg text-sm sm:text-base"
           style={buttonStyle}
         >
-          <MessageSquare size={isMobile ? 16 : 18} />
+          <MessageSquare size={isMobile ? 16 : 18} className="shrink-0" />
           <span className="font-medium">Ask a question</span>
         </Button>
       </div>
@@ -107,4 +107,3 @@ const HomeView = React.memo(({
 HomeView.displayName = 'HomeView';
 
 export default HomeView;
-
