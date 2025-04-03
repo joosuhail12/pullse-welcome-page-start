@@ -130,9 +130,6 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
   }, [showInlineForm, config, handleFormComplete]);
 
   const renderPoweredBy = () => {
-    // Explicitly check if branding bar should be shown
-    if (!config.branding?.showBrandingBar) return null;
-    
     return (
       <div className="border-t border-gray-100 py-2 px-3 bg-white/90 backdrop-blur-sm flex items-center justify-center gap-1 text-xs text-gray-500">
         <span>Powered by</span>
