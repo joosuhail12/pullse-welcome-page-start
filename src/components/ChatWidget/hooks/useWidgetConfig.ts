@@ -52,10 +52,10 @@ export function useWidgetConfig(workspaceId?: string) {
             'useWidgetConfig'
           );
           
-          const defaultPlacement = defaultConfig.position?.placement || 'bottom-right';
+          const defaultPlacement = defaultConfig.position?.placement || 'bottom-right' as ChatPosition;
           const validatedPlacement = isValidChatPosition(defaultPlacement) 
-            ? defaultPlacement as ChatPosition 
-            : 'bottom-right' as ChatPosition;
+            ? (defaultPlacement as ChatPosition)
+            : ('bottom-right' as ChatPosition);
           
           const devConfig: ChatWidgetConfig = {
             ...defaultConfig,
@@ -81,9 +81,10 @@ export function useWidgetConfig(workspaceId?: string) {
           hasBranding: !!fetchedConfig.branding
         });
         
-        const validatedPlacement = isValidChatPosition(fetchedConfig.position?.placement) 
-          ? fetchedConfig.position.placement as ChatPosition 
-          : 'bottom-right' as ChatPosition;
+        const fetchedPlacement = fetchedConfig.position?.placement || 'bottom-right' as ChatPosition;
+        const validatedPlacement = isValidChatPosition(fetchedPlacement) 
+          ? (fetchedPlacement as ChatPosition)
+          : ('bottom-right' as ChatPosition);
         
         setConfig({
           ...fetchedConfig,
@@ -97,10 +98,10 @@ export function useWidgetConfig(workspaceId?: string) {
         const errorInstance = err instanceof Error ? err : new Error('Failed to fetch config');
         logger.error('Failed to fetch widget config', 'useWidgetConfig', errorInstance);
         
-        const defaultPlacement = defaultConfig.position?.placement || 'bottom-right';
+        const defaultPlacement = defaultConfig.position?.placement || 'bottom-right' as ChatPosition;
         const validatedPlacement = isValidChatPosition(defaultPlacement) 
-          ? defaultPlacement as ChatPosition 
-          : 'bottom-right' as ChatPosition;
+          ? (defaultPlacement as ChatPosition)
+          : ('bottom-right' as ChatPosition);
         
         setConfig({
           ...defaultConfig,
