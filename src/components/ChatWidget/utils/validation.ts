@@ -14,19 +14,60 @@ const ALLOWED_FILE_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 ];
 
+// Configure DOMPurify for maximum security
+const DOM_PURIFY_CONFIG = {
+  ALLOWED_TAGS: [], // Don't allow any HTML tags for maximum XSS protection
+  ALLOWED_ATTR: [], // Don't allow any HTML attributes
+  FORBID_TAGS: ['style', 'script', 'iframe', 'form', 'object'],
+  FORBID_ATTR: ['style', 'onerror', 'onload', 'src', 'href'],
+  KEEP_CONTENT: true,
+  RETURN_DOM: false,
+  RETURN_DOM_FRAGMENT: false,
+  RETURN_DOM_IMPORT: false
+};
+
 /**
- * Sanitizes user input to prevent XSS attacks
+ * Sanitizes user input to prevent XSS attacks using DOMPurify with strict settings
  * @param input The user input to sanitize
  * @returns Sanitized string
  */
 export function sanitizeInput(input: string): string {
   if (!input) return '';
   
-  // Use DOMPurify to sanitize HTML and prevent XSS
-  return DOMPurify.sanitize(input.trim(), {
-    ALLOWED_TAGS: [], // Don't allow any HTML tags
-    ALLOWED_ATTR: [] // Don't allow any HTML attributes
-  });
+  // First trim the input
+  const trimmed = input.trim();
+  
+  // Use DOMPurify with strict configuration to sanitize HTML and prevent XSS
+  return DOMPurify.sanitize(trimmed, DOM_PURIFY_CONFIG);
+}
+
+/**
+ * Additional layer of sanitization for specific contexts
+ * @param input Input string to sanitize
+ * @param context Context where string will be used
+ * @returns String sanitized specifically for the context
+ */
+export function contextSpecificSanitize(input: string, context: 'html' | 'url' | 'attribute' = 'html'): string {
+  // First apply the basic sanitization
+  const sanitized = sanitizeInput(input);
+  
+  switch (context) {
+    case 'url':
+      // Additional URL-specific sanitization
+      // Only allow http/https URLs
+      if (sanitized.match(/^https?:\/\//)) {
+        return encodeURI(sanitized);
+      }
+      return '';
+      
+    case 'attribute':
+      // Additional attribute-specific sanitization
+      return sanitized.replace(/[^\w\s.,;:!?()-]/g, '');
+      
+    case 'html':
+    default:
+      return sanitized;
+  }
 }
 
 /**
@@ -58,7 +99,27 @@ export function validateFormData(formData: Record<string, string>): Record<strin
   for (const [key, value] of Object.entries(formData)) {
     // Sanitize the key as well to be extra safe
     const sanitizedKey = sanitizeInput(key);
-    sanitizedData[sanitizedKey] = sanitizeInput(value);
+    
+    // For extra security, apply context-specific sanitization based on field name
+    let sanitizedValue = '';
+    
+    if (key.toLowerCase().includes('email')) {
+      // Email-specific validation
+      sanitizedValue = sanitizeInput(value);
+      if (!isValidEmail(sanitizedValue)) sanitizedValue = '';
+    } else if (key.toLowerCase().includes('phone') || key.toLowerCase().includes('tel')) {
+      // Phone-specific validation
+      sanitizedValue = sanitizeInput(value);
+      if (!isValidPhoneNumber(sanitizedValue)) sanitizedValue = '';
+    } else if (key.toLowerCase().includes('url') || key.toLowerCase().includes('website')) {
+      // URL-specific validation
+      sanitizedValue = contextSpecificSanitize(value, 'url');
+    } else {
+      // General text validation
+      sanitizedValue = sanitizeInput(value);
+    }
+    
+    sanitizedData[sanitizedKey] = sanitizedValue;
   }
   
   return sanitizedData;
@@ -109,7 +170,8 @@ export function sanitizeFileName(fileName: string): string {
   const sanitized = fileName
     .replace(/\.\.\//g, '') // Remove path traversal sequences
     .replace(/[/\\]/g, '_') // Replace slashes with underscores
-    .replace(/;|&|`|\||>|<|$/g, '_'); // Replace shell special chars
+    .replace(/;|&|`|\||>|<|$/g, '_') // Replace shell special chars
+    .replace(/\s+/g, '_');  // Replace spaces with underscores
     
   return sanitized;
 }
@@ -163,5 +225,30 @@ export function validateField(name: string, value: string, isRequired: boolean):
     }
   }
   
+  // URL validation
+  if ((name.toLowerCase().includes('url') || name.toLowerCase().includes('website')) && sanitized) {
+    try {
+      new URL(sanitized);
+    } catch (e) {
+      return "Please enter a valid URL";
+    }
+  }
+  
   return null;
+}
+
+/**
+ * Sanitizes HTML content if it absolutely must be rendered
+ * @param html HTML content to sanitize
+ * @returns Sanitized HTML that's safe to render
+ */
+export function sanitizeHtml(html: string): string {
+  // Use a less restrictive DOMPurify config that allows some safe HTML
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li'],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+    ADD_ATTR: ['target'], // Force target attribute on links
+    FORCE_BODY: true,
+    USE_PROFILES: { html: true }
+  });
 }

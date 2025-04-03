@@ -5,7 +5,7 @@
  */
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import { getChatSessionId, setChatSessionId } from '../utils/cookies';
-import { sanitizeInput } from '../utils/validation';
+import { sanitizeInput, validateMessage } from '../utils/validation';
 import { isRateLimited, generateCsrfToken, enforceHttps, signMessage, verifyMessageSignature } from '../utils/security';
 import { toast } from '@/components/ui/use-toast';
 
@@ -47,9 +47,13 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
     // Generate timestamp for request signing
     const timestamp = Date.now();
     
-    // Include CSRF token and timestamp in headers
+    // Generate CSRF token with nonce
+    const { token: csrfToken, nonce: csrfNonce } = generateCsrfToken();
+    
+    // Include CSRF token, nonce and timestamp in headers
     const headers: HeadersInit = {
-      'X-CSRF-Token': generateCsrfToken(),
+      'X-CSRF-Token': csrfToken,
+      'X-CSRF-Nonce': csrfNonce,
       'X-Request-Timestamp': timestamp.toString(),
       'X-Request-Signature': signMessage(sanitizedWorkspaceId, timestamp)
     };
@@ -133,12 +137,14 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
     }
     
     // Validate and sanitize inputs
-    const sanitizedMessage = sanitizeInput(message);
+    const sanitizedMessage = validateMessage(message);
     const sanitizedWorkspaceId = sanitizeInput(workspaceId);
     const sessionId = getChatSessionId();
     
-    // Generate CSRF token and timestamp for request signing
-    const csrfToken = generateCsrfToken();
+    // Generate CSRF token and nonce
+    const { token: csrfToken, nonce: csrfNonce } = generateCsrfToken();
+    
+    // Generate timestamp for request signing
     const timestamp = Date.now();
     
     const payload = {
@@ -156,6 +162,7 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-Token': csrfToken,
+        'X-CSRF-Nonce': csrfNonce,
         'X-Request-Timestamp': timestamp.toString(),
         'X-Request-Signature': signature
       },

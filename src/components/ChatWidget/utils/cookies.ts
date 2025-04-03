@@ -9,10 +9,12 @@ const SESSION_EXPIRY_KEY = '_chat_session_expiry';
 
 /**
  * Sets a cookie with the provided name and value with enhanced security
+ * Note: HttpOnly flag can only be set by server, not by client-side JavaScript
  */
 export function setCookie(name: string, value: string, maxAgeSeconds: number = COOKIE_MAX_AGE): void {
-  // Build secure cookie string with httpOnly, secure, and SameSite flags
-  const cookieString = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Strict; Secure; HttpOnly`;
+  // Build secure cookie string with secure and SameSite flags
+  // Note: We use SameSite=Lax for better user experience while maintaining security
+  const cookieString = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax; Secure`;
   document.cookie = cookieString;
 }
 
@@ -35,7 +37,7 @@ export function getCookie(name: string): string | null {
  * Deletes a cookie by setting its expiration to the past
  */
 export function deleteCookie(name: string): void {
-  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict; Secure`;
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax; Secure`;
 }
 
 /**
