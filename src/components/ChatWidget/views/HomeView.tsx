@@ -1,10 +1,11 @@
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { defaultConfig, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
 import { dispatchChatEvent } from '../utils/events';
+import PreChatForm from '../components/PreChatForm';
 
 interface HomeViewProps {
   onStartChat: (formData?: Record<string, string>) => void;
@@ -15,6 +16,8 @@ const HomeView = React.memo(({
   onStartChat, 
   config = defaultConfig 
 }: HomeViewProps) => {
+  const [showForm, setShowForm] = useState(false);
+  
   // Apply custom branding if available - use useMemo to prevent recalculation
   const buttonStyle = useMemo(() => {
     return config.branding?.primaryColor 
@@ -22,13 +25,26 @@ const HomeView = React.memo(({
       : {};
   }, [config.branding?.primaryColor]);
   
-  // Handle direct chat start (no form) - memoized to prevent recreation on each render
-  const handleStartChat = useCallback(() => {
-    // Always dispatch event when chat is initiated
+  // Handle form submission
+  const handleFormComplete = useCallback((formData: Record<string, string>) => {
+    // Always dispatch event when form is completed
+    dispatchChatEvent('contact:formCompleted', { formData }, config);
+    
+    // Pass form data to start chat
+    onStartChat(formData);
+  }, [onStartChat, config]);
+  
+  // Handle direct chat start (show form if enabled)
+  const handleStartChatClick = useCallback(() => {
+    // Dispatch event when chat button is clicked
     dispatchChatEvent('contact:initiatedChat', { showForm: config.preChatForm.enabled }, config);
     
-    // Pass empty object if no form is enabled, the ChatView will handle showing the form
-    onStartChat({});
+    if (config.preChatForm.enabled) {
+      setShowForm(true);
+    } else {
+      // If no form is enabled, start chat directly
+      onStartChat({});
+    }
   }, [onStartChat, config]);
   
   return (
@@ -45,16 +61,22 @@ const HomeView = React.memo(({
         <AgentPresence />
       </div>
       
-      <div className="mt-auto">
-        <Button 
-          onClick={handleStartChat}
-          className="chat-widget-button flex items-center gap-2 w-full py-2.5"
-          style={buttonStyle}
-        >
-          <MessageSquare size={18} />
-          <span className="font-medium">Ask a question</span>
-        </Button>
-      </div>
+      {showForm && config.preChatForm.enabled ? (
+        <div className="mt-2">
+          <PreChatForm config={config} onFormComplete={handleFormComplete} />
+        </div>
+      ) : (
+        <div className="mt-auto">
+          <Button 
+            onClick={handleStartChatClick}
+            className="chat-widget-button flex items-center gap-2 w-full py-2.5"
+            style={buttonStyle}
+          >
+            <MessageSquare size={18} />
+            <span className="font-medium">Ask a question</span>
+          </Button>
+        </div>
+      )}
     </div>
   );
 });

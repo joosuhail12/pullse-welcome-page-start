@@ -94,8 +94,6 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     if (formData && Object.keys(formData).length > 0) {
       dispatchChatEvent('contact:formCompleted', { formData }, config);
     }
-    
-    dispatchChatEvent('contact:initiatedChat', undefined, config);
   }, [handleStartChat, setUserFormData, config]);
 
   // Memoize footer component to prevent re-renders
@@ -154,7 +152,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
           style={widgetStyle}
         >
           <div className="relative w-full h-full flex flex-col">
-            {viewState === 'chat' ? (
+            {viewState === 'chat' && userFormData ? (
               <ChatView 
                 conversation={activeConversation!} 
                 onBack={handleBackToMessages} 
@@ -174,6 +172,12 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
                     />
                   )}
                   {viewState === 'messages' && <MessagesView onSelectConversation={handleSelectConversation} />}
+                  {viewState === 'chat' && !userFormData && (
+                    <HomeView 
+                      onStartChat={wrappedHandleStartChat} 
+                      config={config}
+                    />
+                  )}
                 </div>
                 
                 <TabBar viewState={viewState} onChangeView={handleChangeView} />
