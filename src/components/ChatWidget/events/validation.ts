@@ -1,134 +1,119 @@
 
 import { ChatEventType, ChatEventPayload } from '../config';
+import { logger } from '@/lib/logger';
 
 /**
- * Event validation schema definitions
+ * Valid event types for validation
  */
-const eventSchemas: Record<ChatEventType, (data: any) => boolean> = {
-  'chat:open': (data) => true, // No specific data requirements
-  'chat:close': (data) => true, // No specific data requirements
-  'chat:messageSent': (data) => {
-    return !!(data && 
-      typeof data === 'object' && 
-      typeof data.messageId === 'string' &&
-      typeof data.text === 'string');
-  },
-  'chat:messageReceived': (data) => {
-    return !!(data && 
-      typeof data === 'object' && 
-      typeof data.messageId === 'string');
-  },
-  'contact:initiatedChat': (data) => {
-    return !!(data && 
-      typeof data === 'object' && 
-      typeof data.sessionId === 'string');
-  },
-  'contact:formCompleted': (data) => {
-    return !!(data && 
-      typeof data === 'object' && 
-      Array.isArray(data.fields));
-  },
-  'message:reacted': (data) => {
-    return !!(data && 
-      typeof data === 'object' && 
-      typeof data.messageId === 'string' && 
-      (data.reaction === 'thumbsUp' || data.reaction === 'thumbsDown' || data.reaction === null));
-  },
-  'chat:typingStarted': (data) => {
-    return !!(data && 
-      typeof data === 'object' && 
-      (typeof data.userId === 'string' || typeof data.agentId === 'string'));
-  },
-  'chat:typingStopped': (data) => {
-    return !!(data && 
-      typeof data === 'object' && 
-      (typeof data.userId === 'string' || typeof data.agentId === 'string'));
-  },
-  'message:fileUploaded': (data) => {
-    return !!(data && 
-      typeof data === 'object' && 
-      typeof data.messageId === 'string' && 
-      typeof data.fileName === 'string');
-  },
-  'chat:ended': (data) => true // No specific data requirements
-};
+const VALID_EVENT_TYPES: Set<ChatEventType> = new Set([
+  'chat:open',
+  'chat:close',
+  'chat:messageSent',
+  'chat:messageReceived',
+  'contact:initiatedChat',
+  'contact:formCompleted',
+  'message:reacted',
+  'chat:typingStarted',
+  'chat:typingStopped',
+  'message:fileUploaded',
+  'chat:ended'
+]);
 
 /**
- * Validates event data based on event type
- * @param eventType Type of the event
- * @param data Event data payload
- * @returns Whether the data is valid for this event type
+ * Validates an event payload
+ * @param payload Event payload to validate
+ * @returns Boolean indicating if event is valid
  */
-export const validateEventData = (eventType: ChatEventType, data: any): boolean => {
-  if (!eventSchemas[eventType]) {
-    console.warn(`No validation schema defined for event type: ${eventType}`);
-    return true; // Allow unknown event types to pass through
-  }
-  
-  return eventSchemas[eventType](data);
-};
-
-/**
- * Sanitizes event data by removing any potentially dangerous fields
- * @param data Event data to sanitize
- * @returns Sanitized event data
- */
-export const sanitizeEventData = (data: any): any => {
-  if (!data || typeof data !== 'object') {
-    return data;
-  }
-  
-  // Create a copy to avoid mutating the original object
-  const sanitized = { ...data };
-  
-  // Remove potentially dangerous properties
-  const dangerousProps = ['__proto__', 'constructor', 'prototype'];
-  dangerousProps.forEach(prop => {
-    if (prop in sanitized) {
-      delete sanitized[prop];
-    }
-  });
-  
-  return sanitized;
-};
-
-/**
- * Validates a complete event payload
- * @param event The event payload to validate
- * @returns Whether the event payload is valid
- */
-export const validateEventPayload = (event: ChatEventPayload): boolean => {
-  // Check required fields
-  if (!event.type || !event.timestamp) {
+export function validateEventPayload(payload: any): payload is ChatEventPayload {
+  if (!payload || typeof payload !== 'object') {
+    logger.warn('Invalid event payload: not an object', 'validation');
     return false;
   }
   
-  // Validate based on event type
-  return validateEventData(event.type, event.data);
-};
+  if (!payload.type || !VALID_EVENT_TYPES.has(payload.type as ChatEventType)) {
+    logger.warn('Invalid event type', 'validation', { type: payload.type });
+    return false;
+  }
+  
+  if (!(payload.timestamp instanceof Date)) {
+    logger.warn('Invalid event timestamp', 'validation', { timestamp: payload.timestamp });
+    return false;
+  }
+  
+  return true;
+}
 
 /**
  * Creates a validated event payload
  * @param type Event type
- * @param data Event data
+ * @param data Optional event data
  * @returns Validated event payload or null if invalid
  */
-export const createValidatedEvent = (type: ChatEventType, data?: any): ChatEventPayload | null => {
-  // Sanitize the data first
-  const sanitizedData = data ? sanitizeEventData(data) : undefined;
-  
-  // Create the event payload
+export function createValidatedEvent(type: ChatEventType, data?: any): ChatEventPayload | null {
+  // Create the event
   const event: ChatEventPayload = {
     type,
     timestamp: new Date(),
-    data: sanitizedData
+    data
   };
   
-  // Validate the event
+  // Validate it
   if (!validateEventPayload(event)) {
-    console.error(`Invalid event payload for type: ${type}`, data);
+    logger.warn('Failed to create validated event', 'validation', { type, data });
     return null;
   }
   
   return event;
-};
+}
+
+/**
+ * Validates generic event data
+ * @param data Data to validate
+ * @returns Validated data or null if invalid
+ */
+export function validateEventData(data: any): any {
+  if (data === null || data === undefined) {
+    return undefined;
+  }
+  
+  // If it's a string, sanitize it
+  if (typeof data === 'string') {
+    return sanitizeEventData(data);
+  }
+  
+  // If it's an object, recursively sanitize its properties
+  if (typeof data === 'object' && !Array.isArray(data)) {
+    const sanitized: Record<string, any> = {};
+    Object.keys(data).forEach(key => {
+      sanitized[key] = validateEventData(data[key]);
+    });
+    return sanitized;
+  }
+  
+  // If it's an array, recursively sanitize its elements
+  if (Array.isArray(data)) {
+    return data.map(item => validateEventData(item));
+  }
+  
+  // For other primitive types, pass through
+  return data;
+}
+
+/**
+ * Sanitizes event data to prevent XSS and other injection attacks
+ * @param data Data to sanitize
+ * @returns Sanitized data
+ */
+export function sanitizeEventData(data: string): string {
+  if (typeof data !== 'string') {
+    return data;
+  }
+  
+  // Basic XSS prevention
+  return data
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+}
