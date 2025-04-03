@@ -52,9 +52,13 @@ export function useWidgetConfig(workspaceId?: string) {
             'useWidgetConfig'
           );
           
-          const defaultPlacement = defaultConfig.position?.placement || 'bottom-right' as ChatPosition;
+          // Explicitly type the default placement as ChatPosition
+          const defaultPositionPlacement = defaultConfig.position?.placement || 'bottom-right';
+          const defaultPlacement = defaultPositionPlacement as ChatPosition;
+          
+          // Validate the placement and provide fallback
           const validatedPlacement = isValidChatPosition(defaultPlacement) 
-            ? (defaultPlacement as ChatPosition)
+            ? defaultPlacement
             : ('bottom-right' as ChatPosition);
           
           const devConfig: ChatWidgetConfig = {
@@ -81,9 +85,13 @@ export function useWidgetConfig(workspaceId?: string) {
           hasBranding: !!fetchedConfig.branding
         });
         
-        const fetchedPlacement = fetchedConfig.position?.placement || 'bottom-right' as ChatPosition;
+        // Explicitly type the fetched placement
+        const fetchedPositionPlacement = fetchedConfig.position?.placement || 'bottom-right';
+        const fetchedPlacement = fetchedPositionPlacement as ChatPosition;
+        
+        // Validate the placement and provide fallback
         const validatedPlacement = isValidChatPosition(fetchedPlacement) 
-          ? (fetchedPlacement as ChatPosition)
+          ? fetchedPlacement
           : ('bottom-right' as ChatPosition);
         
         setConfig({
@@ -98,9 +106,13 @@ export function useWidgetConfig(workspaceId?: string) {
         const errorInstance = err instanceof Error ? err : new Error('Failed to fetch config');
         logger.error('Failed to fetch widget config', 'useWidgetConfig', errorInstance);
         
-        const defaultPlacement = defaultConfig.position?.placement || 'bottom-right' as ChatPosition;
+        // Explicitly type the default placement in error case
+        const defaultPositionPlacement = defaultConfig.position?.placement || 'bottom-right';
+        const defaultPlacement = defaultPositionPlacement as ChatPosition;
+        
+        // Validate the placement and provide fallback
         const validatedPlacement = isValidChatPosition(defaultPlacement) 
-          ? (defaultPlacement as ChatPosition)
+          ? defaultPlacement
           : ('bottom-right' as ChatPosition);
         
         setConfig({
