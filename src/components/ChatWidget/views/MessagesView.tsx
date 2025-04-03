@@ -214,13 +214,11 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       <Button 
         variant="outline" 
         size="sm" 
-        className="mt-2 border-vivid-purple text-vivid-purple hover:bg-transparent hover:border-vivid-purple/80 transition-all duration-300 ease-in-out group"
+        className="mt-2 border-vivid-purple text-vivid-purple hover:bg-vivid-purple hover:text-white transition-colors duration-300 ease-in-out hover:border-vivid-purple-600 active:scale-95"
         onClick={handleStartNewChat}
       >
-        <MessageSquare className="mr-1.5 text-vivid-purple group-hover:text-vivid-purple/80 transition-colors" size={16} />
-        <span className="text-vivid-purple group-hover:text-vivid-purple/80 transition-colors">
-          Start a new conversation
-        </span>
+        <MessageSquare className="mr-1.5" size={16} />
+        Start a new conversation
       </Button>
     </div>
   );

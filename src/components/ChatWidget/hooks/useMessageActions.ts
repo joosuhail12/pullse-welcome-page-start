@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { Message } from '../types';
 import { publishToChannel, getConnectionState } from '../utils/ably';
@@ -12,7 +13,7 @@ import {
 } from '../utils/messageHandlers';
 import { validateMessage, validateFile, sanitizeFileName } from '../utils/validation';
 import { isRateLimited } from '../utils/security';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import { addMessageToQueue } from '../utils/offlineQueue';
 
 export function useMessageActions(
@@ -36,14 +37,22 @@ export function useMessageActions(
     
     // Rate limiting check
     if (isRateLimited()) {
-      toast.error("Rate limit exceeded", "Please wait before sending more messages");
+      toast({
+        title: "Rate limit exceeded",
+        description: "Please wait before sending more messages",
+        variant: "destructive"
+      });
       return;
     }
     
     // Message frequency throttling
     const now = Date.now();
     if (now - lastMessageTime < MESSAGE_THROTTLE_MS) {
-      toast.error("Sending too fast", "Please wait a moment between messages");
+      toast({
+        title: "Sending too fast",
+        description: "Please wait a moment between messages",
+        variant: "destructive"
+      });
       return;
     }
     setLastMessageTime(now);
@@ -86,7 +95,11 @@ export function useMessageActions(
           console.error('Error sending message:', err);
           // Message failed to send - queue it for later
           addMessageToQueue(userMessage, chatChannelName);
-          toast.info("Message queued", "Will be sent when connection is restored");
+          toast({
+            title: "Message queued",
+            description: "Will be sent when connection is restored",
+            variant: "default"
+          });
         });
         
         // Stop typing indicator when sending a message
@@ -95,7 +108,10 @@ export function useMessageActions(
       } else {
         // We're offline - queue message for later sending
         addMessageToQueue(userMessage, chatChannelName);
-        toast.info("Message queued", "Will be sent when connection is restored");
+        toast({
+          title: "Message queued",
+          description: "Will be sent when connection is restored",
+        });
         
         // Show optimistic UI for offline mode
         setTimeout(() => {
@@ -161,7 +177,11 @@ export function useMessageActions(
     
     // Rate limiting check
     if (isRateLimited()) {
-      toast.error("Rate limit exceeded", "Please wait before uploading more files");
+      toast({
+        title: "Rate limit exceeded",
+        description: "Please wait before uploading more files",
+        variant: "destructive"
+      });
       return;
     }
     
@@ -227,12 +247,18 @@ export function useMessageActions(
           console.error('Error sending file message:', err);
           // Queue the message for later
           addMessageToQueue(fileMessage, chatChannelName);
-          toast.info("File message queued", "Will be sent when connection is restored");
+          toast({
+            title: "File message queued",
+            description: "Will be sent when connection is restored",
+          });
         });
       } else {
         // Queue the message for later when offline
         addMessageToQueue(fileMessage, chatChannelName);
-        toast.info("File message queued", "Will be sent when connection is restored");
+        toast({
+          title: "File message queued",
+          description: "Will be sent when connection is restored",
+        });
         
         // Show optimistic response for offline mode
         setTimeout(() => {

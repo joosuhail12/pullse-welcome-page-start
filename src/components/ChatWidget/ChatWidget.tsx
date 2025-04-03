@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
 import ChatView from './views/ChatView';
@@ -6,23 +6,23 @@ import TabBar from './components/TabBar';
 import { useChatState } from './hooks/useChatState';
 import useWidgetConfig from './hooks/useWidgetConfig';
 import { dispatchChatEvent } from './utils/events';
-import { initializeAbly, cleanupAbly } from './utils/ably';
+import { initializeAbly, cleanupAbly, getConnectionState } from './utils/ably';
 import { getAblyAuthUrl } from './services/ablyAuth';
-import { MessageSquare, WifiOff, CloudOff } from 'lucide-react';
+import { MessageSquare, WifiOff, Cloud, CloudOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
 import { useConnectionState } from './hooks/useConnectionState';
 import { Toaster } from '@/components/ui/toaster';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { getPendingMessageCount } from './utils/offlineQueue';
 
 interface ChatWidgetProps {
   workspaceId?: string;
 }
 
-const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
+export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   const {
     viewState,
     activeConversation,
@@ -51,36 +51,30 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
   }, []);
   
   useEffect(() => {
-    if (!loading && config?.realtime?.enabled && workspaceId) {
+    if (!loading && config.realtime?.enabled && workspaceId) {
       const authUrl = getAblyAuthUrl(workspaceId);
       
       initializeAbly(authUrl)
         .then(() => {
           console.log('Ably initialized successfully');
-          setTimeout(() => {
-            toast.success('Chat connection established');
-          }, 0);
+          toast.success('Chat connection established');
         })
         .catch(err => {
           console.error('Failed to initialize Ably:', err);
-          setTimeout(() => {
-            toast.error('Failed to establish chat connection');
-          }, 0);
+          toast.error('Failed to establish chat connection');
         });
       
       return () => {
         cleanupAbly();
       };
     }
-  }, [loading, config?.realtime?.enabled, workspaceId]);
+  }, [loading, config.realtime?.enabled, workspaceId]);
   
-  const widgetStyle = useMemo(() => {
-    return {
-      ...(config?.branding?.primaryColor && {
-        '--vivid-purple': config.branding.primaryColor,
-      } as React.CSSProperties)
-    };
-  }, [config?.branding?.primaryColor]);
+  const widgetStyle = {
+    ...(config.branding?.primaryColor && {
+      '--vivid-purple': config.branding.primaryColor,
+    } as React.CSSProperties)
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -88,26 +82,25 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
     }
   }, [isOpen, clearUnreadMessages]);
 
-  const toggleChat = useCallback(() => {
-    setIsOpen(prev => {
-      const newIsOpen = !prev;
-      
-      if (newIsOpen) {
-        dispatchChatEvent('chat:open', undefined, config);
-        clearUnreadMessages();
-      } else {
-        dispatchChatEvent('chat:close', undefined, config);
-      }
-      
-      return newIsOpen;
-    });
-  }, [config, clearUnreadMessages]);
+  if (loading) {
+    return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
+  }
 
-  const handleReconnect = useCallback(() => {
+  const toggleChat = () => {
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+    
+    if (newIsOpen) {
+      dispatchChatEvent('chat:open', undefined, config);
+      clearUnreadMessages();
+    } else {
+      dispatchChatEvent('chat:close', undefined, config);
+    }
+  };
+
+  const handleReconnect = () => {
     if (connectionState === 'disconnected' || connectionState === 'suspended' || connectionState === 'failed') {
-      setTimeout(() => {
-        toast.loading('Attempting to reconnect...', { id: 'reconnecting' } as any);
-      }, 0);
+      toast.loading('Attempting to reconnect...', { id: 'reconnecting' });
       
       cleanupAbly();
       
@@ -117,28 +110,33 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
           
           initializeAbly(authUrl)
             .then(() => {
-              setTimeout(() => {
-                toast.success('Successfully reconnected', { id: 'reconnecting' } as any);
-              }, 0);
+              toast.success('Successfully reconnected', { id: 'reconnecting' });
             })
             .catch(err => {
-              setTimeout(() => {
-                toast.error('Failed to reconnect', { id: 'reconnecting' } as any);
-              }, 0);
+              toast.error('Failed to reconnect', { id: 'reconnecting' });
               console.error('Failed to reconnect:', err);
             });
         }
       }, 1000);
     }
-  }, [connectionState, workspaceId]);
+  };
 
-  const wrappedHandleStartChat = useCallback(() => {
-    handleStartChat();
+  const wrappedHandleStartChat = (formData?: Record<string, string>) => {
+    if (formData) {
+      setUserFormData(formData);
+    }
+    
+    handleStartChat(formData);
+    
+    if (formData && Object.keys(formData).length > 0) {
+      dispatchChatEvent('contact:formCompleted', { formData }, config);
+    }
+    
     dispatchChatEvent('contact:initiatedChat', undefined, config);
-  }, [handleStartChat, config]);
+  };
 
-  const renderFooter = useCallback(() => {
-    if (!config?.branding?.showBrandingBar) return null;
+  const renderFooter = () => {
+    if (!config.branding?.showBrandingBar) return null;
     
     return (
       <div className="mt-auto border-t border-gray-100 p-2 flex items-center justify-center gap-1 text-xs text-gray-400">
@@ -150,7 +148,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
         />
         <span>Pullse</span>
         
-        {config?.realtime?.enabled && (
+        {config.realtime?.enabled && (
           <div 
             className={`ml-1 w-2 h-2 rounded-full ${
               isConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'
@@ -162,10 +160,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
         )}
       </div>
     );
-  }, [config?.branding?.showBrandingBar, config?.realtime?.enabled, isConnected, connectionState, handleReconnect]);
+  };
 
-  const renderLauncher = useCallback(() => {
-    const buttonStyle = config?.branding?.primaryColor 
+  const renderLauncher = () => {
+    const buttonStyle = config.branding?.primaryColor 
       ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
       : {};
     
@@ -190,7 +188,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
           aria-controls="chat-widget-container"
           aria-haspopup="dialog"
         >
-          {config?.realtime?.enabled && !isConnected ? (
+          {config.realtime?.enabled && !isConnected ? (
             <WifiOff size={24} className="text-white animate-pulse" aria-hidden="true" />
           ) : (
             <MessageSquare size={24} className="text-white" aria-hidden="true" />
@@ -207,11 +205,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
         </Button>
       </div>
     );
-  }, [config?.branding?.primaryColor, config?.realtime?.enabled, isConnected, isOpen, pendingMessages, toggleChat, unreadCount]);
-
-  if (loading) {
-    return <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[600px] rounded-lg shadow-lg bg-white p-4 font-sans">Loading...</div>;
-  }
+  };
 
   return (
     <>
@@ -257,7 +251,8 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
               </div>
             )}
             
-            {config?.realtime?.enabled && !isConnected && (
+            {/* Connection warning banner */}
+            {config.realtime?.enabled && !isConnected && (
               <div 
                 className="absolute top-0 left-0 w-full bg-red-500 text-white text-xs py-1 px-2 text-center cursor-pointer"
                 onClick={handleReconnect}
@@ -272,12 +267,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = React.memo(({ workspaceId }) => {
       )}
       {renderLauncher()}
       
+      {/* Add Sonner toaster for connection notifications */}
       <Toaster />
     </>
   );
-});
+};
 
-ChatWidget.displayName = 'ChatWidget';
-
-export { ChatWidget };
 export default ChatWidget;

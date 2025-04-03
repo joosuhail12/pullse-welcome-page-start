@@ -1,4 +1,3 @@
-
 import * as React from "react"
 
 import type {
@@ -140,8 +139,7 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">
 
-// Basic toast function
-function toast(props: Toast) {
+function toast({ ...props }: Toast) {
   const id = genId()
 
   const update = (props: ToasterToast) =>
@@ -170,59 +168,6 @@ function toast(props: Toast) {
   }
 }
 
-// Extended toast function with helper methods
-interface ExtendedToast {
-  (props: Toast): ReturnType<typeof toast>;
-  success: (title: string, description?: string) => ReturnType<typeof toast>;
-  error: (title: string, description?: string) => ReturnType<typeof toast>;
-  warning: (title: string, description?: string) => ReturnType<typeof toast>;
-  info: (title: string, description?: string) => ReturnType<typeof toast>;
-  loading: (title: string, description?: string) => ReturnType<typeof toast>;
-}
-
-const toastWithHelpers = toast as ExtendedToast;
-
-// Add helper methods
-toastWithHelpers.success = (title, description) => {
-  return toast({
-    title,
-    description,
-    variant: "default",
-  });
-};
-
-toastWithHelpers.error = (title, description) => {
-  return toast({
-    title,
-    description,
-    variant: "destructive",
-  });
-};
-
-toastWithHelpers.warning = (title, description) => {
-  return toast({
-    title,
-    description,
-    variant: "default",
-  });
-};
-
-toastWithHelpers.info = (title, description) => {
-  return toast({
-    title,
-    description,
-    variant: "default",
-  });
-};
-
-toastWithHelpers.loading = (title, description) => {
-  return toast({
-    title,
-    description,
-    variant: "default",
-  });
-};
-
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 
@@ -238,9 +183,9 @@ function useToast() {
 
   return {
     ...state,
-    toast: toastWithHelpers,
+    toast,
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   }
 }
 
-export { useToast, toastWithHelpers as toast }
+export { useToast, toast }

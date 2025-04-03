@@ -105,7 +105,7 @@ export const defaultConfig: ChatWidgetConfig = {
     'Can I get a refund?'
   ],
   preChatForm: {
-    enabled: false, // Changed from true to false to disable pre-chat form by default
+    enabled: true,
     title: 'Start a Conversation',
     fields: [
       {
@@ -155,3 +155,4 @@ export const defaultConfig: ChatWidgetConfig = {
     authEndpoint: '/api/chat-widget/token'
   }
 };
+

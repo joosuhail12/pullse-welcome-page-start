@@ -1,43 +1,89 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { subscribeToConnectionState, getConnectionState } from '../utils/ably';
-
-type ConnectionState = 'connected' | 'disconnected' | 'suspended' | 'connecting' | 'failed' | 'unknown';
+import { useState, useEffect } from 'react';
+import { getConnectionState, subscribeToConnectionState } from '../utils/ably';
+import { toast } from 'sonner';
 
 export function useConnectionState() {
-  // Initialize state with the proper value
-  const [connectionState, setConnectionState] = useState<ConnectionState>('unknown');
-  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [connectionState, setConnectionState] = useState<'connected' | 'connecting' | 'disconnected' | 'suspended' | 'closed' | 'failed' | 'initialized' | 'closing'>(
+    getConnectionState() || 'disconnected'
+  );
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   
-  // Handle connection state change
-  const handleConnectionChange = useCallback((newState: string) => {
-    console.log('Connection state changed:', newState);
+  // Listen for Ably connection state changes
+  useEffect(() => {
+    const unsubscribe = subscribeToConnectionState((state) => {
+      setConnectionState(state);
+      
+      // Show toast notifications for important state changes
+      switch (state) {
+        case 'connected':
+          toast.success('Connection established', {
+            id: 'connection-status',
+            duration: 3000,
+          });
+          break;
+        case 'disconnected':
+          toast.warning('Connection lost, reconnecting...', {
+            id: 'connection-status',
+            duration: 5000,
+          });
+          break;
+        case 'suspended':
+          toast.error('Connection suspended, check your network', {
+            id: 'connection-status',
+            duration: 0, // Don't auto-dismiss this one
+          });
+          break;
+        case 'failed':
+          toast.error('Connection failed, please refresh the page', {
+            id: 'connection-status',
+            duration: 0, // Don't auto-dismiss this one
+          });
+          break;
+        case 'closing':
+          toast.info('Connection closing...', {
+            id: 'connection-status',
+            duration: 3000,
+          });
+          break;
+      }
+    });
     
-    // Cast to ConnectionState to ensure type safety
-    const typedState = newState as ConnectionState;
-    setConnectionState(typedState);
-    setIsConnected(typedState === 'connected');
+    return unsubscribe;
   }, []);
   
-  // Subscribe to connection state changes only once on mount
+  // Also monitor browser's online/offline status
   useEffect(() => {
-    // Get current state and update if it exists
-    const currentState = getConnectionState();
-    if (currentState) {
-      handleConnectionChange(currentState);
-    }
-    
-    // Subscribe to state changes
-    const unsubscribe = subscribeToConnectionState(handleConnectionChange);
-    
-    // Cleanup on unmount
-    return () => {
-      unsubscribe();
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast.success('Network connection restored', {
+        id: 'network-status',
+        duration: 3000,
+      });
     };
-  }, [handleConnectionChange]);
+    
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.error('Network connection lost', {
+        id: 'network-status',
+        duration: 0, // Don't auto-dismiss
+      });
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   
   return {
     connectionState,
-    isConnected
+    isOnline,
+    isConnected: connectionState === 'connected',
+    isConnecting: connectionState === 'connecting',
+    isDisconnected: ['disconnected', 'suspended', 'closed', 'failed', 'initialized', 'closing'].includes(connectionState)
   };
 }

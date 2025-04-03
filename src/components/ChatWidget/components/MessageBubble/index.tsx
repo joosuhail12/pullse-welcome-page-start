@@ -1,5 +1,5 @@
 
-import React, { memo } from 'react';
+import React from 'react';
 import { Message } from '../../types';
 import { sanitizeInput } from '../../utils/validation';
 import MessageAvatar from './MessageAvatar';
@@ -149,4 +149,4 @@ const MessageBubble = ({
   );
 };
 
-export default memo(MessageBubble);
+export default MessageBubble;

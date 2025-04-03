@@ -1,5 +1,5 @@
 
-import React, { useCallback } from 'react';
+import React from 'react';
 import { Message } from '../types';
 import MessageList from './MessageList';
 
@@ -20,8 +20,7 @@ interface MessagesSectionProps {
   isLoadingMore?: boolean;
 }
 
-// Using React.memo to prevent unnecessary re-renders
-const MessagesSection: React.FC<MessagesSectionProps> = React.memo(({ 
+const MessagesSection = ({ 
   messages,
   isTyping,
   remoteIsTyping,
@@ -36,14 +35,7 @@ const MessagesSection: React.FC<MessagesSectionProps> = React.memo(({
   onScrollTop,
   hasMoreMessages,
   isLoadingMore
-}) => {
-  // Use useCallback for the scroll handler if it exists
-  const handleScrollTop = useCallback(async () => {
-    if (onScrollTop) {
-      await onScrollTop();
-    }
-  }, [onScrollTop]);
-  
+}: MessagesSectionProps) => {
   return (
     <div className="flex-1 overflow-y-auto px-4 py-2 bg-opacity-50">
       <MessageList 
@@ -57,15 +49,12 @@ const MessagesSection: React.FC<MessagesSectionProps> = React.memo(({
         searchTerm={searchTerm}
         agentAvatar={agentAvatar}
         userAvatar={userAvatar}
-        onScrollTop={onScrollTop ? handleScrollTop : undefined}
+        onScrollTop={onScrollTop}
         hasMoreMessages={hasMoreMessages}
         isLoadingMore={isLoadingMore}
       />
     </div>
   );
-});
-
-// Add display name for debugging
-MessagesSection.displayName = 'MessagesSection';
+};
 
 export default MessagesSection;

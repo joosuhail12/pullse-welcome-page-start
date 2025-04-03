@@ -1,9 +1,10 @@
+
 /**
  * Utility for managing offline message queuing
  */
 import { Message } from '../types';
 import { encryptData, decryptData } from './security';
-import { toast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/use-toast';
 
 // Storage key for offline message queue
 const OFFLINE_QUEUE_KEY = 'pullse_chat_offline_queue';
@@ -46,10 +47,10 @@ export function addMessageToQueue(
     // Notify the user visually that the message is queued
     if (queue.length === 1) {
       // Only show toast for first queued message to avoid spam
-      // Fix: Use setTimeout to avoid re-render issues
-      setTimeout(() => {
-        toast.info("Message queued", "Will be sent automatically when connection is restored");
-      }, 0);
+      toast({
+        title: "Message queued",
+        description: "Will be sent automatically when connection is restored",
+      });
     }
   } catch (error) {
     console.error('Error adding message to offline queue:', error);
@@ -102,10 +103,11 @@ export function removeMessageFromQueue(messageId: string): void {
     
     // If queue is now empty and was previously not, show a toast
     if (queue.length > 0 && updatedQueue.length === 0) {
-      // Fix: Use setTimeout to avoid re-render issues
-      setTimeout(() => {
-        toast.success("All messages sent", "Your queued messages have been delivered");
-      }, 0);
+      toast({
+        title: "All messages sent",
+        description: "Your queued messages have been delivered",
+        variant: "default"
+      });
     }
   } catch (error) {
     console.error('Error removing message from queue:', error);
@@ -120,10 +122,10 @@ export function clearMessageQueue(): void {
     localStorage.removeItem(OFFLINE_QUEUE_KEY);
     
     // Show a toast when queue is cleared manually
-    // Fix: Use setTimeout to avoid re-render issues
-    setTimeout(() => {
-      toast.info("Queue cleared", "All pending messages have been removed");
-    }, 0);
+    toast({
+      title: "Queue cleared",
+      description: "All pending messages have been removed",
+    });
   } catch (error) {
     console.error('Error clearing message queue:', error);
   }
