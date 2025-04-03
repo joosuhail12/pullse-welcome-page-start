@@ -1,8 +1,10 @@
+
 import { PullseChatWidgetOptions } from './types';
 import { getPositionStyles, loadDependencies } from './utils';
 import { EventManager } from './events';
 import { createLauncherButton, createWidgetContainer, injectWidgetStyles } from './ui-components';
 import { initLazyLoadViaScroll, prepareWidgetConfig } from './lazy-loading';
+import { WIDGET_VERSION, RESOURCE_INTEGRITY } from './api';
 
 /**
  * Main widget loader class
@@ -105,12 +107,25 @@ export class PullseChatWidgetLoader {
     this.styleElement = injectWidgetStyles(positionStyles);
   }
 
+  /**
+   * Add integrity attribute to a script or link element if available
+   * @param element Element to add integrity to
+   * @param resourceKey Key in RESOURCE_INTEGRITY
+   */
+  private addIntegrityAttribute(element: HTMLElement, resourceKey: string): void {
+    const key = resourceKey as keyof typeof RESOURCE_INTEGRITY;
+    if (RESOURCE_INTEGRITY[key]) {
+      element.setAttribute('integrity', RESOURCE_INTEGRITY[key]);
+      element.setAttribute('crossorigin', 'anonymous');
+    }
+  }
+
   private loadFullWidget(): void {
     // Load React dependencies first
     loadDependencies()
       .then(() => {
-        // Add cache busting to prevent stale scripts
-        const cacheBuster = `?v=${new Date().getTime()}`;
+        // Add cache busting and version tracking
+        const cacheParam = `?v=${WIDGET_VERSION}`;
         
         // Handle widget events
         const onEvent = (event: any) => {
@@ -121,8 +136,9 @@ export class PullseChatWidgetLoader {
         const { position = 'bottom-right', offsetX = 20, offsetY = 20 } = this.options;
         const config = prepareWidgetConfig(this.options, position, offsetX, offsetY);
         
-        // Add event handler
+        // Add event handler and version information
         config.onEvent = onEvent;
+        config.version = WIDGET_VERSION;
         
         // Create global config object
         (window as any).__PULLSE_CHAT_CONFIG__ = config;
@@ -130,21 +146,88 @@ export class PullseChatWidgetLoader {
         // Save widget instance for global access
         (window as any).__PULLSE_CHAT_INSTANCE__ = this;
         
-        // Load the widget bundle
+        // Load styles with integrity if available
+        if (!document.getElementById('pullse-widget-styles')) {
+          const link = document.createElement('link');
+          link.id = 'pullse-widget-styles';
+          link.rel = 'stylesheet';
+          link.href = `https://cdn.pullse.io/widget-styles.css${cacheParam}`;
+          this.addIntegrityAttribute(link, 'widget-styles.css');
+          document.head.appendChild(link);
+        }
+        
+        // Load the widget bundle with integrity
         this.scriptElement = document.createElement('script');
-        this.scriptElement.src = `https://cdn.pullse.io/chat-widget.js${cacheBuster}`;
+        this.scriptElement.src = `https://cdn.pullse.io/chat-widget.js${cacheParam}`;
         this.scriptElement.async = true;
+        this.addIntegrityAttribute(this.scriptElement, 'chat-widget.js');
+        
         this.scriptElement.onload = () => {
           console.log('Pullse Chat Widget loaded successfully');
           this.widgetLoaded = true;
+          
+          // Check for updates after successful load (delayed to not impact performance)
+          if (this.options.checkUpdates !== false) {
+            setTimeout(() => {
+              this.checkForUpdates();
+            }, 3000);
+          }
         };
+        
         this.scriptElement.onerror = () => {
-          console.error('Failed to load Pullse Chat Widget');
+          console.error('Failed to load Pullse Chat Widget script');
+          this.eventManager.handleEvent({
+            type: 'error',
+            code: 'script_load_failed',
+            message: 'Failed to load widget script'
+          });
         };
         
         document.body.appendChild(this.scriptElement);
       })
-      .catch(error => console.error('Failed to load dependencies:', error));
+      .catch(error => {
+        console.error('Failed to load dependencies:', error);
+        this.eventManager.handleEvent({
+          type: 'error',
+          code: 'dependencies_load_failed',
+          message: 'Failed to load dependencies'
+        });
+      });
+  }
+  
+  /**
+   * Check for available updates and notify if found
+   */
+  private checkForUpdates(): void {
+    // Simple XHR to check version from CDN
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `https://cdn.pullse.io/version.json?t=${Date.now()}`, true);
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState === 4) {
+        if (xhr.status === 200) {
+          try {
+            const versionInfo = JSON.parse(xhr.responseText);
+            if (versionInfo && versionInfo.version && versionInfo.version !== WIDGET_VERSION) {
+              // Log update available
+              console.info(`[Pullse] A new version is available: ${versionInfo.version}`);
+              
+              // Trigger update event
+              this.eventManager.handleEvent({
+                type: 'versionUpdate',
+                currentVersion: WIDGET_VERSION,
+                latestVersion: versionInfo.version,
+                releaseNotes: versionInfo.releaseNotes || '',
+                updateUrl: versionInfo.updateUrl || 'https://docs.pullse.io/updates'
+              });
+            }
+          } catch (err) {
+            // Silently fail version check - non-critical
+            console.warn('[Pullse] Version check failed:', err);
+          }
+        }
+      }
+    };
+    xhr.send();
   }
   
   /**

@@ -3,6 +3,8 @@
  * Security utilities for widget embedding
  */
 
+import { RESOURCE_INTEGRITY } from '../embed/api';
+
 /**
  * Creates a meta tag with CSP directives for widget embedding
  * @param hostElement The element to append the meta tag to
@@ -45,6 +47,15 @@ export function createScriptWithSRI(scriptUrl: string, integrity?: string): HTML
   
   if (integrity) {
     script.integrity = integrity;
+  } else {
+    // Try to use our predefined integrity hashes
+    const resourceKey = Object.keys(RESOURCE_INTEGRITY).find(key => 
+      scriptUrl.includes(key)
+    ) as keyof typeof RESOURCE_INTEGRITY;
+    
+    if (resourceKey && RESOURCE_INTEGRITY[resourceKey]) {
+      script.integrity = RESOURCE_INTEGRITY[resourceKey];
+    }
   }
   
   return script;
@@ -160,6 +171,56 @@ export function initializeEmbedSecurity(containerId: string = 'pullse-chat-widge
   }
   
   return { container, shadowRoot };
+}
+
+/**
+ * Load a script with integrity checking
+ * @param url Script URL
+ * @param integrity Integrity hash (optional, will use predefined if available)
+ * @returns Promise that resolves when script is loaded
+ */
+export function loadScriptWithIntegrity(url: string, integrity?: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const script = createScriptWithSRI(url, integrity);
+    
+    script.onload = () => resolve();
+    script.onerror = (err) => reject(new Error(`Failed to load script: ${url}`));
+    
+    document.head.appendChild(script);
+  });
+}
+
+/**
+ * Load a stylesheet with integrity checking
+ * @param url Stylesheet URL
+ * @param integrity Integrity hash (optional, will use predefined if available)
+ * @returns Promise that resolves when stylesheet is loaded
+ */
+export function loadStylesheetWithIntegrity(url: string, integrity?: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+    link.crossOrigin = 'anonymous';
+    
+    if (integrity) {
+      link.integrity = integrity;
+    } else {
+      // Try to use our predefined integrity hashes
+      const resourceKey = Object.keys(RESOURCE_INTEGRITY).find(key => 
+        url.includes(key)
+      ) as keyof typeof RESOURCE_INTEGRITY;
+      
+      if (resourceKey && RESOURCE_INTEGRITY[resourceKey]) {
+        link.integrity = RESOURCE_INTEGRITY[resourceKey];
+      }
+    }
+    
+    link.onload = () => resolve();
+    link.onerror = () => reject(new Error(`Failed to load stylesheet: ${url}`));
+    
+    document.head.appendChild(link);
+  });
 }
 
 // Helper function to check if the device is mobile

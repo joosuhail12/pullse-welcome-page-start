@@ -15,6 +15,11 @@
   var eventListeners = {};
   var widgetScriptLoaded = false;
   var lazyLoadObserver = null;
+  var currentVersion = '1.0.0'; // Script version for update checks
+  var scriptIntegrityHashes = {
+    'chat-widget.js': 'sha384-ZWV5STn1gVLUuKbJx22EsU08tW3tuALY9FEZmOc1mHMVpZnuQYgKMW4M24405lnN',
+    'widget-styles.css': 'sha384-H483Zlm4zvw3f83lKp8ymNGmJWDMWR2B3sZY9YF2W9YuNpw3kS9RYPhtAGmOssM6'
+  };
   
   // Cache DOM elements
   var containerElement = null;
@@ -48,11 +53,58 @@
       var callback = args.length >= 2 ? args[1] : undefined;
       
       unregisterEventHandler(eventType, callback);
+    } else if (command === 'checkVersion') {
+      // New command to manually check for updates
+      checkForUpdates(true);
     } else {
       // Queue commands for later execution
       pullseChatQueue.push([command].concat(args));
     }
   };
+
+  /**
+   * Check for script updates from CDN
+   * @param {boolean} notifyEvenIfLatest Whether to show notification even if using latest version
+   */
+  function checkForUpdates(notifyEvenIfLatest) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://cdn.pullse.io/version.json?t=' + new Date().getTime(), true);
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4) {
+        if (xhr.status === 200) {
+          try {
+            var versionInfo = JSON.parse(xhr.responseText);
+            if (versionInfo && versionInfo.version) {
+              if (versionInfo.version !== currentVersion) {
+                // Show update notification
+                console.info('[Pullse] A new version of the chat widget is available: ' + versionInfo.version);
+                if (typeof versionInfo.releaseNotes === 'string') {
+                  console.info('[Pullse] Release notes: ' + versionInfo.releaseNotes);
+                }
+                
+                var updateEvent = {
+                  type: 'versionUpdate',
+                  currentVersion: currentVersion,
+                  latestVersion: versionInfo.version,
+                  releaseNotes: versionInfo.releaseNotes || '',
+                  updateUrl: versionInfo.updateUrl || 'https://docs.pullse.io/updates'
+                };
+                
+                dispatchEvent(updateEvent);
+              } else if (notifyEvenIfLatest) {
+                console.info('[Pullse] You are using the latest version: ' + currentVersion);
+              }
+            }
+          } catch (e) {
+            console.error('[Pullse] Error checking for updates:', e);
+          }
+        } else {
+          console.warn('[Pullse] Could not check for updates. Status: ' + xhr.status);
+        }
+      }
+    };
+    xhr.send();
+  }
   
   /**
    * Register event handler
@@ -196,6 +248,18 @@
   }
   
   /**
+   * Add Subresource Integrity (SRI) to a script or link element
+   * @param {HTMLElement} element The DOM element to add integrity to
+   * @param {string} resourceName The name of the resource in the scriptIntegrityHashes object
+   */
+  function addIntegrityAttribute(element, resourceName) {
+    if (scriptIntegrityHashes[resourceName]) {
+      element.setAttribute('integrity', scriptIntegrityHashes[resourceName]);
+      element.setAttribute('crossorigin', 'anonymous');
+    }
+  }
+  
+  /**
    * Lazy load the full widget when needed
    */
   function loadFullWidget(config) {
@@ -216,25 +280,51 @@
       styleElement.id = 'pullse-chat-widget-styles';
       styleElement.textContent = '#pullse-chat-widget-container { position: fixed; z-index: 9999; ' + getPositionStyles(config.position, config.offsetX, config.offsetY) + ' }';
       document.head.appendChild(styleElement);
+      
+      // Add external stylesheet with SRI if applicable
+      var cssLink = document.createElement('link');
+      cssLink.rel = 'stylesheet';
+      cssLink.href = 'https://cdn.pullse.io/widget-styles.css' + '?v=' + currentVersion;
+      addIntegrityAttribute(cssLink, 'widget-styles.css');
+      document.head.appendChild(cssLink);
     }
     
     // Set global config object with version stamp for cache busting
     w.__PULLSE_CHAT_CONFIG__ = {
       ...config,
-      version: '1.0.' + Date.now(), // Add timestamp for cache busting
+      version: currentVersion,
       onEvent: function(event) {
         handleWidgetEvent(event);
       }
     };
     
-    // Dynamically load the widget script with cache busting
+    // Dynamically load the widget script with cache busting and SRI
     var scriptElement = document.createElement('script');
-    var cacheParam = '?v=' + (new Date().getTime());
+    var cacheParam = '?v=' + currentVersion;
     scriptElement.src = 'https://cdn.pullse.io/chat-widget.js' + cacheParam;
     scriptElement.async = true;
+    
+    // Add integrity attribute for security
+    addIntegrityAttribute(scriptElement, 'chat-widget.js');
+    
+    // Add error handling for SRI failures
+    scriptElement.onerror = function() {
+      console.error('[Pullse] Failed to load chat widget script. This could be due to a network error or a Content Security Policy issue.');
+      dispatchEvent({
+        type: 'error',
+        code: 'script_load_failed',
+        message: 'Failed to load chat widget script'
+      });
+    };
+    
     scriptElement.onload = function() {
-      console.log('Pullse Chat Widget loaded successfully');
+      console.log('[Pullse] Chat Widget loaded successfully');
       widgetScriptLoaded = true;
+      
+      // Check for updates after successful load
+      setTimeout(function() {
+        checkForUpdates(false);
+      }, 3000);
       
       // Process queued commands
       while (pullseChatQueue.length > 0) {
@@ -408,7 +498,7 @@
         try {
           callback(event);
         } catch (e) {
-          console.error('Error in event handler:', e);
+          console.error('[Pullse] Error in event handler:', e);
         }
       });
     }
@@ -419,7 +509,7 @@
         try {
           callback(event);
         } catch (e) {
-          console.error('Error in event handler:', e);
+          console.error('[Pullse] Error in event handler:', e);
         }
       });
     }
@@ -460,7 +550,8 @@
       hideBranding: currentScript.hasAttribute('data-hide-branding'),
       autoOpen: currentScript.hasAttribute('data-auto-open'),
       lazyLoadScroll: currentScript.hasAttribute('data-lazy-load'),
-      scrollThreshold: currentScript.getAttribute('data-scroll-threshold') ? parseFloat(currentScript.getAttribute('data-scroll-threshold')) : undefined
+      scrollThreshold: currentScript.getAttribute('data-scroll-threshold') ? parseFloat(currentScript.getAttribute('data-scroll-threshold')) : undefined,
+      checkUpdates: !currentScript.hasAttribute('data-disable-updates')
     });
   }
 })(window, document);

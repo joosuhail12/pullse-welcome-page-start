@@ -9,11 +9,29 @@
 import { PullseChatWidgetLoader } from './embed/widget-loader';
 import { PullseChatWidgetOptions, EventCallback } from './embed/types';
 import { ChatEventType, ChatEventPayload } from './config';
+import { WIDGET_VERSION, checkForUpdates } from './embed/api';
 
 // Create global Pullse object
 (window as any).Pullse = (window as any).Pullse || {};
 (window as any).Pullse.initChatWidget = (options: PullseChatWidgetOptions) => {
   return new PullseChatWidgetLoader(options);
+};
+
+// Add version information
+(window as any).Pullse.version = WIDGET_VERSION;
+
+// Add update check functionality
+(window as any).Pullse.checkForUpdates = async () => {
+  const updateInfo = await checkForUpdates();
+  if (updateInfo.hasUpdate) {
+    console.info(`[Pullse] A new version is available: ${updateInfo.latestVersion}`);
+    if (updateInfo.releaseNotes) {
+      console.info(`[Pullse] Release notes: ${updateInfo.releaseNotes}`);
+    }
+  } else if (!updateInfo.error) {
+    console.info(`[Pullse] You are using the latest version: ${updateInfo.currentVersion}`);
+  }
+  return updateInfo;
 };
 
 // Add event API to global Pullse object
