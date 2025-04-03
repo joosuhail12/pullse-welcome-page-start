@@ -7,16 +7,24 @@ import { Button } from '@/components/ui/button';
 import { sanitizeInput } from '../utils/validation';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
-interface MessageBubbleProps {
+export interface MessageBubbleProps {
   message: Message;
   setMessageText?: (text: string) => void;
   onReact?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
+  highlightText?: (text: string) => { text: string; highlighted: boolean }[];
   highlightSearchTerm?: (text: string, term: string) => { text: string; highlighted: boolean }[];
   searchTerm?: string;
   showAvatar?: boolean;
   isConsecutive?: boolean;
   avatarUrl?: string;
   agentStatus?: 'online' | 'offline' | 'away' | 'busy';
+  isHighlighted?: boolean;
+  onReply?: (text: string) => void;
+  onReaction?: (messageId: string, reaction: string) => void;
+  userAvatar?: string;
+  agentAvatar?: string;
+  readStatus?: MessageReadStatus;
+  readTimestamp?: Date;
 }
 
 const MessageBubble = ({ 

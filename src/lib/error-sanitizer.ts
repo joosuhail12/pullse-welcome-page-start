@@ -79,7 +79,23 @@ export function sanitizeApiData(data: any): any {
   return sanitized;
 }
 
+/**
+ * Get safe error details for user display
+ * 
+ * @param error Any error that occurred
+ * @returns Safe error details that can be shown to users
+ */
+export const getSafeErrorDetails = (error: unknown): string => {
+  if (error instanceof Error) {
+    // Strip any sensitive information
+    return sanitizeErrorMessage(error.message);
+  }
+  
+  return 'An unexpected error occurred';
+};
+
 export default {
   sanitizeErrorMessage,
-  sanitizeApiData
+  sanitizeApiData,
+  getSafeErrorDetails
 };

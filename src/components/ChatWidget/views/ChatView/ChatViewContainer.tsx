@@ -14,6 +14,10 @@ interface ChatViewContainerProps {
   onUpdateConversation: (conversation: Conversation) => void;
   onEndChat: () => void;
   workspaceId: string;
+  config?: any;
+  playMessageSound?: () => void;
+  userFormData?: Record<string, any>;
+  setUserFormData?: (data: Record<string, any>) => void;
   onSendMessage?: (message: string) => void;
   startFormFlow?: () => void;
   children?: React.ReactNode;
@@ -27,6 +31,10 @@ export const ChatViewContainer: React.FC<ChatViewContainerProps> = ({
   onUpdateConversation,
   onEndChat,
   workspaceId,
+  config,
+  playMessageSound,
+  userFormData,
+  setUserFormData,
   onSendMessage,
   startFormFlow,
   children
@@ -39,11 +47,16 @@ export const ChatViewContainer: React.FC<ChatViewContainerProps> = ({
   
   // Get message handling actions
   const { 
-    sendMessage, 
-    sendFileMessage,
-    fileUpload,
+    handleSendMessage,
+    handleUserTyping,
+    handleFileUpload,
     fileError
-  } = useMessageActions(conversation, onUpdateConversation);
+  } = useMessageActions(
+    conversation.messages || [], 
+    (messages) => onUpdateConversation({...conversation, messages}),
+    `conversation:${conversation.id}`, 
+    workspaceId
+  );
   
   // Setup notifications for incoming messages
   useChatNotifications(conversation);
@@ -84,7 +97,7 @@ export const ChatViewContainer: React.FC<ChatViewContainerProps> = ({
   };
   
   // Send a message
-  const handleSendMessage = () => {
+  const sendMessageHandler = () => {
     if (!messageText.trim()) return;
     
     const messageContent = messageText;
@@ -92,7 +105,7 @@ export const ChatViewContainer: React.FC<ChatViewContainerProps> = ({
     setIsTyping(false);
     
     // Send through hook
-    sendMessage(messageContent);
+    handleSendMessage();
     
     // Call external handler if provided
     if (onSendMessage) {
@@ -100,19 +113,11 @@ export const ChatViewContainer: React.FC<ChatViewContainerProps> = ({
     }
   };
   
-  // Handle file upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    fileUpload(e);
-  };
-  
   // Handle typing indicators
-  const handleUserTyping = () => {
+  const handleUserTypingCallback = () => {
     if (!isTyping) {
       setIsTyping(true);
-      dispatchChatEvent('chat:typingStarted', {
-        conversationId: conversation.id,
-        userId: 'user'
-      });
+      handleUserTyping();
       
       // Simulate typing stop after 5 seconds of no input
       setTimeout(() => {
@@ -208,14 +213,16 @@ export const ChatViewContainer: React.FC<ChatViewContainerProps> = ({
               searchResults={searchResults}
               highlightMessage={highlightSearchMatch}
               readReceipts={readReceipts}
+              onMessageReaction={() => {}}
+              setMessageText={setMessageText}
             />
             
             {/* Message Input */}
             <MessageInput
-              value={messageText}
-              onChange={setMessageText}
-              onSend={handleSendMessage}
-              onTyping={handleUserTyping}
+              messageText={messageText}
+              setMessageText={setMessageText}
+              onSendMessage={sendMessageHandler}
+              onUserTyping={handleUserTypingCallback}
               onFileUpload={handleFileUpload}
               fileError={fileError}
             />

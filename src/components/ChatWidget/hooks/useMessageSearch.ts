@@ -1,97 +1,95 @@
 
 import { useState, useCallback } from 'react';
-import { Message, MessageSearchResult } from '../types';
+import { Message } from '../types';
 
-export function useMessageSearch(messages: Message[]) {
-  const [searchTerm, setSearchTerm] = useState<string>('');
+export interface MessageSearchResult {
+  messageId: string;
+  matchText: string;
+  timestamp: Date;
+  conversationId: string;
+  score: number;
+}
+
+export const useMessageSearch = (conversationId: string) => {
   const [searchResults, setSearchResults] = useState<MessageSearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [currentResult, setCurrentResult] = useState<number>(-1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
 
-  const searchMessages = useCallback((term: string) => {
+  // Search through messages
+  const searchMessages = useCallback((
+    messages: Message[], 
+    term: string
+  ) => {
     if (!term.trim()) {
       setSearchResults([]);
-      setCurrentResult(-1);
+      setSearchTerm('');
       return;
     }
 
-    setIsSearching(true);
-    
-    // Simple search implementation - can be expanded with more sophisticated search
     const results: MessageSearchResult[] = [];
-    
+    const lowerTerm = term.toLowerCase();
+
     messages.forEach(message => {
-      if (message.text && message.text.toLowerCase().includes(term.toLowerCase())) {
+      if (message.text && message.text.toLowerCase().includes(lowerTerm)) {
         results.push({
           messageId: message.id,
           matchText: message.text,
-          timestamp: message.timestamp
+          timestamp: message.timestamp,
+          conversationId,
+          score: 1.0
         });
       }
     });
-    
+
     setSearchResults(results);
-    setCurrentResult(results.length > 0 ? 0 : -1);
-    setIsSearching(false);
-  }, [messages]);
+    setSearchTerm(term);
+  }, [conversationId]);
 
-  const clearSearch = useCallback(() => {
-    setSearchTerm('');
-    setSearchResults([]);
-    setCurrentResult(-1);
-  }, []);
-
-  const scrollToNextResult = useCallback(() => {
-    if (searchResults.length === 0) return;
-    
-    const nextIdx = (currentResult + 1) % searchResults.length;
-    setCurrentResult(nextIdx);
-    
-    // Scroll to the message element
-    const messageElement = document.getElementById(searchResults[nextIdx].messageId);
-    if (messageElement) {
-      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Highlight search term in text
+  const highlightTextWithTerm = useCallback((text: string, term: string) => {
+    if (!term.trim() || !text) {
+      return [{ text, highlighted: false }];
     }
-  }, [searchResults, currentResult]);
 
-  const scrollToPrevResult = useCallback(() => {
-    if (searchResults.length === 0) return;
-    
-    const prevIdx = (currentResult - 1 + searchResults.length) % searchResults.length;
-    setCurrentResult(prevIdx);
-    
-    // Scroll to the message element
-    const messageElement = document.getElementById(searchResults[prevIdx].messageId);
-    if (messageElement) {
-      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const lowerText = text.toLowerCase();
+    const lowerTerm = term.toLowerCase();
+    const result: { text: string; highlighted: boolean }[] = [];
+    let lastIndex = 0;
+
+    let index = lowerText.indexOf(lowerTerm);
+    while (index !== -1) {
+      if (index > lastIndex) {
+        result.push({
+          text: text.substring(lastIndex, index),
+          highlighted: false
+        });
+      }
+
+      result.push({
+        text: text.substring(index, index + term.length),
+        highlighted: true
+      });
+
+      lastIndex = index + term.length;
+      index = lowerText.indexOf(lowerTerm, lastIndex);
     }
-  }, [searchResults, currentResult]);
 
-  // Helper function to highlight text based on search term
-  // Returns an array of parts with highlighted status instead of JSX
-  const highlightText = useCallback((text: string, term: string): { text: string; highlighted: boolean }[] => {
-    if (!term.trim() || !text) return [{ text, highlighted: false }];
-    
-    const regex = new RegExp(`(${term})`, 'gi');
-    const parts = text.split(regex);
-    
-    return parts.map((part) => ({
-      text: part,
-      highlighted: regex.test(part)
-    }));
+    if (lastIndex < text.length) {
+      result.push({
+        text: text.substring(lastIndex),
+        highlighted: false
+      });
+    }
+
+    return result;
   }, []);
 
   return {
-    searchTerm,
-    setSearchTerm,
     searchResults,
+    searchTerm,
     searchMessages,
-    clearSearch,
-    isSearching,
-    currentResult,
-    scrollToNextResult,
-    scrollToPrevResult,
-    highlightText,
-    messageIds: searchResults.map(r => r.messageId)
+    highlightTextWithTerm,
+    highlightedMessageId,
+    setHighlightedMessageId
   };
-}
+};

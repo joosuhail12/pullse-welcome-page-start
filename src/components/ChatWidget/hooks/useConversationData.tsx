@@ -17,7 +17,7 @@ export const useConversationData = (
   const [readReceipts, setReadReceipts] = useState<Record<string, { status: MessageReadStatus; timestamp?: Date }>>({});
   
   // Handle inline forms
-  const inlineForm = useInlineForm(conversation, config);
+  const inlineForm = useInlineForm(conversation);
   
   // Add inlineFormComponent to the returned object
   const inlineFormComponent = inlineForm.formType ? (
@@ -30,7 +30,7 @@ export const useConversationData = (
   // Dispatch event when inline form is displayed
   useEffect(() => {
     if (inlineForm.showInlineForm) {
-      dispatchValidatedEvent('message:sent', {
+      dispatchValidatedEvent('chat:inlineFormDisplayed', {
         conversationId: conversation.id,
         formType: inlineForm.formType,
         formConfig: inlineForm.formConfig
@@ -60,7 +60,7 @@ export const useConversationData = (
     }));
     
     // Dispatch event for message reaction
-    dispatchValidatedEvent('message:reaction', {
+    dispatchValidatedEvent('chat:messageReaction', {
       conversationId: conversation.id,
       messageId,
       reaction
@@ -69,10 +69,9 @@ export const useConversationData = (
   
   // Load more messages functionality
   const { 
-    hasMoreMessages, 
     isLoadingMore, 
-    loadMoreMessages 
-  } = useLoadMoreMessages(conversation.id, messages, setMessages);
+    handleLoadMoreMessages 
+  } = useLoadMoreMessages(conversation.id, messages);
   
   // Message reactions object
   const messageReactions = useMemo(() => ({
@@ -83,9 +82,9 @@ export const useConversationData = (
   
   return {
     messages,
-    hasMoreMessages,
+    hasMoreMessages: messages.length >= 20, // Assuming we load 20 messages at a time
     isLoadingMore,
-    loadMoreMessages,
+    loadMoreMessages: handleLoadMoreMessages,
     showInlineForm: inlineForm.showInlineForm,
     inlineFormComponent,
     messageReactions,

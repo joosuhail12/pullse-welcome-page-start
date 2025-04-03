@@ -71,7 +71,9 @@ export type ChatEventType =
   | 'chat:heartbeat'
   | 'chat:inlineFormDisplayed'
   | 'chat:formSubmitted'
-  | 'chat:messageReaction';
+  | 'chat:messageReaction'
+  | 'message:sent'
+  | 'message:reaction';
 
 export interface ChatEventPayload {
   type: ChatEventType;
@@ -93,6 +95,7 @@ export interface ChatWidgetConfig {
   eventHandlers?: {
     [key in ChatEventType]?: (payload: ChatEventPayload) => void;
   };
+  formData?: Record<string, any>;
 }
 
 export const defaultConfig: ChatWidgetConfig = {
