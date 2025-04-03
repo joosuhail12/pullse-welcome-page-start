@@ -14,10 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
-
-interface ChatWidgetProps {
-  workspaceId?: string;
-}
+import PoweredByBar from './components/PoweredByBar'; // Import PoweredByBar
 
 export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
   const {
@@ -155,10 +152,10 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     <>
       {isOpen && (
         <div 
-          className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] z-50 chat-widget-container animate-fade-in shadow-chat-widget"
+          className="fixed bottom-24 right-4 w-80 sm:w-96 h-[600px] z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col" // Added flex-col to ensure footer is at bottom
           style={widgetStyle}
         >
-          <div className="relative w-full h-full flex flex-col">
+          <div className="relative w-full h-full flex flex-col flex-grow">
             {viewState === 'chat' ? (
               <ChatView 
                 conversation={activeConversation!} 
@@ -183,10 +180,13 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
                 
                 <TabBar viewState={viewState} onChangeView={handleChangeView} />
                 
-                {renderFooter()}
+                {/* Removed the old renderFooter method */}
               </div>
             )}
           </div>
+          
+          {/* Always show PoweredByBar at the bottom of the widget */}
+          {config.branding?.showBrandingBar !== false && <PoweredByBar />}
         </div>
       )}
       {renderLauncher()}
