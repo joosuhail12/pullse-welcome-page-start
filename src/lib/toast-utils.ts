@@ -7,8 +7,12 @@ interface ToastOptions {
   title?: string
   description?: string
   duration?: number
+  action?: React.ReactNode
+  variant?: 'default' | 'destructive' | 'warning'
+  dismissible?: boolean
 }
 
+// Enhanced toast function with resilience features
 export const showToast = (
   type: ToastType, 
   options: ToastOptions = {}
@@ -16,14 +20,25 @@ export const showToast = (
   const { 
     title, 
     description, 
-    duration = 5000 
+    duration = 5000,
+    action,
+    variant = type === 'error' ? 'destructive' : type === 'warning' ? 'warning' : 'default',
+    dismissible = true
   } = options
+  
+  // Prevent duplicate toasts by using an ID
+  const toastId = title ? `${type}-${title.replace(/\s+/g, '-').toLowerCase()}` : undefined
 
+  // Add a retry button for error toasts when provided with an action
   return toast({
     title,
     description,
-    type,
-    duration
+    variant,
+    duration,
+    action,
+    id: toastId,
+    // These spread through to the underlying Toast component
+    className: `toast-${type}`,
   })
 }
 
@@ -31,6 +46,40 @@ export const showToast = (
 export const toasts = {
   info: (options: ToastOptions) => showToast('info', options),
   success: (options: ToastOptions) => showToast('success', options),
-  warning: (options: ToastOptions) => showToast('warning', options),
-  error: (options: ToastOptions) => showToast('error', options)
+  warning: (options: ToastOptions) => showToast('warning', {
+    variant: 'warning', 
+    ...options
+  }),
+  error: (options: ToastOptions) => showToast('error', {
+    variant: 'destructive', 
+    ...options
+  })
 }
+
+// Toast with retry action
+export const retryableToast = (
+  options: ToastOptions & { onRetry: () => void }
+) => {
+  const { onRetry, ...toastOptions } = options
+  
+  const retryAction = (
+    <button 
+      className="bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2 py-1 rounded text-xs"
+      onClick={() => {
+        // Dismiss the current toast
+        toast.dismiss()
+        // Execute the retry action
+        onRetry()
+      }}
+    >
+      Retry
+    </button>
+  )
+  
+  return showToast('error', {
+    ...toastOptions,
+    action: retryAction,
+    duration: 10000 // Give more time for user to decide to retry
+  })
+}
+
