@@ -75,7 +75,7 @@ export interface UserInfo {
 
 export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status' | UserInfo;
 
-export type MessageReadStatus = 'unread' | 'delivered' | 'read';
+export type MessageReadStatus = 'unread' | 'delivered' | 'read' | 'sent';
 
 export interface MessageReadReceipt {
   status: MessageReadStatus;

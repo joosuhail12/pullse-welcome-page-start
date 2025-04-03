@@ -45,17 +45,17 @@ export function useWidgetConfig(workspaceId?: string) {
       try {
         setLoading(true);
         
-        // Log that we're in development mode
+        // Development mode handling
         if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
           logger.debug(
             `Using default config for workspace ${workspaceId} in development mode`, 
             'useWidgetConfig'
           );
           
-          // Use the default config for development mode
           const defaultPlacement = defaultConfig.position?.placement || 'bottom-right';
-          // Validate placement to ensure it's a valid ChatPosition
-          const validatedPlacement = isValidChatPosition(defaultPlacement) ? defaultPlacement as ChatPosition : 'bottom-right' as ChatPosition;
+          const validatedPlacement = isValidChatPosition(defaultPlacement) 
+            ? defaultPlacement as ChatPosition 
+            : 'bottom-right' as ChatPosition;
           
           const devConfig: ChatWidgetConfig = {
             ...defaultConfig,
@@ -64,7 +64,6 @@ export function useWidgetConfig(workspaceId?: string) {
               ...defaultConfig.position,
               placement: validatedPlacement
             },
-            // Merge with our simple default config
             ...getDefaultConfig(workspaceId)
           };
           
@@ -73,6 +72,7 @@ export function useWidgetConfig(workspaceId?: string) {
           return;
         }
         
+        // Production mode handling
         logger.info(`Fetching config for workspace ${workspaceId}`, 'useWidgetConfig');
         const fetchedConfig = await fetchChatWidgetConfig(workspaceId);
         
@@ -81,16 +81,26 @@ export function useWidgetConfig(workspaceId?: string) {
           hasBranding: !!fetchedConfig.branding
         });
         
-        setConfig(fetchedConfig);
+        const validatedPlacement = isValidChatPosition(fetchedConfig.position?.placement) 
+          ? fetchedConfig.position.placement as ChatPosition 
+          : 'bottom-right' as ChatPosition;
+        
+        setConfig({
+          ...fetchedConfig,
+          position: {
+            ...fetchedConfig.position,
+            placement: validatedPlacement
+          }
+        });
         setError(null);
       } catch (err) {
         const errorInstance = err instanceof Error ? err : new Error('Failed to fetch config');
         logger.error('Failed to fetch widget config', 'useWidgetConfig', errorInstance);
         
-        // Still use default config as fallback
         const defaultPlacement = defaultConfig.position?.placement || 'bottom-right';
-        // Validate placement to ensure it's a valid ChatPosition
-        const validatedPlacement = isValidChatPosition(defaultPlacement) ? defaultPlacement as ChatPosition : 'bottom-right' as ChatPosition;
+        const validatedPlacement = isValidChatPosition(defaultPlacement) 
+          ? defaultPlacement as ChatPosition 
+          : 'bottom-right' as ChatPosition;
         
         setConfig({
           ...defaultConfig,
@@ -99,7 +109,6 @@ export function useWidgetConfig(workspaceId?: string) {
             ...defaultConfig.position,
             placement: validatedPlacement
           },
-          // Merge with our simple default config
           ...getDefaultConfig(workspaceId)
         });
         setError(errorInstance);
