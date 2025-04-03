@@ -1,3 +1,4 @@
+
 /**
  * Pullse Chat Widget Embed Script
  * Version 1.0.0
@@ -123,21 +124,6 @@
   }
   
   /**
-   * Register Service Worker for asset caching
-   */
-  function registerServiceWorker() {
-    if ('serviceWorker' in navigator && !import.meta?.env?.DEV) {
-      navigator.serviceWorker.register('/chat-widget-sw.js')
-        .then(function(registration) {
-          console.log('Pullse Chat Widget Service Worker registered with scope:', registration.scope);
-        })
-        .catch(function(error) {
-          console.error('Pullse Chat Widget Service Worker registration failed:', error);
-        });
-    }
-  }
-  
-  /**
    * Initialize the chat widget
    */
   function initChatWidget(options) {
@@ -163,17 +149,12 @@
         primaryColor: options.primaryColor,
         showBrandingBar: !options.hideBranding
       },
-      enableCache: options.enableCache !== false, // Enable caching by default
-      cacheTTL: options.cacheTTL || 300, // Default cache TTL in seconds (5 minutes)
       onEvent: options.onEvent,
       eventHandlers: options.eventHandlers || {}
     };
     
     // Create global config object
     w.__PULLSE_CHAT_CONFIG__ = config;
-    
-    // Register service worker for asset caching
-    registerServiceWorker();
     
     // Create container element
     var containerElement = document.createElement('div');
@@ -184,15 +165,6 @@
     var styleElement = document.createElement('style');
     styleElement.textContent = '#pullse-chat-widget-container { position: fixed; z-index: 9999; ' + getPositionStyles(config.position) + ' }';
     document.head.appendChild(styleElement);
-    
-    // Pre-connect to the CDN for faster loading
-    var preconnect = document.createElement('link');
-    preconnect.rel = 'preconnect';
-    preconnect.href = 'https://cdn.pullse.io';
-    document.head.appendChild(preconnect);
-    
-    // Preload critical assets
-    preloadCriticalAssets();
     
     // Load widget script
     var scriptElement = document.createElement('script');
@@ -214,23 +186,6 @@
     };
     
     document.body.appendChild(scriptElement);
-  }
-  
-  /**
-   * Preload critical assets
-   */
-  function preloadCriticalAssets() {
-    var criticalAssets = [
-      { type: 'audio', url: '/message-notification.mp3' }
-    ];
-    
-    criticalAssets.forEach(function(asset) {
-      var preload = document.createElement('link');
-      preload.rel = 'preload';
-      preload.href = asset.url;
-      preload.as = asset.type;
-      document.head.appendChild(preload);
-    });
   }
   
   /**
@@ -313,8 +268,7 @@
       primaryColor: currentScript.getAttribute('data-primary-color'),
       position: currentScript.getAttribute('data-position'),
       hideBranding: currentScript.hasAttribute('data-hide-branding'),
-      autoOpen: currentScript.hasAttribute('data-auto-open'),
-      enableCache: !currentScript.hasAttribute('data-disable-cache')
+      autoOpen: currentScript.hasAttribute('data-auto-open')
     });
   }
 })(window, document);

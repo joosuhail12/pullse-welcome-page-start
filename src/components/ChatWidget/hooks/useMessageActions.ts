@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { Message } from '../types';
-import { publishToChannel, getConnectionState } from '../utils/ably';
+import { publishToChannel } from '../utils/ably';
 import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig } from '../config';
 import { getChatSessionId } from '../utils/cookies';
@@ -14,7 +14,6 @@ import {
 import { validateMessage, validateFile, sanitizeFileName } from '../utils/validation';
 import { isRateLimited } from '../utils/security';
 import { toast } from '@/components/ui/use-toast';
-import { addMessageToQueue } from '../utils/offlineQueue';
 
 export function useMessageActions(
   messages: Message[],
@@ -57,11 +56,9 @@ export function useMessageActions(
     }
     setLastMessageTime(now);
     
-    // Create user message with optimistic UI update
     const userMessage = createUserMessage(sanitizedText);
     
-    // Optimistic update: Add user message to messages array immediately
-    setMessages(prevMessages => [...prevMessages, userMessage]);
+    setMessages([...messages, userMessage]);
     setMessageText('');
     
     // Dispatch message sent event
@@ -71,64 +68,22 @@ export function useMessageActions(
       setHasUserSentMessage(true);
     }
     
-    // Check connection state before sending
-    const connectionState = getConnectionState();
-    const isConnected = connectionState === 'connected';
-    
     // If realtime is enabled, publish the message to the channel
     if (config?.realtime?.enabled) {
-      // Optimistically show typing indicator immediately
-      if (setIsTyping) {
-        setIsTyping(true);
-        dispatchChatEvent('chat:typingStarted', { userId: 'agent' }, config);
-      }
+      publishToChannel(chatChannelName, 'message', {
+        id: userMessage.id,
+        text: userMessage.text,
+        sender: userMessage.sender,
+        timestamp: userMessage.timestamp,
+        type: userMessage.type
+      });
       
-      if (isConnected) {
-        // We're online - send message via realtime
-        publishToChannel(chatChannelName, 'message', {
-          id: userMessage.id,
-          text: userMessage.text,
-          sender: userMessage.sender,
-          timestamp: userMessage.timestamp,
-          type: userMessage.type
-        }).catch(err => {
-          console.error('Error sending message:', err);
-          // Message failed to send - queue it for later
-          addMessageToQueue(userMessage, chatChannelName);
-          toast({
-            title: "Message queued",
-            description: "Will be sent when connection is restored",
-            variant: "default"
-          });
-        });
-        
-        // Stop typing indicator when sending a message
-        sendTypingIndicator(chatChannelName, sessionId, 'stop');
-        dispatchChatEvent('chat:typingStopped', { userId: sessionId }, config);
-      } else {
-        // We're offline - queue message for later sending
-        addMessageToQueue(userMessage, chatChannelName);
-        toast({
-          title: "Message queued",
-          description: "Will be sent when connection is restored",
-        });
-        
-        // Show optimistic UI for offline mode
-        setTimeout(() => {
-          if (setIsTyping) {
-            setIsTyping(false);
-          }
-          
-          const optimisticResponse = createSystemMessage(
-            'Your message has been queued and will be delivered when you\'re back online.'
-          );
-          optimisticResponse.status = 'pending';
-          
-          setMessages(prev => [...prev, optimisticResponse]);
-        }, 1500);
-      }
+      // Stop typing indicator when sending a message
+      sendTypingIndicator(chatChannelName, sessionId, 'stop');
+      // Dispatch typing stopped event
+      dispatchChatEvent('chat:typingStopped', { userId: sessionId }, config);
     } else {
-      // Non-realtime mode - simulate response
+      // Fallback to the original behavior
       if (setIsTyping) {
         setIsTyping(true);
         
@@ -160,10 +115,7 @@ export function useMessageActions(
   const handleUserTyping = useCallback(() => {
     // If realtime is enabled, send typing indicator
     if (config?.realtime?.enabled) {
-      const isConnected = getConnectionState() === 'connected';
-      if (isConnected) {
-        sendTypingIndicator(chatChannelName, sessionId, 'start');
-      }
+      sendTypingIndicator(chatChannelName, sessionId, 'start');
     }
     
     // Dispatch typing started event
@@ -204,7 +156,6 @@ export function useMessageActions(
     // Sanitize the file name
     const sanitizedFileName = sanitizeFileName(file.name);
     
-    // Optimistic UI update for file upload
     const fileMessage = createUserMessage(
       `Uploaded: ${sanitizedFileName}`, 
       'file',
@@ -214,7 +165,7 @@ export function useMessageActions(
       }
     );
     
-    setMessages(prevMessages => [...prevMessages, fileMessage]);
+    setMessages([...messages, fileMessage]);
     
     // Dispatch file uploaded event
     dispatchChatEvent('message:fileUploaded', { 
@@ -230,48 +181,18 @@ export function useMessageActions(
     
     e.target.value = '';
     
-    // Check connection state
-    const isConnected = getConnectionState() === 'connected';
-    
     // If realtime is enabled, publish the file message to the channel
     if (config?.realtime?.enabled) {
-      if (isConnected) {
-        publishToChannel(chatChannelName, 'message', {
-          id: fileMessage.id,
-          text: fileMessage.text,
-          sender: fileMessage.sender,
-          timestamp: fileMessage.timestamp,
-          type: fileMessage.type,
-          fileName: fileMessage.fileName
-        }).catch(err => {
-          console.error('Error sending file message:', err);
-          // Queue the message for later
-          addMessageToQueue(fileMessage, chatChannelName);
-          toast({
-            title: "File message queued",
-            description: "Will be sent when connection is restored",
-          });
-        });
-      } else {
-        // Queue the message for later when offline
-        addMessageToQueue(fileMessage, chatChannelName);
-        toast({
-          title: "File message queued",
-          description: "Will be sent when connection is restored",
-        });
-        
-        // Show optimistic response for offline mode
-        setTimeout(() => {
-          const optimisticResponse = createSystemMessage(
-            `Your file "${sanitizedFileName}" has been queued and will be processed when you're back online.`
-          );
-          optimisticResponse.status = 'pending';
-          
-          setMessages(prev => [...prev, optimisticResponse]);
-        }, 1000);
-      }
+      publishToChannel(chatChannelName, 'message', {
+        id: fileMessage.id,
+        text: fileMessage.text,
+        sender: fileMessage.sender,
+        timestamp: fileMessage.timestamp,
+        type: fileMessage.type,
+        fileName: fileMessage.fileName
+      });
     } else {
-      // Non-realtime mode - simulate response
+      // Fallback to the original behavior
       setTimeout(() => {
         const systemMessage = createSystemMessage(
           `I've received your file ${sanitizedFileName}. Is there anything specific you'd like me to help with regarding this file?`
@@ -289,7 +210,6 @@ export function useMessageActions(
   }, [messages, setMessages, config, setHasUserSentMessage, chatChannelName, sessionId, lastMessageTime]);
 
   const handleEndChat = useCallback(() => {
-    // Optimistically update UI with end chat status
     const statusMessage: Message = {
       id: `msg-${Date.now()}-status`,
       text: 'Chat ended',
@@ -306,36 +226,12 @@ export function useMessageActions(
     // Also dispatch chat close event for backward compatibility
     dispatchChatEvent('chat:close', { endedByUser: true }, config);
     
-    // Check connection state
-    const isConnected = getConnectionState() === 'connected';
-    
     // If realtime is enabled, publish the end chat event
     if (config?.realtime?.enabled) {
-      if (isConnected) {
-        publishToChannel(chatChannelName, 'end', {
-          timestamp: new Date(),
-          userId: sessionId
-        }).catch(err => {
-          console.error('Error sending end chat event:', err);
-          // Queue end event for later
-          const endEvent = {
-            id: `end-${Date.now()}`,
-            timestamp: new Date(),
-            userId: sessionId,
-            type: 'status'
-          };
-          addMessageToQueue(endEvent as any, chatChannelName, 'end');
-        });
-      } else {
-        // Queue end event for later when offline
-        const endEvent = {
-          id: `end-${Date.now()}`,
-          timestamp: new Date(),
-          userId: sessionId,
-          type: 'status'
-        };
-        addMessageToQueue(endEvent as any, chatChannelName, 'end');
-      }
+      publishToChannel(chatChannelName, 'end', {
+        timestamp: new Date(),
+        userId: sessionId
+      });
     }
   }, [chatChannelName, config, sessionId, setMessages]);
 

@@ -9,7 +9,7 @@ import useWidgetConfig from './hooks/useWidgetConfig';
 import { dispatchChatEvent } from './utils/events';
 import { initializeAbly, cleanupAbly, getConnectionState } from './utils/ably';
 import { getAblyAuthUrl } from './services/ablyAuth';
-import { MessageSquare, WifiOff, Cloud, CloudOff } from 'lucide-react';
+import { MessageSquare, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
@@ -17,7 +17,6 @@ import { useSound } from './hooks/useSound';
 import { useConnectionState } from './hooks/useConnectionState';
 import { Toaster } from '@/components/ui/toaster';
 import { toast } from 'sonner';
-import { getPendingMessageCount } from './utils/offlineQueue';
 
 interface ChatWidgetProps {
   workspaceId?: string;
@@ -41,16 +40,6 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
   const { isConnected, connectionState } = useConnectionState();
-  const [pendingMessages, setPendingMessages] = useState(getPendingMessageCount());
-  
-  // Check for pending messages periodically
-  useEffect(() => {
-    const checkPendingInterval = setInterval(() => {
-      setPendingMessages(getPendingMessageCount());
-    }, 3000);
-    
-    return () => clearInterval(checkPendingInterval);
-  }, []);
   
   useEffect(() => {
     if (!loading && config.realtime?.enabled && workspaceId) {
@@ -171,15 +160,6 @@ export const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     
     return (
       <div className="fixed bottom-4 right-4 flex flex-col items-end">
-        {pendingMessages > 0 && (
-          <div 
-            className="mb-2 bg-orange-100 text-orange-800 px-2 py-1 rounded-md text-xs flex items-center gap-1 cursor-help"
-            title="Messages waiting to be sent when connection is restored"
-          >
-            <CloudOff size={12} /> {pendingMessages} pending
-          </div>
-        )}
-        
         <Button
           className="rounded-full w-14 h-14 flex items-center justify-center chat-widget-button relative"
           style={buttonStyle}

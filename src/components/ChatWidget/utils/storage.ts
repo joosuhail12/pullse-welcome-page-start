@@ -2,12 +2,11 @@
 /**
  * Local storage utilities for the Chat Widget
  */
-import { Conversation, Message } from '../types';
+import { Conversation } from '../types';
 import { getChatSessionId } from './cookies';
 import { encryptData, decryptData } from './security';
 
 const STORAGE_KEY = 'chat_widget_conversations';
-const OFFLINE_MESSAGES_KEY = 'chat_widget_offline_messages';
 const MAX_STORED_CONVERSATIONS = 30;
 const MAX_CONVERSATION_AGE_DAYS = 30; // Retention period in days
 
@@ -142,81 +141,5 @@ export function clearConversationsFromStorage(): void {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
     console.error('Error clearing conversations from storage', error);
-  }
-}
-
-/**
- * Save offline message to persistent storage
- * This is separate from the offline queue to ensure messages persist across sessions
- */
-export function saveOfflineMessage(conversationId: string, message: Message): void {
-  try {
-    let offlineMessages = getOfflineMessages();
-    
-    if (!offlineMessages[conversationId]) {
-      offlineMessages[conversationId] = [];
-    }
-    
-    // Add message
-    offlineMessages[conversationId].push(message);
-    
-    // Save to localStorage
-    const encryptedData = encryptData(JSON.stringify(offlineMessages));
-    localStorage.setItem(OFFLINE_MESSAGES_KEY, encryptedData);
-  } catch (error) {
-    console.error('Error saving offline message', error);
-  }
-}
-
-/**
- * Get all offline messages
- */
-export function getOfflineMessages(): Record<string, Message[]> {
-  try {
-    const data = localStorage.getItem(OFFLINE_MESSAGES_KEY);
-    if (!data) {
-      return {};
-    }
-    
-    const decryptedData = decryptData(data);
-    if (!decryptedData) {
-      return {};
-    }
-    
-    const parsedData = JSON.parse(decryptedData);
-    
-    // Convert string timestamps back to Date objects
-    const result: Record<string, Message[]> = {};
-    
-    for (const [conversationId, messages] of Object.entries(parsedData)) {
-      result[conversationId] = (messages as Message[]).map(msg => ({
-        ...msg,
-        timestamp: new Date(msg.timestamp)
-      }));
-    }
-    
-    return result;
-  } catch (error) {
-    console.error('Error loading offline messages', error);
-    return {};
-  }
-}
-
-/**
- * Mark offline messages as sent for a conversation
- */
-export function markOfflineMessagesAsSent(conversationId: string): void {
-  try {
-    const offlineMessages = getOfflineMessages();
-    
-    if (offlineMessages[conversationId]) {
-      delete offlineMessages[conversationId];
-      
-      // Save updated data
-      const encryptedData = encryptData(JSON.stringify(offlineMessages));
-      localStorage.setItem(OFFLINE_MESSAGES_KEY, encryptedData);
-    }
-  } catch (error) {
-    console.error('Error marking offline messages as sent', error);
   }
 }

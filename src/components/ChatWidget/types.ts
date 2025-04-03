@@ -1,4 +1,3 @@
-
 export interface Message {
   id: string;
   text: string;
@@ -7,7 +6,7 @@ export interface Message {
   type?: 'text' | 'file' | 'card' | 'quick_reply' | 'status';
   fileUrl?: string;
   fileName?: string;
-  status?: 'sent' | 'delivered' | 'read' | 'pending';
+  status?: 'sent' | 'delivered' | 'read';
   reaction?: 'thumbsUp' | 'thumbsDown' | null;
   cardData?: {
     title: string;

@@ -1,3 +1,4 @@
+
 /**
  * Chat Widget API Service
  * Provides methods to interact with the chat widget API
@@ -7,15 +8,9 @@ import { getChatSessionId, setChatSessionId } from '../utils/cookies';
 import { sanitizeInput } from '../utils/validation';
 import { isRateLimited, generateCsrfToken, enforceHttps, signMessage, verifyMessageSignature } from '../utils/security';
 import { toast } from '@/components/ui/use-toast';
-import { addMessageToQueue, getMessageQueue } from '../utils/offlineQueue';
-import { cacheItem, getCachedItem, isCached, removeCachedItem } from '../utils/cacheManager';
-
-// Cache keys
-const CACHE_KEY_CONFIG = (workspaceId: string) => `chat_config_${workspaceId}`;
-const CONFIG_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Fetch chat widget configuration from the API with caching
+ * Fetch chat widget configuration from the API
  * @param workspaceId The workspace ID to fetch configuration for
  * @returns Promise resolving to the chat widget configuration
  */
@@ -30,27 +25,14 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
     // Validate and sanitize workspaceId
     const sanitizedWorkspaceId = sanitizeInput(workspaceId);
     
-    // Check cache first
-    const cacheKey = CACHE_KEY_CONFIG(sanitizedWorkspaceId);
-    const cachedConfig = getCachedItem<ChatWidgetConfig>(cacheKey);
-    
-    if (cachedConfig) {
-      console.log(`Using cached config for workspace ${sanitizedWorkspaceId}`);
-      return cachedConfig;
-    }
-    
     // In development/demo mode, we'll just use default config
     // since the API may not be available or may return HTML instead of JSON
     if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
       console.log(`Using default config for workspace ${sanitizedWorkspaceId} in development mode`);
-      const devConfig = {
+      return {
         ...defaultConfig,
         workspaceId: sanitizedWorkspaceId
       };
-      
-      // Cache the development config as well
-      cacheItem<ChatWidgetConfig>(cacheKey, devConfig, CONFIG_CACHE_TTL);
-      return devConfig;
     }
     
     // Check if we have a session ID
@@ -69,15 +51,8 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
     const headers: HeadersInit = {
       'X-CSRF-Token': generateCsrfToken(),
       'X-Request-Timestamp': timestamp.toString(),
-      'X-Request-Signature': signMessage(sanitizedWorkspaceId, timestamp),
-      'Cache-Control': 'no-cache' // Ensure we don't hit browser cache
+      'X-Request-Signature': signMessage(sanitizedWorkspaceId, timestamp)
     };
-    
-    // Check for internet connection before making request
-    if (!navigator.onLine) {
-      console.warn('Offline mode: Using default chat widget config');
-      return { ...defaultConfig, workspaceId: sanitizedWorkspaceId };
-    }
     
     const response = await fetch(url, {
       headers,
@@ -121,11 +96,7 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
       setChatSessionId(config.sessionId);
     }
     
-    // Cache the successful response
-    const finalConfig = { ...config, workspaceId: sanitizedWorkspaceId };
-    cacheItem<ChatWidgetConfig>(cacheKey, finalConfig, CONFIG_CACHE_TTL);
-    
-    return finalConfig;
+    return { ...config, workspaceId: sanitizedWorkspaceId };
   } catch (error) {
     // If fetch fails, fall back to default config
     console.error('Error fetching chat widget config:', error);
@@ -165,30 +136,6 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
     const sanitizedMessage = sanitizeInput(message);
     const sanitizedWorkspaceId = sanitizeInput(workspaceId);
     const sessionId = getChatSessionId();
-    
-    // Check for internet connection
-    if (!navigator.onLine) {
-      // Create a payload that will be queued for later
-      const offlinePayload = {
-        id: `api-${Date.now()}`,
-        text: sanitizedMessage,
-        workspaceId: sanitizedWorkspaceId,
-        sessionId,
-        type: 'api',
-        sender: 'user',
-        timestamp: new Date()
-      };
-      
-      // Add to offline queue for processing when back online
-      addMessageToQueue(offlinePayload as any, 'api-messages', 'api');
-      
-      toast({
-        title: "Offline mode",
-        description: "Message saved and will be sent when you're back online",
-      });
-      
-      throw new Error('Offline mode - message queued');
-    }
     
     // Generate CSRF token and timestamp for request signing
     const csrfToken = generateCsrfToken();
@@ -249,47 +196,4 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
     console.error('Error sending chat message:', error);
     throw error;
   }
-};
-
-/**
- * Process any queued API messages when back online
- * @returns Promise resolving when all queued messages are processed
- */
-export const processQueuedApiMessages = async (): Promise<void> => {
-  const queue = getMessageQueue();
-  const apiMessages = queue.filter(item => item.eventType === 'api');
-  
-  if (apiMessages.length === 0) {
-    return;
-  }
-  
-  console.log(`Processing ${apiMessages.length} queued API messages`);
-  
-  for (const item of apiMessages) {
-    try {
-      const msg = item.message;
-      if (typeof msg.text === 'string') {
-        // Access workspaceId from the custom property in the message
-        const workspaceId = (msg as any).workspaceId || '';
-        await sendChatMessage(msg.text, workspaceId);
-        
-        // Remove from queue after successful sending
-        const messageId = msg.id;
-        const queue = getMessageQueue();
-        const updatedQueue = queue.filter(qItem => qItem.message.id !== messageId);
-        localStorage.setItem('pullse_chat_offline_queue', JSON.stringify(updatedQueue));
-      }
-    } catch (error) {
-      console.error('Error processing queued API message:', error);
-    }
-  }
-};
-
-/**
- * Invalidate the config cache for a specific workspace
- * @param workspaceId The workspace ID to invalidate cache for
- */
-export const invalidateConfigCache = (workspaceId: string): void => {
-  const cacheKey = CACHE_KEY_CONFIG(sanitizeInput(workspaceId));
-  removeCachedItem(cacheKey);
 };
