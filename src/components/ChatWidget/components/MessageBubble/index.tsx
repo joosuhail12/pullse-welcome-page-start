@@ -58,20 +58,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     <div 
       id={`message-${message.id}`}
       className={cn(
-        "flex items-start my-1.5 px-2 group message-animation-enter",
+        "flex items-start my-2 px-2 group message-animation-enter",
+        isUserMessage ? "justify-end" : "justify-start",
         isImportant && "important-message-container",
-        hasError && "opacity-75"
+        hasError && "opacity-75",
+        isConsecutive ? "mt-1" : "mt-3"
       )}
       data-status={message.status}
     >
       {/* Show avatar for system messages on the left */}
       {!isUserMessage && showAvatar && (
-        <MessageAvatar 
-          isUserMessage={false}
-          userAvatar={userAvatar}
-          agentAvatar={agentAvatar}
-          agentStatus={agentStatus}
-        />
+        <div className={cn(isConsecutive ? "opacity-0 invisible" : "")}>
+          <MessageAvatar 
+            isUserMessage={false}
+            userAvatar={userAvatar}
+            agentAvatar={agentAvatar}
+            agentStatus={agentStatus}
+          />
+        </div>
       )}
       
       <div 
@@ -79,9 +83,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           `chat-message-${msgType}`,
           message.quickReplies && message.quickReplies.length > 0 && "chat-message-actionable",
           isImportant && "important-message",
-          hasError && "border-red-300 bg-red-50 text-red-500"
+          hasError && "border-red-300 bg-red-50 text-red-500",
+          isConsecutive && !isUserMessage ? "ml-10" : "",
+          isConsecutive && isUserMessage ? "mr-10" : ""
         )}
       >
+        {/* Sender name for grouped messages */}
+        {!isConsecutive && !isUserMessage && (
+          <div className="text-xs text-gray-500 mb-1 font-medium">
+            {getDisplayName()}
+          </div>
+        )}
+        
         {/* Message Content */}
         <MessageContent 
           message={message} 
@@ -100,11 +113,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       
       {/* Show avatar for user messages on the right */}
       {isUserMessage && showAvatar && (
-        <MessageAvatar 
-          isUserMessage={true}
-          userAvatar={userAvatar}
-          agentAvatar={agentAvatar}
-        />
+        <div className={cn(isConsecutive ? "opacity-0 invisible" : "")}>
+          <MessageAvatar 
+            isUserMessage={true}
+            userAvatar={userAvatar}
+            agentAvatar={agentAvatar}
+          />
+        </div>
       )}
     </div>
   );

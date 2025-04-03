@@ -56,7 +56,7 @@ const StatusMessage = ({
   };
 
   return (
-    <div className={`py-1.5 px-5 rounded-full text-xs font-medium text-center shadow-sm border flex items-center justify-center max-w-[80%] mx-auto animate-subtle-fade-in ${getStatusColor()} ${className}`}>
+    <div className={`py-2 px-5 rounded-full text-xs font-medium my-3 text-center shadow-sm border flex items-center justify-center max-w-[80%] mx-auto animate-subtle-fade-in ${getStatusColor()} ${className}`}>
       {getStatusIcon()}
       <span>{renderText ? renderText(text) : text}</span>
       {timestamp && (

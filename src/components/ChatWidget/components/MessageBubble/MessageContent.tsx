@@ -2,6 +2,7 @@
 import React from 'react';
 import { Message } from '../../types';
 import MessageActions from './MessageActions';
+import MessageStatus from './MessageStatus';
 import { cn } from '@/lib/utils';
 
 interface MessageContentProps {
@@ -63,11 +64,11 @@ const MessageContent: React.FC<MessageContentProps> = ({
       
       {/* Image message */}
       {isImage && message.mediaUrl && (
-        <div className="mt-2 rounded overflow-hidden">
+        <div className="mt-2 rounded-lg overflow-hidden">
           <img 
             src={message.mediaUrl} 
             alt={message.text || "Image message"} 
-            className="max-w-full h-auto max-h-96 object-contain rounded"
+            className="max-w-full h-auto max-h-96 object-contain rounded-lg"
             loading="lazy"
           />
         </div>
@@ -102,11 +103,21 @@ const MessageContent: React.FC<MessageContentProps> = ({
         </div>
       )}
       
+      {/* Show message status (sent, delivered, etc.) */}
+      {isUserMessage && message.timestamp && (
+        <MessageStatus 
+          status={message.status === 'sending' ? 'sending' : message.readStatus || 'sent'} 
+          timestamp={message.timestamp}
+          isFileMessage={isFile}
+          fileUploading={message.status === 'uploading'}
+        />
+      )}
+      
       {/* Message Actions (e.g., reactions, copy, etc.) */}
       <MessageActions 
         message={message}
         isLast={isLast}
-        onToggleHighlight={onToggleHighlight}
+        onToggleHighlight={onToggleHighlight ? () => onToggleHighlight(message.id) : undefined}
       />
     </div>
   );

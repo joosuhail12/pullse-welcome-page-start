@@ -16,7 +16,7 @@ function ensureValidPosition(position: unknown): ChatPositionString {
     return position as ChatPositionString;
   }
   // Default to 'bottom-right' as the fallback position
-  return 'bottom-right';
+  return 'bottom-right' as ChatPositionString;
 }
 
 export function useWidgetConfig(workspaceId?: string) {
