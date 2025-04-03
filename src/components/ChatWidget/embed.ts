@@ -10,6 +10,8 @@ import { PullseChatWidgetLoader } from './embed/widget-loader';
 import { PullseChatWidgetOptions, EventCallback } from './embed/types';
 import { ChatEventType, ChatEventPayload } from './config';
 import { WIDGET_VERSION, checkForUpdates } from './embed/api';
+import { getEventManager, EventPriority, dispatchValidatedEvent } from './embed/enhancedEvents';
+import { validateEventPayload } from './utils/eventValidation';
 
 // Create global Pullse object
 (window as any).Pullse = (window as any).Pullse || {};
@@ -34,13 +36,22 @@ import { WIDGET_VERSION, checkForUpdates } from './embed/api';
   return updateInfo;
 };
 
-// Add event API to global Pullse object
-(window as any).Pullse.on = (eventType: ChatEventType | 'all', callback: EventCallback) => {
+// Add enhanced event API to global Pullse object
+(window as any).Pullse.on = (eventType: ChatEventType | 'all', callback: EventCallback, options?: { priority?: boolean }) => {
   if (!(window as any).__PULLSE_CHAT_INSTANCE__) {
     console.error('Pullse Chat Widget not initialized');
     return () => {};
   }
-  return (window as any).__PULLSE_CHAT_INSTANCE__.on(eventType, callback);
+  
+  // Use the new event system
+  return getEventManager().on(eventType, (event: ChatEventPayload) => {
+    // Validate event before passing to callback
+    if (validateEventPayload(event)) {
+      callback(event);
+    } else {
+      console.warn('Invalid event payload detected and blocked:', event);
+    }
+  });
 };
 
 (window as any).Pullse.off = (eventType: ChatEventType | 'all', callback?: EventCallback) => {
@@ -48,7 +59,16 @@ import { WIDGET_VERSION, checkForUpdates } from './embed/api';
     console.error('Pullse Chat Widget not initialized');
     return;
   }
-  (window as any).__PULLSE_CHAT_INSTANCE__.off(eventType, callback);
+  getEventManager().off(eventType, callback);
+};
+
+// Add function to dispatch validated events
+(window as any).Pullse.dispatchEvent = (eventType: ChatEventType, data?: any, priority?: EventPriority) => {
+  if (!(window as any).__PULLSE_CHAT_INSTANCE__) {
+    console.error('Pullse Chat Widget not initialized');
+    return null;
+  }
+  return dispatchValidatedEvent(eventType, data, priority);
 };
 
 // Export for ESM environments
