@@ -14,8 +14,8 @@ export function useRealtimeSubscriptions(
   playMessageSound?: () => void
 ) {
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
-  const [readReceipts, setReadReceipts] = useState<Record<string, boolean>>({});
-  const [deliveredReceipts, setDeliveredReceipts] = useState<Record<string, boolean>>({});
+  const [readReceipts, setReadReceipts] = useState<Record<string, Date>>({});
+  const [deliveredReceipts, setDeliveredReceipts] = useState<Record<string, Date>>({});
 
   // Realtime communication effect
   useEffect(() => {
@@ -63,7 +63,7 @@ export function useRealtimeSubscriptions(
           if (message.data && message.data.messageId && message.data.userId !== sessionId) {
             setReadReceipts(prev => ({
               ...prev,
-              [message.data.messageId]: true
+              [message.data.messageId]: new Date(message.data.timestamp || Date.now())
             }));
             
             // Update message status
@@ -86,7 +86,7 @@ export function useRealtimeSubscriptions(
           if (message.data && message.data.messageId && message.data.userId !== sessionId) {
             setDeliveredReceipts(prev => ({
               ...prev,
-              [message.data.messageId]: true
+              [message.data.messageId]: new Date(message.data.timestamp || Date.now())
             }));
             
             // Update message status if not already read
@@ -128,12 +128,6 @@ export function useRealtimeSubscriptions(
             timestamp: message.timestamp
           });
         }
-      };
-
-      // Process existing messages to send read receipts
-      const processExistingMessages = () => {
-        // This would be called with messages from the parent component
-        // Implementation remains in useRealTime
       };
 
       // Clean up subscriptions on unmount

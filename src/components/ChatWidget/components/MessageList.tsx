@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
@@ -11,7 +10,7 @@ interface MessageListProps {
   messages: Message[];
   isTyping: boolean;
   setMessageText: (text: string) => void;
-  readReceipts?: Record<string, boolean>;
+  readReceipts?: Record<string, Date>;
   onMessageReaction?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
   searchTerm?: string;
   searchResults?: string[];
@@ -132,9 +131,12 @@ const MessageList = ({
   const renderReadReceipt = (message: Message) => {
     if (message.sender !== 'user') return null;
     
+    // Check if there's a read receipt for this message
+    const hasReadReceipt = readReceipts[message.id] !== undefined;
+    
     return (
       <div className="flex justify-end mt-1 text-xs text-gray-500">
-        {message.status === 'read' || readReceipts[message.id] ? (
+        {message.status === 'read' || hasReadReceipt ? (
           <div className="flex items-center text-vivid-purple">
             <CheckCheck size={12} />
             <span className="ml-1 text-[10px]">Read</span>
