@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -92,8 +91,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     }
   }, [handleStartChat, setUserFormData, config]);
 
-  // Get position for the widget container
-  const getWidgetPositionStyles = useMemo(() => {
+  const getLauncherPositionStyles = useMemo(() => {
     const position = config.position?.placement || 'bottom-right';
     const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 1;
     const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 1;
@@ -103,16 +101,18 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     switch(position) {
       case 'bottom-left':
         positionStyle = { 
-          bottom: `${offsetY + 5}rem`, // Add extra spacing to avoid overlap
+          bottom: `${offsetY}rem`, 
           left: `${offsetX}rem`, 
-          right: 'auto'
+          right: 'auto',
+          top: 'auto'
         };
         break;
       case 'top-right':
         positionStyle = { 
           top: `${offsetY}rem`, 
           right: `${offsetX}rem`,
-          bottom: 'auto'
+          bottom: 'auto',
+          left: 'auto'
         };
         break;
       case 'top-left':
@@ -126,63 +126,63 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
       case 'bottom-right':
       default:
         positionStyle = { 
-          bottom: `${offsetY + 5}rem`, // Add extra spacing to avoid overlap
-          right: `${offsetX}rem`
-        };
-    }
-    
-    return positionStyle;
-  }, [config.position]);
-
-  // Calculate launcher position for when widget is open
-  const getLauncherPositionStyles = useMemo(() => {
-    if (!isOpen) return getWidgetPositionStyles;
-    
-    const position = config.position?.placement || 'bottom-right';
-    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 1;
-    const buttonMargin = 2.5; // Margin for the button
-    
-    let launcherStyle: React.CSSProperties = {};
-    
-    switch(position) {
-      case 'bottom-left':
-        launcherStyle = { 
-          bottom: `${buttonMargin}rem`, 
-          left: `${offsetX}rem`, 
-          right: 'auto',
-          top: 'auto'
-        };
-        break;
-      case 'top-right':
-        // For top positions, we need different logic to position the launcher below the widget
-        launcherStyle = { 
-          top: 'auto', // Remove top positioning
-          bottom: `${buttonMargin}rem`, // Position from the bottom instead
-          right: `${offsetX}rem`,
-          left: 'auto'
-        };
-        break;
-      case 'top-left':
-        // For top positions, we need different logic to position the launcher below the widget
-        launcherStyle = { 
-          top: 'auto', // Remove top positioning
-          bottom: `${buttonMargin}rem`, // Position from the bottom instead
-          left: `${offsetX}rem`,
-          right: 'auto'
-        };
-        break;
-      case 'bottom-right':
-      default:
-        launcherStyle = { 
-          bottom: `${buttonMargin}rem`, 
+          bottom: `${offsetY}rem`, 
           right: `${offsetX}rem`,
           top: 'auto',
           left: 'auto'
         };
     }
     
-    return launcherStyle;
-  }, [isOpen, getWidgetPositionStyles, config.position?.placement, config.position?.offsetX]);
+    return positionStyle;
+  }, [config.position]);
+
+  const getWidgetContainerPositionStyles = useMemo(() => {
+    const position = config.position?.placement || 'bottom-right';
+    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 1;
+    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 1;
+    const launcherHeight = isMobile ? 3.5 : 4;
+    const containerMargin = 1;
+    const totalOffset = offsetY + launcherHeight + containerMargin;
+    
+    let positionStyle: React.CSSProperties = {};
+    
+    switch(position) {
+      case 'bottom-left':
+        positionStyle = { 
+          bottom: `${totalOffset}rem`, 
+          left: `${offsetX}rem`, 
+          right: 'auto',
+          top: 'auto'
+        };
+        break;
+      case 'top-right':
+        positionStyle = { 
+          top: `${offsetY}rem`, 
+          right: `${offsetX}rem`,
+          bottom: 'auto',
+          left: 'auto'
+        };
+        break;
+      case 'top-left':
+        positionStyle = { 
+          top: `${offsetY}rem`, 
+          left: `${offsetX}rem`,
+          bottom: 'auto',
+          right: 'auto'
+        };
+        break;
+      case 'bottom-right':
+      default:
+        positionStyle = { 
+          bottom: `${totalOffset}rem`, 
+          right: `${offsetX}rem`,
+          top: 'auto',
+          left: 'auto'
+        };
+    }
+    
+    return positionStyle;
+  }, [config.position, isMobile]);
 
   if (loading) {
     return (
@@ -204,7 +204,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
       {isOpen && (
         <div 
           className={`fixed ${widgetWidth} h-[${widgetHeight}] max-h-[${widgetMaxHeight}] z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden`}
-          style={{...widgetStyle, ...getWidgetPositionStyles}}
+          style={{...widgetStyle, ...getWidgetContainerPositionStyles}}
         >
           <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden">
             {viewState === 'chat' ? (
