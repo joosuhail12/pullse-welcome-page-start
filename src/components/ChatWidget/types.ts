@@ -1,65 +1,59 @@
 
+/**
+ * Common type definitions for the Chat Widget
+ */
+
+export type MessageSender = 'user' | 'bot' | 'agent' | 'system';
+
+export type MessageType = 'text' | 'image' | 'file' | 'card' | 'quick_reply' | 'status';
+
+export type MessageReadStatus = 'sent' | 'delivered' | 'read';
+
 export interface Message {
   id: string;
   text: string;
-  sender: UserType;
+  sender: MessageSender;
   timestamp: Date;
   type?: MessageType;
-  fileUrl?: string;
-  fileName?: string;
-  status?: 'sending' | 'sent' | 'delivered' | 'read';
-  reaction?: 'thumbsUp' | 'thumbsDown' | null;
-  cardData?: {
-    title: string;
-    description: string;
-    imageUrl?: string;
-    buttons?: Array<{ text: string; action: string }>;
-  };
-  quickReplies?: Array<{ text: string; action: string }>;
-  important?: boolean; // Field to mark important messages
-  unread?: boolean;    // Field to mark unread messages
   metadata?: Record<string, any>;
+  reactions?: string[];
 }
-
-export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
-export type UserType = 'user' | 'system' | 'status' | 'agent' | 'bot';
-export type MessageReadStatus = 'sent' | 'delivered' | 'read' | 'failed';
 
 export interface Conversation {
   id: string;
   title: string;
-  messages?: Message[];
-  timestamp: Date;
-  lastMessage?: string;
-  status?: 'active' | 'ended';
-  agentInfo?: {
-    name?: string;
-    avatar?: string;
-    status?: 'online' | 'offline' | 'away' | 'busy';
-  };
-  metadata?: any;
-  sessionId?: string;
-  contactIdentified?: boolean;
-  unread?: boolean; // New property to track unread status
-  isResolved?: boolean; // Added for ChatViewHeader
+  messages: Message[];
+  status: 'active' | 'closed' | 'archived';
+  unreadCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+  participants?: { id: string; name: string; avatar?: string }[];
+  metadata?: Record<string, any>;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email?: string;
+  avatar?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface Agent {
   id: string;
   name: string;
   avatar?: string;
-  status?: 'online' | 'away' | 'offline' | 'busy';
+  status: 'online' | 'offline' | 'away' | 'busy';
+  role?: string;
+  metadata?: Record<string, any>;
 }
 
-export interface MessageReaction {
-  messageId: string;
-  reaction: 'thumbsUp' | 'thumbsDown';
-  userId: string;
-  timestamp: Date;
-}
-
-export interface MessageSearchResult {
-  messageId: string;
-  matchText: string;
-  timestamp: Date;
+export interface FileAttachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+  thumbnailUrl?: string;
+  metadata?: Record<string, any>;
 }

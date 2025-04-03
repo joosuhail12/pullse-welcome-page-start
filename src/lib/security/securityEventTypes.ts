@@ -1,52 +1,55 @@
 
 /**
- * Security event types for logging and monitoring
+ * Security event types for auditing and logging
  */
 export enum SecurityEventType {
   // Authentication events
-  LOGIN_ATTEMPT = 'login_attempt',
-  LOGIN_SUCCESS = 'login_success',
-  LOGIN_FAILURE = 'login_failure',
-  LOGOUT = 'logout',
-  PASSWORD_RESET = 'password_reset',
-  MFA_CHALLENGE = 'mfa_challenge',
+  LOGIN_ATTEMPT = "LOGIN_ATTEMPT",
+  LOGIN_SUCCESS = "LOGIN_SUCCESS",
+  LOGIN_FAILURE = "LOGIN_FAILURE",
+  LOGOUT = "LOGOUT",
+  PASSWORD_CHANGE = "PASSWORD_CHANGE",
+  PASSWORD_RESET_REQUEST = "PASSWORD_RESET_REQUEST",
   
   // Authorization events
-  ACCESS_DENIED = 'access_denied',
-  PERMISSION_CHANGED = 'permission_changed',
-  ROLE_CHANGED = 'role_changed',
+  PERMISSION_DENIED = "PERMISSION_DENIED",
+  ACCESS_GRANTED = "ACCESS_GRANTED",
+  ROLE_CHANGE = "ROLE_CHANGE",
   
-  // Data security events
-  DATA_EXPORT = 'data_export',
-  SENSITIVE_DATA_ACCESS = 'sensitive_data_access',
+  // Session events
+  SESSION_CREATED = "SESSION_CREATED",
+  SESSION_EXPIRED = "SESSION_EXPIRED",
+  SESSION_TERMINATED = "SESSION_TERMINATED",
+  SESSION_HIJACK_ATTEMPT = "SESSION_HIJACK_ATTEMPT",
   
-  // Session management events
-  SESSION_CREATED = 'session_created',
-  SESSION_REFRESHED = 'session_refreshed',
-  SESSION_EXPIRED = 'session_expired',
-  SESSION_TERMINATED = 'session_terminated',
+  // Token management
+  TOKEN_ISSUED = "TOKEN_ISSUED",
+  TOKEN_REFRESHED = "TOKEN_REFRESHED",
+  TOKEN_REVOKED = "TOKEN_REVOKED",
+  TOKEN_REJECTED = "TOKEN_REJECTED",
   
-  // API security events
-  TOKEN_ISSUED = 'token_issued',
-  TOKEN_REFRESHED = 'token_refreshed',
-  TOKEN_REVOKED = 'token_revoked',
+  // API security
+  RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED",
+  RATE_LIMIT_WARNING = "RATE_LIMIT_WARNING",
+  API_KEY_CREATED = "API_KEY_CREATED",
+  API_KEY_REVOKED = "API_KEY_REVOKED",
+  
+  // Data security
+  DATA_EXPORT = "DATA_EXPORT",
+  SENSITIVE_DATA_ACCESS = "SENSITIVE_DATA_ACCESS",
+  ENCRYPTION_KEY_ROTATION = "ENCRYPTION_KEY_ROTATION",
   
   // Attack detection
-  RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
-  INJECTION_ATTEMPT = 'injection_attempt',
-  XSS_ATTEMPT = 'xss_attempt',
-  CSRF_ATTEMPT = 'csrf_attempt',
+  POSSIBLE_XSS_ATTEMPT = "POSSIBLE_XSS_ATTEMPT",
+  POSSIBLE_CSRF_ATTEMPT = "POSSIBLE_CSRF_ATTEMPT",
+  POSSIBLE_SQL_INJECTION = "POSSIBLE_SQL_INJECTION",
+  POSSIBLE_PARAMETER_TAMPERING = "POSSIBLE_PARAMETER_TAMPERING",
   
-  // System security events
-  CONFIG_CHANGED = 'config_changed',
-  SECURITY_SETTING_CHANGED = 'security_setting_changed',
+  // Integration security
+  THIRD_PARTY_AUTH = "THIRD_PARTY_AUTH",
+  WEBHOOK_DELIVERY_FAILURE = "WEBHOOK_DELIVERY_FAILURE",
   
-  // Chat widget specific events
-  WIDGET_INIT = 'widget_init',
-  WIDGET_CONNECT = 'widget_connect',
-  CHANNEL_ACCESS = 'channel_access',
-  REALTIME_AUTH = 'realtime_auth'
+  // System events
+  SECURITY_CONFIGURATION_CHANGE = "SECURITY_CONFIGURATION_CHANGE",
+  SECURITY_ALERT = "SECURITY_ALERT"
 }
-
-// Re-export for backward compatibility
-export default SecurityEventType;

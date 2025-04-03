@@ -1,219 +1,181 @@
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Conversation } from '../types';
-import { ChatWidgetConfig, defaultConfig } from '../config';
-import MessageList from '../components/MessageList';
-import MessageInput from '../components/MessageInput';
-import ChatViewHeader from '../components/ChatViewHeader';
-import PreChatForm from '../components/PreChatForm';
-import { useChatMessages } from '../hooks/useChatMessages';
-import { useMessageReactions } from '../hooks/useMessageReactions';
-import { useMessageSearch } from '../hooks/useMessageSearch';
-import { useInlineForm } from '../hooks/useInlineForm';
-import { dispatchChatEvent } from '../utils/events';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
+import { Conversation, Message, MessageReadStatus } from '../types';
+import { useMessageActions } from '../hooks/useMessageActions';
+import { useConversationData } from '../hooks/useConversationData';
+import { useTypingIndicator } from '../hooks/useTypingIndicator';
+import { useSearchMessages } from '../hooks/useSearchMessages';
+import ChatHeader from '../components/ChatHeader';
+import ChatBody from '../components/ChatBody';
+import { ChatWidgetConfig } from '../config';
 
 interface ChatViewProps {
   conversation: Conversation;
   onBack: () => void;
-  onUpdateConversation: (updatedConversation: Conversation) => void;
-  config?: ChatWidgetConfig;
-  playMessageSound?: () => void;
-  userFormData?: Record<string, string>;
-  setUserFormData?: (data: Record<string, string>) => void;
+  onUpdateConversation: (conversation: Conversation) => void;
+  config: ChatWidgetConfig;
+  playMessageSound: () => void;
+  userFormData?: Record<string, any>;
+  setUserFormData: (data: Record<string, any>) => void;
 }
 
-const ChatView = React.memo(({ 
-  conversation, 
-  onBack, 
-  onUpdateConversation, 
-  config = defaultConfig,
+const ChatView: React.FC<ChatViewProps> = ({
+  conversation,
+  onBack,
+  onUpdateConversation,
+  config,
   playMessageSound,
   userFormData,
   setUserFormData
-}: ChatViewProps) => {
-  const [showSearch, setShowSearch] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-  // Use the new inline form hook
+}) => {
+  const [messageText, setMessageText] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSearchBar, setShowSearchBar] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Get message actions
   const {
-    showInlineForm,
-    handleFormComplete
-  } = useInlineForm(
-    conversation,
-    config,
-    userFormData,
-    setUserFormData,
-    onUpdateConversation
-  );
-
-  const {
-    messages,
-    messageText,
-    setMessageText,
-    isTyping,
-    hasUserSentMessage,
-    handleSendMessage,
+    sendMessage,
+    sendFileMessage,
     handleUserTyping,
-    handleFileUpload,
-    handleEndChat,
-    remoteIsTyping,
-    readReceipts,
-    loadPreviousMessages
-  } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
-
+    endChat
+  } = useMessageActions(conversation, onUpdateConversation, config, playMessageSound);
+  
+  // Get conversation data
   const {
-    handleMessageReaction
-  } = useMessageReactions(
     messages,
-    message => setMessages(message),
-    `conversation:${conversation.id}`,
-    conversation.sessionId || '',
-    config
-  );
-
-  const {
-    searchTerm,
-    setSearchTerm,
-    searchMessages,
-    clearSearch,
-    highlightText,
-    messageIds,
-    isSearching
-  } = useMessageSearch(messages);
-
-  const setMessages = useCallback((updatedMessages: React.SetStateAction<typeof messages>) => {
-    if (typeof updatedMessages === 'function') {
-      const newMessages = updatedMessages(messages);
-      onUpdateConversation({
-        ...conversation,
-        messages: newMessages
-      });
-    } else {
-      onUpdateConversation({
-        ...conversation,
-        messages: updatedMessages
-      });
+    hasMoreMessages,
+    isLoadingMore,
+    loadMoreMessages,
+    showInlineForm,
+    inlineFormComponent,
+    messageReactions,
+    readReceipts,
+  } = useConversationData(conversation, config, userFormData, setUserFormData);
+  
+  // Get typing indicators
+  const { isTyping, remoteIsTyping } = useTypingIndicator(conversation.id, isComposing);
+  
+  // Get search functionality
+  const { searchMessages, messageIds, highlightTextWithTerm } = useSearchMessages(messages);
+  
+  // Handle sending a message
+  const handleSendMessage = useCallback(() => {
+    if (messageText.trim()) {
+      sendMessage(messageText);
+      setMessageText('');
+      setIsComposing(false);
     }
-  }, [messages, conversation, onUpdateConversation]);
-
-  const toggleSearch = useCallback(() => {
-    setShowSearch(prev => !prev);
-    if (showSearch) {
-      clearSearch();
+  }, [messageText, sendMessage]);
+  
+  // Handle file upload
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      sendFileMessage(file);
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
-  }, [showSearch, clearSearch]);
-
-  const handleLoadMoreMessages = useCallback(async () => {
-    if (!loadPreviousMessages) return;
+  }, [sendFileMessage]);
+  
+  // Handle user typing
+  const handleUserTypingCallback = useCallback(() => {
+    setIsComposing(true);
+    handleUserTyping();
+  }, [handleUserTyping]);
+  
+  // Handle search term change
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    searchMessages(e.target.value);
+  }, [searchMessages]);
+  
+  // Get agent status if available
+  const agentStatus = useMemo(() => {
+    if (conversation.participants && conversation.participants.length > 0) {
+      const agent = conversation.participants.find(p => p.id !== 'user');
+      return agent?.metadata?.status as 'online' | 'offline' | 'away' | 'busy' | undefined;
+    }
+    return undefined;
+  }, [conversation.participants]);
+  
+  // Format read receipts to match the expected type
+  const formattedReadReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }> = useMemo(() => {
+    const result: Record<string, { status: MessageReadStatus; timestamp?: Date }> = {};
     
-    setIsLoadingMore(true);
-    try {
-      await loadPreviousMessages();
-    } finally {
-      setIsLoadingMore(false);
+    // Convert string statuses to MessageReadStatus type
+    if (readReceipts) {
+      Object.keys(readReceipts).forEach(messageId => {
+        const receipt = readReceipts[messageId];
+        if (typeof receipt === 'object') {
+          if ('status' in receipt) {
+            const status = receipt.status as MessageReadStatus;
+            result[messageId] = {
+              status,
+              timestamp: receipt.timestamp
+            };
+          } else if (receipt instanceof Date) {
+            result[messageId] = {
+              status: 'read', // Default to 'read' for Date objects
+              timestamp: receipt
+            };
+          }
+        }
+      });
     }
-  }, [loadPreviousMessages]);
-
-  // Convert readReceipts to the correct format
-  const formattedReadReceipts = useMemo(() => {
-    const formatted: Record<string, { status: string; timestamp?: Date }> = {};
-    Object.entries(readReceipts).forEach(([messageId, timestamp]) => {
-      formatted[messageId] = {
-        status: 'read',
-        timestamp
-      };
-    });
-    return formatted;
+    
+    return result;
   }, [readReceipts]);
-
-  // Prepare content for rendering
-  const agentAvatar = useMemo(() => conversation.agentInfo?.avatar || config?.branding?.avatarUrl, 
-    [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]);
-    
-  const userAvatar = undefined;
-  const hasMoreMessages = messages.length >= 20;
-
-  // Render pre-chat form component when needed
-  const inlineFormComponent = useMemo(() => {
-    if (showInlineForm) {
-      return <PreChatForm config={config} onFormComplete={handleFormComplete} />;
-    }
-    return null;
-  }, [showInlineForm, config, handleFormComplete]);
-
-  const chatViewStyle = useMemo(() => {
-    return {
-      ...(config?.branding?.primaryColor && {
-        '--chat-header-bg': config.branding.primaryColor,
-        '--chat-header-text': '#ffffff',
-        '--user-bubble-bg': config.branding.primaryColor,
-        '--user-bubble-text': '#ffffff',
-        '--system-bubble-bg': '#F5F3FF',
-        '--system-bubble-text': '#1f2937',
-        '--chat-bg': 'linear-gradient(to bottom, #F5F3FF, #E5DEFF)',
-      } as React.CSSProperties)
-    };
-  }, [config?.branding?.primaryColor]);
-
+  
+  // Adaptation function for highlighting text
+  const highlightTextAdapter = useCallback((text: string) => {
+    return highlightTextWithTerm(text, searchTerm);
+  }, [highlightTextWithTerm, searchTerm]);
+  
   return (
-    <div 
-      className="flex flex-col h-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100"
-      style={chatViewStyle}
-    >
-      <ChatViewHeader 
-        conversation={conversation} 
+    <>
+      <ChatHeader
+        conversationTitle={conversation.title}
         onBack={onBack}
-        showSearch={showSearch}
-        toggleSearch={toggleSearch}
-        searchMessages={searchMessages}
-        clearSearch={clearSearch}
-        searchResultCount={messageIds.length}
-        isSearching={isSearching}
-        showSearchFeature={!!config?.features?.searchMessages}
+        onSearch={() => setShowSearchBar(!showSearchBar)}
+        onEndChat={endChat}
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        showSearchBar={showSearchBar}
       />
       
-      <div className="flex-grow overflow-hidden flex flex-col">
-        {showInlineForm ? (
-          <div className="flex-grow flex flex-col justify-center items-center p-4 bg-gradient-to-br from-[#f8f7ff] to-[#f5f3ff]">
-            <div className="w-full max-w-md">
-              {inlineFormComponent}
-            </div>
-          </div>
-        ) : (
-          <MessageList 
-            messages={messages}
-            isTyping={isTyping || remoteIsTyping}
-            setMessageText={setMessageText}
-            readReceipts={formattedReadReceipts}
-            onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
-            searchResults={messageIds}
-            highlightMessage={highlightText}
-            searchTerm={searchTerm}
-            agentAvatar={agentAvatar}
-            userAvatar={userAvatar}
-            onScrollTop={handleLoadMoreMessages}
-            hasMoreMessages={hasMoreMessages}
-            isLoadingMore={isLoadingMore}
-            conversationId={conversation.id}
-            agentStatus={conversation.agentInfo?.status}
-          />
-        )}
-      </div>
-      
-      <MessageInput
+      <ChatBody
+        messages={messages}
         messageText={messageText}
         setMessageText={setMessageText}
+        isTyping={isTyping}
+        remoteIsTyping={remoteIsTyping}
         handleSendMessage={handleSendMessage}
+        handleUserTyping={handleUserTypingCallback}
         handleFileUpload={handleFileUpload}
-        handleEndChat={handleEndChat}
-        hasUserSentMessage={hasUserSentMessage}
-        onTyping={handleUserTyping}
-        disabled={showInlineForm}
+        handleEndChat={endChat}
+        readReceipts={formattedReadReceipts}
+        onMessageReaction={messageReactions.onMessageReaction}
+        searchTerm={searchTerm}
+        messageIds={messageIds}
+        highlightText={highlightTextAdapter}
+        agentAvatar={config.branding?.avatarUrl}
+        userAvatar={userFormData?.avatar}
+        handleLoadMoreMessages={loadMoreMessages}
+        hasMoreMessages={hasMoreMessages}
+        isLoadingMore={isLoadingMore}
+        showInlineForm={showInlineForm}
+        inlineFormComponent={inlineFormComponent}
+        conversationId={conversation.id}
+        agentStatus={agentStatus}
+        onToggleHighlight={(messageId) => searchMessages(searchTerm, [messageId])}
       />
-    </div>
+    </>
   );
-});
-
-ChatView.displayName = 'ChatView';
+};
 
 export default ChatView;

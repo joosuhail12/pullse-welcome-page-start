@@ -1,12 +1,12 @@
 
 import React, { useState, lazy, Suspense } from 'react';
-import { Message } from '../../types';
+import { Message, MessageReadStatus } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
 import MessageStatus from './MessageStatus';
 import MessageAvatar from './MessageAvatar';
 import MessageReactionButtons from './MessageReactionButtons';
-import MessageReadReceipt, { MessageReadStatus } from '../MessageReadReceipt';
+import MessageReadReceipt from '../MessageReadReceipt';
 import { cn } from '@/lib/utils';
 
 // Lazy load less commonly used message types

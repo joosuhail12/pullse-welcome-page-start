@@ -1,113 +1,88 @@
 
-/**
- * Error Handlers
- * 
- * Provides specialized handlers for different error types
- * with appropriate logging and user notifications.
- * 
- * SECURITY NOTICE: Error handling must balance providing useful
- * information with preventing sensitive data disclosure.
- */
-
-import { toasts } from '../toast-utils';
 import { logger } from '../logger';
-import { sanitizeErrorMessage, getSafeErrorDetails } from '../error-sanitizer';
-import { AppError, ErrorSeverity } from './errorTypes';
+import { toasts } from '../toast-utils';
+import { AppError, NetworkError, ErrorSeverity } from './types';
 
 /**
- * Specialized handlers for different error categories
+ * Generic error handler
+ * @param error The error to handle
  */
-export const handlers = {
-  // Handle application defined errors
-  handleAppError: (error: AppError) => {
-    // Different toast variants based on severity
-    const variant = error.severity === ErrorSeverity.HIGH || error.severity === ErrorSeverity.FATAL 
-      ? 'destructive' 
-      : error.severity === ErrorSeverity.MEDIUM 
-        ? 'warning' 
-        : 'default';
-    
-    // Always use sanitized message for user-facing toast
-    const safeMessage = sanitizeErrorMessage(error.message);
-    
-    toasts.error({
-      title: error.code || 'Application Error',
-      description: safeMessage,
-      variant
-    });
-    
-    // Log with appropriate severity level using safe details
-    logger.error(
-      `${error.name} [${error.severity}]: ${safeMessage}`, 
-      'ErrorHandler', 
-      {
-        code: error.code,
-        details: error.details ? getSafeErrorDetails(error.details) : undefined,
-        stack: error.stack ? sanitizeErrorMessage(error.stack) : undefined
-      }
-    );
-    
-    // For fatal errors we might want to show a recovery UI
-    if (error.severity === ErrorSeverity.FATAL) {
-      // Could trigger app-level error boundary or redirect to error page
-      logger.error('FATAL ERROR - Application may be unstable', 'ErrorHandler');
-    }
-  },
-
-  // Handle standard JavaScript errors
-  handleStandardError: (error: Error) => {
-    // Sanitize the message for user-facing toast
-    const safeMessage = sanitizeErrorMessage(error.message);
-    
-    toasts.error({
-      title: 'Unexpected Error',
-      description: safeMessage,
-    });
-    
-    logger.error('Standard Error', 'ErrorHandler', getSafeErrorDetails(error));
-  },
-
-  // Handle unknown error types
-  handleUnknownError: (error: unknown) => {
-    // For unknown errors, use a generic message for the user
-    toasts.error({
-      title: 'Unknown Error',
-      description: 'An unexpected error occurred',
-    });
-    
-    // But log as much safe detail as we can gather
-    logger.error('Unknown Error', 'ErrorHandler', getSafeErrorDetails(error));
-  },
-  
-  // Handle network errors
-  handleNetworkError: (error: Error) => {
-    const safeMessage = sanitizeErrorMessage(error.message);
-    
-    toasts.error({
-      title: 'Network Error',
-      description: safeMessage || 'Connection problem detected',
-    });
-    
-    logger.error('Network Error', 'ErrorHandler', getSafeErrorDetails(error));
-  },
-  
-  // Handle API errors
-  handleApiError: (error: Error, status?: number) => {
-    const safeMessage = sanitizeErrorMessage(error.message);
-    
-    // Customize message based on status code
-    let title = 'API Error';
-    if (status === 401) title = 'Authentication Error';
-    else if (status === 403) title = 'Access Denied';
-    else if (status === 404) title = 'Resource Not Found';
-    else if (status === 429) title = 'Too Many Requests';
-    else if (status >= 500) title = 'Server Error';
-    
-    toasts.error({
-      title,
-      description: safeMessage,
-    });
-    
-    logger.error(`API Error (${status})`, 'ErrorHandler', getSafeErrorDetails(error));
+export function handleError(error: unknown): void {
+  if (error instanceof AppError) {
+    handleAppError(error);
+  } else if (error instanceof NetworkError) {
+    handleNetworkError(error);
+  } else {
+    handleUnknownError(error);
   }
-};
+}
+
+/**
+ * Handle application errors
+ */
+function handleAppError(error: AppError): void {
+  logger.error(error.message, 'ErrorHandler', error.details);
+  
+  // Show toast notification for user-facing errors
+  if (error.userFacing) {
+    toasts.error({
+      title: 'Application Error',
+      description: error.message,
+      duration: error.severity === 'CRITICAL' ? 0 : 5000
+    });
+  }
+}
+
+/**
+ * Handle network errors
+ */
+function handleNetworkError(error: NetworkError): void {
+  logger.error('Network Error', 'ErrorHandler', {
+    message: error.message,
+    retryable: error.retryable,
+    statusCode: error.statusCode
+  });
+  
+  // Show toast notification for network errors
+  toasts.error({
+    title: 'Connection Error',
+    description: error.message || 'Unable to connect to the server',
+    action: error.retryable ? {
+      label: 'Retry',
+      onClick: error.retry || (() => window.location.reload())
+    } : undefined
+  });
+}
+
+/**
+ * Handle unknown errors
+ */
+function handleUnknownError(error: unknown): void {
+  const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+  
+  logger.error('Unknown Error', 'ErrorHandler', { error });
+  
+  toasts.error({
+    title: 'Unexpected Error',
+    description: errorMessage
+  });
+}
+
+/**
+ * Handle a standard error with the option to show a user-facing message
+ */
+export function handleStandardError(
+  error: Error, 
+  showToast: boolean = true,
+  severity: ErrorSeverity = 'MEDIUM'
+): void {
+  logger.error(error.message, 'ErrorHandler', { stack: error.stack });
+  
+  if (showToast) {
+    toasts.error({
+      title: 'Error',
+      description: error.message,
+      duration: severity === 'CRITICAL' ? 0 : 5000
+    });
+  }
+}
