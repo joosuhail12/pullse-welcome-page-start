@@ -1,6 +1,5 @@
 
 import { toast } from "@/hooks/use-toast"
-import React from "react"
 import { ToastAction } from "@/components/ui/toast"
 import { ToastActionElement } from "@/components/ui/toast"
 
@@ -59,7 +58,7 @@ export const retryableToast = (
 ) => {
   const { onRetry, ...toastOptions } = options
   
-  // Create a proper ToastAction component instead of using createElement directly
+  // Create a proper ToastAction component for the retry button
   const retryAction = (
     <ToastAction altText="Retry" onClick={onRetry}>
       Retry
