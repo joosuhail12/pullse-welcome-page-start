@@ -1,94 +1,76 @@
 
-import React, { useEffect, useRef } from 'react';
-import { initializeAbly, cleanupAbly, reconnectAbly } from '../utils/ably';
-import { getAblyAuthUrl } from '../services/ablyAuth';
-import { ConnectionStatus, getReconnectionManager } from '../utils/reconnectionManager';
-import { showSuccessToast, showWarningToast, showErrorToast } from '@/lib/toast-utils';
-import { logger } from '@/lib/logger';
+import React, { useEffect, useCallback, useState } from 'react';
+import { initializeAblyClient, reconnectAbly } from '../utils/ably';
+import { ChatWidgetConfig } from '../config';
 
 interface ConnectionManagerProps {
-  workspaceId: string;
-  enabled: boolean;
-  onStatusChange: (status: ConnectionStatus) => void;
+  config: ChatWidgetConfig;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
+  onReconnect?: () => void;
+  onError?: (error: any) => void;
 }
 
-const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionManagerProps) => {
-  const reconnectionAttempts = useRef(0);
-
-  useEffect(() => {
-    let ablyCleanup: (() => void) | null = null;
+export function ConnectionManager({ 
+  config, 
+  onConnect, 
+  onDisconnect,
+  onReconnect,
+  onError
+}: ConnectionManagerProps) {
+  const [isConnected, setIsConnected] = useState(false);
+  
+  const connectToRealtime = useCallback(() => {
+    if (!config.realtime?.enabled) return;
     
-    if (!enabled || !workspaceId) return;
-
-    const authUrl = getAblyAuthUrl(workspaceId);
-    const reconnectionManager = getReconnectionManager({
-      initialDelayMs: 1000,
-      maxDelayMs: 30000,
-      maxAttempts: 20,
-      backoffFactor: 1.5
-    });
-
-    const initRealtime = async () => {
-      try {
-        await initializeAbly(authUrl);
-        onStatusChange(ConnectionStatus.CONNECTED);
-        logger.info('Real-time communication initialized', 'ConnectionManager');
-        ablyCleanup = cleanupAbly;
-      } catch (err) {
-        logger.error('Failed to initialize real-time communication', 'ConnectionManager', err);
-        onStatusChange(ConnectionStatus.FAILED);
-        startReconnectionProcess(authUrl);
-      }
-    };
-
-    const startReconnectionProcess = (url: string) => {
-      reconnectionManager.start(async () => {
-        reconnectionAttempts.current += 1;
-        
-        logger.info(`Reconnection attempt ${reconnectionAttempts.current}`, 'ConnectionManager');
-        
-        if (reconnectionAttempts.current === 1) {
-          showWarningToast('Attempting to restore connection...', {
-            title: 'Reconnecting'
-          });
-        }
-        
-        const success = await reconnectAbly(url);
-        
-        if (success) {
-          onStatusChange(ConnectionStatus.CONNECTED);
-          reconnectionAttempts.current = 0;
-          
-          logger.info('Real-time connection restored', 'ConnectionManager');
-          
-          showSuccessToast('Real-time connection restored', {
-            title: 'Connected'
-          });
-          
-          return true;
-        }
-        
-        return false;
-      }).catch(error => {
-        logger.error('Reconnection failed after multiple attempts', 'ConnectionManager', error);
-        
-        showErrorToast('Unable to establish real-time connection. Some features may be limited.', {
-          title: 'Connection Failed',
-          duration: 0
-        });
-        
-        onStatusChange(ConnectionStatus.FAILED);
+    try {
+      // Generate auth URL from config
+      const authUrl = `/api/chat-widget/auth?workspaceId=${config.workspaceId}`;
+      
+      // Initialize Ably client
+      const client = initializeAblyClient(authUrl);
+      
+      // Set up connection state handlers
+      client.connection.on('connected', () => {
+        setIsConnected(true);
+        onConnect?.();
       });
-    };
-
-    initRealtime();
-
+      
+      client.connection.on('disconnected', () => {
+        setIsConnected(false);
+        onDisconnect?.();
+      });
+      
+      client.connection.on('failed', (error) => {
+        setIsConnected(false);
+        onError?.(error);
+      });
+      
+    } catch (error) {
+      onError?.(error);
+    }
+  }, [config, onConnect, onDisconnect, onError]);
+  
+  useEffect(() => {
+    // Connect to realtime if enabled
+    if (config.realtime?.enabled) {
+      connectToRealtime();
+    }
+    
+    // Clean up on unmount
     return () => {
-      if (ablyCleanup) ablyCleanup();
+      // Connection cleanup would be handled here
     };
-  }, [enabled, workspaceId, onStatusChange]);
-
-  return null;
-};
+  }, [config.realtime?.enabled, connectToRealtime]);
+  
+  // Handle reconnection attempts
+  const handleReconnect = useCallback(() => {
+    reconnectAbly().then(() => {
+      onReconnect?.();
+    }).catch(onError);
+  }, [onReconnect, onError]);
+  
+  return null; // This is a non-visual component
+}
 
 export default ConnectionManager;

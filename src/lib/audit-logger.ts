@@ -1,10 +1,11 @@
 
 import { SecurityEventType, SecurityEventOutcome, SecurityEventSeverity } from '../components/ChatWidget/utils/securityTypes';
 
+// Re-export the types
+export { SecurityEventType, SecurityEventOutcome, SecurityEventSeverity };
+
 // Simple audit logger implementation
 class AuditLogger {
-  // No need to add direct property for SecurityEventType
-  
   logSecurityEvent(
     eventType: SecurityEventType,
     outcome: SecurityEventOutcome,

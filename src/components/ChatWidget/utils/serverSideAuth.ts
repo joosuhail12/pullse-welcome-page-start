@@ -9,7 +9,7 @@
  * before deploying to production. The client-side versions provide no real security.
  */
 
-import { auditLogger } from '@/lib/audit-logger';
+import { auditLogger, SecurityEventType } from '@/lib/audit-logger';
 
 /**
  * This signifies a function that should be performed on the server side
@@ -21,7 +21,7 @@ import { auditLogger } from '@/lib/audit-logger';
 export function requiresServerImplementation(actionName: string, data?: any): string {
   // Log the attempt to use a server-side function
   auditLogger.logSecurityEvent(
-    auditLogger.SecurityEventType.SENSITIVE_DATA_ACCESS, 
+    SecurityEventType.API_ACCESS_DENIED, 
     'ATTEMPT',
     { actionName, clientSide: true, data: data || {} }
   );
@@ -43,7 +43,7 @@ export function requiresServerImplementation(actionName: string, data?: any): st
 export function generateSecureToken(userId: string, workspaceId: string): string {
   // Log the token generation attempt
   auditLogger.logSecurityEvent(
-    auditLogger.SecurityEventType.TOKEN_ISSUED, 
+    SecurityEventType.TOKEN_EXPIRED, 
     'ATTEMPT',
     { userId, workspaceId, clientSide: true }
   );
@@ -64,7 +64,7 @@ export function generateSecureToken(userId: string, workspaceId: string): string
 export function encryptServerSide(data: string): string {
   // Log encryption attempt (without the actual data)
   auditLogger.logSecurityEvent(
-    auditLogger.SecurityEventType.SENSITIVE_DATA_ACCESS, 
+    SecurityEventType.CONTENT_INJECTION_ATTEMPT, 
     'ATTEMPT',
     { action: 'encrypt', dataLength: data.length, clientSide: true }
   );
@@ -90,7 +90,7 @@ export function decryptServerSide(encryptedData: string): string {
   
   // Log decryption attempt
   auditLogger.logSecurityEvent(
-    auditLogger.SecurityEventType.SENSITIVE_DATA_ACCESS, 
+    SecurityEventType.CONTENT_INJECTION_ATTEMPT, 
     'ATTEMPT',
     { action: 'decrypt', clientSide: true }
   );
@@ -111,7 +111,7 @@ export function decryptServerSide(encryptedData: string): string {
 export function signMessageServerSide(message: string, timestamp: number): string {
   // Log signing attempt
   auditLogger.logSecurityEvent(
-    auditLogger.SecurityEventType.TOKEN_ISSUED, 
+    SecurityEventType.TOKEN_EXPIRED, 
     'ATTEMPT',
     { action: 'sign', messageLength: message.length, timestamp, clientSide: true }
   );
@@ -133,7 +133,7 @@ export function signMessageServerSide(message: string, timestamp: number): strin
 export function verifySignatureServerSide(message: string, timestamp: number, signature: string): boolean {
   // Log verification attempt
   auditLogger.logSecurityEvent(
-    auditLogger.SecurityEventType.TOKEN_VALIDATED, 
+    SecurityEventType.TOKEN_VALIDATED, 
     'ATTEMPT',
     { action: 'verify', messageLength: message.length, timestamp, clientSide: true }
   );

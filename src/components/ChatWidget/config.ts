@@ -1,3 +1,4 @@
+
 /**
  * Shared configuration and types for the Chat Widget
  */
@@ -28,7 +29,7 @@ export interface ChatEventPayload {
 
 // Chat widget position
 export type ChatPosition = {
-  placement?: "bottom-right" | "bottom-left" | "top-right" | "top-left";
+  placement: "bottom-right" | "bottom-left" | "top-right" | "top-left";
   offsetX?: number;
   offsetY?: number;
 };
@@ -89,7 +90,11 @@ export interface FeaturesConfig {
   quickReplies?: boolean;
   cards?: boolean;
   voiceMessages?: boolean;
+  readReceipts?: boolean;
 }
+
+// Add event handler type for global events
+export type EventCallback = (payload: ChatEventPayload) => void;
 
 // Complete widget configuration
 export interface ChatWidgetConfig {
@@ -104,6 +109,7 @@ export interface ChatWidgetConfig {
   eventHandlers?: {
     [key in ChatEventType]?: (payload: ChatEventPayload) => void;
   };
+  onEvent?: EventCallback;
 }
 
 // Default configuration
@@ -165,6 +171,7 @@ export const defaultConfig: ChatWidgetConfig = {
     searchMessages: true,
     quickReplies: true,
     cards: true,
-    voiceMessages: false
+    voiceMessages: false,
+    readReceipts: true
   }
 };

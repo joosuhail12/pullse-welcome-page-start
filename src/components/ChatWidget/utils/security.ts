@@ -5,7 +5,8 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { dispatchChatEvent } from './events';
-import { logger, auditLogger } from '@/lib/audit-logger';
+import { logger } from '@/lib/logger';
+import { auditLogger, SecurityEventType, SecurityEventOutcome } from '@/lib/audit-logger';
 import { EventPriority } from './eventValidation';
 
 // Constants
@@ -47,7 +48,7 @@ export function generateSecureToken(): string {
     
     // Log security event
     auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
+      SecurityEventType.SECURITY_SETTING_CHANGE,
       'SUCCESS',
       { action: 'token_generated', tokenId: randomPart.substring(0, 8) },
       'LOW'
@@ -73,7 +74,7 @@ export function validateToken(token: string): boolean {
     // Check if token has expired
     if (payload.expires < Date.now()) {
       auditLogger.logSecurityEvent(
-        auditLogger.SecurityEventType.AUTH_FAILURE,
+        SecurityEventType.AUTH_FAILURE,
         'FAILURE',
         { reason: 'token_expired', tokenId: payload.id.substring(0, 8) },
         'MEDIUM'
@@ -84,7 +85,7 @@ export function validateToken(token: string): boolean {
     // Check token version
     if (payload.version !== TOKEN_VERSION) {
       auditLogger.logSecurityEvent(
-        auditLogger.SecurityEventType.AUTH_FAILURE,
+        SecurityEventType.AUTH_FAILURE,
         'FAILURE',
         { reason: 'token_version_mismatch', tokenVersion: payload.version },
         'MEDIUM'
@@ -95,7 +96,7 @@ export function validateToken(token: string): boolean {
     return true;
   } catch (err) {
     auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.AUTH_FAILURE,
+      SecurityEventType.AUTH_FAILURE,
       'FAILURE',
       { reason: 'token_validation_error', error: String(err) },
       'MEDIUM'
@@ -135,6 +136,32 @@ export function isSessionValid(): boolean {
 }
 
 /**
+ * Get CSRF token for API requests
+ */
+export function getCsrfToken(): { token: string, nonce: string } {
+  const token = `csrf-${uuidv4()}-${Date.now()}`;
+  const nonce = uuidv4().substring(0, 8);
+  return { token, nonce };
+}
+
+/**
+ * Sign a message for security verification
+ */
+export function signMessage(message: string, timestamp: number): string {
+  // In a real implementation, this would use HMAC or a similar approach
+  return `sig-${uuidv4()}-${timestamp}`;
+}
+
+/**
+ * Verify a message signature
+ */
+export function verifyMessageSignature(message: string, timestamp: number, signature: string): boolean {
+  // This is a simplified implementation
+  // In a real world scenario, this would verify the signature cryptographically
+  return signature.startsWith('sig-') && timestamp > 0;
+}
+
+/**
  * Generate a client ID for real-time communication
  */
 export function generateClientId(): string {
@@ -161,7 +188,7 @@ export function getOrCreateSessionId(): string {
     
     // Log security event
     auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.AUTH_SUCCESS,
+      SecurityEventType.AUTH_SUCCESS,
       'SUCCESS',
       { action: 'session_created', sessionId: sessionId.substring(0, 16) },
       'LOW'
@@ -174,49 +201,8 @@ export function getOrCreateSessionId(): string {
   return sessionId;
 }
 
-/**
- * Get CSRF token for API requests
- * Note: This is a simplified implementation.
- * In a production environment, this should be replaced with a more robust implementation.
- */
-export async function getCsrfToken(): Promise<string> {
-  // In a real implementation, this would fetch a CSRF token from the server
-  // For this simplified version, we'll generate a local token
-  
-  return `csrf-${uuidv4()}-${Date.now()}`;
-}
-
-/**
- * Validate CSRF token
- * Note: This is a simplified implementation.
- */
-export function validateCsrfToken(token: string): boolean {
-  // In a real implementation, this would validate the token against the server
-  // For this simplified version, we'll just check if it exists and has the expected format
-  
-  if (!token || !token.startsWith('csrf-')) {
-    auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.CSRF_VALIDATION_FAILURE,
-      'FAILURE',
-      { reason: 'invalid_csrf_token' },
-      'HIGH'
-    );
-    return false;
-  }
-  
-  return true;
-}
-
-/**
- * Generate an API signature for request validation
- * Note: This is a simplified implementation.
- */
-export async function generateApiSignature(payload: any): Promise<string> {
-  // In a real implementation, this would use a secure hashing algorithm
-  // with a shared secret to generate a signature
-  
-  return `signature-${uuidv4()}-${Date.now()}`;
-}
+// Alias for backward compatibility
+export const checkSessionValidity = isSessionValid;
 
 /**
  * Check if the user is being rate limited
@@ -229,7 +215,7 @@ export function isRateLimited(): boolean {
   if (now - lastMessageTimestamp < DEFAULT_MESSAGE_COOLDOWN_MS) {
     // Log rate limit event
     auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.RATE_LIMIT_EXCEEDED,
+      SecurityEventType.RATE_LIMIT_EXCEEDED,
       'ATTEMPT',
       { cooldownMs: DEFAULT_MESSAGE_COOLDOWN_MS },
       'LOW'
@@ -248,7 +234,7 @@ export function isRateLimited(): boolean {
   if (rateLimitData.messageCount >= DEFAULT_MAX_MESSAGES_PER_MINUTE) {
     // Log rate limit event
     auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.RATE_LIMIT_EXCEEDED,
+      SecurityEventType.RATE_LIMIT_EXCEEDED,
       'FAILURE',
       { 
         messageCount: rateLimitData.messageCount,
@@ -333,7 +319,7 @@ export function enforceHttps(): boolean {
   if (window.location.protocol !== 'https:') {
     // Log security event
     auditLogger.logSecurityEvent(
-      auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
+      SecurityEventType.SECURITY_SETTING_CHANGE,
       'ATTEMPT',
       { action: 'enforce_https', currentProtocol: window.location.protocol },
       'HIGH'
@@ -362,9 +348,30 @@ export function logout() {
   
   // Log security event
   auditLogger.logSecurityEvent(
-    auditLogger.SecurityEventType.SECURITY_SETTING_CHANGE,
+    SecurityEventType.SECURITY_SETTING_CHANGE,
     'SUCCESS',
     { action: 'logout' },
     'LOW'
   );
+}
+
+// For compatibility with encryption-related functions
+export function encryptData(data: string): string {
+  return btoa(`encrypted:${data}`); // Simple base64 encoding for development
+}
+
+export function decryptData(encryptedData: string): string {
+  if (!encryptedData || !encryptedData.startsWith('encrypted:')) {
+    try {
+      const decoded = atob(encryptedData);
+      if (decoded.startsWith('encrypted:')) {
+        return decoded.substring(10);
+      }
+    } catch (e) {
+      // Not encoded or not our format
+      return encryptedData;
+    }
+  }
+  
+  return encryptedData;
 }
