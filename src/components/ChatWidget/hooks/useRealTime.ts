@@ -24,6 +24,8 @@ export function useRealTime(
   
   // Track if the component is mounted to prevent state updates after unmount
   const isMounted = useRef(true);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const typingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   // Use the realtime subscriptions hook
   const { remoteIsTyping, readReceipts } = useRealtimeSubscriptions(
@@ -62,32 +64,62 @@ export function useRealTime(
   useEffect(() => {
     // Process existing messages when component mounts
     sendReadReceipts();
-  }, [sendReadReceipts]);
+    
+    // Set mounted flag for cleanup
+    isMounted.current = true;
+    
+    return () => {
+      isMounted.current = false;
+      
+      // Clean up any timers
+      if (typingTimerRef.current) {
+        clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
+      
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current);
+        typingIntervalRef.current = null;
+      }
+      
+      clearTypingTimeout();
+    };
+  }, [sendReadReceipts, clearTypingTimeout]);
 
   // For non-realtime mode, simulate agent typing - with proper cleanup
   useEffect(() => {
     if (!config?.realtime?.enabled && hasUserSentMessage) {
-      let typingTimer: ReturnType<typeof setTimeout> | null = null;
+      // Clear any existing timers first
+      if (typingTimerRef.current) {
+        clearTimeout(typingTimerRef.current);
+      }
+      if (typingIntervalRef.current) {
+        clearInterval(typingIntervalRef.current);
+      }
       
-      const typingInterval = setInterval(() => {
+      // Set up new typing simulation
+      typingIntervalRef.current = setInterval(() => {
         if (!isMounted.current) return;
         
-        typingTimer = simulateAgentTyping(setIsTyping, setMessages, config, playMessageSound);
+        typingTimerRef.current = simulateAgentTyping(setIsTyping, setMessages, config, playMessageSound);
       }, 15000);
       
       return () => {
-        isMounted.current = false;
-        clearInterval(typingInterval);
-        if (typingTimer) clearTimeout(typingTimer);
-        clearTypingTimeout();
+        if (typingTimerRef.current) {
+          clearTimeout(typingTimerRef.current);
+          typingTimerRef.current = null;
+        }
+        
+        if (typingIntervalRef.current) {
+          clearInterval(typingIntervalRef.current);
+          typingIntervalRef.current = null;
+        }
       };
     }
     
-    // No cleanup needed when realtime is enabled
-    return () => {
-      isMounted.current = false;
-    };
-  }, [config?.realtime?.enabled, hasUserSentMessage, playMessageSound, setIsTyping, setMessages, clearTypingTimeout]);
+    // No additional cleanup needed
+    return undefined;
+  }, [config?.realtime?.enabled, hasUserSentMessage, playMessageSound, setIsTyping, setMessages]);
 
   return {
     remoteIsTyping,

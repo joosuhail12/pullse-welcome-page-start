@@ -15,11 +15,9 @@ const initChatWidget = () => {
     const root = createRoot(container!);
     
     root.render(
-      <React.StrictMode>
-        <ChatWidget 
-          workspaceId={config.workspaceId}
-        />
-      </React.StrictMode>
+      <ChatWidget 
+        workspaceId={config.workspaceId}
+      />
     );
     
     console.log('Pullse Chat Widget initialized with config:', config);
@@ -37,9 +35,7 @@ if (document.currentScript &&
   if (!rootElement) throw new Error('Failed to find the root element');
 
   createRoot(rootElement).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
+    <App />
   );
 }
 

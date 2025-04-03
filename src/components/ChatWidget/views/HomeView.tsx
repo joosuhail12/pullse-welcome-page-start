@@ -1,5 +1,5 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { defaultConfig, ChatWidgetConfig } from '../config';
@@ -15,10 +15,12 @@ const HomeView = React.memo(({
   onStartChat, 
   config = defaultConfig 
 }: HomeViewProps) => {
-  // Apply custom branding if available
-  const buttonStyle = config.branding?.primaryColor 
-    ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
-    : {};
+  // Apply custom branding if available - use useMemo to prevent recalculation
+  const buttonStyle = useMemo(() => {
+    return config.branding?.primaryColor 
+      ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
+      : {};
+  }, [config.branding?.primaryColor]);
   
   // Handle direct chat start (no form) - memoized to prevent recreation on each render
   const handleStartChat = useCallback(() => {
