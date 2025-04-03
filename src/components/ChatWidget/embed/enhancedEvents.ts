@@ -94,3 +94,10 @@ export function subscribeToEnhancedEvent(
  * Re-export EventPriority for consumers
  */
 export { EventPriority } from '../events/types';
+
+// Add extra function to clean up event handlers for widget cleanup
+export function cleanupEventHandlers(): void {
+  // This is a simple wrapper around the event manager's cleanup method
+  // to make it accessible from the widget loader
+  getEventManager().removeAllListeners();
+}

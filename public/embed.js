@@ -1,3 +1,4 @@
+
 /**
  * Pullse Chat Widget Embed Script
  * Version 1.0.0
@@ -378,7 +379,9 @@
         showBrandingBar: !options.hideBranding
       },
       autoOpen: !!options.autoOpen,
-      eventHandlers: options.eventHandlers || {}
+      eventHandlers: options.eventHandlers || {},
+      // Add test mode configuration
+      testMode: !!options.testMode
     };
     
     // Check if we should implement lazy loading via scroll
@@ -551,7 +554,9 @@
       autoOpen: currentScript.hasAttribute('data-auto-open'),
       lazyLoadScroll: currentScript.hasAttribute('data-lazy-load'),
       scrollThreshold: currentScript.getAttribute('data-scroll-threshold') ? parseFloat(currentScript.getAttribute('data-scroll-threshold')) : undefined,
-      checkUpdates: !currentScript.hasAttribute('data-disable-updates')
+      checkUpdates: !currentScript.hasAttribute('data-disable-updates'),
+      // Add test mode attribute support
+      testMode: currentScript.hasAttribute('data-test-mode')
     });
   }
 })(window, document);

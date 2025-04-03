@@ -33,6 +33,12 @@ const PullseNamespace = {
         // Create a root in the shadow DOM for isolation
         const root = createRoot(innerContainer as HTMLElement);
         
+        // Check if test mode is enabled
+        const isTestMode = config.testMode === true;
+        if (isTestMode) {
+          console.log('Initializing Chat Widget in TEST MODE');
+        }
+        
         // Use Suspense to handle the loading state
         root.render(
           <React.Suspense fallback={
@@ -42,6 +48,8 @@ const PullseNamespace = {
           }>
             <PullseNamespace.ChatWidget 
               workspaceId={config.workspaceId}
+              previewConfig={config}
+              isTestMode={isTestMode}
             />
           </React.Suspense>
         );

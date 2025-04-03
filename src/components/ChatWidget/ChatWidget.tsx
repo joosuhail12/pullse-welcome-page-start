@@ -17,11 +17,11 @@ import { ChatWidgetConfig } from './config';
 
 export interface ChatWidgetProps {
   workspaceId: string;
-  previewConfig?: ChatWidgetConfig; // Added for preview mode
-  isPreviewMode?: boolean; // Flag to indicate preview mode
+  previewConfig?: ChatWidgetConfig;
+  isTestMode?: boolean;
 }
 
-const ChatWidget = ({ workspaceId, previewConfig, isPreviewMode = false }: ChatWidgetProps) => {
+const ChatWidget = ({ workspaceId, previewConfig, isTestMode = false }: ChatWidgetProps) => {
   const {
     viewState,
     activeConversation,
@@ -36,9 +36,9 @@ const ChatWidget = ({ workspaceId, previewConfig, isPreviewMode = false }: ChatW
   
   const configFromHook = useWidgetConfig(workspaceId);
   
-  // Use previewConfig if in preview mode, otherwise use config from hook
+  // Use previewConfig if in test mode, otherwise use config from hook
   const { config, loading, error } = useMemo(() => {
-    if (isPreviewMode && previewConfig) {
+    if (isTestMode && previewConfig) {
       return { 
         config: previewConfig, 
         loading: false, 
@@ -46,7 +46,7 @@ const ChatWidget = ({ workspaceId, previewConfig, isPreviewMode = false }: ChatW
       };
     }
     return configFromHook;
-  }, [isPreviewMode, previewConfig, configFromHook]);
+  }, [isTestMode, previewConfig, configFromHook]);
   
   const [isOpen, setIsOpen] = useState(false);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
@@ -54,25 +54,6 @@ const ChatWidget = ({ workspaceId, previewConfig, isPreviewMode = false }: ChatW
   const isMobile = useIsMobile();
   const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
-
-  // Listen for config updates in preview mode
-  useEffect(() => {
-    if (!isPreviewMode) return;
-    
-    const eventManager = getEventManager();
-    
-    const unsubscribe = eventManager.on('chat:configUpdated', (event) => {
-      if (event.data && event.data.config) {
-        // This would update the previewConfig if we were using state here
-        // But since we're directly passing previewConfig as a prop, the parent component
-        // is responsible for updating it
-      }
-    });
-    
-    return () => {
-      unsubscribe();
-    };
-  }, [isPreviewMode]);
 
   const widgetStyle = useMemo(() => ({
     ...(config.branding?.primaryColor && {
@@ -91,6 +72,14 @@ const ChatWidget = ({ workspaceId, previewConfig, isPreviewMode = false }: ChatW
     }, isMobile ? 50 : 0);
   }, [isOpen, clearUnreadMessages, isMobile]);
 
+  // Handle test mode as a special case
+  useEffect(() => {
+    if (isTestMode) {
+      // Log test mode activation
+      console.log('Chat Widget running in test mode with custom configuration');
+    }
+  }, [isTestMode]);
+
   if (loading) {
     return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles} config={config} />;
   }
@@ -99,7 +88,7 @@ const ChatWidget = ({ workspaceId, previewConfig, isPreviewMode = false }: ChatW
     <ChatWidgetErrorBoundary workspaceId={workspaceId}>
       <ConnectionManager
         workspaceId={workspaceId}
-        enabled={config.realtime?.enabled && !isPreviewMode}
+        enabled={config.realtime?.enabled && !isTestMode}
         onStatusChange={setConnectionStatus}
       />
       
