@@ -9,6 +9,7 @@ import PreChatForm from '../components/PreChatForm';
 import { useChatMessages } from '../hooks/useChatMessages';
 import { useMessageReactions } from '../hooks/useMessageReactions';
 import { useMessageSearch } from '../hooks/useMessageSearch';
+import { useInlineForm } from '../hooks/useInlineForm';
 import { dispatchChatEvent } from '../utils/events';
 
 interface ChatViewProps {
@@ -32,15 +33,18 @@ const ChatView = React.memo(({
 }: ChatViewProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [showInlineForm, setShowInlineForm] = useState(
-    config?.preChatForm?.enabled && !userFormData && !conversation.contactIdentified
-  );
 
-  useEffect(() => {
-    if (userFormData || conversation.contactIdentified) {
-      setShowInlineForm(false);
-    }
-  }, [userFormData, conversation.contactIdentified]);
+  // Use the new inline form hook
+  const {
+    showInlineForm,
+    handleFormComplete
+  } = useInlineForm(
+    conversation,
+    config,
+    userFormData,
+    setUserFormData,
+    onUpdateConversation
+  );
 
   const {
     messages,
@@ -110,35 +114,17 @@ const ChatView = React.memo(({
     }
   }, [loadPreviousMessages]);
 
-  const handleFormComplete = useCallback((formData: Record<string, string>) => {
-    setShowInlineForm(false);
-    
-    if (setUserFormData) {
-      setUserFormData(formData);
-    }
-    
-    onUpdateConversation({
-      ...conversation,
-      contactIdentified: true
-    });
-    
-    dispatchChatEvent('contact:formCompleted', { formData }, config);
-  }, [setUserFormData, onUpdateConversation, conversation, config]);
-
+  // Prepare content for rendering
   const agentAvatar = useMemo(() => conversation.agentInfo?.avatar || config?.branding?.avatarUrl, 
     [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]);
     
   const userAvatar = undefined;
-
   const hasMoreMessages = messages.length >= 20;
 
+  // Render pre-chat form component when needed
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
-      return (
-        <div className="mb-4">
-          <PreChatForm config={config} onFormComplete={handleFormComplete} />
-        </div>
-      );
+      return <PreChatForm config={config} onFormComplete={handleFormComplete} />;
     }
     return null;
   }, [showInlineForm, config, handleFormComplete]);
@@ -174,25 +160,33 @@ const ChatView = React.memo(({
         showSearchFeature={!!config?.features?.searchMessages}
       />
       
-      {inlineFormComponent}
-      
-      {(!showInlineForm || userFormData || conversation.contactIdentified) && (
-        <MessageList 
-          messages={messages}
-          isTyping={isTyping || remoteIsTyping}
-          setMessageText={setMessageText}
-          readReceipts={readReceipts}
-          onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
-          searchResults={messageIds}
-          highlightMessage={highlightText}
-          searchTerm={searchTerm}
-          agentAvatar={agentAvatar}
-          userAvatar={userAvatar}
-          onScrollTop={handleLoadMoreMessages}
-          hasMoreMessages={hasMoreMessages}
-          isLoadingMore={isLoadingMore}
-        />
-      )}
+      <div className="flex-grow overflow-hidden flex flex-col">
+        {showInlineForm ? (
+          <div className="flex-grow flex flex-col justify-center items-center p-4 bg-gradient-to-br from-[#f8f7ff] to-[#f5f3ff]">
+            <div className="w-full max-w-md">
+              {inlineFormComponent}
+            </div>
+          </div>
+        ) : (
+          <MessageList 
+            messages={messages}
+            isTyping={isTyping || remoteIsTyping}
+            setMessageText={setMessageText}
+            readReceipts={readReceipts}
+            onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
+            searchResults={messageIds}
+            highlightMessage={highlightText}
+            searchTerm={searchTerm}
+            agentAvatar={agentAvatar}
+            userAvatar={userAvatar}
+            onScrollTop={handleLoadMoreMessages}
+            hasMoreMessages={hasMoreMessages}
+            isLoadingMore={isLoadingMore}
+            conversationId={conversation.id}
+            agentStatus={conversation.agentInfo?.status}
+          />
+        )}
+      </div>
       
       <MessageInput
         messageText={messageText}

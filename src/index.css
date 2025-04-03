@@ -252,6 +252,36 @@
     @apply w-full py-1 px-2 text-center text-xs font-medium text-red-600 bg-red-100 rounded-sm my-2;
     animation: unread-pulse 2s ease-in-out infinite;
   }
+
+  /* PRE-CHAT FORM ENHANCEMENTS */
+  .pre-chat-form-container {
+    @apply bg-white rounded-xl shadow-lg p-6 border border-gray-100;
+    animation: form-appear 0.4s ease-out;
+  }
+  
+  @keyframes form-appear {
+    0% {
+      opacity: 0;
+      transform: translateY(20px) scale(0.96);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  .pre-chat-input {
+    @apply transition-all duration-200;
+  }
+  
+  .pre-chat-input:focus {
+    @apply ring-2 ring-vivid-purple/30 border-vivid-purple;
+  }
+  
+  .pre-chat-btn {
+    @apply transition-all duration-200 transform hover:scale-[1.02] hover:shadow-md;
+    box-shadow: 0 3px 10px rgba(139, 92, 246, 0.15);
+  }
 }
 
 /* Enhanced keyboard navigation indicators for chat components */
