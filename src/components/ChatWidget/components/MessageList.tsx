@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
@@ -249,7 +250,7 @@ const MessageList = ({
           if (unreadDivider === message.id) {
             renderedItems.push(
               <div key="unread-divider" className="w-full flex justify-center my-2">
-                <div className="bg-red-100 text-red-600 py-1.5 px-4 rounded-full text-xs font-medium shadow-sm animate-pulse">
+                <div className="unread-divider">
                   Unread messages
                 </div>
               </div>
@@ -263,7 +264,7 @@ const MessageList = ({
                 isMessageHighlighted(message.id) ? 'bg-yellow-100 p-2 rounded-lg' : ''
               } ${
                 isConsecutiveMessage(index) ? 'mt-1' : 'mt-4'
-              } ${message.important ? 'relative important-message-container' : ''}`}
+              } ${message.important ? 'important-message-container' : ''}`}
               style={{ 
                 animationDelay: `${index * 50}ms`,
                 opacity: 0
@@ -273,39 +274,25 @@ const MessageList = ({
               {message.important && (
                 <div className="absolute -left-1 top-0 h-full w-1 bg-vivid-purple rounded-full"></div>
               )}
-              <div className="flex flex-col w-full">
-                {message.sender !== 'status' && (
-                  <MessageBubble 
-                    message={enrichedMessage}
-                    setMessageText={setMessageText} 
-                    onReact={onMessageReaction}
-                    highlightSearchTerm={highlightMessage}
-                    searchTerm={searchTerm}
-                    isConsecutiveMessage={isConsecutiveMessage(index)}
-                    showAvatar={true}
-                    avatarUrl={message.sender === 'system' ? agentAvatar : userAvatar}
-                    agentStatus={agentStatus}
-                    onToggleHighlight={onToggleHighlight ? () => onToggleHighlight(message.id) : undefined}
-                    isImportant={message.important}
-                  />
-                )}
-                
-                {message.sender === 'status' && (
-                  <div className="w-full flex justify-center">
-                    <MessageBubble 
-                      message={message}
-                      highlightSearchTerm={highlightMessage}
-                      searchTerm={searchTerm}
-                    />
-                  </div>
-                )}
-                
-                {inlineFormComponent && index === 0 && message.sender === 'system' && (
-                  <div className="mt-3 w-full">
-                    {inlineFormComponent}
-                  </div>
-                )}
-              </div>
+              <MessageBubble 
+                message={enrichedMessage}
+                setMessageText={setMessageText} 
+                onReact={onMessageReaction}
+                highlightSearchTerm={highlightMessage}
+                searchTerm={searchTerm}
+                isConsecutiveMessage={isConsecutiveMessage(index)}
+                showAvatar={true}
+                avatarUrl={message.sender === 'system' ? agentAvatar : userAvatar}
+                agentStatus={agentStatus}
+                onToggleHighlight={onToggleHighlight ? () => onToggleHighlight(message.id) : undefined}
+                isImportant={message.important}
+              />
+              
+              {inlineFormComponent && index === 0 && message.sender === 'system' && (
+                <div className="mt-3 w-full">
+                  {inlineFormComponent}
+                </div>
+              )}
             </div>
           );
           
