@@ -1,16 +1,17 @@
-import { SecurityEvent, SecurityEventType } from './securityTypes';
+
+import { SecurityEvent, SecurityEventType, SecurityOutcome, SecuritySeverity } from './securityTypes';
 import { logger } from '../logger';
 
 class SecurityLogger {
   logSecurityEvent(
     eventType: SecurityEventType,
-    status: 'SUCCESS' | 'FAILURE' | 'ATTEMPT',
+    outcome: SecurityOutcome,
     details?: Record<string, any>,
-    severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'MEDIUM'
+    severity: SecuritySeverity = 'MEDIUM'
   ): void {
     const securityEvent: SecurityEvent = {
       type: eventType,
-      status,
+      outcome,
       timestamp: new Date(),
       details: details || {},
       severity
@@ -18,9 +19,9 @@ class SecurityLogger {
     
     // In development, just log to console
     if (import.meta.env.DEV) {
-      const logMethod = status === 'SUCCESS' ? logger.info : status === 'ATTEMPT' ? logger.warn : logger.error;
+      const logMethod = outcome === 'SUCCESS' ? logger.info : outcome === 'ATTEMPT' ? logger.warn : logger.error;
       logMethod(
-        `Security Event [${severity}]: ${eventType} (${status})`, 
+        `Security Event [${severity}]: ${eventType} (${outcome})`, 
         'SecurityLogger', 
         securityEvent.details
       );
@@ -29,9 +30,9 @@ class SecurityLogger {
     
     // In production, should send to a secure logging endpoint
     // This is a placeholder for actual secure logging implementation
-    if (severity === 'HIGH' || severity === 'CRITICAL' || status === 'FAILURE') {
+    if (severity === 'HIGH' || severity === 'CRITICAL' || outcome === 'FAILURE') {
       logger.error(
-        `Security Event [${severity}]: ${eventType} (${status})`, 
+        `Security Event [${severity}]: ${eventType} (${outcome})`, 
         'SecurityLogger', 
         securityEvent.details
       );
@@ -44,7 +45,7 @@ class SecurityLogger {
       // }).catch(e => console.error('Failed to log security event', e));
     } else {
       logger.info(
-        `Security Event: ${eventType} (${status})`, 
+        `Security Event: ${eventType} (${outcome})`, 
         'SecurityLogger', 
         securityEvent.details
       );

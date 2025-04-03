@@ -14,7 +14,16 @@ export enum SecurityEventType {
   CONFIGURATION = 'configuration',
   ACCESS_CONTROL = 'access_control',
   SECURITY_SETTING_CHANGE = 'security_setting_change',
-  CRYPTO_OPERATION_FAILED = 'crypto_operation_failed'
+  CRYPTO_OPERATION_FAILED = 'crypto_operation_failed',
+  TOKEN_ISSUED = 'token_issued',
+  TOKEN_REFRESHED = 'token_refreshed',
+  TOKEN_REVOKED = 'token_revoked',
+  TOKEN_REJECTED = 'token_rejected',
+  TOKEN_VALIDATED = 'token_validated',
+  LOGOUT = 'logout',
+  SENSITIVE_DATA_ACCESS = 'sensitive_data_access',
+  POSSIBLE_XSS_ATTEMPT = 'possible_xss_attempt',
+  RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded'
 }
 
 /**

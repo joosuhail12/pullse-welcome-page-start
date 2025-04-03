@@ -56,5 +56,5 @@ export function refreshSession(sessionId: string): string {
   return sessionId;
 }
 
-// Export types
-export * from '../../../lib/security/securityTypes';
+// Export types - fix the path to use the correct file
+export * from '@/lib/security/securityTypes';
