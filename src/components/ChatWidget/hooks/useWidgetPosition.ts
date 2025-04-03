@@ -1,16 +1,25 @@
 
 import { useMemo } from 'react';
-import { ChatWidgetConfig } from '../config';
+import { ChatWidgetConfig, ChatPosition } from '../config';
 
 export function useWidgetPosition(
   config: ChatWidgetConfig,
   isMobile: boolean
 ) {
   const getLauncherPositionStyles = useMemo(() => {
-    const position = config.position?.placement || 'bottom-right';
-    // Adjust offsets for mobile - smaller offsets on mobile for better edge positioning
-    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : (isMobile ? 0.5 : 1);
-    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : (isMobile ? 0.5 : 1);
+    // Convert string position to object if needed
+    const position = typeof config.position === 'string' 
+      ? config.position
+      : (config.position?.placement || 'bottom-right');
+      
+    // Handle offset values correctly
+    const offsetX = typeof config.position === 'object' && config.position.offsetX !== undefined
+      ? config.position.offsetX 
+      : (isMobile ? 0.5 : 1);
+      
+    const offsetY = typeof config.position === 'object' && config.position.offsetY !== undefined
+      ? config.position.offsetY
+      : (isMobile ? 0.5 : 1);
     
     let positionStyle: React.CSSProperties = {};
     
@@ -53,10 +62,20 @@ export function useWidgetPosition(
   }, [config.position, isMobile]);
 
   const getWidgetContainerPositionStyles = useMemo(() => {
-    const position = config.position?.placement || 'bottom-right';
-    // Adjust offsets for mobile - smaller offsets on mobile for better edge positioning
-    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : (isMobile ? 0.5 : 1);
-    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : (isMobile ? 0.5 : 1);
+    // Convert string position to object if needed
+    const position = typeof config.position === 'string' 
+      ? config.position
+      : (config.position?.placement || 'bottom-right');
+      
+    // Handle offset values correctly
+    const offsetX = typeof config.position === 'object' && config.position.offsetX !== undefined
+      ? config.position.offsetX 
+      : (isMobile ? 0.5 : 1);
+      
+    const offsetY = typeof config.position === 'object' && config.position.offsetY !== undefined
+      ? config.position.offsetY
+      : (isMobile ? 0.5 : 1);
+    
     const launcherHeight = isMobile ? 3.5 : 4;
     const containerMargin = 0.25;
     const totalOffset = offsetY + launcherHeight + containerMargin;
