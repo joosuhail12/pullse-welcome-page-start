@@ -107,24 +107,36 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       case 'card':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata && <CardMessage metadata={message.metadata} />}
+            <CardMessage 
+              title={message.cardData?.title}
+              description={message.cardData?.description}
+              imageUrl={message.cardData?.imageUrl}
+              metadata={message.metadata}
+              buttonText={message.cardData?.buttons?.[0]?.text}
+              buttonUrl={message.cardData?.buttons?.[0]?.url}
+            />
           </Suspense>
         );
       case 'file':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata && <FileMessage metadata={message.metadata} />}
+            <FileMessage 
+              fileName={message.fileName}
+              fileUrl={message.fileUrl}
+              fileType={message.metadata?.fileType}
+              fileSize={message.metadata?.fileSize}
+              metadata={message.metadata}
+            />
           </Suspense>
         );
       case 'quick_reply':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata && (
-              <QuickReplyMessage
-                metadata={message.metadata}
-                onReply={(text) => onReply && onReply(text)}
-              />
-            )}
+            <QuickReplyMessage
+              options={message.quickReplies}
+              onReply={(text) => onReply && onReply(text)}
+              metadata={message.metadata}
+            />
           </Suspense>
         );
       case 'status':

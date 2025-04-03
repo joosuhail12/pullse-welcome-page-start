@@ -13,6 +13,7 @@ const QuickReplyMessage: React.FC<QuickReplyMessageProps> = ({
   onReply,
   metadata
 }) => {
+  // Use provided options or extract from metadata
   const quickReplyOptions = options || metadata?.options || [];
   
   if (quickReplyOptions.length === 0) {

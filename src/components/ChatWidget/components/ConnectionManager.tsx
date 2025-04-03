@@ -3,12 +3,14 @@ import React, { useEffect, useCallback, useState } from 'react';
 import { initializeAblyClient, reconnectAbly } from '../utils/ably';
 import { ChatWidgetConfig } from '../config';
 
-interface ConnectionManagerProps {
+export interface ConnectionManagerProps {
   config: ChatWidgetConfig;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onReconnect?: () => void;
   onError?: (error: any) => void;
+  onStatusChange?: (status: 'connected' | 'disconnected' | 'connecting' | 'failed') => void;
+  enabled?: boolean;
 }
 
 export function ConnectionManager({ 
@@ -16,12 +18,14 @@ export function ConnectionManager({
   onConnect, 
   onDisconnect,
   onReconnect,
-  onError
+  onError,
+  onStatusChange,
+  enabled = true
 }: ConnectionManagerProps) {
   const [isConnected, setIsConnected] = useState(false);
   
   const connectToRealtime = useCallback(() => {
-    if (!config.realtime?.enabled) return;
+    if (!enabled || !config.realtime?.enabled) return;
     
     try {
       // Generate auth URL from config
@@ -34,26 +38,34 @@ export function ConnectionManager({
       client.connection.on('connected', () => {
         setIsConnected(true);
         onConnect?.();
+        onStatusChange?.('connected');
       });
       
       client.connection.on('disconnected', () => {
         setIsConnected(false);
         onDisconnect?.();
+        onStatusChange?.('disconnected');
+      });
+      
+      client.connection.on('connecting', () => {
+        onStatusChange?.('connecting');
       });
       
       client.connection.on('failed', (error) => {
         setIsConnected(false);
         onError?.(error);
+        onStatusChange?.('failed');
       });
       
     } catch (error) {
       onError?.(error);
+      onStatusChange?.('failed');
     }
-  }, [config, onConnect, onDisconnect, onError]);
+  }, [config, onConnect, onDisconnect, onError, onStatusChange, enabled]);
   
   useEffect(() => {
     // Connect to realtime if enabled
-    if (config.realtime?.enabled) {
+    if (enabled && config.realtime?.enabled) {
       connectToRealtime();
     }
     
@@ -61,14 +73,18 @@ export function ConnectionManager({
     return () => {
       // Connection cleanup would be handled here
     };
-  }, [config.realtime?.enabled, connectToRealtime]);
+  }, [enabled, config.realtime?.enabled, connectToRealtime]);
   
   // Handle reconnection attempts
   const handleReconnect = useCallback(() => {
     reconnectAbly().then(() => {
       onReconnect?.();
-    }).catch(onError);
-  }, [onReconnect, onError]);
+      onStatusChange?.('connected');
+    }).catch((error) => {
+      onError?.(error);
+      onStatusChange?.('failed');
+    });
+  }, [onReconnect, onError, onStatusChange]);
   
   return null; // This is a non-visual component
 }

@@ -20,6 +20,7 @@ const CardMessage: React.FC<CardMessageProps> = ({
   buttonUrl,
   metadata
 }) => {
+  // Use provided values or extract from metadata if not directly provided
   const cardTitle = title || metadata?.title;
   const cardDescription = description || metadata?.description;
   const cardImageUrl = imageUrl || metadata?.imageUrl;

@@ -18,6 +18,7 @@ const FileMessage: React.FC<FileMessageProps> = ({
   fileSize,
   metadata
 }) => {
+  // Use provided values or extract from metadata if not directly provided
   const fileNameToUse = fileName || metadata?.fileName || 'File';
   const fileUrlToUse = fileUrl || metadata?.fileUrl;
   const fileTypeToUse = fileType || metadata?.fileType || getFileTypeFromName(fileNameToUse);
