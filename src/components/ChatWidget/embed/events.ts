@@ -1,3 +1,4 @@
+
 import { ChatEventType, ChatEventPayload } from '../config';
 import { EventCallback } from './types';
 import { debounce } from './utils';
@@ -20,7 +21,7 @@ export class EventManager {
    */
   public handleEvent(event: ChatEventPayload): void {
     // Handle typing events with debouncing
-    if (event.type === 'chat:typingStarted' || event.type === 'chat:typingStopped') {
+    if (event.type === 'typing') {
       this.debouncedDispatch(event);
     } else {
       // Handle other events immediately
@@ -94,12 +95,5 @@ export class EventManager {
         }
       });
     }
-  }
-  
-  /**
-   * Public method to dispatch events programmatically
-   */
-  public dispatchEvent(event: ChatEventPayload): void {
-    this.dispatchToListeners(event);
   }
 }
