@@ -1,9 +1,10 @@
+
 import { PullseChatWidgetOptions } from './types';
 import { getPositionStyles, loadDependencies } from './utils';
 import { EventManager } from './events';
 import { createLauncherButton, createWidgetContainer, injectWidgetStyles } from './ui-components';
 import { initLazyLoadViaScroll, prepareWidgetConfig } from './lazy-loading';
-import { PullseChatWidgetAPI } from './interfaces/widget-api';
+import { PullseChatWidgetAPI } from './api';
 import { PullseChatWidgetAPIImpl } from './api-implementation';
 
 /**
