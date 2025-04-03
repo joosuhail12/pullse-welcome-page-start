@@ -1,5 +1,5 @@
 
-// Export everything from config except processQueuedMessages
+// Export everything from config
 export {
   getAblyClient,
   setAblyClient,
