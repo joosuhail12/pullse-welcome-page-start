@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Message } from '../types';
 import { Paperclip, ThumbsUp, ThumbsDown } from 'lucide-react';
@@ -6,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { sanitizeInput } from '../utils/validation';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { MessageReadStatus } from './MessageReadReceipt';
 
 interface MessageBubbleProps {
   message: Message;

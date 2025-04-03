@@ -4,6 +4,7 @@ import { Check, Clock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
+// Use 'export type' instead of just 'export' for the type definition
 export type MessageReadStatus = 'sent' | 'delivered' | 'read' | 'failed';
 
 interface MessageReadReceiptProps {

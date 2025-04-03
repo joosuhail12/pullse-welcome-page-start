@@ -27,6 +27,7 @@ interface MessageBubbleProps {
     sender: UserType;
     timestamp: Date;
     metadata?: Record<string, any>;
+    reaction?: 'thumbsUp' | 'thumbsDown' | null;
     reactions?: string[];
   };
   highlightText?: string;
@@ -34,7 +35,7 @@ interface MessageBubbleProps {
   userAvatar?: string;
   agentAvatar?: string;
   onReply?: (text: string) => void;
-  onReaction?: (messageId: string, emoji: string) => void;
+  onReaction?: (messageId: string, emoji: 'thumbsUp' | 'thumbsDown') => void;
   agentStatus?: 'online' | 'away' | 'offline';
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
@@ -60,7 +61,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     }
   };
 
-  const handleReaction = (emoji: string) => {
+  const handleReaction = (emoji: 'thumbsUp' | 'thumbsDown') => {
     if (onReaction) {
       onReaction(message.id, emoji);
       setShowReactions(false);
@@ -69,8 +70,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
 
   // Determine if the message is from the user or the agent
   const isUserMessage = message.sender === 'user';
-  const isBotMessage = message.sender === 'bot' || message.sender === 'agent';
-  const isSystemMessage = message.sender === 'system';
+  const isBotMessage = message.sender === 'bot' || message.sender === 'agent' || message.sender === 'system';
+  const isSystemMessage = message.sender === 'status';
 
   const messageTypeClass = isUserMessage
     ? 'bg-vivid-purple text-white rounded-t-2xl rounded-bl-2xl rounded-br-sm'
@@ -137,10 +138,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     >
       {!isSystemMessage && (
         <MessageAvatar
-          isUserMessage={isUserMessage}
-          userAvatar={userAvatar}
-          agentAvatar={agentAvatar}
-          agentStatus={agentStatus}
+          sender={isUserMessage ? 'user' : 'system'}
+          avatarUrl={isUserMessage ? userAvatar : agentAvatar}
+          status={isUserMessage ? undefined : agentStatus}
         />
       )}
 
@@ -164,12 +164,33 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
             />
           </div>
         )}
+
+        {/* Reaction indicator if message has a reaction */}
+        {message.reaction && !showReactions && (
+          <div className="absolute -bottom-6 left-0">
+            <div className={`p-1 rounded-full ${
+              message.reaction === 'thumbsUp' ? 'bg-green-100' : 'bg-red-100'
+            }`}>
+              {message.reaction === 'thumbsUp' ? (
+                <span className="flex items-center">
+                  <span className="text-green-600 text-xs mr-1">👍</span>
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <span className="text-red-600 text-xs mr-1">👎</span>
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {showReactions && onReaction && (
         <MessageReactionButtons
           onReaction={handleReaction}
           onClose={() => setShowReactions(false)}
+          currentReaction={message.reaction}
+          animate={true}
         />
       )}
     </div>

@@ -1,7 +1,6 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import MessageBubble from './MessageBubble';
+import MessageBubble from './MessageBubble/index';
 import TypingIndicator from './TypingIndicator';
 import { Button } from '@/components/ui/button';
 import { ArrowDown, Loader2 } from 'lucide-react';
@@ -12,10 +11,10 @@ interface MessageListProps {
   messages: any[];
   isTyping?: boolean;
   setMessageText?: (text: string) => void;
-  readReceipts?: Record<string, { status: MessageReadStatus; timestamp?: Date }>;
-  onMessageReaction?: (messageId: string, emoji: string) => void;
+  readReceipts?: Record<string, Date>;
+  onMessageReaction?: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
   searchResults?: string[];
-  highlightMessage?: (text: string) => string[];
+  highlightMessage?: (text: string, term: string) => { text: string; highlighted: boolean }[];
   searchTerm?: string;
   agentAvatar?: string;
   userAvatar?: string;
@@ -24,6 +23,7 @@ interface MessageListProps {
   isLoadingMore?: boolean;
   conversationId?: string;
   agentStatus?: 'online' | 'away' | 'offline';
+  onToggleHighlight?: (messageId: string) => void;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -41,7 +41,8 @@ const MessageList: React.FC<MessageListProps> = ({
   hasMoreMessages = false,
   isLoadingMore = false,
   conversationId,
-  agentStatus = 'online'
+  agentStatus = 'online',
+  onToggleHighlight
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -121,8 +122,12 @@ const MessageList: React.FC<MessageListProps> = ({
     }
   };
 
-  const getReadReceipt = (messageId: string) => {
-    return readReceipts[messageId] || { status: 'sent' as MessageReadStatus };
+  const getReadStatus = (messageId: string): MessageReadStatus => {
+    return readReceipts[messageId] ? 'read' : 'sent';
+  };
+
+  const getReadTimestamp = (messageId: string): Date | undefined => {
+    return readReceipts[messageId];
   };
 
   return (
@@ -150,7 +155,8 @@ const MessageList: React.FC<MessageListProps> = ({
         {messages.map((message, index) => {
           const isLastMessage = index === messages.length - 1;
           const isHighlighted = searchResults.includes(message.id);
-          const readReceipt = getReadReceipt(message.id);
+          const readStatus = getReadStatus(message.id);
+          const readTimestamp = getReadTimestamp(message.id);
           
           return (
             <div 
@@ -160,15 +166,15 @@ const MessageList: React.FC<MessageListProps> = ({
             >
               <MessageBubble
                 message={message}
-                highlightText={searchTerm && highlightMessage ? searchTerm : undefined}
+                highlightText={searchTerm}
                 isHighlighted={isHighlighted}
                 userAvatar={userAvatar}
                 agentAvatar={agentAvatar}
                 onReply={setMessageText}
                 onReaction={onMessageReaction}
-                agentStatus={message.sender === 'agent' ? agentStatus : undefined}
-                readStatus={readReceipt.status}
-                readTimestamp={readReceipt.timestamp}
+                agentStatus={agentStatus}
+                readStatus={readStatus}
+                readTimestamp={readTimestamp}
               />
             </div>
           );
@@ -177,7 +183,7 @@ const MessageList: React.FC<MessageListProps> = ({
         {isTyping && (
           <div className="flex items-end mb-4">
             <MessageAvatar 
-              sender={agentStatus ? 'system' : 'system'}
+              sender="system"
               avatarUrl={agentAvatar}
               status={agentStatus}
             />

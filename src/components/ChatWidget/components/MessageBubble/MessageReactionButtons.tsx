@@ -4,25 +4,36 @@ import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface MessageReactionButtonsProps {
-  messageId: string;
+  onReaction: (emoji: string) => void;
+  onClose: () => void;
+  messageId?: string;
   currentReaction?: 'thumbsUp' | 'thumbsDown' | null;
-  onReact: (messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => void;
   animate?: boolean;
 }
 
 const MessageReactionButtons = ({
+  onReaction,
+  onClose,
   messageId,
   currentReaction,
-  onReact,
   animate = false
 }: MessageReactionButtonsProps) => {
+  const handleReaction = (reaction: 'thumbsUp' | 'thumbsDown') => {
+    if (messageId) {
+      onReaction(reaction);
+    } else {
+      onReaction(reaction);
+    }
+    onClose();
+  };
+
   return (
-    <div className="flex gap-2 mt-1.5">
+    <div className="flex gap-2 mt-1.5 absolute -bottom-10 bg-white rounded-full shadow-md p-1.5 z-10">
       <Button
         variant="ghost"
         size="sm"
         className={`p-1 h-auto transition-all ${currentReaction === 'thumbsUp' ? 'bg-green-100' : ''} ${currentReaction === 'thumbsUp' && animate ? 'reaction-selected' : ''}`}
-        onClick={() => onReact(messageId, 'thumbsUp')}
+        onClick={() => handleReaction('thumbsUp')}
         aria-label="Thumbs up"
       >
         <ThumbsUp 
@@ -34,7 +45,7 @@ const MessageReactionButtons = ({
         variant="ghost"
         size="sm"
         className={`p-1 h-auto transition-all ${currentReaction === 'thumbsDown' ? 'bg-red-100' : ''} ${currentReaction === 'thumbsDown' && animate ? 'reaction-selected' : ''}`}
-        onClick={() => onReact(messageId, 'thumbsDown')}
+        onClick={() => handleReaction('thumbsDown')}
         aria-label="Thumbs down"
       >
         <ThumbsDown 
