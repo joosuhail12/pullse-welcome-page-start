@@ -218,3 +218,4 @@ export class PullseChatWidgetAPIImpl implements PullseChatWidgetAPI {
     }
   }
 }
+

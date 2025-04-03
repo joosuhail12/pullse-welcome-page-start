@@ -1,4 +1,3 @@
-
 /**
  * Pullse Chat Widget Embed Script
  * 
