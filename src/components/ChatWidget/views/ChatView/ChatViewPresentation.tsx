@@ -87,6 +87,11 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
 }) => {
   const isMobile = useIsMobile();
   
+  // Calculate height dynamically based on screen size
+  const chatViewHeight = isMobile 
+    ? "h-[85vh] max-h-[85vh]" 
+    : "h-[600px] max-h-[85vh]";
+  
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
       return (
@@ -107,7 +112,7 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
       showSearchFeature={showSearchFeature}
     >
       <div 
-        className="flex flex-col h-[600px] sm:h-[600px] max-h-[85vh] w-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 rounded-lg shadow-lg"
+        className={`flex flex-col w-full ${chatViewHeight} bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 rounded-lg shadow-lg`}
         style={chatViewStyle}
         role="region" 
         aria-label="Chat conversation"

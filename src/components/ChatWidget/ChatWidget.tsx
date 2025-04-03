@@ -55,6 +55,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     };
   }, [loading, config.realtime?.enabled, workspaceId]);
   
+  // Apply custom branding colors to the widget
   const widgetStyle = useMemo(() => {
     return {
       ...(config.branding?.primaryColor && {
@@ -63,24 +64,32 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     };
   }, [config.branding?.primaryColor]);
 
+  // Cleanup unread messages when opening the chat
   useEffect(() => {
     if (isOpen) {
       clearUnreadMessages();
     }
   }, [isOpen, clearUnreadMessages]);
 
+  // Toggle chat open/close state
   const toggleChat = useCallback(() => {
     const newIsOpen = !isOpen;
     setIsOpen(newIsOpen);
     
-    if (newIsOpen) {
-      dispatchChatEvent('chat:open', undefined, config);
-      clearUnreadMessages();
-    } else {
-      dispatchChatEvent('chat:close', undefined, config);
-    }
-  }, [isOpen, config, clearUnreadMessages]);
+    // Add a small delay on mobile devices to allow for animations
+    const eventDelay = isMobile ? 50 : 0;
+    
+    setTimeout(() => {
+      if (newIsOpen) {
+        dispatchChatEvent('chat:open', undefined, config);
+        clearUnreadMessages();
+      } else {
+        dispatchChatEvent('chat:close', undefined, config);
+      }
+    }, eventDelay);
+  }, [isOpen, config, clearUnreadMessages, isMobile]);
 
+  // Handle starting a chat with form data
   const wrappedHandleStartChat = useCallback((formData?: Record<string, string>) => {
     if (formData) {
       setUserFormData(formData);

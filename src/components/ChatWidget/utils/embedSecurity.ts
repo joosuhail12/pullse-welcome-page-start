@@ -12,7 +12,7 @@ export function injectCSP(hostElement: Element | Document = document): void {
   const meta = document.createElement('meta');
   meta.httpEquiv = 'Content-Security-Policy';
   
-  // Define CSP directives
+  // Define CSP directives with improved mobile support
   meta.content = [
     "default-src 'self' https://cdn.pullse.io",
     "script-src 'self' https://cdn.pullse.io https://unpkg.com 'sha256-CALCULATED_HASH_HERE'",
@@ -23,7 +23,7 @@ export function injectCSP(hostElement: Element | Document = document): void {
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'self' https://lovableproject.com"
+    "frame-ancestors 'self' https://*.lovableproject.com https://*.pullse.io"
   ].join('; ');
   
   // Add the meta tag to the document head or host element
@@ -66,7 +66,7 @@ export function createShadowContainer(container: HTMLElement): ShadowRoot {
   // Create Shadow DOM with 'open' mode
   const shadow = container.attachShadow({ mode: 'open' });
   
-  // Add base styles for Shadow DOM encapsulation
+  // Add base styles for Shadow DOM encapsulation with improved mobile support
   const style = document.createElement('style');
   style.textContent = `
     :host {
@@ -75,6 +75,22 @@ export function createShadowContainer(container: HTMLElement): ShadowRoot {
       position: relative;
       contain: content;
       font-family: system-ui, sans-serif;
+      z-index: 999999;
+    }
+    
+    /* Responsive container styles */
+    .pullse-chat-widget-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      z-index: 999999;
+    }
+    
+    /* Ensure container allows for proper widget positioning */
+    @media (max-width: 640px) {
+      :host {
+        overflow: visible !important;
+      }
     }
   `;
   shadow.appendChild(style);
@@ -94,6 +110,10 @@ export function initializeEmbedSecurity(containerId: string = 'pullse-chat-widge
   if (!container) {
     container = document.createElement('div');
     container.id = containerId;
+    container.style.position = 'fixed';
+    container.style.bottom = '0';
+    container.style.right = '0';
+    container.style.zIndex = '999999';
     document.body.appendChild(container);
   }
   
@@ -105,6 +125,12 @@ export function initializeEmbedSecurity(containerId: string = 'pullse-chat-widge
     const innerContainer = document.createElement('div');
     innerContainer.className = 'pullse-chat-widget-inner';
     shadow.appendChild(innerContainer);
+    
+    // Add viewport meta tag for proper mobile rendering
+    const viewport = document.createElement('meta');
+    viewport.name = 'viewport';
+    viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    shadow.appendChild(viewport);
     
     // Inject CSP into the shadow DOM
     injectCSP(shadow);
@@ -118,4 +144,20 @@ export function initializeEmbedSecurity(containerId: string = 'pullse-chat-widge
   }
   
   return container;
+}
+
+// Helper function to check if the device is mobile
+export function isMobileDevice(): boolean {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (window.innerWidth <= 640);
+}
+
+// Add responsive meta tag to parent document if embedded
+export function ensureResponsiveMetaTags(): void {
+  if (!document.querySelector('meta[name="viewport"]')) {
+    const meta = document.createElement('meta');
+    meta.name = 'viewport';
+    meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+    document.head.appendChild(meta);
+  }
 }

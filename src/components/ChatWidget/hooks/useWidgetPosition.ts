@@ -8,8 +8,9 @@ export function useWidgetPosition(
 ) {
   const getLauncherPositionStyles = useMemo(() => {
     const position = config.position?.placement || 'bottom-right';
-    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 0.25;
-    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 0.25;
+    // Adjust offsets for mobile - smaller offsets on mobile for better edge positioning
+    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : (isMobile ? 0.5 : 1);
+    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : (isMobile ? 0.5 : 1);
     
     let positionStyle: React.CSSProperties = {};
     
@@ -49,12 +50,13 @@ export function useWidgetPosition(
     }
     
     return positionStyle;
-  }, [config.position]);
+  }, [config.position, isMobile]);
 
   const getWidgetContainerPositionStyles = useMemo(() => {
     const position = config.position?.placement || 'bottom-right';
-    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 0.25;
-    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 0.25;
+    // Adjust offsets for mobile - smaller offsets on mobile for better edge positioning
+    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : (isMobile ? 0.5 : 1);
+    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : (isMobile ? 0.5 : 1);
     const launcherHeight = isMobile ? 3.5 : 4;
     const containerMargin = 0.25;
     const totalOffset = offsetY + launcherHeight + containerMargin;

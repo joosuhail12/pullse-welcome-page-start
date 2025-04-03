@@ -7,6 +7,7 @@ import MessagesView from '../views/MessagesView';
 import ChatView from '../views/ChatView';
 import TabBar from './TabBar';
 import PoweredByBar from './PoweredByBar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WidgetContainerProps {
   isOpen: boolean;
@@ -43,9 +44,18 @@ const WidgetContainer: React.FC<WidgetContainerProps> = ({
 }) => {
   if (!isOpen) return null;
   
-  const widgetWidth = "w-[90vw] sm:w-80 md:w-96";
-  const widgetHeight = "h-[500px] sm:h-[600px]";
-  const widgetMaxHeight = "max-h-[80vh] sm:max-h-[85vh]";
+  const isMobile = useIsMobile();
+  
+  // Enhanced responsive width and height classes
+  const widgetWidth = isMobile 
+    ? "w-[95vw] max-w-[100vw]" // Nearly full width on very small screens
+    : "w-[90vw] sm:w-80 md:w-96"; // Percentage based with breakpoints
+    
+  const widgetHeight = isMobile 
+    ? "h-[85vh]" // Taller on mobile to use more screen space
+    : "h-[500px] sm:h-[600px]";
+    
+  const widgetMaxHeight = "max-h-[90vh] sm:max-h-[85vh]"; // Increased max height for small screens
 
   return (
     <div 
