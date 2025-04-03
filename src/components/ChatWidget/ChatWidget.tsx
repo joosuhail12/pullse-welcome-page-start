@@ -93,8 +93,8 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
 
   const getLauncherPositionStyles = useMemo(() => {
     const position = config.position?.placement || 'bottom-right';
-    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 0.5;
-    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 0.5;
+    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 0.25;
+    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 0.25;
     
     let positionStyle: React.CSSProperties = {};
     
@@ -138,10 +138,10 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
 
   const getWidgetContainerPositionStyles = useMemo(() => {
     const position = config.position?.placement || 'bottom-right';
-    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 0.5;
-    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 0.5;
+    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 0.25;
+    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 0.25;
     const launcherHeight = isMobile ? 3.5 : 4;
-    const containerMargin = 0.5;
+    const containerMargin = 0.25;
     const totalOffset = offsetY + launcherHeight + containerMargin;
     
     let positionStyle: React.CSSProperties = {};
