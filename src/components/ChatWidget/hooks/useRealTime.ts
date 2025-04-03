@@ -44,11 +44,19 @@ export function useRealTime(
     !!config?.realtime?.enabled
   );
 
-  // Memoize the function to send read receipts
+  // Memoize the function to send read receipts - prevents unnecessary re-renders
   const sendReadReceipts = useCallback(() => {
     if (!config?.realtime?.enabled || messages.length === 0) return;
     
+    // Use Set to track already processed message IDs
+    const processedIds = new Set<string>();
+    
     messages.forEach(message => {
+      // Skip if already processed this message
+      if (processedIds.has(message.id)) return;
+      
+      processedIds.add(message.id);
+      
       if (message.sender === 'system') {
         // Send read receipt for existing system messages
         publishToChannel(chatChannelName, 'read', {
@@ -60,7 +68,7 @@ export function useRealTime(
     });
   }, [chatChannelName, config?.realtime?.enabled, messages, sessionId]);
 
-  // Effects for specific functionality
+  // Effect for cleanup and initialization
   useEffect(() => {
     // Process existing messages when component mounts
     sendReadReceipts();
@@ -68,6 +76,7 @@ export function useRealTime(
     // Set mounted flag for cleanup
     isMounted.current = true;
     
+    // Return cleanup function to avoid memory leaks
     return () => {
       isMounted.current = false;
       
@@ -97,12 +106,21 @@ export function useRealTime(
         clearInterval(typingIntervalRef.current);
       }
       
+      // Debounce typing simulation to reduce CPU usage
+      const debounceInterval = 15000; // 15 seconds between typing simulations
+      
       // Set up new typing simulation
       typingIntervalRef.current = setInterval(() => {
-        if (!isMounted.current) return;
+        if (!isMounted.current) {
+          // Component unmounted, clean up
+          if (typingIntervalRef.current) {
+            clearInterval(typingIntervalRef.current);
+          }
+          return;
+        }
         
         typingTimerRef.current = simulateAgentTyping(setIsTyping, setMessages, config, playMessageSound);
-      }, 15000);
+      }, debounceInterval);
       
       return () => {
         if (typingTimerRef.current) {

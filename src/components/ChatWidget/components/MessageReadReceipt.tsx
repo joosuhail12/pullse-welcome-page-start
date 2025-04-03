@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Check, Clock } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 export type MessageReadStatus = 'sent' | 'delivered' | 'read' | 'failed';
@@ -12,12 +12,12 @@ interface MessageReadReceiptProps {
   className?: string;
 }
 
-const MessageReadReceipt: React.FC<MessageReadReceiptProps> = ({ 
+const MessageReadReceipt: React.FC<MessageReadReceiptProps> = React.memo(({ 
   status = 'sent', 
   timestamp,
   className
 }) => {
-  const getStatusInfo = () => {
+  const statusInfo = useMemo(() => {
     switch (status) {
       case 'read':
         return {
@@ -49,38 +49,40 @@ const MessageReadReceipt: React.FC<MessageReadReceiptProps> = ({
           doubleCheck: false
         };
     }
-  };
-
-  const statusInfo = getStatusInfo();
+  }, [status, timestamp]);
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className={cn("flex items-center justify-end space-x-0.5", className)}>
-          {statusInfo.doubleCheck ? (
-            <div className="relative">
-              <Check size={14} className="text-gray-400 opacity-70" />
-              <Check size={14} className={`absolute top-0 left-1 ${status === 'read' ? 'text-green-500' : 'text-gray-400'}`} />
-            </div>
-          ) : status === 'failed' ? (
-            <div className="rounded-full bg-red-100 w-3.5 h-3.5 flex items-center justify-center">
-              {statusInfo.icon}
-            </div>
-          ) : status === 'sent' ? (
-            <Clock size={14} className="text-gray-400" />
-          ) : (
-            statusInfo.icon
-          )}
-        </div>
-      </TooltipTrigger>
-      <TooltipContent side="top" align="end">
-        <div className="text-xs">
-          <div className="font-medium">{statusInfo.label}</div>
-          <div className="text-gray-500">{statusInfo.description}</div>
-        </div>
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className={cn("flex items-center justify-end space-x-0.5", className)}>
+            {statusInfo.doubleCheck ? (
+              <div className="relative">
+                <Check size={14} className="text-gray-400 opacity-70" />
+                <Check size={14} className={`absolute top-0 left-1 ${status === 'read' ? 'text-green-500' : 'text-gray-400'}`} />
+              </div>
+            ) : status === 'failed' ? (
+              <div className="rounded-full bg-red-100 w-3.5 h-3.5 flex items-center justify-center">
+                {statusInfo.icon}
+              </div>
+            ) : status === 'sent' ? (
+              <Clock size={14} className="text-gray-400" />
+            ) : (
+              statusInfo.icon
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" align="end">
+          <div className="text-xs">
+            <div className="font-medium">{statusInfo.label}</div>
+            <div className="text-gray-500">{statusInfo.description}</div>
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
-};
+});
+
+MessageReadReceipt.displayName = 'MessageReadReceipt';
 
 export default MessageReadReceipt;

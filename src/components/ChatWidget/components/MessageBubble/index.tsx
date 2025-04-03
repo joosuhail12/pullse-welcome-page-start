@@ -1,16 +1,23 @@
 
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { MessageType, UserType } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
-import CardMessage from '../MessageTypes/CardMessage';
-import FileMessage from '../MessageTypes/FileMessage';
-import QuickReplyMessage from '../MessageTypes/QuickReplyMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
 import MessageStatus from './MessageStatus';
 import MessageAvatar from './MessageAvatar';
 import MessageReactionButtons from './MessageReactionButtons';
 import MessageReadReceipt, { MessageReadStatus } from '../MessageReadReceipt';
 import { cn } from '@/lib/utils';
+
+// Lazy load less commonly used message types
+const CardMessage = lazy(() => import('../MessageTypes/CardMessage'));
+const FileMessage = lazy(() => import('../MessageTypes/FileMessage'));
+const QuickReplyMessage = lazy(() => import('../MessageTypes/QuickReplyMessage'));
+
+// Loading fallback for lazy components
+const LazyLoadFallback = () => (
+  <div className="w-full h-16 bg-gray-100 animate-pulse rounded-md"></div>
+);
 
 interface MessageBubbleProps {
   message: {
@@ -33,7 +40,7 @@ interface MessageBubbleProps {
   readTimestamp?: Date;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({
+const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   message,
   highlightText,
   isHighlighted,
@@ -85,6 +92,41 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   };
 
+  // Render message content based on type
+  const renderMessageContent = () => {
+    switch (message.type) {
+      case 'text':
+        return <TextMessage text={message.text} highlightText={highlightText} />;
+      case 'card':
+        return (
+          <Suspense fallback={<LazyLoadFallback />}>
+            {message.metadata && <CardMessage metadata={message.metadata} />}
+          </Suspense>
+        );
+      case 'file':
+        return (
+          <Suspense fallback={<LazyLoadFallback />}>
+            {message.metadata && <FileMessage metadata={message.metadata} />}
+          </Suspense>
+        );
+      case 'quick_reply':
+        return (
+          <Suspense fallback={<LazyLoadFallback />}>
+            {message.metadata && (
+              <QuickReplyMessage
+                metadata={message.metadata}
+                onReply={(text) => onReply && onReply(text)}
+              />
+            )}
+          </Suspense>
+        );
+      case 'status':
+        return <StatusMessage text={message.text} />;
+      default:
+        return <TextMessage text={message.text} highlightText={highlightText} />;
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -110,23 +152,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           isSystemMessage && 'py-2 px-3'
         )}
       >
-        {message.type === 'text' && (
-          <TextMessage text={message.text} highlightText={highlightText} />
-        )}
-        {message.type === 'card' && message.metadata && (
-          <CardMessage metadata={message.metadata} />
-        )}
-        {message.type === 'file' && message.metadata && (
-          <FileMessage metadata={message.metadata} />
-        )}
-        {message.type === 'quick_reply' && message.metadata && (
-          <QuickReplyMessage
-            metadata={message.metadata}
-            onReply={(text) => onReply && onReply(text)}
-          />
-        )}
-        {message.type === 'status' && <StatusMessage text={message.text} />}
-
+        {renderMessageContent()}
         <MessageStatus timestamp={message.timestamp} />
         
         {/* Read receipts - Only show for user messages */}
@@ -148,6 +174,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       )}
     </div>
   );
-};
+});
+
+MessageBubble.displayName = 'MessageBubble';
 
 export default MessageBubble;

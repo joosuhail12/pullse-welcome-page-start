@@ -1,4 +1,3 @@
-
 /**
  * Pullse Chat Widget Embed Script
  * Version 1.0.0
@@ -14,6 +13,11 @@
   var pullseChatQueue = [];
   var initialized = false;
   var eventListeners = {};
+  var widgetScriptLoaded = false;
+  var lazyLoadObserver = null;
+  
+  // Cache DOM elements
+  var containerElement = null;
   
   // Create global Pullse object if it doesn't exist
   if (!w.Pullse) {
@@ -65,7 +69,7 @@
     eventListeners[fullEventType].push(callback);
     
     // Set up DOM event listener if widget is already initialized
-    if (initialized) {
+    if (initialized && widgetScriptLoaded) {
       var handleEvent = function(event) {
         callback(event.detail);
       };
@@ -124,7 +128,131 @@
   }
   
   /**
-   * Initialize the chat widget
+   * Progressive loading - Create only launcher button first
+   */
+  function createLauncherButton(options, position, offsetX, offsetY) {
+    // Create launcher container
+    var launcherContainer = document.createElement('div');
+    launcherContainer.id = 'pullse-chat-launcher';
+    launcherContainer.style.position = 'fixed';
+    launcherContainer.style.zIndex = '9998';
+    launcherContainer.style.cursor = 'pointer';
+    
+    // Apply position
+    switch (position) {
+      case 'bottom-left':
+        launcherContainer.style.bottom = offsetY + 'px';
+        launcherContainer.style.left = offsetX + 'px';
+        break;
+      case 'top-right':
+        launcherContainer.style.top = offsetY + 'px';
+        launcherContainer.style.right = offsetX + 'px';
+        break;
+      case 'top-left':
+        launcherContainer.style.top = offsetY + 'px';
+        launcherContainer.style.left = offsetX + 'px';
+        break;
+      case 'bottom-right':
+      default:
+        launcherContainer.style.bottom = offsetY + 'px';
+        launcherContainer.style.right = offsetX + 'px';
+    }
+    
+    // Create the button
+    var button = document.createElement('div');
+    button.className = 'pullse-chat-button';
+    button.style.width = '50px';
+    button.style.height = '50px';
+    button.style.borderRadius = '50%';
+    button.style.backgroundColor = options.primaryColor || '#6366f1';
+    button.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+    button.style.display = 'flex';
+    button.style.alignItems = 'center';
+    button.style.justifyContent = 'center';
+    button.style.transition = 'all 0.2s ease';
+    
+    // Create the icon
+    var svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: white"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>';
+    button.innerHTML = svgIcon;
+    
+    // Add hover effect
+    button.onmouseover = function() {
+      button.style.transform = 'scale(1.05)';
+    };
+    button.onmouseout = function() {
+      button.style.transform = 'scale(1)';
+    };
+    
+    // Add click handler to load full widget
+    button.onclick = function() {
+      loadFullWidget(options);
+      launcherContainer.style.display = 'none';
+    };
+    
+    launcherContainer.appendChild(button);
+    document.body.appendChild(launcherContainer);
+    
+    return launcherContainer;
+  }
+  
+  /**
+   * Lazy load the full widget when needed
+   */
+  function loadFullWidget(config) {
+    if (widgetScriptLoaded) {
+      return;
+    }
+    
+    // Create container element for the full widget if not already created
+    if (!containerElement) {
+      containerElement = document.createElement('div');
+      containerElement.id = 'pullse-chat-widget-container';
+      document.body.appendChild(containerElement);
+    }
+    
+    // Add styles
+    if (!document.getElementById('pullse-chat-widget-styles')) {
+      var styleElement = document.createElement('style');
+      styleElement.id = 'pullse-chat-widget-styles';
+      styleElement.textContent = '#pullse-chat-widget-container { position: fixed; z-index: 9999; ' + getPositionStyles(config.position, config.offsetX, config.offsetY) + ' }';
+      document.head.appendChild(styleElement);
+    }
+    
+    // Set global config object with version stamp for cache busting
+    w.__PULLSE_CHAT_CONFIG__ = {
+      ...config,
+      version: '1.0.' + Date.now(), // Add timestamp for cache busting
+      onEvent: function(event) {
+        handleWidgetEvent(event);
+      }
+    };
+    
+    // Dynamically load the widget script with cache busting
+    var scriptElement = document.createElement('script');
+    var cacheParam = '?v=' + (new Date().getTime());
+    scriptElement.src = 'https://cdn.pullse.io/chat-widget.js' + cacheParam;
+    scriptElement.async = true;
+    scriptElement.onload = function() {
+      console.log('Pullse Chat Widget loaded successfully');
+      widgetScriptLoaded = true;
+      
+      // Process queued commands
+      while (pullseChatQueue.length > 0) {
+        var command = pullseChatQueue.shift();
+        if (w.Pullse.chatAPI && typeof w.Pullse.chatAPI[command[0]] === 'function') {
+          w.Pullse.chatAPI[command[0]].apply(null, command.slice(1));
+        }
+      }
+      
+      // Set up event handlers after load
+      setupEventHandlers();
+    };
+    
+    document.body.appendChild(scriptElement);
+  }
+  
+  /**
+   * Initialize the chat widget with lazy loading
    */
   function initChatWidget(options) {
     // Validate required options
@@ -143,7 +271,7 @@
     var offsetX = options.offsetX !== undefined ? options.offsetX : 20;
     var offsetY = options.offsetY !== undefined ? options.offsetY : 20;
     
-    // Set default options
+    // Set default options with function references removed (for serialization)
     var config = {
       position: {
         placement: position,
@@ -160,43 +288,66 @@
         showBrandingBar: !options.hideBranding
       },
       autoOpen: !!options.autoOpen,
-      onEvent: options.onEvent,
       eventHandlers: options.eventHandlers || {}
     };
     
-    // Create global config object
-    w.__PULLSE_CHAT_CONFIG__ = config;
+    // Check if we should implement lazy loading via scroll
+    if (options.lazyLoadScroll) {
+      initLazyLoadViaScroll(options, config, position, offsetX, offsetY);
+    } 
+    // Check if autoOpen is set - if yes, load the full widget immediately
+    else if (options.autoOpen) {
+      loadFullWidget(config);
+    } 
+    // Otherwise, start with just the launcher
+    else {
+      createLauncherButton(options, position, offsetX, offsetY);
+    }
+  }
+  
+  /**
+   * Initialize lazy loading via scroll with Intersection Observer
+   */
+  function initLazyLoadViaScroll(options, config, position, offsetX, offsetY) {
+    // Create a sentinel element for the observer
+    var sentinel = document.createElement('div');
+    sentinel.style.height = '1px';
+    sentinel.style.width = '1px';
+    sentinel.style.position = 'absolute'; 
+    sentinel.style.visibility = 'hidden';
     
-    // Create container element
-    var containerElement = document.createElement('div');
-    containerElement.id = 'pullse-chat-widget-container';
-    document.body.appendChild(containerElement);
+    // Position the sentinel near the bottom of the page
+    var scrollThreshold = options.scrollThreshold || 0.7; // Default 70% down the page
+    sentinel.style.top = (window.innerHeight * scrollThreshold) + 'px';
     
-    // Add styles
-    var styleElement = document.createElement('style');
-    styleElement.textContent = '#pullse-chat-widget-container { position: fixed; z-index: 9999; ' + getPositionStyles(position, offsetX, offsetY) + ' }';
-    document.head.appendChild(styleElement);
+    document.body.appendChild(sentinel);
     
-    // Load widget script
-    var scriptElement = document.createElement('script');
-    scriptElement.src = 'https://cdn.pullse.io/chat-widget.js'; // Replace with actual CDN URL
-    scriptElement.async = true;
-    scriptElement.onload = function() {
-      console.log('Pullse Chat Widget loaded successfully');
-      
-      // Process queued commands
-      while (pullseChatQueue.length > 0) {
-        var command = pullseChatQueue.shift();
-        if (w.Pullse.chatAPI && typeof w.Pullse.chatAPI[command[0]] === 'function') {
-          w.Pullse.chatAPI[command[0]].apply(null, command.slice(1));
+    // Use Intersection Observer to detect when user scrolls to the sentinel
+    lazyLoadObserver = new IntersectionObserver(function(entries) {
+      if (entries[0].isIntersecting) {
+        // User has scrolled to the threshold, load the widget
+        loadFullWidget(config);
+        
+        // Stop observing
+        if (lazyLoadObserver) {
+          lazyLoadObserver.disconnect();
+          lazyLoadObserver = null;
+        }
+        
+        // Remove sentinel
+        if (sentinel.parentNode) {
+          sentinel.parentNode.removeChild(sentinel);
         }
       }
-      
-      // Set up event handlers after load
-      setupEventHandlers();
-    };
+    }, {
+      threshold: 0.1 // Trigger when 10% visible
+    });
     
-    document.body.appendChild(scriptElement);
+    // Start observing
+    lazyLoadObserver.observe(sentinel);
+    
+    // Add lightweight launcher button for immediate interaction
+    createLauncherButton(options, position, offsetX, offsetY);
   }
   
   /**
@@ -223,9 +374,32 @@
   }
   
   /**
-   * Handle widget events
+   * Handle widget events with debounce for typing indicators
    */
+  var typingTimeout;
   function handleWidgetEvent(event) {
+    // Apply debouncing for typing indicators
+    if (event.type === 'typing') {
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
+      
+      // Wait 300ms before dispatching typing events
+      typingTimeout = setTimeout(function() {
+        dispatchEvent(event);
+      }, 300);
+      
+      return;
+    }
+    
+    // For all other events, dispatch immediately
+    dispatchEvent(event);
+  }
+  
+  /**
+   * Dispatch event to handlers
+   */
+  function dispatchEvent(event) {
     // Dispatch to registered handlers
     var eventType = 'pullse:' + event.type;
     
@@ -284,7 +458,9 @@
       avatarUrl: currentScript.getAttribute('data-avatar-url'),
       widgetTitle: currentScript.getAttribute('data-widget-title'),
       hideBranding: currentScript.hasAttribute('data-hide-branding'),
-      autoOpen: currentScript.hasAttribute('data-auto-open')
+      autoOpen: currentScript.hasAttribute('data-auto-open'),
+      lazyLoadScroll: currentScript.hasAttribute('data-lazy-load'),
+      scrollThreshold: currentScript.getAttribute('data-scroll-threshold') ? parseFloat(currentScript.getAttribute('data-scroll-threshold')) : undefined
     });
   }
 })(window, document);

@@ -10,7 +10,7 @@ interface MessageAvatarProps {
   agentStatus?: 'online' | 'away' | 'offline';
 }
 
-const MessageAvatar: React.FC<MessageAvatarProps> = ({ 
+const MessageAvatar: React.FC<MessageAvatarProps> = React.memo(({ 
   isUserMessage, 
   userAvatar, 
   agentAvatar,
@@ -29,6 +29,7 @@ const MessageAvatar: React.FC<MessageAvatarProps> = ({
           src={isUserMessage ? userAvatar : agentAvatar} 
           alt={isUserMessage ? "User" : "Agent"}
           className="object-cover"
+          loading="lazy"
         />
         <AvatarFallback className="text-[10px] bg-gray-100">
           <User size={14} />
@@ -43,6 +44,8 @@ const MessageAvatar: React.FC<MessageAvatarProps> = ({
       )}
     </div>
   );
-};
+});
+
+MessageAvatar.displayName = 'MessageAvatar';
 
 export default MessageAvatar;
