@@ -1,4 +1,3 @@
-
 import React, { useState, lazy, Suspense } from 'react';
 import { MessageType, UserType, AgentStatus } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
@@ -89,7 +88,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   const isBotMessage = message.sender === 'bot' || message.sender === 'agent';
   const isSystemMessage = message.sender === 'system';
 
-  // Get status-based colors for agent message bubbles
   const getStatusBasedClasses = () => {
     if (!isBotMessage || !agentStatus) return '';
     
@@ -107,7 +105,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     }
   };
 
-  // Additional classes for consecutive messages (grouped)
   const getConsecutiveClasses = () => {
     if (!isConsecutive) return '';
     
@@ -277,7 +274,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         />
       )}
 
-      {/* Add an empty space for avatar alignment when not showing avatar */}
       {!isSystemMessage && !showAvatar && (
         <div className="w-8 flex-shrink-0"></div>
       )}
@@ -294,7 +290,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       >
         {renderMessageContent()}
         
-        {/* Only show timestamp for the last message in a group or non-consecutive messages */}
         {!isConsecutive && <MessageStatus timestamp={message.timestamp} />}
         
         {isUserMessage && !isConsecutive && (
