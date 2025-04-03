@@ -1,4 +1,11 @@
+
 import { ChatWidgetConfig } from '../config';
+
+// Extended interface to handle custom properties
+interface ExtendedChatWidgetConfig extends ChatWidgetConfig {
+  styles?: Record<string, string>;
+  customCSS?: string;
+}
 
 // Function to generate a unique ID for the chat widget
 export function generateWidgetId(): string {
@@ -6,7 +13,7 @@ export function generateWidgetId(): string {
 }
 
 // Function to inject the chat widget into the DOM
-export function injectChatWidget(widgetId: string, config: ChatWidgetConfig): void {
+export function injectChatWidget(widgetId: string, config: ExtendedChatWidgetConfig): void {
   // Check if the widget already exists
   if (document.getElementById(widgetId)) {
     console.warn(`Chat widget with ID "${widgetId}" already exists. Skipping injection.`);
@@ -36,7 +43,7 @@ export function removeChatWidget(widgetId: string): void {
 }
 
 // Function to apply custom CSS to the chat widget
-export function applyCustomCSS(widgetId: string, config: ChatWidgetConfig): void {
+export function applyCustomCSS(widgetId: string, config: ExtendedChatWidgetConfig): void {
   const shadowRoot = document.getElementById(widgetId)?.shadowRoot;
 
   if (shadowRoot && config.customCSS) {
@@ -59,11 +66,15 @@ export function collectDomStyles(): string {
   // Collect styles from all link tags with rel="stylesheet"
   const linkElements = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
   linkElements.forEach((linkEl) => {
-    // Fetch the CSS file and add its content to the styles array
-    fetch(linkEl.href)
-      .then(response => response.text())
-      .then(css => styles.push(css))
-      .catch(error => console.error('Error fetching CSS:', error));
+    // Need to cast linkEl to HTMLLinkElement to access href property
+    const linkHref = (linkEl as HTMLLinkElement).href;
+    if (linkHref) {
+      // Fetch the CSS file and add its content to the styles array
+      fetch(linkHref)
+        .then(response => response.text())
+        .then(css => styles.push(css))
+        .catch(error => console.error('Error fetching CSS:', error));
+    }
   });
 
   return styles.join('\n');
@@ -84,7 +95,7 @@ export function getDomStyles(shadowRoot: ShadowRoot): string {
 }
 
 // Function to create a Shadow DOM for the chat widget
-export function createShadowDOM(widgetId: string, styles: string, config: ChatWidgetConfig): ShadowRoot | null {
+export function createShadowDOM(widgetId: string, styles: string, config: ExtendedChatWidgetConfig): ShadowRoot | null {
   const chatWidgetContainer = document.getElementById(widgetId);
 
   if (!chatWidgetContainer) {

@@ -58,13 +58,19 @@ export const retryableToast = (
 ) => {
   const { onRetry, ...toastOptions } = options
   
+  // Correctly create a button using React API
   const retryAction = createElement(
     'button',
     {
       className: "bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2 py-1 rounded text-xs",
       onClick: () => {
         // Dismiss the current toast
-        toast.dismiss()
+        const toastInstance = toast({
+          title: "Dismissing...",
+          duration: 0
+        });
+        toast.dismiss(toastInstance.id);
+        
         // Execute the retry action
         onRetry()
       }
@@ -78,4 +84,3 @@ export const retryableToast = (
     duration: 10000 // Give more time for user to decide to retry
   })
 }
-
