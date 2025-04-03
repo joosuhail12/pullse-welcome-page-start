@@ -60,9 +60,8 @@ class AuditLogger {
       console.log(`[ADMIN] User ${userId} performed action: ${action}`, details);
     }
   }
-  
-  // Export SecurityEventType for external use
-  SecurityEventType = SecurityEventType;
 }
 
+// Create and export a singleton instance
 export const logger = new AuditLogger();
+export const auditLogger = new AuditLogger(); // Add this export

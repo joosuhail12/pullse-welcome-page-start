@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import { initializeAbly, cleanupAbly, reconnectAbly } from '../utils/ably';
 import { getAblyAuthUrl } from '../services/ablyAuth';
 import { ConnectionStatus, getReconnectionManager } from '../utils/reconnectionManager';
-import { toasts } from '@/lib/toast-utils';
+import { showSuccessToast, showWarningToast, showErrorToast } from '@/lib/toast-utils';
 import { logger } from '@/lib/logger';
 
 interface ConnectionManagerProps {
@@ -48,9 +48,8 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
         logger.info(`Reconnection attempt ${reconnectionAttempts.current}`, 'ConnectionManager');
         
         if (reconnectionAttempts.current === 1) {
-          toasts.warning({
-            title: 'Reconnecting',
-            description: 'Attempting to restore connection...'
+          showWarningToast('Attempting to restore connection...', {
+            title: 'Reconnecting'
           });
         }
         
@@ -62,9 +61,8 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
           
           logger.info('Real-time connection restored', 'ConnectionManager');
           
-          toasts.success({
-            title: 'Connected',
-            description: 'Real-time connection restored'
+          showSuccessToast('Real-time connection restored', {
+            title: 'Connected'
           });
           
           return true;
@@ -74,9 +72,8 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
       }).catch(error => {
         logger.error('Reconnection failed after multiple attempts', 'ConnectionManager', error);
         
-        toasts.error({
+        showErrorToast('Unable to establish real-time connection. Some features may be limited.', {
           title: 'Connection Failed',
-          description: 'Unable to establish real-time connection. Some features may be limited.',
           duration: 0
         });
         

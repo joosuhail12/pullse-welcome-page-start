@@ -29,7 +29,7 @@ export interface ChatBranding {
 }
 
 export interface ChatPosition {
-  placement?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  placement: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
   offsetX?: number;
   offsetY?: number;
 }

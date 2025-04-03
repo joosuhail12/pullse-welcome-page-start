@@ -1,7 +1,7 @@
-
 import React, { ReactElement } from 'react';
 import { Check, X, AlertCircle, Info } from 'lucide-react';
-import { toast, ToastProps } from '@/components/ui/toast';
+import { Toast, ToastProps } from '@/components/ui/toast';
+import { useToast } from '@/hooks/use-toast';
 import { ToastAction, ToastActionElement } from '@/components/ui/toast';
 
 interface ToastOptions extends Omit<ToastProps, 'action'> {
@@ -36,6 +36,8 @@ export function showToast(
 
   const toastAction = action as ReactElement | undefined;
 
+  // Use the imported toast function from useToast hook
+  const { toast } = useToast();
   const toastInstance = toast({
     title: title || getTitleFromType(type),
     description: React.createElement("div", { className: "flex items-start" }, 
@@ -44,7 +46,7 @@ export function showToast(
     ),
     action: toastAction,
     duration,
-    type,  // Pass the type to use with the Toaster component
+    variant: type,  // Use variant instead of type for the Toaster component
     ...rest
   });
   
@@ -56,6 +58,30 @@ export function showToast(
 
   return toastInstance;
 }
+
+// Export a toasts object for convenient access to the toast functions
+export const toasts = {
+  success: (options: ToastOptions = {}, message?: string) => {
+    return typeof message === 'string' 
+      ? showSuccessToast(message, options) 
+      : showToast('', options, ToastType.SUCCESS);
+  },
+  error: (options: ToastOptions = {}, message?: string) => {
+    return typeof message === 'string' 
+      ? showErrorToast(message, options) 
+      : showToast('', options, ToastType.ERROR);
+  },
+  warning: (options: ToastOptions = {}, message?: string) => {
+    return typeof message === 'string' 
+      ? showWarningToast(message, options) 
+      : showToast('', options, ToastType.WARNING);
+  },
+  info: (options: ToastOptions = {}, message?: string) => {
+    return typeof message === 'string' 
+      ? showInfoToast(message, options) 
+      : showToast('', options, ToastType.INFO);
+  }
+};
 
 /**
  * Show a success toast
