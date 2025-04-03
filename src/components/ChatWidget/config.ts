@@ -63,7 +63,10 @@ export type ChatEventType =
   | 'chat:typingStarted'
   | 'chat:typingStopped'
   | 'message:fileUploaded'
-  | 'chat:ended';
+  | 'chat:ended'
+  | 'chat:error'
+  | 'chat:connectionChange'
+  | 'typing';
 
 export interface ChatEventPayload {
   type: ChatEventType;
@@ -138,4 +141,3 @@ export const defaultConfig: ChatWidgetConfig = {
     authEndpoint: '/api/chat-widget/token'
   }
 };
-

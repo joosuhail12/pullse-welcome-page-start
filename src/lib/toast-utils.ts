@@ -1,85 +1,104 @@
 
-import { toast } from "@/hooks/use-toast"
-import { createElement } from "react"
+import React, { ReactElement } from 'react';
+import { Check, X, AlertCircle, Info } from 'lucide-react';
+import { toast, ToastProps } from '@/components/ui/toast';
+import { ToastAction, ToastActionElement } from '@/components/ui/toast';
 
-type ToastType = 'info' | 'success' | 'warning' | 'error'
-
-interface ToastOptions {
-  title?: string
-  description?: string
-  duration?: number
-  action?: React.ReactNode
-  variant?: 'default' | 'destructive' | 'warning'
-  dismissible?: boolean
+interface ToastOptions extends Omit<ToastProps, 'action'> {
+  action?: ToastActionElement;
+  onDismiss?: () => void;
 }
 
-// Enhanced toast function with resilience features
-export const showToast = (
-  type: ToastType, 
-  options: ToastOptions = {}
-) => {
-  const { 
-    title, 
-    description, 
-    duration = 5000,
-    action,
-    variant = type === 'error' ? 'destructive' : type === 'warning' ? 'warning' : 'default',
-    dismissible = true
-  } = options
-  
-  // Prevent duplicate toasts by using an ID
-  const toastId = title ? `${type}-${title.replace(/\s+/g, '-').toLowerCase()}` : undefined
+export enum ToastType {
+  SUCCESS = 'success',
+  ERROR = 'error',
+  WARNING = 'warning',
+  INFO = 'info'
+}
 
-  // Add a retry button for error toasts when provided with an action
-  return toast({
-    title,
-    description,
-    variant,
+/**
+ * Show a toast notification with icon
+ */
+export function showToast(
+  message: string,
+  options: ToastOptions = {},
+  type: ToastType = ToastType.INFO
+) {
+  const { title, action, duration = 5000, onDismiss, ...rest } = options;
+
+  const icons = {
+    [ToastType.SUCCESS]: <Check className="h-4 w-4 text-green-500" />,
+    [ToastType.ERROR]: <X className="h-4 w-4 text-red-500" />,
+    [ToastType.WARNING]: <AlertCircle className="h-4 w-4 text-amber-500" />,
+    [ToastType.INFO]: <Info className="h-4 w-4 text-blue-500" />
+  };
+
+  const toastAction = action as ReactElement | undefined;
+
+  const toastInstance = toast({
+    title: title || getTitleFromType(type),
+    description: (
+      <div className="flex items-start">
+        <span className="flex-shrink-0 mr-2 mt-0.5">{icons[type]}</span>
+        <span className="font-normal">{message}</span>
+      </div>
+    ),
+    action: toastAction,
     duration,
-    action,
-    id: toastId,
-    // These spread through to the underlying Toast component
-    className: `toast-${type}`,
-  })
+    ...rest
+  });
+  
+  if (onDismiss) {
+    setTimeout(() => {
+      onDismiss();
+    }, duration);
+  }
+
+  return toastInstance;
 }
 
-// Convenience methods for each toast type
-export const toasts = {
-  info: (options: ToastOptions) => showToast('info', options),
-  success: (options: ToastOptions) => showToast('success', options),
-  warning: (options: ToastOptions) => showToast('warning', {
-    variant: 'warning', 
-    ...options
-  }),
-  error: (options: ToastOptions) => showToast('error', {
-    variant: 'destructive', 
-    ...options
-  })
+/**
+ * Show a success toast
+ */
+export function showSuccessToast(message: string, options: ToastOptions = {}) {
+  return showToast(message, options, ToastType.SUCCESS);
 }
 
-// Toast with retry action
-export const retryableToast = (
-  options: ToastOptions & { onRetry: () => void }
-) => {
-  const { onRetry, ...toastOptions } = options
-  
-  const retryAction = createElement(
-    'button',
-    {
-      className: "bg-secondary text-secondary-foreground hover:bg-secondary/80 px-2 py-1 rounded text-xs",
-      onClick: () => {
-        // Dismiss the current toast
-        toast.dismiss()
-        // Execute the retry action
-        onRetry()
-      }
-    },
-    'Retry'
-  )
-  
-  return showToast('error', {
-    ...toastOptions,
-    action: retryAction,
-    duration: 10000 // Give more time for user to decide to retry
-  })
+/**
+ * Show an error toast
+ */
+export function showErrorToast(message: string, options: ToastOptions = {}) {
+  return showToast(message, options, ToastType.ERROR);
+}
+
+/**
+ * Show a warning toast
+ */
+export function showWarningToast(message: string, options: ToastOptions = {}) {
+  return showToast(message, options, ToastType.WARNING);
+}
+
+/**
+ * Show an info toast
+ */
+export function showInfoToast(message: string, options: ToastOptions = {}) {
+  return showToast(message, options, ToastType.INFO);
+}
+
+/**
+ * Get default title based on toast type
+ */
+function getTitleFromType(type: ToastType): string {
+  switch (type) {
+    case ToastType.SUCCESS:
+      return 'Success';
+    case ToastType.ERROR:
+      return 'Error';
+    case ToastType.WARNING:
+      return 'Warning';
+    case ToastType.INFO:
+      return 'Information';
+    default:
+      return 'Notification';
+  }
 }

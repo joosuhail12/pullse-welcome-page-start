@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Conversation } from '../../types';
 import { ChatWidgetConfig, defaultConfig } from '../../config';
@@ -41,7 +42,7 @@ const ChatViewContainer = ({
   // Use the new inline form hook
   const {
     showInlineForm,
-    handleFormComplete
+    handleFormComplete: processFormComplete
   } = useInlineForm(
     conversation,
     config,
@@ -119,7 +120,7 @@ const ChatViewContainer = ({
   }, [loadPreviousMessages]);
 
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
-    setShowInlineForm(false);
+    processFormComplete(formData);
     
     if (setUserFormData) {
       setUserFormData(formData);
@@ -131,7 +132,7 @@ const ChatViewContainer = ({
     });
     
     dispatchChatEvent('contact:formCompleted', { formData }, config);
-  }, [setUserFormData, onUpdateConversation, conversation, config]);
+  }, [setUserFormData, onUpdateConversation, conversation, config, processFormComplete]);
 
   // Handler for toggling message importance
   const handleToggleMessageImportance = useCallback((messageId: string) => {

@@ -1,6 +1,6 @@
 
 import React, { useState, lazy, Suspense } from 'react';
-import { MessageType, UserType } from '../../types';
+import { Message, MessageType, UserType } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
 import MessageStatus from './MessageStatus';
@@ -36,7 +36,7 @@ interface MessageBubbleProps {
   agentAvatar?: string;
   onReply?: (text: string) => void;
   onReaction?: (messageId: string, emoji: 'thumbsUp' | 'thumbsDown') => void;
-  agentStatus?: 'online' | 'away' | 'offline';
+  agentStatus?: 'online' | 'away' | 'offline' | 'busy';
   readStatus?: MessageReadStatus;
   readTimestamp?: Date;
 }

@@ -1,221 +1,188 @@
 
-import { EventManager } from './events';
 import { ChatEventType, ChatEventPayload } from '../config';
-import { EventCallback } from './types';
-import { createValidatedEvent, validateEventPayload } from '../utils/eventValidation';
-import { debounce } from './utils';
+import { EventManager } from './events';
+import { validateEventPayload } from '../utils/eventValidation';
 
 /**
- * Event priority levels
+ * Event priority levels for ordering event processing
  */
 export enum EventPriority {
-  CRITICAL = 0,  // Immediate processing (errors, chat ending)
-  HIGH = 1,      // High priority (messages sent/received)
-  NORMAL = 2,    // Normal events (typing, status changes)
-  LOW = 3        // Background events (analytics, non-critical updates)
+  HIGH = 0,
+  NORMAL = 1,
+  LOW = 2
 }
 
 /**
- * Event with priority information
+ * Prioritized event queue entry
  */
-interface PrioritizedEvent {
+interface EventQueueEntry {
   event: ChatEventPayload;
   priority: EventPriority;
+  timestamp: number;
 }
 
-/**
- * Mapping of event types to their default priorities
- */
-const defaultEventPriorities: Record<ChatEventType, EventPriority> = {
-  'chat:open': EventPriority.HIGH,
-  'chat:close': EventPriority.HIGH,
-  'chat:messageSent': EventPriority.HIGH,
-  'chat:messageReceived': EventPriority.HIGH,
-  'contact:initiatedChat': EventPriority.HIGH,
-  'contact:formCompleted': EventPriority.NORMAL,
-  'message:reacted': EventPriority.NORMAL,
-  'chat:typingStarted': EventPriority.LOW,
-  'chat:typingStopped': EventPriority.LOW,
-  'message:fileUploaded': EventPriority.HIGH,
-  'chat:ended': EventPriority.CRITICAL
-};
+// Singleton instance of the enhanced event manager
+let eventManagerInstance: EnhancedEventManager | null = null;
 
 /**
- * Enhanced event manager with prioritization and validation
+ * Enhanced event manager with additional security features
+ * - Event validation
+ * - Event prioritization
+ * - Rate limiting
+ * - Delayed event dispatch
  */
 export class EnhancedEventManager extends EventManager {
-  private eventQueue: PrioritizedEvent[] = [];
-  private isProcessing: boolean = false;
-  private processingInterval: number | null = null;
+  private eventQueue: EventQueueEntry[] = [];
+  private processingQueue: boolean = false;
+  private rateLimitCounters: Map<string, { count: number, timestamp: number }> = new Map();
   
-  constructor(processingInterval: number = 50) {
+  // Rate limiting configuration
+  private readonly MAX_EVENTS_PER_MINUTE = 100;
+  private readonly MAX_EVENTS_OF_TYPE_PER_MINUTE = 20;
+  
+  constructor() {
     super();
-    
-    // Set up regular processing interval
-    if (typeof window !== 'undefined') {
-      this.processingInterval = window.setInterval(() => {
-        this.processEventQueue();
-      }, processingInterval);
-    }
+    this.processQueue = this.processQueue.bind(this);
   }
   
   /**
-   * Clean up resources when manager is no longer needed
+   * Dispatch an event with validation and priority
    */
-  public dispose(): void {
-    if (this.processingInterval !== null && typeof window !== 'undefined') {
-      window.clearInterval(this.processingInterval);
-      this.processingInterval = null;
-    }
-  }
-  
-  /**
-   * Create and dispatch a validated event
-   */
-  public createEvent(type: ChatEventType, data?: any): ChatEventPayload | null {
-    const event = createValidatedEvent(type, data);
-    if (event) {
-      this.handleEvent(event);
-      return event;
-    }
-    return null;
-  }
-  
-  /**
-   * Overridden handleEvent with validation and priority queueing
-   */
-  public handleEvent(event: ChatEventPayload, priority?: EventPriority): void {
-    // Validate event payload
+  public dispatchEvent(event: ChatEventPayload, priority: EventPriority = EventPriority.NORMAL): boolean {
+    // Validate event structure and content
     if (!validateEventPayload(event)) {
-      console.error('Invalid event payload:', event);
+      console.warn('Invalid event payload detected and blocked:', event);
+      return false;
+    }
+    
+    // Check against rate limits
+    if (this.isRateLimited(event)) {
+      console.warn('Event rate limited:', event.type);
+      return false;
+    }
+    
+    // Add to queue with priority
+    this.eventQueue.push({ 
+      event, 
+      priority,
+      timestamp: Date.now()
+    });
+    
+    // Sort queue by priority
+    this.eventQueue.sort((a, b) => 
+      a.priority - b.priority || a.timestamp - b.timestamp
+    );
+    
+    // Start queue processing if not already processing
+    if (!this.processingQueue) {
+      this.processingQueue = true;
+      setTimeout(this.processQueue, 0);
+    }
+    
+    return true;
+  }
+  
+  /**
+   * Process event queue
+   */
+  private processQueue(): void {
+    if (this.eventQueue.length === 0) {
+      this.processingQueue = false;
       return;
     }
     
-    // Determine priority if not specified
-    const eventPriority = priority !== undefined ? 
-      priority : 
-      (defaultEventPriorities[event.type] || EventPriority.NORMAL);
+    const { event } = this.eventQueue.shift()!;
     
-    // Add to queue
-    this.queueEvent(event, eventPriority);
-  }
-  
-  /**
-   * Queue an event with priority
-   */
-  private queueEvent(event: ChatEventPayload, priority: EventPriority): void {
-    this.eventQueue.push({ event, priority });
+    // Dispatch to listeners with proper super method
+    super.dispatchToListeners(event);
     
-    // Sort queue by priority (lower number = higher priority)
-    this.eventQueue.sort((a, b) => a.priority - b.priority);
-    
-    // Process immediately for critical events
-    if (priority === EventPriority.CRITICAL) {
-      this.processEventQueue();
+    // Continue processing if queue has more items
+    if (this.eventQueue.length > 0) {
+      setTimeout(this.processQueue, 0);
+    } else {
+      this.processingQueue = false;
     }
   }
   
   /**
-   * Process events in the queue based on priority
+   * Check if event should be rate limited
    */
-  private processEventQueue(): void {
-    if (this.isProcessing || this.eventQueue.length === 0) {
-      return;
+  private isRateLimited(event: ChatEventPayload): boolean {
+    const now = Date.now();
+    const oneMinuteAgo = now - 60000;
+    
+    // Clean up old counters
+    this.rateLimitCounters.forEach((value, key) => {
+      if (value.timestamp < oneMinuteAgo) {
+        this.rateLimitCounters.delete(key);
+      }
+    });
+    
+    // Check global rate limit
+    const globalKey = 'global';
+    const globalCounter = this.rateLimitCounters.get(globalKey) || { count: 0, timestamp: now };
+    
+    if (globalCounter.count >= this.MAX_EVENTS_PER_MINUTE) {
+      return true; // Rate limited
     }
     
-    this.isProcessing = true;
+    // Update global counter
+    this.rateLimitCounters.set(globalKey, {
+      count: globalCounter.count + 1,
+      timestamp: Math.max(globalCounter.timestamp, now)
+    });
     
-    try {
-      // Process up to 5 events at once
-      const batch = this.eventQueue.splice(0, 5);
-      
-      // Dispatch events
-      batch.forEach(({ event }) => {
-        // Special handling for typing events (use debounce from parent class)
-        if (event.type === 'chat:typingStarted' || event.type === 'chat:typingStopped') {
-          super.handleEvent(event);
-        } else {
-          // For other events, dispatch directly
-          this.dispatchToListeners(event);
-        }
-      });
-    } finally {
-      this.isProcessing = false;
+    // Check type-specific rate limit
+    const typeKey = `type:${event.type}`;
+    const typeCounter = this.rateLimitCounters.get(typeKey) || { count: 0, timestamp: now };
+    
+    if (typeCounter.count >= this.MAX_EVENTS_OF_TYPE_PER_MINUTE) {
+      return true; // Rate limited
     }
+    
+    // Update type counter
+    this.rateLimitCounters.set(typeKey, {
+      count: typeCounter.count + 1,
+      timestamp: Math.max(typeCounter.timestamp, now)
+    });
+    
+    return false; // Not rate limited
   }
   
   /**
-   * Dispatches to listeners (extracted from parent class for enhancement)
+   * Get access to parent class eventListeners in a safe way
    */
-  private dispatchToListeners(event: ChatEventPayload): void {
-    // Dispatch to specific event listeners
-    const listeners = this.getListeners(event.type);
-    if (listeners) {
-      listeners.forEach(callback => {
-        try {
-          callback(event);
-        } catch (e) {
-          console.error(`Error in ${event.type} listener:`, e);
-        }
-      });
-    }
-    
-    // Dispatch to 'all' event listeners
-    const allListeners = this.getListeners('all');
-    if (allListeners) {
-      allListeners.forEach(callback => {
-        try {
-          callback(event);
-        } catch (e) {
-          console.error(`Error in 'all' listener:`, e);
-        }
-      });
-    }
-  }
-  
-  /**
-   * Get listeners for a specific event type
-   */
-  private getListeners(eventType: ChatEventType | 'all'): EventCallback[] | undefined {
-    return this.eventListeners.get(eventType);
+  public getEventListeners(): Map<string, Function[]> {
+    // Access the protected property
+    return new Map(Array.from(this.eventListeners.entries()));
   }
 }
 
 /**
- * Create a global instance of the enhanced event manager
- */
-let globalEventManager: EnhancedEventManager | null = null;
-
-/**
- * Get or create the global event manager instance
+ * Get singleton instance of EnhancedEventManager
  */
 export function getEventManager(): EnhancedEventManager {
-  if (!globalEventManager) {
-    globalEventManager = new EnhancedEventManager();
+  if (!eventManagerInstance) {
+    eventManagerInstance = new EnhancedEventManager();
   }
-  return globalEventManager;
+  return eventManagerInstance;
 }
 
 /**
- * Dispatch an event with validation
+ * Dispatch a validated event through the enhanced event manager
  */
 export function dispatchValidatedEvent(
-  eventType: ChatEventType, 
-  data?: any, 
-  priority?: EventPriority
-): ChatEventPayload | null {
+  eventType: ChatEventType,
+  data: any = {},
+  priority: EventPriority = EventPriority.NORMAL
+): boolean {
   const eventManager = getEventManager();
-  return eventManager.createEvent(eventType, data);
-}
-
-/**
- * Helper function to subscribe to chat events with type safety
- */
-export function subscribeToEvent(
-  eventType: ChatEventType | 'all',
-  callback: EventCallback,
-  options?: { priority?: boolean }
-): () => void {
-  const eventManager = getEventManager();
-  return eventManager.on(eventType, callback);
+  
+  const event: ChatEventPayload = {
+    type: eventType,
+    timestamp: new Date(),
+    data
+  };
+  
+  return eventManager.dispatchEvent(event, priority);
 }

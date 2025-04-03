@@ -2,9 +2,9 @@
 export interface Message {
   id: string;
   text: string;
-  sender: 'user' | 'system' | 'status';
+  sender: UserType;
   timestamp: Date;
-  type?: 'text' | 'file' | 'card' | 'quick_reply' | 'status';
+  type?: MessageType;
   fileUrl?: string;
   fileName?: string;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
@@ -16,8 +16,9 @@ export interface Message {
     buttons?: Array<{ text: string; action: string }>;
   };
   quickReplies?: Array<{ text: string; action: string }>;
-  important?: boolean; // New field to mark important messages
-  unread?: boolean;    // New field to mark unread messages
+  important?: boolean;
+  unread?: boolean;
+  metadata?: Record<string, any>;
 }
 
 export interface Conversation {
@@ -30,20 +31,25 @@ export interface Conversation {
   agentInfo?: {
     name?: string;
     avatar?: string;
-    status?: 'online' | 'offline' | 'away' | 'busy';
+    status?: AgentStatus;
   };
   metadata?: any;
   sessionId?: string;
   contactIdentified?: boolean;
-  unread?: boolean; // New property to track unread status
+  unread?: boolean;
+  isResolved?: boolean;
 }
 
 export interface Agent {
   id: string;
   name: string;
   avatar?: string;
-  status?: 'online' | 'away' | 'offline';
+  status?: AgentStatus;
 }
+
+export type UserType = 'user' | 'system' | 'status' | 'agent' | 'bot';
+export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
+export type AgentStatus = 'online' | 'away' | 'offline' | 'busy';
 
 export interface MessageReaction {
   messageId: string;
