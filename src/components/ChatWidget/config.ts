@@ -1,4 +1,3 @@
-
 /**
  * Chat Widget Configuration Types
  */
@@ -28,11 +27,8 @@ export interface ChatBranding {
   widgetTitle?: string;
 }
 
-export interface ChatPosition {
-  placement?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
-  offsetX?: number;
-  offsetY?: number;
-}
+// Update the ChatPosition type to be a direct string type
+export type ChatPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
 export interface ChatFeatures {
   fileUpload?: boolean;
@@ -138,4 +134,3 @@ export const defaultConfig: ChatWidgetConfig = {
     authEndpoint: '/api/chat-widget/token'
   }
 };
-

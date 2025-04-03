@@ -2,9 +2,9 @@
 export interface Message {
   id: string;
   text: string;
-  sender: 'user' | 'system' | 'status';
+  sender: UserType;
   timestamp: Date;
-  type?: 'text' | 'file' | 'card' | 'quick_reply' | 'status';
+  type?: MessageType;
   fileUrl?: string;
   fileName?: string;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
@@ -18,6 +18,7 @@ export interface Message {
   quickReplies?: Array<{ text: string; action: string }>;
   important?: boolean; // New field to mark important messages
   unread?: boolean;    // New field to mark unread messages
+  metadata?: Record<string, any>; // Add metadata field for flexibility
 }
 
 // Standardized agent status type

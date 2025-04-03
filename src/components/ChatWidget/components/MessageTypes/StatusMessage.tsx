@@ -1,5 +1,6 @@
 
 import React from 'react';
+import BaseStatusMessage from '../StatusMessage';
 
 interface StatusMessageProps {
   text: string;
@@ -7,11 +8,7 @@ interface StatusMessageProps {
 }
 
 const StatusMessage = ({ text, renderText }: StatusMessageProps) => {
-  return (
-    <div className="bg-gray-100/80 py-1.5 px-5 rounded-full text-xs font-medium text-gray-500 text-center shadow-sm border border-gray-100">
-      {renderText ? renderText(text) : text}
-    </div>
-  );
+  return <BaseStatusMessage text={text} renderText={renderText} />;
 };
 
 export default StatusMessage;

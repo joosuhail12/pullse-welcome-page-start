@@ -9,26 +9,34 @@ interface CardButton {
   action: string;
 }
 
-interface CardMessageProps {
-  cardData: {
-    title: string;
-    description: string;
-    imageUrl?: string;
-    buttons?: CardButton[];
-  };
+interface CardData {
+  title: string;
+  description: string;
+  imageUrl?: string;
+  buttons?: CardButton[];
 }
 
-const CardMessage = ({ cardData }: CardMessageProps) => {
+interface CardMessageProps {
+  cardData?: CardData;
+  metadata?: Record<string, any>;
+}
+
+const CardMessage = ({ cardData, metadata }: CardMessageProps) => {
+  // Process either cardData or metadata
+  const data = cardData || (metadata as unknown as CardData);
+  
+  if (!data) return null;
+  
   // Sanitize card data
-  const cardTitle = cardData.title ? sanitizeInput(cardData.title) : '';
-  const cardDesc = cardData.description ? sanitizeInput(cardData.description) : '';
+  const cardTitle = data.title ? sanitizeInput(data.title) : '';
+  const cardDesc = data.description ? sanitizeInput(data.description) : '';
   
   return (
     <Card className="w-full max-w-xs mt-2 shadow-sm">
-      {cardData.imageUrl && (
+      {data.imageUrl && (
         <div className="aspect-video overflow-hidden">
           <img 
-            src={cardData.imageUrl} 
+            src={data.imageUrl} 
             alt={cardTitle} 
             className="w-full h-full object-cover"
           />
@@ -38,9 +46,9 @@ const CardMessage = ({ cardData }: CardMessageProps) => {
         <h4 className="font-semibold">{cardTitle}</h4>
         <p className="text-sm text-gray-600 mt-1">{cardDesc}</p>
         
-        {cardData.buttons && cardData.buttons.length > 0 && (
+        {data.buttons && data.buttons.length > 0 && (
           <div className="mt-3 flex flex-col gap-2">
-            {cardData.buttons.map((button, i) => (
+            {data.buttons.map((button, i) => (
               <Button 
                 key={i} 
                 size="sm" 

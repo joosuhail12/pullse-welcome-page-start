@@ -9,19 +9,30 @@ interface QuickReply {
 }
 
 interface QuickReplyMessageProps {
-  text: string;
+  text?: string;
   quickReplies?: QuickReply[];
-  renderText: (text: string) => React.ReactNode;
+  renderText?: (text: string) => React.ReactNode;
   setMessageText?: (text: string) => void;
+  metadata?: Record<string, any>;
 }
 
-const QuickReplyMessage = ({ text, quickReplies, renderText, setMessageText }: QuickReplyMessageProps) => {
+const QuickReplyMessage = ({ text, quickReplies, renderText, setMessageText, metadata }: QuickReplyMessageProps) => {
+  // Process either direct props or metadata
+  const textToUse = text || (metadata?.text as string) || '';
+  const repliesToUse = quickReplies || (metadata?.quickReplies as QuickReply[]) || [];
+  
+  const renderTextContent = () => {
+    if (!textToUse) return null;
+    if (renderText) return renderText(textToUse);
+    return textToUse;
+  };
+  
   return (
     <div className="flex flex-col">
-      {renderText(text)}
-      {quickReplies && quickReplies.length > 0 && (
+      {renderTextContent()}
+      {repliesToUse.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
-          {quickReplies.map((reply, i) => (
+          {repliesToUse.map((reply, i) => (
             <Button 
               key={i} 
               size="sm" 

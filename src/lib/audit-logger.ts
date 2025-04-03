@@ -1,4 +1,3 @@
-
 /**
  * Secure Audit Logger for Security Events
  * 
@@ -16,23 +15,7 @@ import { logger } from './logger';
 import { sanitizeErrorMessage, getSafeErrorDetails } from './error-sanitizer';
 
 // Security event types that should be audit logged
-export enum SecurityEventType {
-  LOGIN_ATTEMPT = 'LOGIN_ATTEMPT',
-  LOGIN_SUCCESS = 'LOGIN_SUCCESS',
-  LOGIN_FAILURE = 'LOGIN_FAILURE',
-  LOGOUT = 'LOGOUT',
-  PASSWORD_CHANGE = 'PASSWORD_CHANGE',
-  PASSWORD_RESET_REQUEST = 'PASSWORD_RESET_REQUEST',
-  TOKEN_ISSUED = 'TOKEN_ISSUED',
-  TOKEN_VALIDATED = 'TOKEN_VALIDATED',
-  TOKEN_REJECTED = 'TOKEN_REJECTED',
-  TOKEN_REVOKED = 'TOKEN_REVOKED',
-  ACCESS_DENIED = 'ACCESS_DENIED',
-  ADMIN_ACTION = 'ADMIN_ACTION',
-  SENSITIVE_DATA_ACCESS = 'SENSITIVE_DATA_ACCESS',
-  SECURITY_SETTING_CHANGE = 'SECURITY_SETTING_CHANGE',
-  SUSPICIOUS_ACTIVITY = 'SUSPICIOUS_ACTIVITY'
-}
+export { SecurityEventType, SecurityEventOutcome, SecurityEventSeverity } from './securityTypes';
 
 // Standard format for audit log entries
 export interface AuditLogEntry {
