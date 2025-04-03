@@ -102,9 +102,7 @@ export default {
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)',
-				xl: 'calc(var(--radius) + 2px)',
-				'2xl': 'calc(var(--radius) + 4px)',
+				sm: 'calc(var(--radius) - 4px)'
 			},
 			keyframes: {
 				'accordion-down': {
@@ -133,68 +131,12 @@ export default {
 						transform: 'translateY(0)'
 					}
 				},
-				'fade-in-right': {
-					from: {
-						opacity: '0',
-						transform: 'translateX(10px)'
-					},
-					to: {
-						opacity: '1',
-						transform: 'translateX(0)'
-					}
-				},
-				'fade-in-left': {
-					from: {
-						opacity: '0',
-						transform: 'translateX(-10px)'
-					},
-					to: {
-						opacity: '1',
-						transform: 'translateX(0)'
-					}
-				},
 				'typing-bounce': {
-					'0%, 100%': {
-						transform: 'translateY(0)',
-						opacity: '0.6'
-					},
-					'50%': {
-						transform: 'translateY(-5px)',
-						opacity: '1'
-					}
-				},
-				'scale-in': {
-					'0%': {
-						transform: 'scale(0.95)',
-						opacity: '0'
-					},
-					'100%': {
-						transform: 'scale(1)',
-						opacity: '1'
-					}
-				},
-				'pulse-soft': {
-					'0%, 100%': {
-						opacity: '0.6'
-					},
-					'50%': {
-						opacity: '1'
-					}
-				},
-				'float': {
 					'0%, 100%': {
 						transform: 'translateY(0)'
 					},
 					'50%': {
 						transform: 'translateY(-5px)'
-					}
-				},
-				'skeleton-pulse': {
-					'0%, 100%': {
-						opacity: '0.5'
-					},
-					'50%': {
-						opacity: '0.8'
 					}
 				}
 			},
@@ -202,24 +144,12 @@ export default {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fade-in 0.3s ease-out forwards',
-				'fade-in-right': 'fade-in-right 0.3s ease-out forwards',
-				'fade-in-left': 'fade-in-left 0.3s ease-out forwards',
-				'typing-bounce': 'typing-bounce 1s infinite',
-				'scale-in': 'scale-in 0.2s ease-out',
-				'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
-				'float': 'float 3s ease-in-out infinite',
-				'skeleton-pulse': 'skeleton-pulse 1.5s ease-in-out infinite'
+				'typing-bounce': 'typing-bounce 1s infinite'
 			},
 			boxShadow: {
 				'chat-bubble': '0 2px 8px rgba(0, 0, 0, 0.05)',
-				'chat-widget': '0 4px 20px rgba(0, 0, 0, 0.1)',
-				'chat-widget-hover': '0 6px 24px rgba(0, 0, 0, 0.15)',
-				'glassmorphic': '0 8px 32px rgba(31, 38, 135, 0.15)',
-				'glow': '0 0 15px rgba(139, 92, 246, 0.5)'
-			},
-			backdropBlur: {
-				xs: '2px',
-			},
+				'chat-widget': '0 4px 20px rgba(0, 0, 0, 0.1)'
+			}
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
