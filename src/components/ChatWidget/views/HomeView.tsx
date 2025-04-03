@@ -75,7 +75,7 @@ const HomeView = React.memo(({
           <div className="h-px flex-grow bg-gray-100"></div>
         </div>
         
-        <div className="bg-white/70 backdrop-blur-sm p-2 sm:p-4 rounded-lg shadow-sm border border-white/50 hover:shadow-md transition-all duration-300 hover:bg-white/80">
+        <div className="bg-white/70 backdrop-blur-sm p-2 sm:p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-all duration-300 hover:bg-white/80">
           <div className="flex items-center gap-2 mb-1 sm:mb-2">
             <div className="bg-soft-purple-100 p-1 sm:p-2 rounded-full">
               <Clock size={iconSize} className="text-vivid-purple-600" />
@@ -93,7 +93,7 @@ const HomeView = React.memo(({
           <div className="h-px flex-grow bg-gray-100"></div>
         </div>
         
-        <div className="bg-white/70 backdrop-blur-sm p-2 sm:p-4 rounded-lg shadow-sm border border-white/50 hover:shadow-md transition-all duration-300 hover:bg-white/80">
+        <div className="bg-white/70 backdrop-blur-sm p-2 sm:p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-all duration-300 hover:bg-white/80">
           <AgentPresence />
         </div>
       </div>
@@ -116,3 +116,4 @@ const HomeView = React.memo(({
 HomeView.displayName = 'HomeView';
 
 export default HomeView;
+
