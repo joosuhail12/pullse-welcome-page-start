@@ -128,6 +128,17 @@ const ChatViewContainer = ({
     dispatchChatEvent('contact:formCompleted', { formData }, config);
   }, [setUserFormData, onUpdateConversation, conversation, config]);
 
+  // Handler for toggling message importance
+  const handleToggleMessageImportance = useCallback((messageId: string) => {
+    setMessages(currentMessages => {
+      return currentMessages.map(msg => 
+        msg.id === messageId
+          ? { ...msg, important: !msg.important }
+          : msg
+      );
+    });
+  }, [setMessages]);
+
   // Prepare data for presentation component
   const agentAvatar = useMemo(() => 
     conversation.agentInfo?.avatar || config?.branding?.avatarUrl, 
@@ -186,6 +197,7 @@ const ChatViewContainer = ({
       showInlineForm={showInlineForm}
       handleFormComplete={handleFormComplete}
       config={config}
+      onToggleMessageImportance={handleToggleMessageImportance}
     />
   );
 };

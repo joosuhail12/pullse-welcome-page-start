@@ -29,6 +29,7 @@ interface ChatBodyProps {
   inlineFormComponent: React.ReactNode;
   conversationId: string;
   agentStatus?: 'online' | 'offline' | 'away' | 'busy';
+  onToggleHighlight?: (messageId: string) => void;
 }
 
 const ChatBody: React.FC<ChatBodyProps> = ({
@@ -54,7 +55,8 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   showInlineForm,
   inlineFormComponent,
   conversationId,
-  agentStatus
+  agentStatus,
+  onToggleHighlight
 }) => {
   return (
     <div className="flex flex-col flex-grow overflow-hidden">
@@ -77,6 +79,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
           isLoadingMore={isLoadingMore}
           conversationId={conversationId}
           agentStatus={agentStatus}
+          onToggleHighlight={onToggleHighlight}
         />
       )}
       

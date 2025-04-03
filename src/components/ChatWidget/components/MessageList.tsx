@@ -1,11 +1,13 @@
+
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Message } from '../types';
 import MessageBubble from './MessageBubble';
 import TypingIndicator from './TypingIndicator';
-import { ArrowDown } from 'lucide-react';
+import { ArrowDown, Star, StarOff } from 'lucide-react';
 import { markConversationAsRead } from '../utils/storage';
 import { Button } from '@/components/ui/button';
+import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 
 interface MessageListProps {
   messages: Message[];
@@ -24,6 +26,7 @@ interface MessageListProps {
   inlineFormComponent?: React.ReactNode;
   conversationId?: string;
   agentStatus?: 'online' | 'offline' | 'away' | 'busy';
+  onToggleHighlight?: (messageId: string) => void;
 }
 
 const MessageList = ({ 
@@ -42,7 +45,8 @@ const MessageList = ({
   isLoadingMore = false,
   inlineFormComponent,
   conversationId,
-  agentStatus = 'online'
+  agentStatus = 'online',
+  onToggleHighlight
 }: MessageListProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -52,6 +56,17 @@ const MessageList = ({
   const [hasViewedMessages, setHasViewedMessages] = useState(false);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [messageStatuses, setMessageStatuses] = useState<Record<string, Message['status']>>({});
+  const [unreadDivider, setUnreadDivider] = useState<string | null>(null);
+
+  // Find the first unread message
+  useEffect(() => {
+    if (!hasViewedMessages && messages.length > 0) {
+      const lastReadIndex = messages.findIndex(m => m.unread);
+      if (lastReadIndex > 0) {
+        setUnreadDivider(messages[lastReadIndex].id);
+      }
+    }
+  }, [messages, hasViewedMessages]);
 
   // Simulate message status progression for improved UX
   useEffect(() => {
@@ -101,7 +116,27 @@ const MessageList = ({
     return currentMsg.sender === prevMsg.sender && 
            currentMsg.type !== 'status' &&
            prevMsg.type !== 'status' &&
+           isSameDay(currentMsg.timestamp, prevMsg.timestamp) &&
            currentMsg.timestamp.getTime() - prevMsg.timestamp.getTime() < 2 * 60 * 1000;
+  };
+
+  const shouldShowDateDivider = (index: number) => {
+    if (index === 0) return true;
+    
+    const currentMsg = messages[index];
+    const prevMsg = messages[index - 1];
+    
+    return !isSameDay(currentMsg.timestamp, prevMsg.timestamp);
+  };
+
+  const formatMessageDate = (date: Date) => {
+    if (isToday(date)) {
+      return "Today";
+    } else if (isYesterday(date)) {
+      return "Yesterday";
+    } else {
+      return format(date, "EEEE, MMMM d, yyyy");
+    }
   };
 
   const isMessageHighlighted = (messageId: string) => {
@@ -215,7 +250,30 @@ const MessageList = ({
             status: messageStatus
           };
           
-          return (
+          const renderedItems = [];
+          
+          // Add date divider if needed
+          if (shouldShowDateDivider(index)) {
+            renderedItems.push(
+              <div key={`date-${message.id}`} className="date-separator">
+                <div className="date">{formatMessageDate(message.timestamp)}</div>
+              </div>
+            );
+          }
+          
+          // Add unread messages divider if this is the first unread message
+          if (unreadDivider === message.id) {
+            renderedItems.push(
+              <div key="unread-divider" className="w-full flex justify-center my-2">
+                <div className="bg-red-100 text-red-600 py-1.5 px-4 rounded-full text-xs font-medium shadow-sm animate-pulse">
+                  Unread messages
+                </div>
+              </div>
+            );
+          }
+          
+          // Then add the message itself
+          renderedItems.push(
             <div 
               key={message.id} 
               className={`flex ${
@@ -226,13 +284,16 @@ const MessageList = ({
                     : 'justify-start'
               } message-animation-enter ${isMessageHighlighted(message.id) ? 'bg-yellow-100 p-2 rounded-lg' : ''} ${
                 isConsecutiveMessage(index) ? 'mt-1' : 'mt-4'
-              }`}
+              } ${message.important ? 'relative important-message-container' : ''}`}
               style={{ 
                 animationDelay: `${index * 50}ms`,
                 opacity: 0
               }}
               id={message.id}
             >
+              {message.important && (
+                <div className="absolute -left-1 top-0 h-full w-1 bg-vivid-purple rounded-full"></div>
+              )}
               <div className="flex flex-col w-full">
                 {message.sender !== 'status' && (
                   <MessageBubble 
@@ -241,10 +302,12 @@ const MessageList = ({
                     onReact={onMessageReaction}
                     highlightSearchTerm={highlightMessage}
                     searchTerm={searchTerm}
-                    isConsecutive={isConsecutiveMessage(index)}
+                    isConsecutiveMessage={isConsecutiveMessage(index)}
                     showAvatar={true}
                     avatarUrl={message.sender === 'system' ? agentAvatar : userAvatar}
                     agentStatus={agentStatus}
+                    onToggleHighlight={onToggleHighlight ? () => onToggleHighlight(message.id) : undefined}
+                    isImportant={message.important}
                   />
                 )}
                 
@@ -266,6 +329,8 @@ const MessageList = ({
               </div>
             </div>
           );
+          
+          return renderedItems;
         })}
         
         {isTyping && (

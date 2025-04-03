@@ -10,6 +10,8 @@ import CardMessage from '../MessageTypes/CardMessage';
 import QuickReplyMessage from '../MessageTypes/QuickReplyMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
 import TextMessage from '../MessageTypes/TextMessage';
+import { Star, StarOff } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface MessageBubbleProps {
   message: Message;
@@ -18,9 +20,11 @@ interface MessageBubbleProps {
   highlightSearchTerm?: (text: string, term: string) => { text: string; highlighted: boolean }[];
   searchTerm?: string;
   showAvatar?: boolean;
-  isConsecutive?: boolean;
+  isConsecutiveMessage?: boolean;
   avatarUrl?: string;
   agentStatus?: 'online' | 'offline' | 'away' | 'busy';
+  onToggleHighlight?: () => void;
+  isImportant?: boolean;
 }
 
 const MessageBubble = ({ 
@@ -30,9 +34,11 @@ const MessageBubble = ({
   highlightSearchTerm,
   searchTerm,
   showAvatar = true,
-  isConsecutive = false,
+  isConsecutiveMessage = false,
   avatarUrl,
-  agentStatus
+  agentStatus,
+  onToggleHighlight,
+  isImportant = false
 }: MessageBubbleProps) => {
   const sanitizedText = message.text ? sanitizeInput(message.text) : '';
   const [fileUploading, setFileUploading] = useState(
@@ -109,6 +115,23 @@ const MessageBubble = ({
     }
   };
 
+  const renderHighlightButton = () => {
+    if (onToggleHighlight && message.sender !== 'status') {
+      return (
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`p-1 h-auto ${isImportant ? 'text-vivid-purple' : 'text-gray-400'}`}
+          onClick={onToggleHighlight}
+          title={isImportant ? "Remove highlight" : "Highlight message"}
+        >
+          {isImportant ? <Star size={14} /> : <StarOff size={14} />}
+        </Button>
+      );
+    }
+    return null;
+  };
+
   const renderReactionButtons = () => {
     if (message.sender === 'system' && onReact) {
       return (
@@ -124,7 +147,7 @@ const MessageBubble = ({
   };
 
   const renderAvatar = () => {
-    if (!showAvatar || message.sender === 'status' || isConsecutive) return null;
+    if (!showAvatar || message.sender === 'status' || isConsecutiveMessage) return null;
     return (
       <MessageAvatar 
         sender={message.sender} 
@@ -143,7 +166,7 @@ const MessageBubble = ({
     );
   }
 
-  const bubbleClasses = isConsecutive
+  const bubbleClasses = isConsecutiveMessage
     ? message.sender === 'user'
       ? 'chat-message-user rounded-tr-sm ml-10'
       : 'chat-message-system rounded-tl-sm mr-10'
@@ -154,25 +177,29 @@ const MessageBubble = ({
   const actionableClass = hasActionableContent ? 'chat-message-actionable' : '';
   const sendingClass = message.sender === 'user' && message.status === 'sending' ? 'message-sending' : '';
   const fileUploadClass = message.type === 'file' && !fileUploading ? 'file-upload-success' : '';
+  const importantClass = isImportant ? 'important-message' : '';
 
   return (
     <div className="flex items-start">
       {message.sender === 'system' && renderAvatar()}
-      <div className={`max-w-[80%] ${bubbleClasses} ${actionableClass} ${sendingClass} ${fileUploadClass}`}>
+      <div className={`max-w-[80%] ${bubbleClasses} ${actionableClass} ${sendingClass} ${fileUploadClass} ${importantClass}`}>
         {renderMessage()}
         <div className="flex justify-between items-center">
-          {message.sender === 'user' ? (
-            <MessageStatus 
-              status={message.status} 
-              timestamp={message.timestamp}
-              isFileMessage={message.type === 'file'}
-              fileUploading={fileUploading}
-            />
-          ) : (
-            <div className={`text-xs mt-2 text-gray-600`}>
-              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {message.sender === 'user' ? (
+              <MessageStatus 
+                status={message.status} 
+                timestamp={message.timestamp}
+                isFileMessage={message.type === 'file'}
+                fileUploading={fileUploading}
+              />
+            ) : (
+              <div className={`text-xs mt-2 text-gray-600`}>
+                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
+            {renderHighlightButton()}
+          </div>
           {renderReactionButtons()}
         </div>
       </div>

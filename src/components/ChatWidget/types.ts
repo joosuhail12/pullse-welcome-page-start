@@ -16,6 +16,8 @@ export interface Message {
     buttons?: Array<{ text: string; action: string }>;
   };
   quickReplies?: Array<{ text: string; action: string }>;
+  important?: boolean; // New field to mark important messages
+  unread?: boolean;    // New field to mark unread messages
 }
 
 export interface Conversation {

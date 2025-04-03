@@ -222,6 +222,28 @@
     opacity: 0.6;
     z-index: 1;
   }
+  
+  /* IMPORTANT MESSAGES STYLING */
+  .important-message {
+    @apply border-l-2 border-vivid-purple;
+    box-shadow: 0 3px 10px rgba(139, 92, 246, 0.2);
+  }
+  
+  .important-message-container {
+    @apply bg-vivid-purple/5 rounded-lg p-1;
+  }
+  
+  /* UNREAD MESSAGES DIVIDER */
+  @keyframes unread-pulse {
+    0% { background-color: rgba(239, 68, 68, 0.1); }
+    50% { background-color: rgba(239, 68, 68, 0.2); }
+    100% { background-color: rgba(239, 68, 68, 0.1); }
+  }
+  
+  .unread-divider {
+    @apply w-full py-1 px-2 text-center text-xs font-medium text-red-600 bg-red-100 rounded-sm my-2;
+    animation: unread-pulse 2s ease-in-out infinite;
+  }
 }
 
 /* Enhanced keyboard navigation indicators for chat components */

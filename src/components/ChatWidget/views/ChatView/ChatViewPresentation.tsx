@@ -41,6 +41,7 @@ interface ChatViewPresentationProps {
   showInlineForm: boolean;
   handleFormComplete: (formData: Record<string, string>) => void;
   config: ChatWidgetConfig;
+  onToggleMessageImportance?: (messageId: string) => void;
 }
 
 /**
@@ -80,7 +81,8 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
   isLoadingMore,
   showInlineForm,
   handleFormComplete,
-  config
+  config,
+  onToggleMessageImportance
 }) => {
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
@@ -145,6 +147,7 @@ const ChatViewPresentation: React.FC<ChatViewPresentationProps> = ({
           inlineFormComponent={inlineFormComponent}
           conversationId={conversation.id}
           agentStatus={conversation.agentInfo?.status}
+          onToggleHighlight={onToggleMessageImportance}
         />
       </div>
     </ChatKeyboardHandler>
