@@ -1,45 +1,33 @@
 
-import { MessageReadStatus } from '../types';
+import { MessageReadStatus, Message } from '../types';
 
 /**
- * Helper to convert string status to MessageReadStatus type
+ * Type guard for MessageReadStatus
  */
-export function ensureMessageReadStatus(status: string | MessageReadStatus): MessageReadStatus {
-  const validStatuses: MessageReadStatus[] = ['sent', 'delivered', 'read', 'failed'];
-  
-  if (validStatuses.includes(status as MessageReadStatus)) {
+export function isValidReadStatus(status: string): status is MessageReadStatus {
+  return ['sent', 'delivered', 'read'].includes(status);
+}
+
+/**
+ * Safely convert string to MessageReadStatus type
+ */
+export function toMessageReadStatus(status: string): MessageReadStatus {
+  if (isValidReadStatus(status)) {
     return status as MessageReadStatus;
   }
-  
-  return 'sent';
+  return 'sent';  // Default to sent for invalid statuses
 }
 
 /**
- * Helper to convert Record<string, Date> to Record<string, { status: MessageReadStatus, timestamp?: Date }>
+ * Type guard for Message object
  */
-export function convertToReadReceipts(receipts: Record<string, Date>): Record<string, { status: MessageReadStatus; timestamp?: Date }> {
-  const formattedReceipts: Record<string, { status: MessageReadStatus; timestamp?: Date }> = {};
-  
-  Object.entries(receipts).forEach(([messageId, timestamp]) => {
-    formattedReceipts[messageId] = {
-      status: 'read',
-      timestamp
-    };
-  });
-  
-  return formattedReceipts;
-}
-
-/**
- * Helper to ensure agent status includes all valid values
- */
-export function validateAgentStatus(status?: string): 'online' | 'offline' | 'away' | 'busy' | undefined {
-  if (!status) return undefined;
-  
-  const validStatuses = ['online', 'offline', 'away', 'busy'];
-  if (validStatuses.includes(status)) {
-    return status as 'online' | 'offline' | 'away' | 'busy';
-  }
-  
-  return 'offline';
+export function isMessage(obj: any): obj is Message {
+  return (
+    obj &&
+    typeof obj === 'object' &&
+    'id' in obj &&
+    'text' in obj &&
+    'sender' in obj &&
+    'timestamp' in obj
+  );
 }

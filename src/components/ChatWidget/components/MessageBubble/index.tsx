@@ -1,4 +1,3 @@
-
 import React, { useState, lazy, Suspense } from 'react';
 import { Message, MessageReadStatus } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
@@ -63,7 +62,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   const isUserMessage = message.sender === 'user';
   const isBotMessage = message.sender === 'bot' || message.sender === 'agent';
   const isSystemMessage = message.sender === 'system';
-  const isStatusMessage = message.sender === 'status';
+  const isStatusMessage = message.type === 'status';
 
   const messageTypeClass = isUserMessage
     ? 'bg-vivid-purple text-white rounded-t-2xl rounded-bl-2xl rounded-br-sm'

@@ -1,117 +1,94 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { Message, MessageReadStatus } from '../types';
-import { dispatchChatEvent } from './events';
-import { ChatWidgetConfig } from '../config';
-import { publishToChannel } from './ably';
+import { Message, MessageType, MessageSender } from '../types';
+import { sanitizeInput } from './validation';
 
 /**
- * Create a message from the user
+ * Creates a new message object with the specified text and sender
  */
-export function createUserMessage(text: string, type: 'text' | 'file' = 'text', metadata?: Record<string, any>): Message {
+export const createMessage = (
+  text: string,
+  sender: MessageSender,
+  type: MessageType = 'text',
+  metadata?: Record<string, any>
+): Message => {
   return {
-    id: `msg-${Date.now()}-${uuidv4()}`,
-    text,
-    sender: 'user',
+    id: uuidv4(),
+    text: sanitizeInput(text),
+    sender,
     timestamp: new Date(),
     type,
     metadata,
-    status: 'sent'
   };
-}
+};
 
 /**
- * Create a message from the system/bot
+ * Get message object by ID from the API or fallback
  */
-export function createSystemMessage(text: string, type: 'text' | 'card' | 'quick_reply' = 'text', metadata?: Record<string, any>): Message {
+export const getMessage = async (messageId: string): Promise<Message | null> => {
+  try {
+    // In a real implementation, this would fetch from API
+    // For now, we'll just return a mock message
+    return {
+      id: messageId,
+      text: 'Message content not available',
+      sender: 'system',
+      timestamp: new Date(),
+      type: 'text'
+    };
+  } catch (error) {
+    console.error('Failed to fetch message:', error);
+    return null;
+  }
+};
+
+/**
+ * Process system message with templating
+ */
+export const processSystemMessage = (template: string, data: Record<string, any>): string => {
+  let processed = template;
+  
+  // Simple template replacement
+  Object.entries(data).forEach(([key, value]) => {
+    const placeholder = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
+    processed = processed.replace(placeholder, String(value));
+  });
+  
+  return processed;
+};
+
+/**
+ * Send a message delivery receipt
+ */
+export const sendDeliveryReceipt = async (messageId: string, status: 'delivered' | 'read'): Promise<boolean> => {
+  try {
+    // In a real implementation, this would send to API
+    console.log(`Sending ${status} receipt for message ${messageId}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to send delivery receipt:', error);
+    return false;
+  }
+};
+
+/**
+ * Get random response for simulation purposes
+ */
+export const getRandomResponse = (messages: string[]): string => {
+  if (!messages.length) {
+    return "I'm not sure how to respond to that.";
+  }
+  const randomIndex = Math.floor(Math.random() * messages.length);
+  return messages[randomIndex];
+};
+
+/**
+ * Format message for display
+ */
+export const formatMessageForDisplay = (message: Message): Message => {
+  // Apply any formatting rules needed
   return {
-    id: `msg-${Date.now()}-${uuidv4()}`,
-    text,
-    sender: 'system',
-    timestamp: new Date(),
-    type,
-    metadata,
-    status: 'delivered'
+    ...message,
+    text: message.text || ''
   };
-}
-
-/**
- * Send a typing indicator to the channel
- */
-export function sendTypingIndicator(
-  channelName: string, 
-  userId: string, 
-  status: 'start' | 'stop'
-): void {
-  publishToChannel(channelName, 'typing', {
-    userId,
-    status,
-    timestamp: new Date()
-  });
-}
-
-/**
- * Process a system message (notifications, delivery receipts, etc)
- */
-export function processSystemMessage(
-  message: Message, 
-  channelName: string, 
-  sessionId: string, 
-  config?: ChatWidgetConfig,
-  playSound?: () => void
-): void {
-  // Play sound if provided
-  if (playSound) {
-    playSound();
-  }
-
-  // Send delivery receipt
-  sendDeliveryReceipt(channelName, sessionId, message.id);
-
-  // Dispatch message received event
-  if (config) {
-    dispatchChatEvent('chat:messageReceived', { message }, config);
-  }
-}
-
-/**
- * Send a delivery receipt
- */
-export function sendDeliveryReceipt(channelName: string, sessionId: string, messageId: string): void {
-  publishToChannel(channelName, 'delivered', {
-    messageId,
-    userId: sessionId,
-    timestamp: new Date()
-  });
-}
-
-/**
- * Mark a message as read
- */
-export function markMessageAsRead(channelName: string, sessionId: string, messageId: string): void {
-  publishToChannel(channelName, 'read', {
-    messageId,
-    userId: sessionId,
-    timestamp: new Date()
-  });
-}
-
-/**
- * Get formatted read status text
- */
-export function getReadStatusText(status: MessageReadStatus, timestamp?: Date): string {
-  switch (status) {
-    case 'read':
-      return timestamp ? `Read at ${formatTime(timestamp)}` : 'Read';
-    case 'delivered':
-      return timestamp ? `Delivered at ${formatTime(timestamp)}` : 'Delivered';
-    case 'sent':
-    default:
-      return timestamp ? `Sent at ${formatTime(timestamp)}` : 'Sent';
-  }
-}
-
-// Helper function to format time
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
+};

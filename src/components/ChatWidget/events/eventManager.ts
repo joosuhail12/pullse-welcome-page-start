@@ -76,8 +76,18 @@ export class EventManager {
     
     // Create a new array from the listeners and sort by priority
     Array.from(listeners.entries())
-      .filter(([_, details]) => details.priority >= priority)
-      .sort(([_, a], [__, b]) => b.priority - a.priority)
+      .filter(([_, details]) => {
+        // Convert string priority to number for comparison
+        const detailPriority = this.getPriorityValue(details.priority);
+        const currentPriority = this.getPriorityValue(priority);
+        return detailPriority >= currentPriority;
+      })
+      .sort(([_, a], [__, b]) => {
+        // Convert string priority to number for comparison
+        const priorityA = this.getPriorityValue(a.priority);
+        const priorityB = this.getPriorityValue(b.priority);
+        return priorityB - priorityA;
+      })
       .forEach(([callback, _]) => {
         try {
           callback(event);
@@ -85,6 +95,24 @@ export class EventManager {
           logger.error(`Error in event listener for ${eventType}`, 'EventManager', error);
         }
       });
+  }
+
+  /**
+   * Convert string priority to numeric value for comparison
+   */
+  private getPriorityValue(priority: EventPriority): number {
+    switch (priority) {
+      case EventPriority.CRITICAL:
+        return 4;
+      case EventPriority.HIGH:
+        return 3;
+      case EventPriority.NORMAL:
+        return 2;
+      case EventPriority.LOW:
+        return 1;
+      default:
+        return 0;
+    }
   }
   
   /**

@@ -6,8 +6,6 @@ export { EventPriority, type EventCallback } from './types';
 export {
   EventManager,
   getEventManager,
-  dispatchValidatedEvent,
-  subscribeToEvent
 } from './eventManager';
 
 // Export DOM event utilities

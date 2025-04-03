@@ -1,157 +1,122 @@
 
-import React, { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { ToastAction } from '@/components/ui/toast';
 
-// Define the types for action buttons
-type ToastActionProps = {
-  label: string;
-  onClick: () => void;
-  className?: string;
-};
+type ToastVariant = 'default' | 'destructive' | 'success' | 'warning';
+
+interface ToastOptions {
+  title?: string;
+  description: string;
+  duration?: number;
+  variant?: ToastVariant;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+}
 
 /**
- * Enhanced toast utilities with consistent styling and improved accessibility.
+ * Toast utility for showing notifications
  */
-
-// Create an object for exported toast functions
 export const toasts = {
-  success: (options: {
-    title: string;
-    description?: string;
-    action?: ToastActionProps;
-    duration?: number;
-  }) => {
+  /**
+   * Show a success toast notification
+   */
+  success: ({
+    title = 'Success',
+    description,
+    duration = 5000,
+    action
+  }: ToastOptions) => {
     return toast({
-      title: options.title,
-      description: options.description,
-      variant: 'default',
-      className: 'bg-green-50 border-green-200',
-      action: options.action ? (
-        <ToastAction altText={options.action.label} onClick={options.action.onClick} className={options.action.className}>
-          {options.action.label}
-        </ToastAction>
-      ) : undefined,
-      duration: options.duration,
+      title,
+      description,
+      variant: 'success',
+      duration,
+      action
     });
   },
 
-  error: (options: {
-    title: string;
-    description?: string;
-    action?: ToastActionProps;
-    duration?: number;
-  }) => {
+  /**
+   * Show an error toast notification
+   */
+  error: ({
+    title = 'Error',
+    description,
+    duration = 5000,
+    action
+  }: ToastOptions) => {
     return toast({
-      title: options.title,
-      description: options.description,
+      title,
+      description,
       variant: 'destructive',
-      duration: options.duration,
-      action: options.action ? (
-        <ToastAction altText={options.action.label} onClick={options.action.onClick} className={options.action.className}>
-          {options.action.label}
-        </ToastAction>
-      ) : undefined,
+      duration,
+      action
     });
   },
 
-  warning: (options: {
-    title: string;
-    description?: string;
-    action?: ToastActionProps;
-    duration?: number;
-  }) => {
+  /**
+   * Show an informational toast notification
+   */
+  info: ({
+    title = 'Information',
+    description,
+    duration = 5000,
+    action
+  }: ToastOptions) => {
     return toast({
-      title: options.title,
-      description: options.description,
+      title,
+      description,
       variant: 'default',
-      duration: options.duration,
-      className: 'bg-yellow-50 border-yellow-200',
-      action: options.action ? (
-        <ToastAction altText={options.action.label} onClick={options.action.onClick} className={options.action.className}>
-          {options.action.label}
-        </ToastAction>
-      ) : undefined,
+      duration,
+      action
     });
   },
 
-  info: (options: {
-    title: string;
-    description?: string;
-    action?: ToastActionProps;
-    duration?: number;
-  }) => {
+  /**
+   * Show a warning toast notification
+   */
+  warning: ({
+    title = 'Warning',
+    description,
+    duration = 5000,
+    action
+  }: ToastOptions) => {
     return toast({
-      title: options.title,
-      description: options.description,
-      variant: 'default',
-      duration: options.duration,
-      className: 'bg-blue-50 border-blue-200',
-      action: options.action ? (
-        <ToastAction altText={options.action.label} onClick={options.action.onClick} className={options.action.className}>
-          {options.action.label}
-        </ToastAction>
-      ) : undefined,
+      title,
+      description,
+      variant: 'warning',
+      duration,
+      action
     });
   },
 
-  loading: (
-    loadingMessage: string,
-    promise: Promise<any>,
-    successMessage: string,
-    errorMessage: string
-  ) => {
-    const toastInstance = toast({
-      title: loadingMessage,
-      description: 'Please wait...',
-      duration: Infinity,
+  /**
+   * Show a custom toast notification
+   */
+  custom: ({
+    title,
+    description,
+    duration = 5000,
+    variant = 'default',
+    action
+  }: ToastOptions & { variant?: ToastVariant }) => {
+    return toast({
+      title,
+      description,
+      variant,
+      duration,
+      action
     });
-    
-    promise
-      .then(() => {
-        toast({
-          id: toastInstance.id,
-          title: successMessage,
-          description: '',
-          variant: 'default',
-          className: 'bg-green-50 border-green-200',
-        });
-      })
-      .catch((error) => {
-        toast({
-          id: toastInstance.id,
-          title: errorMessage,
-          description: error.message || 'An error occurred',
-          variant: 'destructive',
-        });
-      });
-      
-    return toastInstance;
+  },
+
+  /**
+   * Show a loading toast notification that can be updated
+   */
+  loading: (message: string) => {
+    return toast({
+      description: message,
+      duration: null, // Loading toasts should stay until manually dismissed
+    });
   }
-};
-
-// For backwards compatibility
-export const showSuccessToast = (title: string, description?: string, action?: ToastActionProps) => {
-  return toasts.success({ title, description, action });
-};
-
-export const showErrorToast = (title: string, description?: string, action?: ToastActionProps) => {
-  return toasts.error({ title, description, action });
-};
-
-export const showWarningToast = (title: string, description?: string, action?: ToastActionProps) => {
-  return toasts.warning({ title, description, action });
-};
-
-export const showInfoToast = (title: string, description?: string, action?: ToastActionProps) => {
-  return toasts.info({ title, description, action });
-};
-
-export const showLoadingToast = (
-  loadingMessage: string,
-  promise: Promise<any>,
-  successMessage: string,
-  errorMessage: string
-) => {
-  return toasts.loading(loadingMessage, promise, successMessage, errorMessage);
 };

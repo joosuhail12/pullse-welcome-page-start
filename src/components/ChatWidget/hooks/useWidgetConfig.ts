@@ -1,101 +1,68 @@
 
-import { useState, useEffect } from 'react';
-import { fetchChatWidgetConfig } from '../services/api';
+import { useState, useEffect, useMemo } from 'react';
 import { ChatWidgetConfig, defaultConfig } from '../config';
-import { getDefaultConfig } from '../embed/api';
-import { logger } from '@/lib/logger';
+import { fetchChatWidgetConfig } from '../services/configApi';
 
-export function useWidgetConfig(workspaceId?: string) {
-  const [config, setConfig] = useState<ChatWidgetConfig>(defaultConfig);
-  const [loading, setLoading] = useState<boolean>(true);
+export const useWidgetConfig = (workspaceId: string, initialConfig?: Partial<ChatWidgetConfig>) => {
+  const [config, setConfig] = useState<ChatWidgetConfig>({
+    ...defaultConfig,
+    ...initialConfig,
+    workspaceId
+  });
+  
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-
+  
+  // Fetch configuration from API
   useEffect(() => {
-    async function loadConfig() {
-      if (!workspaceId) {
-        setConfig(defaultConfig);
-        setLoading(false);
-        return;
-      }
-
+    const getConfig = async () => {
       try {
         setLoading(true);
+        const apiConfig = await fetchChatWidgetConfig(workspaceId);
         
-        // Log that we're in development mode
-        if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
-          logger.debug(
-            `Using default config for workspace ${workspaceId} in development mode`, 
-            'useWidgetConfig'
-          );
-          
-          // Use the default config for development mode
-          const devConfig = getDefaultConfig(workspaceId);
-          
-          // Ensure placement is a valid type
-          setConfig({
-            ...defaultConfig,
-            workspaceId,
-            // Ensure the position has a valid placement value
-            position: {
-              ...defaultConfig.position,
-              ...(devConfig.position ? {
-                offsetX: devConfig.position.offsetX,
-                offsetY: devConfig.position.offsetY,
-                placement: devConfig.position.placement as "bottom-right" | "bottom-left" | "top-right" | "top-left"
-              } : {})
-            },
-            // Copy other safe properties
-            welcomeMessage: devConfig.welcomeMessage || defaultConfig.welcomeMessage,
-            preChatForm: devConfig.preChatForm || defaultConfig.preChatForm,
-            branding: devConfig.branding || defaultConfig.branding,
-            features: devConfig.features || defaultConfig.features,
-            realtime: devConfig.realtime || defaultConfig.realtime,
-            sessionId: devConfig.sessionId || defaultConfig.sessionId,
-          });
-          
-          setError(null);
-          return;
-        }
-        
-        logger.info(`Fetching config for workspace ${workspaceId}`, 'useWidgetConfig');
-        const fetchedConfig = await fetchChatWidgetConfig(workspaceId);
-        
-        logger.debug('Config fetched successfully', 'useWidgetConfig', {
-          hasRealtime: !!fetchedConfig.realtime,
-          hasBranding: !!fetchedConfig.branding
-        });
-        
-        // Ensure placement is a valid type
-        setConfig({
+        // Merge API config with initial config (initial config takes precedence)
+        setConfig(currentConfig => ({
           ...defaultConfig,
-          ...fetchedConfig,
-          position: {
-            ...defaultConfig.position,
-            ...(fetchedConfig.position ? {
-              offsetX: fetchedConfig.position.offsetX,
-              offsetY: fetchedConfig.position.offsetY,
-              placement: fetchedConfig.position.placement as "bottom-right" | "bottom-left" | "top-right" | "top-left"
-            } : {})
-          }
-        });
+          ...apiConfig,
+          ...initialConfig,
+          workspaceId
+        }));
         
         setError(null);
-      } catch (err) {
-        const errorInstance = err instanceof Error ? err : new Error('Failed to fetch config');
-        logger.error('Failed to fetch widget config', 'useWidgetConfig', errorInstance);
-        
-        setError(errorInstance);
-        // Still use default config as fallback
-        setConfig(defaultConfig);
+      } catch (err: any) {
+        setError(err instanceof Error ? err : new Error('Failed to load configuration'));
+        // Still use default/initial config on error
       } finally {
         setLoading(false);
       }
-    }
-
-    loadConfig();
-  }, [workspaceId]);
-
-  return { config, loading, error };
-}
-
-export default useWidgetConfig;
+    };
+    
+    getConfig();
+  }, [workspaceId, initialConfig]);
+  
+  // Create a derived, normalized config with defaults for any missing properties
+  const mergedConfig = useMemo(() => {
+    // Ensure preChatForm exists with default values
+    const preChatForm = config.preChatForm || defaultConfig.preChatForm;
+    
+    // Ensure features exist with default values
+    const features = { ...defaultConfig.features, ...config.features };
+    const realtime = { ...defaultConfig.realtime, ...config.realtime };
+    const sessionId = config.sessionId || undefined;
+    
+    return {
+      ...config,
+      preChatForm,
+      features,
+      realtime,
+      sessionId
+    };
+  }, [config]);
+  
+  return {
+    config: mergedConfig,
+    loading,
+    error,
+    setConfig
+  };
+};

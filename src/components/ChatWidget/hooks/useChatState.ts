@@ -1,104 +1,78 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { Conversation } from '../types';
-import { saveConversationToStorage, loadConversationsFromStorage } from '../utils/storage';
-import { logout, checkSessionValidity } from '../utils/security';
+import { useState, useCallback } from 'react';
+import { Conversation, Message } from '../types';
+import { v4 as uuidv4 } from 'uuid';
 
-type ViewState = 'home' | 'messages' | 'chat';
+const emptyConversation: Conversation = {
+  id: '',
+  title: 'New Conversation',
+  messages: [],
+  status: 'active',
+  unreadCount: 0,
+  createdAt: new Date(),
+  updatedAt: new Date()
+};
 
-export function useChatState() {
-  const [viewState, setViewState] = useState<ViewState>('messages'); // Default to messages view
-  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
-  const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(undefined);
+export const useChatState = (initialConversation?: Conversation) => {
+  const [conversation, setConversation] = useState<Conversation>(
+    initialConversation || { ...emptyConversation, id: uuidv4() }
+  );
   
-  // Load any existing conversations when component mounts
-  // and verify session validity
-  useEffect(() => {
-    if (checkSessionValidity()) {
-      loadConversationsFromStorage();
-    } else {
-      // If session is invalid, redirect to home view
-      setViewState('home');
-      // Reset active conversation
-      setActiveConversation(null);
-    }
+  // Add a message to the conversation
+  const addMessage = useCallback((message: Message) => {
+    setConversation((prev) => ({
+      ...prev,
+      messages: [...prev.messages, message],
+      updatedAt: new Date()
+    }));
   }, []);
-
-  const handleStartChat = useCallback((formData?: Record<string, string>) => {
-    // Create a new conversation even without form data
-    // Form data will be collected in the ChatView component
-    const newConversation = {
-      id: `conv-${Date.now()}`,
-      title: formData?.name ? `Chat with ${formData.name}` : 'New Conversation',
+  
+  // Create a new conversation
+  const createNewConversation = useCallback((title: string = 'New Conversation', agent?: { name: string, avatar: any }) => {
+    const newConversation: Conversation = {
+      id: uuidv4(),
+      title,
+      messages: [],
+      status: 'active',
+      unreadCount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
       lastMessage: '',
       timestamp: new Date(),
-      agentInfo: {
-        name: 'Support Agent',
-        avatar: undefined // You could set a default avatar URL here
-      },
-      // Flag to indicate whether contact has been identified yet
-      contactIdentified: !!formData
+      agentInfo: agent ? {
+        name: agent.name,
+        avatar: agent.avatar
+      } : undefined,
+      contactIdentified: false
     };
     
-    setActiveConversation(newConversation);
-    setViewState('chat');
-    
-    // Save the new conversation to localStorage
-    saveConversationToStorage(newConversation);
+    setConversation(newConversation);
+    return newConversation;
   }, []);
-
-  const handleBackToMessages = useCallback(() => {
-    // Update the conversation in localStorage before going back
-    if (activeConversation) {
-      saveConversationToStorage(activeConversation);
-    }
-    setViewState('messages');
-  }, [activeConversation]);
-
-  const handleChangeView = useCallback((view: ViewState) => {
-    if (view !== 'chat') {
-      setViewState(view);
-    }
+  
+  // Update the conversation
+  const updateConversation = useCallback((updates: Partial<Conversation>) => {
+    setConversation((prev) => ({
+      ...prev,
+      ...updates,
+      updatedAt: new Date()
+    }));
   }, []);
-
-  // Handler for when a conversation is selected from the messages view
-  const handleSelectConversation = useCallback((conversation: Conversation) => {
-    setActiveConversation(conversation);
-    setViewState('chat');
-  }, []);
-
-  // Update conversation with new message
-  const handleUpdateConversation = useCallback((updatedConversation: Conversation) => {
-    setActiveConversation(updatedConversation);
-    // Save the updated conversation to localStorage
-    saveConversationToStorage(updatedConversation);
-  }, []);
-
-  // Handle logout and session invalidation
-  const handleLogout = useCallback(() => {
-    // Clear active conversation
-    setActiveConversation(null);
-    
-    // Return to home view
-    setViewState('home');
-    
-    // Clear form data
-    setUserFormData(undefined);
-    
-    // Invalidate the session
-    logout();
+  
+  // End the conversation
+  const endConversation = useCallback(() => {
+    setConversation((prev) => ({
+      ...prev,
+      status: 'ended',
+      updatedAt: new Date()
+    }));
   }, []);
 
   return {
-    viewState,
-    activeConversation,
-    handleStartChat,
-    handleBackToMessages,
-    handleChangeView,
-    handleSelectConversation,
-    handleUpdateConversation,
-    handleLogout,
-    userFormData,
-    setUserFormData,
+    conversation,
+    addMessage,
+    createNewConversation,
+    updateConversation,
+    endConversation
   };
-}
+};

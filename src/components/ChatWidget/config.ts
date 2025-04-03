@@ -1,3 +1,4 @@
+
 /**
  * Chat Widget Configuration Types
  */

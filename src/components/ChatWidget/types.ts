@@ -38,7 +38,12 @@ export interface Conversation {
   unreadCount: number;
   createdAt: Date;
   updatedAt: Date;
-  participants?: { id: string; name: string; avatar?: string; metadata?: Record<string, any> }[];
+  participants?: { 
+    id: string; 
+    name: string; 
+    avatar?: string; 
+    metadata?: Record<string, any> 
+  }[];
   metadata?: Record<string, any>;
   lastMessage?: string;
   timestamp?: Date;
@@ -84,4 +89,5 @@ export interface MessageSearchResult {
   conversationId: string;
   score: number;
   highlight?: string[];
+  matchText?: string; // Add missing property
 }
