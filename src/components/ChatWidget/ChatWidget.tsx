@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import HomeView from './views/HomeView';
 import MessagesView from './views/MessagesView';
@@ -91,7 +92,8 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     }
   }, [handleStartChat, setUserFormData, config]);
 
-  const getPositionStyles = useMemo(() => {
+  // Get position for the widget container
+  const getWidgetPositionStyles = useMemo(() => {
     const position = config.position?.placement || 'bottom-right';
     const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 1;
     const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 1;
@@ -132,6 +134,56 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     return positionStyle;
   }, [config.position]);
 
+  // Calculate launcher position for when widget is open
+  const getLauncherPositionStyles = useMemo(() => {
+    if (!isOpen) return getWidgetPositionStyles;
+    
+    const position = config.position?.placement || 'bottom-right';
+    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 1;
+    const widgetHeightPx = isMobile ? 500 : 600; 
+    const widgetHeightRem = widgetHeightPx / 16;
+    const buttonMargin = 1; // 1rem margin between widget and button
+    
+    let launcherStyle: React.CSSProperties = {};
+    
+    switch(position) {
+      case 'bottom-left':
+        launcherStyle = { 
+          bottom: `${buttonMargin}rem`, 
+          left: `${offsetX}rem`, 
+          right: 'auto',
+          top: 'auto'
+        };
+        break;
+      case 'top-right':
+        launcherStyle = { 
+          top: `${widgetHeightRem + buttonMargin}rem`, 
+          right: `${offsetX}rem`,
+          bottom: 'auto',
+          left: 'auto'
+        };
+        break;
+      case 'top-left':
+        launcherStyle = { 
+          top: `${widgetHeightRem + buttonMargin}rem`, 
+          left: `${offsetX}rem`,
+          bottom: 'auto',
+          right: 'auto'
+        };
+        break;
+      case 'bottom-right':
+      default:
+        launcherStyle = { 
+          bottom: `${buttonMargin}rem`, 
+          right: `${offsetX}rem`,
+          top: 'auto',
+          left: 'auto'
+        };
+    }
+    
+    return launcherStyle;
+  }, [isOpen, getWidgetPositionStyles, config.position?.placement, config.position?.offsetX, isMobile]);
+
   if (loading) {
     return (
       <div className="fixed bottom-16 sm:bottom-24 right-4 w-[90vw] sm:w-80 md:w-96 h-[500px] sm:h-[600px] max-h-[80vh] rounded-lg shadow-lg bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 p-4 font-sans flex items-center justify-center">
@@ -147,40 +199,12 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
   const widgetHeight = isMobile ? "500px" : "600px";
   const widgetMaxHeight = isMobile ? "80vh" : "85vh";
 
-  // Calculate launcher position for when widget is open
-  const getLauncherPositionStyles = () => {
-    if (!isOpen) return getPositionStyles;
-    
-    // Clone the position styles
-    const positionStyle = {...getPositionStyles};
-    
-    // Add extra bottom margin to position launcher below the widget
-    const widgetHeightPx = isMobile ? 500 : 600;
-    const extraMargin = 16; // 1rem in pixels
-    
-    // Adjust bottom position for bottom placements
-    if (positionStyle.bottom !== undefined && positionStyle.bottom !== 'auto') {
-      const currentBottom = parseFloat(positionStyle.bottom as string);
-      const heightInRem = (widgetHeightPx / 16) + (extraMargin / 16); // Convert px to rem
-      positionStyle.bottom = `${currentBottom - heightInRem}rem`;
-    }
-    
-    // For top placements, we need different logic
-    if (positionStyle.top !== undefined && positionStyle.top !== 'auto') {
-      const currentTop = parseFloat(positionStyle.top as string);
-      const heightInRem = (widgetHeightPx / 16) + (extraMargin / 16);
-      positionStyle.top = `${currentTop + heightInRem}rem`;
-    }
-    
-    return positionStyle;
-  };
-
   return (
     <>
       {isOpen && (
         <div 
           className={`fixed ${widgetWidth} h-[${widgetHeight}] max-h-[${widgetMaxHeight}] z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden`}
-          style={{...widgetStyle, ...getPositionStyles}}
+          style={{...widgetStyle, ...getWidgetPositionStyles}}
         >
           <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden">
             {viewState === 'chat' ? (
@@ -215,7 +239,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
           {config.branding?.showBrandingBar !== false && <PoweredByBar />}
         </div>
       )}
-      <div className="fixed flex flex-col items-end" style={getLauncherPositionStyles()}>
+      <div className="fixed flex flex-col items-end" style={getLauncherPositionStyles}>
         <Button
           className="rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105"
           style={config.branding?.primaryColor ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor } : {}}
