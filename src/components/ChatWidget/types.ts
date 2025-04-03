@@ -1,4 +1,5 @@
 
+
 export interface Message {
   id: string;
   text: string;
@@ -69,20 +70,13 @@ export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
 // Define standard user types
 export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status';
 
-// Define ChatPosition type
-export type ChatPosition = 
-  | 'bottom-right'
-  | 'bottom-left'
-  | 'top-right'
-  | 'top-left'
-  | {
-      placement: string;
-      offsetX: number;
-      offsetY: number;
-    };
-
 // Define MessageReadStatus type 
 export type MessageReadStatus = 'unread' | 'delivered' | 'read';
+
+export interface MessageReadReceipt {
+  status: MessageReadStatus;
+  timestamp?: Date;
+}
 
 // Define MessageReaction types
 export interface MessageReactionButtonsProps {
@@ -117,3 +111,4 @@ export interface QuickReplyMessageProps {
   metadata: Record<string, any>;
   onReply: (text: string) => void;
 }
+

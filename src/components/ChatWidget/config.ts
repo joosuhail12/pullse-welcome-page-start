@@ -1,3 +1,4 @@
+
 /**
  * Chat Widget Configuration Types
  */
@@ -27,8 +28,17 @@ export interface ChatBranding {
   widgetTitle?: string;
 }
 
-// Update the ChatPosition type to be a direct string type
-export type ChatPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+// Update the ChatPosition type to include both string literals and object type
+export type ChatPosition = 
+  | 'bottom-right' 
+  | 'bottom-left' 
+  | 'top-right' 
+  | 'top-left'
+  | {
+      placement: string;
+      offsetX: number;
+      offsetY: number;
+    };
 
 export interface ChatFeatures {
   fileUpload?: boolean;
@@ -59,7 +69,9 @@ export type ChatEventType =
   | 'chat:typingStarted'
   | 'chat:typingStopped'
   | 'message:fileUploaded'
-  | 'chat:ended';
+  | 'chat:ended'
+  | 'chat:connectionChange' // Add connection change event type
+  | 'chat:error';          // Add error event type
 
 export interface ChatEventPayload {
   type: ChatEventType;
@@ -112,11 +124,7 @@ export const defaultConfig: ChatWidgetConfig = {
     primaryColor: '#8B5CF6',
     showBrandingBar: true
   },
-  position: {
-    placement: 'bottom-right',
-    offsetX: 4,
-    offsetY: 4
-  },
+  position: 'bottom-right',
   features: {
     fileUpload: true,
     messageRating: false,

@@ -26,7 +26,7 @@ interface PrioritizedEvent {
 /**
  * Mapping of event types to their default priorities
  */
-const defaultEventPriorities: Record<ChatEventType, EventPriority> = {
+const defaultEventPriorities: Record<string, EventPriority> = {
   'chat:open': EventPriority.HIGH,
   'chat:close': EventPriority.HIGH,
   'chat:messageSent': EventPriority.HIGH,
@@ -37,7 +37,9 @@ const defaultEventPriorities: Record<ChatEventType, EventPriority> = {
   'chat:typingStarted': EventPriority.LOW,
   'chat:typingStopped': EventPriority.LOW,
   'message:fileUploaded': EventPriority.HIGH,
-  'chat:ended': EventPriority.CRITICAL
+  'chat:ended': EventPriority.CRITICAL,
+  'chat:connectionChange': EventPriority.HIGH,
+  'chat:error': EventPriority.CRITICAL
 };
 
 /**
@@ -136,7 +138,7 @@ export class EnhancedEventManager extends EventManager {
           super.handleEvent(event);
         } else {
           // For other events, dispatch directly
-          this.dispatchToListeners(event);
+          this.dispatchToListenersInternal(event);
         }
       });
     } finally {
@@ -145,11 +147,11 @@ export class EnhancedEventManager extends EventManager {
   }
   
   /**
-   * Dispatches to listeners (extracted from parent class for enhancement)
+   * Dispatches to listeners (extracted for enhancement)
    */
-  private dispatchToListeners(event: ChatEventPayload): void {
-    // Dispatch to specific event listeners
-    const listeners = this.getListeners(event.type);
+  private dispatchToListenersInternal(event: ChatEventPayload): void {
+    // Get access to event listeners through parent class methods
+    const listeners = this.getEventListeners(event.type);
     if (listeners) {
       listeners.forEach(callback => {
         try {
@@ -161,7 +163,7 @@ export class EnhancedEventManager extends EventManager {
     }
     
     // Dispatch to 'all' event listeners
-    const allListeners = this.getListeners('all');
+    const allListeners = this.getEventListeners('all');
     if (allListeners) {
       allListeners.forEach(callback => {
         try {
@@ -174,10 +176,10 @@ export class EnhancedEventManager extends EventManager {
   }
   
   /**
-   * Get listeners for a specific event type
+   * Get listeners for a specific event type - provides access to the parent's private field
    */
-  private getListeners(eventType: ChatEventType | 'all'): EventCallback[] | undefined {
-    return this.eventListeners.get(eventType);
+  private getEventListeners(eventType: ChatEventType | 'all'): EventCallback[] | undefined {
+    return this.getListenersFromParent(eventType);
   }
 }
 

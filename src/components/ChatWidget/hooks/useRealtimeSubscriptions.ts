@@ -1,6 +1,6 @@
 
 import { useEffect, useState, useRef } from 'react';
-import { Message } from '../types';
+import { Message, MessageReadReceipt, MessageReadStatus } from '../types';
 import { subscribeToChannel, publishToChannel, isInFallbackMode } from '../utils/ably';
 import { ChatWidgetConfig, ChatEventType } from '../config';
 import { processSystemMessage, sendDeliveryReceipt } from '../utils/messageHandlers';
@@ -15,8 +15,8 @@ export function useRealtimeSubscriptions(
   playMessageSound?: () => void
 ) {
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
-  const [readReceipts, setReadReceipts] = useState<Record<string, Date>>({});
-  const [deliveredReceipts, setDeliveredReceipts] = useState<Record<string, Date>>({});
+  const [readReceipts, setReadReceipts] = useState<Record<string, MessageReadReceipt>>({});
+  const [deliveredReceipts, setDeliveredReceipts] = useState<Record<string, MessageReadReceipt>>({});
   const [connectionState, setConnectionState] = useState<string>('connecting');
   
   // Track if local fallback has already been set up
@@ -69,7 +69,10 @@ export function useRealtimeSubscriptions(
         if (message.data && message.data.messageId && message.data.userId !== sessionId) {
           setReadReceipts(prev => ({
             ...prev,
-            [message.data.messageId]: new Date(message.data.timestamp || Date.now())
+            [message.data.messageId]: {
+              status: 'read' as MessageReadStatus,
+              timestamp: new Date(message.data.timestamp || Date.now())
+            }
           }));
           
           // Update message status
@@ -87,7 +90,10 @@ export function useRealtimeSubscriptions(
         if (message.data && message.data.messageId && message.data.userId !== sessionId) {
           setDeliveredReceipts(prev => ({
             ...prev,
-            [message.data.messageId]: new Date(message.data.timestamp || Date.now())
+            [message.data.messageId]: {
+              status: 'delivered' as MessageReadStatus,
+              timestamp: new Date(message.data.timestamp || Date.now())
+            }
           }));
           
           // Update message status if not already read

@@ -18,7 +18,7 @@ import { ChatEventType, ChatEventPayload } from '../config';
  * TODO: Add JSON schema validation for complex event data
  * TODO: Regularly update schemas based on security findings
  */
-const eventSchemas: Record<ChatEventType, (data: any) => boolean> = {
+const eventSchemas: Record<string, (data: any) => boolean> = {
   'chat:open': (data) => true, // No specific data requirements
   'chat:close': (data) => true, // No specific data requirements
   'chat:messageSent': (data) => {
@@ -64,7 +64,15 @@ const eventSchemas: Record<ChatEventType, (data: any) => boolean> = {
       typeof data.messageId === 'string' && 
       typeof data.fileName === 'string');
   },
-  'chat:ended': (data) => true // No specific data requirements
+  'chat:ended': (data) => true, // No specific data requirements
+  'chat:connectionChange': (data) => {
+    return !!(data && typeof data === 'object' && typeof data.status === 'string');
+  },
+  'chat:error': (data) => {
+    return !!(data && 
+      typeof data === 'object' && 
+      typeof data.error === 'string');
+  }
 };
 
 /**
@@ -76,6 +84,11 @@ const eventSchemas: Record<ChatEventType, (data: any) => boolean> = {
  * TODO: Add more comprehensive validation for complex data structures
  */
 export const validateEventData = (eventType: ChatEventType, data: any): boolean => {
+  // Allow local channel events to pass through validation
+  if (typeof eventType === 'string' && eventType.startsWith('local:')) {
+    return true;
+  }
+  
   if (!eventSchemas[eventType]) {
     console.warn(`No validation schema defined for event type: ${eventType}`);
     return true; // Allow unknown event types to pass through
@@ -122,6 +135,11 @@ export const validateEventPayload = (event: ChatEventPayload): boolean => {
   // Check required fields
   if (!event.type || !event.timestamp) {
     return false;
+  }
+  
+  // Allow local channel events to pass through validation
+  if (typeof event.type === 'string' && event.type.startsWith('local:')) {
+    return true;
   }
   
   // Validate based on event type

@@ -3,6 +3,7 @@ import Ably from 'ably';
 import { getReconnectionManager, ConnectionStatus } from './reconnectionManager';
 import { createValidatedEvent } from './eventValidation';
 import { dispatchValidatedEvent, EventPriority } from '../embed/enhancedEvents';
+import { ChatEventType } from '../config';
 
 // Client instance to ensure singleton pattern
 let ablyClient: Ably.Realtime | null = null;
@@ -35,7 +36,7 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
         // Transport options
         transports: ['websocket', 'xhr'],  // Preferred transports in order of priority
         fallbackHosts: ['b-fallback.ably.io', 'c-fallback.ably.io'], // Fallback hosts if primary fails
-      });
+      } as Ably.Types.ClientOptions);
     }
     
     // Reset fallback mode when initializing
@@ -116,18 +117,18 @@ function setupConnectionStateListeners() {
   ablyClient.connection.on('connected', () => {
     console.log('Ably connection established');
     localFallbackMode = false;
-    dispatchValidatedEvent('chat:connectionChange', { status: 'connected' }, EventPriority.HIGH);
+    dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'connected' }, EventPriority.HIGH);
     processQueuedMessages();
   });
   
   ablyClient.connection.on('disconnected', () => {
     console.warn('Ably connection disconnected, attempting to reconnect');
-    dispatchValidatedEvent('chat:connectionChange', { status: 'disconnected' }, EventPriority.HIGH);
+    dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'disconnected' }, EventPriority.HIGH);
   });
   
   ablyClient.connection.on('suspended', () => {
     console.warn('Ably connection suspended (multiple reconnection attempts failed)');
-    dispatchValidatedEvent('chat:connectionChange', { status: 'suspended' }, EventPriority.HIGH);
+    dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'suspended' }, EventPriority.HIGH);
     
     // After being suspended for 30 seconds, enable fallback mode
     setTimeout(() => {
@@ -139,7 +140,7 @@ function setupConnectionStateListeners() {
   
   ablyClient.connection.on('failed', (err) => {
     console.error('Ably connection failed permanently:', err);
-    dispatchValidatedEvent('chat:connectionChange', { 
+    dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { 
       status: 'failed', 
       error: err?.message || 'Connection failed' 
     }, EventPriority.HIGH);
@@ -148,7 +149,7 @@ function setupConnectionStateListeners() {
   
   ablyClient.connection.on('closed', () => {
     console.log('Ably connection closed');
-    dispatchValidatedEvent('chat:connectionChange', { status: 'closed' }, EventPriority.HIGH);
+    dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'closed' }, EventPriority.HIGH);
   });
 }
 
@@ -160,7 +161,7 @@ function enableLocalFallback(): void {
   
   localFallbackMode = true;
   console.warn('Switching to local fallback mode due to Ably unavailability');
-  dispatchValidatedEvent('chat:connectionChange', { status: 'fallback' }, EventPriority.HIGH);
+  dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'fallback' }, EventPriority.HIGH);
 }
 
 /**
@@ -370,7 +371,8 @@ export const publishToChannel = (
     pendingMessages.push({ channelName, eventName, data });
     
     // Also dispatch local event in fallback mode for real-time-like behavior
-    dispatchValidatedEvent(`local:${channelName}:${eventName}`, data);
+    const localEventType = `local:${channelName}:${eventName}` as ChatEventType;
+    dispatchValidatedEvent(localEventType, data);
     return;
   }
   
@@ -384,7 +386,8 @@ export const publishToChannel = (
     pendingMessages.push({ channelName, eventName, data });
     
     // Also dispatch local event for fallback
-    dispatchValidatedEvent(`local:${channelName}:${eventName}`, data);
+    const localEventType = `local:${channelName}:${eventName}` as ChatEventType;
+    dispatchValidatedEvent(localEventType, data);
   }
 };
 
@@ -450,10 +453,10 @@ export const subscribeToPresence = (
     channel.presence.subscribe('update', updateCallback);
     
     // Set up recovery for presence failures
-    channel.presence.on('error', (err) => {
+    channel.presence.on ? channel.presence.on('error', (err) => {
       console.error(`Presence error on channel ${channelName}:`, err);
       setTimeout(updateCallback, 3000);
-    });
+    }) : console.warn('Presence on method not available');
   } catch (error) {
     console.error(`Error subscribing to presence for channel ${channelName}:`, error);
   }
