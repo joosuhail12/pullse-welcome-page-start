@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MessageBubble from './MessageBubble';
@@ -6,6 +5,7 @@ import TypingIndicator from './TypingIndicator';
 import { Button } from '@/components/ui/button';
 import { ArrowDown, Loader2 } from 'lucide-react';
 import { MessageReadStatus } from './MessageReadReceipt';
+import MessageAvatar from './MessageBubble/MessageAvatar';
 
 interface MessageListProps {
   messages: any[];
@@ -49,20 +49,15 @@ const MessageList: React.FC<MessageListProps> = ({
   const [hasInitiallyScrolled, setHasInitiallyScrolled] = useState(false);
   const [isScrolledToSearchResult, setIsScrolledToSearchResult] = useState(false);
 
-  // Tracks if we're manually scrolling to a specific point
   const isAutoScrollingRef = useRef(false);
-  
-  // Track scroll position to detect direction
   const lastScrollTop = useRef(0);
 
-  // Scroll to bottom on new messages or typing indicator changes
   useEffect(() => {
     if (messages.length && !searchResults.length && isAtBottom && !isAutoScrollingRef.current) {
       scrollToBottom();
     }
   }, [messages, isTyping, searchResults.length]);
 
-  // Scroll to the first search result when search results change
   useEffect(() => {
     if (searchResults.length && !isScrolledToSearchResult) {
       const firstResultId = searchResults[0];
@@ -81,7 +76,6 @@ const MessageList: React.FC<MessageListProps> = ({
     }
   }, [searchResults, isScrolledToSearchResult]);
 
-  // Set up scroll detection for the scroll-to-bottom button
   useEffect(() => {
     const scrollContainer = scrollAreaRef.current?.querySelector('[data-radix-scroll-area-viewport]');
     
@@ -90,24 +84,19 @@ const MessageList: React.FC<MessageListProps> = ({
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
       
-      // Check if scrolling up or down
       const isScrollingUp = scrollTop < lastScrollTop.current;
       lastScrollTop.current = scrollTop;
       
-      // Check if we're near the bottom (within 100px)
       const isCloseToBottom = scrollTop + clientHeight >= scrollHeight - 100;
       setIsAtBottom(isCloseToBottom);
       
-      // Show scroll button if not at bottom and scrolling up
       setShowScrollButton(!isCloseToBottom && isScrollingUp);
       
-      // Handle loading more messages when scrolled to top
       if (scrollTop === 0 && onScrollTop && hasMoreMessages && !isLoadingMore) {
         onScrollTop();
       }
     };
     
-    // Set initial scroll position to bottom on first render
     if (!hasInitiallyScrolled && messages.length > 0) {
       scrollToBottom();
       setHasInitiallyScrolled(true);
@@ -131,7 +120,6 @@ const MessageList: React.FC<MessageListProps> = ({
     }
   };
 
-  // Get read receipt status for a message
   const getReadReceipt = (messageId: string) => {
     return readReceipts[messageId] || { status: 'sent' as MessageReadStatus };
   };
@@ -188,9 +176,9 @@ const MessageList: React.FC<MessageListProps> = ({
         {isTyping && (
           <div className="flex items-end mb-4">
             <MessageAvatar 
-              isUserMessage={false}
-              agentAvatar={agentAvatar}
-              agentStatus={agentStatus}
+              sender={agentStatus ? 'system' : 'system'}
+              avatarUrl={agentAvatar}
+              status={agentStatus}
             />
             <TypingIndicator />
           </div>
