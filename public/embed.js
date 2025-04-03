@@ -138,17 +138,28 @@
       handleWidgetEvent(event);
     };
     
+    // Parse positioning options
+    var position = options.position || 'bottom-right';
+    var offsetX = options.offsetX !== undefined ? options.offsetX : 20;
+    var offsetY = options.offsetY !== undefined ? options.offsetY : 20;
+    
     // Set default options
     var config = {
-      position: options.position || 'bottom-right',
-      hideBranding: !!options.hideBranding,
-      autoOpen: !!options.autoOpen,
+      position: {
+        placement: position,
+        offsetX: offsetX / 16, // Convert px to rem
+        offsetY: offsetY / 16  // Convert px to rem
+      },
       workspaceId: options.workspaceId,
       welcomeMessage: options.welcomeMessage,
       branding: {
         primaryColor: options.primaryColor,
+        logoUrl: options.logoUrl,
+        avatarUrl: options.avatarUrl,
+        widgetTitle: options.widgetTitle,
         showBrandingBar: !options.hideBranding
       },
+      autoOpen: !!options.autoOpen,
       onEvent: options.onEvent,
       eventHandlers: options.eventHandlers || {}
     };
@@ -163,7 +174,7 @@
     
     // Add styles
     var styleElement = document.createElement('style');
-    styleElement.textContent = '#pullse-chat-widget-container { position: fixed; z-index: 9999; ' + getPositionStyles(config.position) + ' }';
+    styleElement.textContent = '#pullse-chat-widget-container { position: fixed; z-index: 9999; ' + getPositionStyles(position, offsetX, offsetY) + ' }';
     document.head.appendChild(styleElement);
     
     // Load widget script
@@ -243,17 +254,17 @@
   /**
    * Get CSS styles for widget position
    */
-  function getPositionStyles(position) {
+  function getPositionStyles(position, offsetX, offsetY) {
     switch (position) {
       case 'bottom-left':
-        return 'bottom: 20px; left: 20px;';
+        return 'bottom: ' + offsetY + 'px; left: ' + offsetX + 'px;';
       case 'top-right':
-        return 'top: 20px; right: 20px;';
+        return 'top: ' + offsetY + 'px; right: ' + offsetX + 'px;';
       case 'top-left':
-        return 'top: 20px; left: 20px;';
+        return 'top: ' + offsetY + 'px; left: ' + offsetX + 'px;';
       case 'bottom-right':
       default:
-        return 'bottom: 20px; right: 20px;';
+        return 'bottom: ' + offsetY + 'px; right: ' + offsetX + 'px;';
     }
   }
   
@@ -267,6 +278,11 @@
       welcomeMessage: currentScript.getAttribute('data-welcome-message'),
       primaryColor: currentScript.getAttribute('data-primary-color'),
       position: currentScript.getAttribute('data-position'),
+      offsetX: currentScript.getAttribute('data-offset-x') ? parseInt(currentScript.getAttribute('data-offset-x'), 10) : undefined,
+      offsetY: currentScript.getAttribute('data-offset-y') ? parseInt(currentScript.getAttribute('data-offset-y'), 10) : undefined,
+      logoUrl: currentScript.getAttribute('data-logo-url'),
+      avatarUrl: currentScript.getAttribute('data-avatar-url'),
+      widgetTitle: currentScript.getAttribute('data-widget-title'),
       hideBranding: currentScript.hasAttribute('data-hide-branding'),
       autoOpen: currentScript.hasAttribute('data-auto-open')
     });

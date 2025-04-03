@@ -44,7 +44,13 @@ const HomeView = React.memo(({
       {/* Welcoming header with avatar */}
       <div className="flex flex-col items-center mb-4 sm:mb-7 transition-transform duration-300 hover:scale-[1.01]">
         <Avatar className={`${avatarSize} mb-3 sm:mb-5 shadow-md animate-subtle-scale border-2 border-white`}>
-          <AvatarImage src="https://framerusercontent.com/images/9N8Z1vTRbJsHlrIuTjm6Ajga4dI.png" />
+          {config.branding?.logoUrl ? (
+            <AvatarImage src={config.branding.logoUrl} alt="Company logo" />
+          ) : config.branding?.avatarUrl ? (
+            <AvatarImage src={config.branding.avatarUrl} alt="Avatar image" />
+          ) : (
+            <AvatarImage src="https://framerusercontent.com/images/9N8Z1vTRbJsHlrIuTjm6Ajga4dI.png" />
+          )}
           <AvatarFallback className="bg-soft-purple-100 text-vivid-purple-600 text-xl">
             <MessageCircle size={isMobile ? 24 : 30} />
           </AvatarFallback>

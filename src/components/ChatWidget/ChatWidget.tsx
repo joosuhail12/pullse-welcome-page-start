@@ -54,6 +54,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     };
   }, [loading, config.realtime?.enabled, workspaceId]);
   
+  // Apply custom branding if available
   const widgetStyle = useMemo(() => {
     return {
       ...(config.branding?.primaryColor && {
@@ -92,6 +93,48 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     }
   }, [handleStartChat, setUserFormData, config]);
 
+  // Get position styles based on config
+  const getPositionStyles = useMemo(() => {
+    const position = config.position?.placement || 'bottom-right';
+    const offsetX = config.position?.offsetX !== undefined ? config.position.offsetX : 4;
+    const offsetY = config.position?.offsetY !== undefined ? config.position.offsetY : 4;
+    
+    let positionStyle: React.CSSProperties = {};
+    
+    switch(position) {
+      case 'bottom-left':
+        positionStyle = { 
+          bottom: `${offsetY}rem`, 
+          left: `${offsetX}rem`,
+          right: 'auto'
+        };
+        break;
+      case 'top-right':
+        positionStyle = { 
+          top: `${offsetY}rem`, 
+          right: `${offsetX}rem`,
+          bottom: 'auto'
+        };
+        break;
+      case 'top-left':
+        positionStyle = { 
+          top: `${offsetY}rem`, 
+          left: `${offsetX}rem`,
+          bottom: 'auto',
+          right: 'auto'
+        };
+        break;
+      case 'bottom-right':
+      default:
+        positionStyle = { 
+          bottom: `${offsetY}rem`, 
+          right: `${offsetX}rem`
+        };
+    }
+    
+    return positionStyle;
+  }, [config.position]);
+
   if (loading) {
     return (
       <div className="fixed bottom-16 sm:bottom-24 right-4 w-[90vw] sm:w-80 md:w-96 h-[500px] sm:h-[600px] max-h-[80vh] rounded-lg shadow-lg bg-gradient-to-br from-soft-purple-50 to-soft-purple-100 p-4 font-sans flex items-center justify-center">
@@ -111,8 +154,8 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
     <>
       {isOpen && (
         <div 
-          className={`fixed bottom-16 sm:bottom-24 right-4 ${widgetWidth} h-[${widgetHeight}] max-h-[${widgetMaxHeight}] z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden`}
-          style={widgetStyle}
+          className={`fixed ${widgetWidth} h-[${widgetHeight}] max-h-[${widgetMaxHeight}] z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden`}
+          style={{...widgetStyle, ...getPositionStyles}}
         >
           <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden">
             {viewState === 'chat' ? (
@@ -147,7 +190,7 @@ export const ChatWidget = React.memo(({ workspaceId }: ChatWidgetProps) => {
           {config.branding?.showBrandingBar !== false && <PoweredByBar />}
         </div>
       )}
-      <div className="fixed bottom-4 right-4 flex flex-col items-end">
+      <div className="fixed flex flex-col items-end" style={getPositionStyles}>
         <Button
           className="rounded-full w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105"
           style={config.branding?.primaryColor ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor } : {}}

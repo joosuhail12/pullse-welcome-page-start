@@ -1,4 +1,3 @@
-
 /**
  * Pullse Chat Widget Embed Script
  * 
@@ -6,15 +5,20 @@
  * with customizable configuration options.
  */
 
-import { ChatEventType, ChatEventPayload } from './config';
+import { ChatEventType, ChatEventPayload, ChatPosition, ChatBranding } from './config';
 
 interface PullseChatWidgetOptions {
   workspaceId: string;
   welcomeMessage?: string;
   primaryColor?: string;
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  offsetX?: number;
+  offsetY?: number;
   hideBranding?: boolean;
   autoOpen?: boolean;
+  logoUrl?: string;
+  avatarUrl?: string;
+  widgetTitle?: string;
   onEvent?: (event: ChatEventPayload) => void;
   eventHandlers?: {
     [key in ChatEventType]?: (payload: ChatEventPayload) => void;
@@ -35,6 +39,8 @@ class PullseChatWidgetLoader {
     // Set default options
     this.options = {
       position: 'bottom-right',
+      offsetX: 20,
+      offsetY: 20,
       hideBranding: false,
       autoOpen: false,
       ...options
@@ -87,16 +93,18 @@ class PullseChatWidgetLoader {
   }
 
   private getPositionStyles(): string {
-    switch (this.options.position) {
+    const { position, offsetX, offsetY } = this.options;
+    
+    switch (position) {
       case 'bottom-left':
-        return 'bottom: 20px; left: 20px;';
+        return `bottom: ${offsetY}px; left: ${offsetX}px;`;
       case 'top-right':
-        return 'top: 20px; right: 20px;';
+        return `top: ${offsetY}px; right: ${offsetX}px;`;
       case 'top-left':
-        return 'top: 20px; left: 20px;';
+        return `top: ${offsetY}px; left: ${offsetX}px;`;
       case 'bottom-right':
       default:
-        return 'bottom: 20px; right: 20px;';
+        return `bottom: ${offsetY}px; right: ${offsetX}px;`;
     }
   }
 
@@ -158,14 +166,28 @@ class PullseChatWidgetLoader {
       this.dispatchToListeners(event);
     };
     
+    // Create position configuration from options
+    const position: ChatPosition = {
+      placement: this.options.position,
+      offsetX: this.options.offsetX && this.options.offsetX / 16, // Convert px to rem
+      offsetY: this.options.offsetY && this.options.offsetY / 16  // Convert px to rem
+    };
+    
+    // Create branding configuration
+    const branding: ChatBranding = {
+      primaryColor: this.options.primaryColor,
+      logoUrl: this.options.logoUrl,
+      avatarUrl: this.options.avatarUrl,
+      widgetTitle: this.options.widgetTitle,
+      showBrandingBar: !this.options.hideBranding
+    };
+    
     // Create global config object
     (window as any).__PULLSE_CHAT_CONFIG__ = {
       workspaceId: this.options.workspaceId,
       welcomeMessage: this.options.welcomeMessage,
-      branding: {
-        primaryColor: this.options.primaryColor,
-        showBrandingBar: !this.options.hideBranding
-      },
+      branding: branding,
+      position: position,
       autoOpen: this.options.autoOpen,
       onEvent: onEvent,
       eventHandlers: this.options.eventHandlers

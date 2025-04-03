@@ -23,7 +23,15 @@ export interface ChatBranding {
   primaryColor?: string;
   fontFamily?: string;
   avatarUrl?: string;
+  logoUrl?: string;
   showBrandingBar?: boolean;
+  widgetTitle?: string;
+}
+
+export interface ChatPosition {
+  placement?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  offsetX?: number;
+  offsetY?: number;
 }
 
 export interface ChatFeatures {
@@ -68,6 +76,7 @@ export interface ChatWidgetConfig {
   welcomeMessage: string;
   preChatForm: PreChatForm;
   branding?: ChatBranding;
+  position?: ChatPosition;
   features?: ChatFeatures;
   realtime?: ChatRealtime;
   sessionId?: string;
@@ -107,6 +116,11 @@ export const defaultConfig: ChatWidgetConfig = {
     primaryColor: '#8B5CF6',
     showBrandingBar: true
   },
+  position: {
+    placement: 'bottom-right',
+    offsetX: 4,
+    offsetY: 4
+  },
   features: {
     fileUpload: true,
     messageRating: false,
@@ -124,3 +138,4 @@ export const defaultConfig: ChatWidgetConfig = {
     authEndpoint: '/api/chat-widget/token'
   }
 };
+
