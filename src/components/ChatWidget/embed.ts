@@ -1,4 +1,3 @@
-
 /**
  * Pullse Chat Widget Embed Script
  * 
@@ -9,8 +8,7 @@
 import { PullseChatWidgetLoader } from './embed/widget-loader';
 import { PullseChatWidgetOptions, EventCallback } from './embed/types';
 import { ChatEventType, ChatEventPayload } from './config';
-import { PullseChatWidgetAPI } from './embed/interfaces/widget-api';
-import { PullseChatWidgetAPIImpl } from './embed/api-implementation';
+import { PullseChatWidgetAPI, PullseChatWidgetAPIImpl } from './embed/api';
 
 // Create global Pullse object
 (window as any).Pullse = (window as any).Pullse || {};
