@@ -224,11 +224,13 @@ const ChatViewContainer = ({
   // Convert readReceipts to the format expected by ChatViewPresentation
   const formattedReadReceipts = useMemo(() => {
     if (!readReceipts) return {};
-    const result: Record<string, Date> = {};
+    
+    const result: Record<string, { status: MessageReadStatus; timestamp?: Date }> = {};
     Object.entries(readReceipts).forEach(([id, receipt]) => {
-      if (receipt.timestamp) {
-        result[id] = receipt.timestamp;
-      }
+      result[id] = {
+        status: receipt.status || 'sent',
+        timestamp: receipt.timestamp
+      };
     });
     return result;
   }, [readReceipts]);

@@ -1,3 +1,4 @@
+
 import React, { useState, lazy, Suspense } from 'react';
 import { MessageType, UserType } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
@@ -28,7 +29,7 @@ interface MessageBubbleProps {
     metadata?: Record<string, any>;
     reactions?: string[];
   };
-  highlightText?: string;
+  highlightText?: string; // Explicitly add highlightText prop
   isHighlighted?: boolean;
   userAvatar?: string;
   agentAvatar?: string;
