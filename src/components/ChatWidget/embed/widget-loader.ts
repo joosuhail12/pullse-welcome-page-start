@@ -1,10 +1,10 @@
-
 import { PullseChatWidgetOptions } from './types';
 import { getPositionStyles, loadDependencies } from './utils';
 import { EventManager } from './events';
 import { createLauncherButton, createWidgetContainer, injectWidgetStyles } from './ui-components';
 import { initLazyLoadViaScroll, prepareWidgetConfig } from './lazy-loading';
-import { PullseChatWidgetAPI, PullseChatWidgetAPIImpl } from './api';
+import { PullseChatWidgetAPI } from './interfaces/widget-api';
+import { PullseChatWidgetAPIImpl } from './api-implementation';
 
 /**
  * Main widget loader class
@@ -153,8 +153,6 @@ export class PullseChatWidgetLoader implements PullseChatWidgetAPI {
       })
       .catch(error => console.error('Failed to load dependencies:', error));
   }
-  
-  // API Method implementations
   
   /**
    * Subscribe to widget events
