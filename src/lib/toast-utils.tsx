@@ -20,12 +20,15 @@ export const toasts = {
     title: string;
     description?: string;
     action?: ToastActionProps;
+    duration?: number;
   }) => {
     return toast({
       title: options.title,
       description: options.description,
       variant: 'default',
       className: 'bg-green-50 border-green-200',
+      type: 'success',
+      duration: options.duration,
       action: options.action ? (
         <ToastAction altText={options.action.label} onClick={options.action.onClick} className={options.action.className}>
           {options.action.label}
@@ -44,6 +47,7 @@ export const toasts = {
       title: options.title,
       description: options.description,
       variant: 'destructive',
+      type: 'error',
       duration: options.duration,
       action: options.action ? (
         <ToastAction altText={options.action.label} onClick={options.action.onClick} className={options.action.className}>
@@ -57,11 +61,14 @@ export const toasts = {
     title: string;
     description?: string;
     action?: ToastActionProps;
+    duration?: number;
   }) => {
     return toast({
       title: options.title,
       description: options.description,
       variant: 'default',
+      type: 'warning',
+      duration: options.duration,
       className: 'bg-yellow-50 border-yellow-200',
       action: options.action ? (
         <ToastAction altText={options.action.label} onClick={options.action.onClick} className={options.action.className}>
@@ -75,11 +82,14 @@ export const toasts = {
     title: string;
     description?: string;
     action?: ToastActionProps;
+    duration?: number;
   }) => {
     return toast({
       title: options.title,
       description: options.description,
       variant: 'default',
+      type: 'info',
+      duration: options.duration,
       className: 'bg-blue-50 border-blue-200',
       action: options.action ? (
         <ToastAction altText={options.action.label} onClick={options.action.onClick} className={options.action.className}>
@@ -109,6 +119,7 @@ export const toasts = {
           description: '',
           variant: 'default',
           className: 'bg-green-50 border-green-200',
+          type: 'success',
         });
       })
       .catch((error) => {
@@ -117,6 +128,7 @@ export const toasts = {
           title: errorMessage,
           description: error.message || 'An error occurred',
           variant: 'destructive',
+          type: 'error',
         });
       });
       

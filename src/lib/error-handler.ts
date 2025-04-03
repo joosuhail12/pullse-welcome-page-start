@@ -9,7 +9,7 @@
  * information with preventing sensitive data disclosure.
  */
 
-import { handlers } from './errors/errorHandlers';
+import { handleError, handleStandardError } from './errors/errorHandlers';
 import { errorFactory } from './errors/errorFactory';
 import { getSafeErrorDetails } from './error-sanitizer';
 import { logger } from './logger';
@@ -37,26 +37,9 @@ export {
 // Error handler utility
 export const errorHandler = {
   // Handle and display generic errors
-  handle: (error: unknown) => {
-    if (error instanceof NetworkError) {
-      return handlers.handleNetworkError(error);
-    }
-    
-    if (error instanceof ApiError) {
-      return handlers.handleApiError(error, error.status);
-    }
-    
-    if (error instanceof AppError) {
-      return handlers.handleAppError(error);
-    }
-    
-    if (error instanceof Error) {
-      return handlers.handleStandardError(error);
-    }
-
-    handlers.handleUnknownError(error);
-  },
-
+  handle: handleError,
+  handleStandardError,
+  
   // Re-export error factory methods
   ...errorFactory
 };

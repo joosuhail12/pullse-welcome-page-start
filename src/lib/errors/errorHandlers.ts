@@ -1,7 +1,7 @@
 
 import { logger } from '../logger';
 import { toasts } from '../toast-utils';
-import { AppError, NetworkError, ErrorSeverity } from './types';
+import { AppError, NetworkError, ErrorSeverity } from './errorTypes';
 
 /**
  * Generic error handler
