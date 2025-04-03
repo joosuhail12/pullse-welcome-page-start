@@ -4,7 +4,7 @@ import { Conversation, Message } from '../../types';
 import { ChatWidgetConfig } from '../../config';
 import ChatViewHeader from '../../components/ChatViewHeader';
 import PreChatForm from '../../components/PreChatForm';
-import KeyboardShortcutsInfo from '../../components/KeyboardShortcutsInfo';
+import KeyboardShortcutsInfo, { KeyboardShortcutProps } from '../../components/KeyboardShortcutsInfo';
 import ChatKeyboardHandler from '../../components/ChatKeyboardHandler';
 import ChatBody from '../../components/ChatBody';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -117,7 +117,7 @@ const ChatViewPresentation = ({
   }, [showInlineForm, config, handleFormComplete]);
   
   // Custom keyboard shortcuts for this view
-  const customShortcuts = [
+  const customShortcuts: KeyboardShortcutProps[] = [
     { key: 'Alt + /', description: 'Search messages', category: 'search' },
     { key: 'Alt + Enter', description: 'Send message', category: 'messages' },
     { key: 'Alt + End', description: 'Go to latest messages', category: 'navigation' },
@@ -174,7 +174,7 @@ const ChatViewPresentation = ({
           conversationId={conversation.id}
           agentStatus={conversation.agentInfo?.status}
           onToggleHighlight={onToggleMessageImportance}
-          typingDuration={isTyping ? 3000 : 0} // Add smart typing duration
+          typingDuration={3000} // Add smart typing duration
         />
       </ChatKeyboardHandler>
 

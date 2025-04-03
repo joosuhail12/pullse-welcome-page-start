@@ -132,4 +132,3 @@ const KeyboardShortcutsInfo: React.FC<KeyboardShortcutsInfoProps> = ({ shortcuts
 };
 
 export default KeyboardShortcutsInfo;
-export type { KeyboardShortcutProps };

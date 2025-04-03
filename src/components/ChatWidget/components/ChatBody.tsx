@@ -31,6 +31,7 @@ interface ChatBodyProps {
   conversationId: string;
   agentStatus?: 'online' | 'offline' | 'away' | 'busy';
   onToggleHighlight?: (messageId: string) => void;
+  typingDuration?: number; // Added typingDuration prop
 }
 
 const ChatBody: React.FC<ChatBodyProps> = ({
@@ -57,10 +58,11 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   inlineFormComponent,
   conversationId,
   agentStatus,
-  onToggleHighlight
+  onToggleHighlight,
+  typingDuration = 0 // Default value for typingDuration
 }) => {
   const [typingStartTime, setTypingStartTime] = useState<number | null>(null);
-  const [typingDuration, setTypingDuration] = useState(0);
+  const [calculatedTypingDuration, setCalculatedTypingDuration] = useState(typingDuration);
   
   // Track how long typing has been active
   useEffect(() => {
@@ -68,7 +70,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
       setTypingStartTime(Date.now());
     } else if (!remoteIsTyping && typingStartTime) {
       setTypingStartTime(null);
-      setTypingDuration(0);
+      setCalculatedTypingDuration(0);
     }
   }, [remoteIsTyping, typingStartTime]);
   
@@ -77,7 +79,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
     if (!typingStartTime) return;
     
     const intervalId = setInterval(() => {
-      setTypingDuration(Date.now() - typingStartTime);
+      setCalculatedTypingDuration(Date.now() - typingStartTime);
     }, 1000);
     
     return () => clearInterval(intervalId);
@@ -106,7 +108,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
             conversationId={conversationId}
             agentStatus={agentStatus}
             onToggleHighlight={onToggleHighlight}
-            typingDuration={typingDuration}
+            typingDuration={typingDuration || calculatedTypingDuration}
           />
         </div>
       )}

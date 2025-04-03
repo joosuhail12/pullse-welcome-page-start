@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useChatState } from './hooks/useChatState';
 import useWidgetConfig from './hooks/useWidgetConfig';
 import { useUnreadMessages } from './hooks/useUnreadMessages';
