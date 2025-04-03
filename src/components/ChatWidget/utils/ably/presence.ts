@@ -1,6 +1,8 @@
+
 import Ably from 'ably';
 import { v4 as uuidv4 } from 'uuid';
 import { getChatSessionId } from '../cookies';
+import { getAblyClient } from './config';
 
 // Function to generate a unique presence ID
 export const generatePresenceId = (): string => {
@@ -8,7 +10,7 @@ export const generatePresenceId = (): string => {
 };
 
 // Function to enter presence on a channel
-export const enterPresence = async (channel: Ably.Types.RealtimeChannel, clientId: string, data?: any): Promise<void> => {
+export const enterPresence = async (channel: Ably.Types.RealtimeChannelBase, clientId: string, data?: any): Promise<void> => {
   try {
     await channel.presence.enterClient(clientId, data);
     console.log(`Entered presence on channel ${channel.name} with clientId ${clientId}`);
@@ -19,7 +21,7 @@ export const enterPresence = async (channel: Ably.Types.RealtimeChannel, clientI
 };
 
 // Function to leave presence on a channel
-export const leavePresence = async (channel: Ably.Types.RealtimeChannel, clientId: string): Promise<void> => {
+export const leavePresence = async (channel: Ably.Types.RealtimeChannelBase, clientId: string): Promise<void> => {
   try {
     await channel.presence.leaveClient(clientId);
     console.log(`Left presence on channel ${channel.name} with clientId ${clientId}`);
@@ -30,7 +32,7 @@ export const leavePresence = async (channel: Ably.Types.RealtimeChannel, clientI
 };
 
 // Function to get the current presence members on a channel
-export const getPresence = async (channel: Ably.Types.RealtimeChannel): Promise<Ably.Types.PresenceMessage[]> => {
+export const getPresence = async (channel: Ably.Types.RealtimeChannelBase): Promise<Ably.Types.PresenceMessage[]> => {
   try {
     const presence = await channel.presence.get();
     console.log(`Current presence members on channel ${channel.name}:`, presence);
@@ -43,7 +45,7 @@ export const getPresence = async (channel: Ably.Types.RealtimeChannel): Promise<
 
 // Fix presence event registration
 export const registerPresenceHandlers = (
-  channel: Ably.Types.RealtimeChannel,
+  channel: Ably.Types.RealtimeChannelBase,
   onPresenceJoin?: (member: Ably.Types.PresenceMessage) => void,
   onPresenceLeave?: (member: Ably.Types.PresenceMessage) => void,
   onPresenceUpdate?: (member: Ably.Types.PresenceMessage) => void
@@ -62,9 +64,53 @@ export const registerPresenceHandlers = (
 };
 
 // Function to clear all presence subscriptions
-export const clearPresenceHandlers = (channel: Ably.Types.RealtimeChannel) => {
+export const clearPresenceHandlers = (channel: Ably.Types.RealtimeChannelBase) => {
   if (channel && channel.presence) {
     channel.presence.unsubscribe();
     console.log(`Cleared all presence subscriptions on channel ${channel.name}`);
+  }
+};
+
+/**
+ * Subscribe to presence events on a channel
+ */
+export const subscribeToPresence = (
+  channelName: string,
+  callback: (members: Ably.Types.PresenceMessage[]) => void
+): () => void => {
+  const client = getAblyClient();
+  if (!client) {
+    console.warn('Ably client not initialized, subscription will be deferred');
+    return () => {}; // Return empty cleanup function
+  }
+
+  try {
+    const channel = client.channels.get(channelName);
+    
+    // Create handler to get all presence members
+    const updatePresence = async () => {
+      try {
+        const members = await channel.presence.get();
+        callback(members);
+      } catch (err) {
+        console.error(`Error getting presence members for ${channelName}:`, err);
+      }
+    };
+    
+    // Subscribe to relevant presence events
+    channel.presence.subscribe('enter', updatePresence);
+    channel.presence.subscribe('leave', updatePresence);
+    channel.presence.subscribe('update', updatePresence);
+    
+    // Get initial presence
+    updatePresence();
+    
+    // Return cleanup function
+    return () => {
+      channel.presence.unsubscribe();
+    };
+  } catch (error) {
+    console.error(`Error subscribing to presence on ${channelName}:`, error);
+    return () => {}; // Return empty cleanup function
   }
 };
