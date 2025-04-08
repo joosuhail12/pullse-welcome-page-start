@@ -17,7 +17,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
 
   useEffect(() => {
     let ablyCleanup: (() => void) | null = null;
-    
+    return;
     if (!enabled || !workspaceId) return;
 
     const authUrl = getAblyAuthUrl(workspaceId);
@@ -44,42 +44,42 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
     const startReconnectionProcess = (url: string) => {
       reconnectionManager.start(async () => {
         reconnectionAttempts.current += 1;
-        
+
         logger.info(`Reconnection attempt ${reconnectionAttempts.current}`, 'ConnectionManager');
-        
+
         if (reconnectionAttempts.current === 1) {
           toasts.warning({
             title: 'Reconnecting',
             description: 'Attempting to restore connection...'
           });
         }
-        
+
         const success = await reconnectAbly(url);
-        
+
         if (success) {
           onStatusChange(ConnectionStatus.CONNECTED);
           reconnectionAttempts.current = 0;
-          
+
           logger.info('Real-time connection restored', 'ConnectionManager');
-          
+
           toasts.success({
             title: 'Connected',
             description: 'Real-time connection restored'
           });
-          
+
           return true;
         }
-        
+
         return false;
       }).catch(error => {
         logger.error('Reconnection failed after multiple attempts', 'ConnectionManager', error);
-        
+
         toasts.error({
           title: 'Connection Failed',
           description: 'Unable to establish real-time connection. Some features may be limited.',
           duration: 0
         });
-        
+
         onStatusChange(ConnectionStatus.FAILED);
       });
     };

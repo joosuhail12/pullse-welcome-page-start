@@ -42,22 +42,25 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
   setUserFormData,
   playMessageSound
 }) => {
+
   if (!isOpen) return null;
-  
+
+
   const isMobile = useIsMobile();
-  
+
+
   // Enhanced responsive width and height classes - memoized to prevent recalculation
   const widgetClasses = useMemo(() => {
-    const widgetWidth = isMobile 
+    const widgetWidth = isMobile
       ? "w-[95vw] max-w-[100vw]" // Nearly full width on very small screens
       : "w-[90vw] sm:w-80 md:w-96"; // Percentage based with breakpoints
-      
-    const widgetHeight = isMobile 
+
+    const widgetHeight = isMobile
       ? "h-[90vh]" // Taller on mobile to use more screen space
       : "h-[500px] sm:h-[600px]";
-      
+
     const widgetMaxHeight = "max-h-[90vh] sm:max-h-[85vh]"; // Increased max height for small screens
-    
+
     return `${widgetWidth} ${widgetHeight} ${widgetMaxHeight}`;
   }, [isMobile]);
 
@@ -66,9 +69,9 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
     if (viewState === 'chat') {
       return (
         <div className="flex flex-col h-full">
-          <ChatView 
-            conversation={activeConversation!} 
-            onBack={handleBackToMessages} 
+          <ChatView
+            conversation={activeConversation!}
+            onBack={handleBackToMessages}
             onUpdateConversation={handleUpdateConversation}
             config={config}
             playMessageSound={playMessageSound}
@@ -78,13 +81,14 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
         </div>
       );
     }
-    
+
+
     return (
       <div className="flex flex-col h-full">
         <div className="flex-grow overflow-y-auto">
           {viewState === 'home' && (
-            <HomeView 
-              onStartChat={handleStartChat} 
+            <HomeView
+              onStartChat={handleStartChat}
               config={config}
             />
           )}
@@ -92,18 +96,18 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
             <MessagesView onSelectConversation={handleSelectConversation} />
           )}
         </div>
-        
+
         <TabBar viewState={viewState} onChangeView={handleChangeView} />
       </div>
     );
   }, [
-    viewState, 
-    activeConversation, 
-    handleBackToMessages, 
-    handleUpdateConversation, 
-    config, 
-    playMessageSound, 
-    userFormData, 
+    viewState,
+    activeConversation,
+    handleBackToMessages,
+    handleUpdateConversation,
+    config,
+    playMessageSound,
+    userFormData,
     setUserFormData,
     handleStartChat,
     handleSelectConversation,
@@ -112,13 +116,13 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
 
   // Memoize the branding bar to prevent unnecessary re-renders
   const brandingBar = useMemo(() => {
-    return config.branding?.showBrandingBar !== false ? <PoweredByBar /> : null;
-  }, [config.branding?.showBrandingBar]);
+    return config.interfaceSettings?.showBrandingBar !== false ? <PoweredByBar /> : null;
+  }, [config.interfaceSettings?.showBrandingBar]);
 
   return (
-    <div 
+    <div
       className={`fixed ${widgetClasses} z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden`}
-      style={{...widgetStyle, ...containerStyles}}
+      style={{ ...widgetStyle, ...containerStyles }}
     >
       <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden">
         {currentView}

@@ -21,10 +21,10 @@ interface ChatViewProps {
   setUserFormData?: (data: Record<string, string>) => void;
 }
 
-const ChatView = React.memo(({ 
-  conversation, 
-  onBack, 
-  onUpdateConversation, 
+const ChatView = React.memo(({
+  conversation,
+  onBack,
+  onUpdateConversation,
   config = defaultConfig,
   playMessageSound,
   userFormData,
@@ -103,7 +103,7 @@ const ChatView = React.memo(({
 
   const handleLoadMoreMessages = useCallback(async () => {
     if (!loadPreviousMessages) return;
-    
+
     setIsLoadingMore(true);
     try {
       await loadPreviousMessages();
@@ -114,14 +114,14 @@ const ChatView = React.memo(({
 
   const highlightText = useCallback((text: string): string[] => {
     if (!searchTerm) return [text];
-    
+
     return originalHighlightText(text, searchTerm)
       .map(part => part.text);
   }, [searchTerm, originalHighlightText]);
 
-  const agentAvatar = useMemo(() => conversation.agentInfo?.avatar || config?.branding?.avatarUrl, 
-    [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]);
-    
+  const agentAvatar = useMemo(() => conversation.agentInfo?.avatar || config?.brandAssets?.avatarUrl,
+    [conversation.agentInfo?.avatar, config?.brandAssets?.avatarUrl]);
+
   const userAvatar = undefined;
   const hasMoreMessages = messages.length >= 20;
 
@@ -134,26 +134,27 @@ const ChatView = React.memo(({
 
   const chatViewStyle = useMemo(() => {
     return {
-      ...(config?.branding?.primaryColor && {
-        '--chat-header-bg': config.branding.primaryColor,
+      ...(config?.colors?.primaryColor && {
+        '--chat-header-bg': config.colors.primaryColor,
         '--chat-header-text': '#ffffff',
-        '--user-bubble-bg': config.branding.primaryColor,
+        '--user-bubble-bg': config.colors.primaryColor,
         '--user-bubble-text': '#ffffff',
         '--system-bubble-bg': '#F5F3FF',
         '--system-bubble-text': '#1f2937',
         '--chat-bg': 'linear-gradient(to bottom, #F5F3FF, #E5DEFF)',
       } as React.CSSProperties)
     };
-  }, [config?.branding?.primaryColor]);
+  }, [config?.colors?.primaryColor]);
 
   return (
-    <div 
+    <div
       className="flex flex-col h-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100"
       style={chatViewStyle}
     >
-      <ChatViewHeader 
-        conversation={conversation} 
+      <ChatViewHeader
+        conversation={conversation}
         onBack={onBack}
+        config={config}
         showSearch={showSearch}
         toggleSearch={toggleSearch}
         searchMessages={searchMessages}
@@ -162,7 +163,7 @@ const ChatView = React.memo(({
         isSearching={isSearching}
         showSearchFeature={!!config?.features?.searchMessages}
       />
-      
+
       <div className="flex-grow overflow-hidden flex flex-col">
         {showInlineForm ? (
           <div className="flex-grow flex flex-col justify-center items-center p-4 bg-gradient-to-br from-[#f8f7ff] to-[#f5f3ff]">
@@ -171,7 +172,7 @@ const ChatView = React.memo(({
             </div>
           </div>
         ) : (
-          <MessageList 
+          <MessageList
             messages={messages}
             isTyping={isTyping || remoteIsTyping}
             setMessageText={setMessageText}
@@ -190,7 +191,7 @@ const ChatView = React.memo(({
           />
         )}
       </div>
-      
+
       <MessageInput
         messageText={messageText}
         setMessageText={setMessageText}

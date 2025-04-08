@@ -13,44 +13,43 @@ interface HomeViewProps {
   config?: ChatWidgetConfig;
 }
 
-const HomeView = React.memo(({ 
-  onStartChat, 
-  config = defaultConfig 
+const HomeView = React.memo(({
+  onStartChat,
+  config = defaultConfig
 }: HomeViewProps) => {
   const isMobile = useIsMobile();
-  
+
   // Apply custom branding if available - use useMemo to prevent recalculation
   const buttonStyle = useMemo(() => {
-    return config.branding?.primaryColor 
-      ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor }
+    return config.colors?.primaryColor
+      ? { backgroundColor: config.colors.primaryColor, borderColor: config.colors.primaryColor }
       : {};
-  }, [config.branding?.primaryColor]);
-  
+  }, [config.colors?.primaryColor]);
+
   // Handle direct chat start
   const handleStartChatClick = useCallback(() => {
     // Dispatch event when chat button is clicked
-    dispatchChatEvent('contact:initiatedChat', { showForm: config.preChatForm.enabled }, config);
-    
-    // Always start the chat view, the pre-chat form will be handled there
+    dispatchChatEvent('contact:initiatedChat', { showForm: true }, config);
+
     onStartChat();
-  }, [onStartChat, config]);
-  
+  }, [config, onStartChat]);
+
   // Responsive sizing
   const avatarSize = isMobile ? "h-14 w-14" : "h-16 w-16 sm:h-20 sm:w-20";
   const headingSize = isMobile ? "text-lg" : "text-xl sm:text-3xl";
   const paragraphSize = isMobile ? "text-2xs sm:text-xs" : "text-xs sm:text-base";
   const iconSize = isMobile ? 14 : 18;
   const paddingSize = isMobile ? "p-3" : "p-4 sm:p-6";
-  
+
   return (
     <div className={`flex flex-col ${paddingSize} h-full animate-subtle-fade-in bg-gradient-to-br from-soft-purple-50 to-soft-purple-100`}>
       {/* Welcoming header with avatar */}
       <div className="flex flex-col items-center mb-3 sm:mb-7 transition-transform duration-300 hover:scale-[1.01]">
         <Avatar className={`${avatarSize} mb-2 sm:mb-5 shadow-md animate-subtle-scale border-2 border-white`}>
-          {config.branding?.logoUrl ? (
-            <AvatarImage src={config.branding.logoUrl} alt="Company logo" />
-          ) : config.branding?.avatarUrl ? (
-            <AvatarImage src={config.branding.avatarUrl} alt="Avatar image" />
+          {config.brandAssets?.headerLogo ? (
+            <AvatarImage src={config.brandAssets.headerLogo} alt="Company logo" />
+          ) : config.brandAssets?.avatarUrl ? (
+            <AvatarImage src={config.brandAssets.avatarUrl} alt="Avatar image" />
           ) : (
             <AvatarImage src="https://framerusercontent.com/images/9N8Z1vTRbJsHlrIuTjm6Ajga4dI.png" />
           )}
@@ -58,54 +57,59 @@ const HomeView = React.memo(({
             <MessageCircle size={isMobile ? 20 : 24} />
           </AvatarFallback>
         </Avatar>
-        
-        <h1 className={`${headingSize} font-bold text-center bg-gradient-to-r from-vivid-purple-600 to-vivid-purple-500 bg-clip-text text-transparent animate-subtle-slide-in mb-1 sm:mb-2`}>
-          {config.welcomeMessage}
+        <h1
+          style={{ color: config.colors?.primaryColor }}
+          className={`${headingSize} font-bold text-center bg-gradient-to-r bg-clip-text animate-subtle-slide-in mb-1 sm:mb-2`}>
+          {config.labels.welcomeTitle}
         </h1>
-        
+
         <p className={`${paragraphSize} text-gray-600 text-center leading-relaxed max-w-xs animate-subtle-fade-in`}>
-          Get help, ask questions, or start a conversation with our friendly support team.
+          {config.labels.welcomeSubtitle}
         </p>
       </div>
-      
+
       {/* Team Availability Section */}
-      <div className="mb-3 sm:mb-6 animate-subtle-fade-in space-y-2 sm:space-y-4">
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className="text-3xs sm:text-xs uppercase tracking-wide font-semibold text-gray-500">Team Availability</h3>
-          <div className="h-px flex-grow bg-gray-100"></div>
-        </div>
-        
-        <div className="bg-white/70 backdrop-blur-sm p-2 sm:p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-all duration-300 hover:bg-white/80">
-          <div className="flex items-center gap-2 mb-1 sm:mb-2">
-            <div className="bg-soft-purple-100 p-1 sm:p-2 rounded-full">
-              <Clock size={iconSize} className="text-vivid-purple-600" />
-            </div>
-            <span className="text-2xs sm:text-sm font-medium text-gray-700">Office Hours</span>
+      {
+        config.interfaceSettings?.showOfficeHours && (<div className="mb-3 sm:mb-6 animate-subtle-fade-in space-y-2 sm:space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-3xs sm:text-xs uppercase tracking-wide font-semibold text-gray-500">Team Availability</h3>
+            <div className="h-px flex-grow bg-gray-100"></div>
           </div>
-          <p className="text-3xs sm:text-xs text-gray-600 pl-6 sm:pl-9">Mon-Fri: 9 AM - 5 PM EST</p>
-        </div>
-      </div>
-      
+
+          <div className="bg-white/70 backdrop-blur-sm p-2 sm:p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-all duration-300 hover:bg-white/80">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <div className="bg-soft-purple-100 p-1 sm:p-2 rounded-full">
+                <Clock size={iconSize} className="text-vivid-purple-600" />
+              </div>
+              <span className="text-2xs sm:text-sm font-medium text-gray-700">Office Hours</span>
+            </div>
+            <p className="text-3xs sm:text-xs text-gray-600 pl-6 sm:pl-9">Mon-Fri: 9 AM - 5 PM EST</p>
+          </div>
+        </div>)
+      }
+
       {/* Support status */}
-      <div className="mb-3 sm:mb-6 animate-subtle-fade-in">
-        <div className="flex items-center gap-2 mb-1">
-          <h3 className="text-3xs sm:text-xs uppercase tracking-wide font-semibold text-gray-500">Current Availability</h3>
-          <div className="h-px flex-grow bg-gray-100"></div>
+      {
+        config.interfaceSettings?.showAgentPresence && (<div className="mb-3 sm:mb-6 animate-subtle-fade-in">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-3xs sm:text-xs uppercase tracking-wide font-semibold text-gray-500">Current Availability</h3>
+            <div className="h-px flex-grow bg-gray-100"></div>
+          </div>
+
+          <div className="bg-white/70 backdrop-blur-sm p-2 sm:p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-all duration-300 hover:bg-white/80">
+            <AgentPresence />
+          </div>
         </div>
-        
-        <div className="bg-white/70 backdrop-blur-sm p-2 sm:p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-all duration-300 hover:bg-white/80">
-          <AgentPresence />
-        </div>
-      </div>
-      
+        )}
+
       <div className="mt-auto animate-subtle-fade-in">
-        <Button 
+        <Button
           onClick={handleStartChatClick}
           className="chat-widget-button flex items-center justify-center gap-2 w-full py-3 sm:py-5 shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] rounded-lg text-xs sm:text-base"
           style={buttonStyle}
         >
           <MessageSquare size={iconSize} className="shrink-0" />
-          <span className="font-medium">Ask a question</span>
+          <span className="font-medium">{config?.labels?.askQuestionButtonText}</span>
         </Button>
       </div>
     </div>

@@ -17,22 +17,22 @@ const RETRY_DELAY = 500; // milliseconds
 async function withRetry<T>(operation: () => T, maxRetries = MAX_RETRY_ATTEMPTS): Promise<T> {
   let lastError: Error | null = null;
   let retryCount = 0;
-  
+
   while (retryCount < maxRetries) {
     try {
       return operation();
     } catch (error) {
       lastError = error as Error;
       retryCount++;
-      
+
       if (retryCount >= maxRetries) break;
-      
+
       // Exponential backoff with jitter
       const delay = RETRY_DELAY * Math.pow(2, retryCount - 1) * (0.9 + Math.random() * 0.2);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
-  
+
   throw lastError || new Error('Operation failed after retries');
 }
 
@@ -41,8 +41,8 @@ async function withRetry<T>(operation: () => T, maxRetries = MAX_RETRY_ATTEMPTS)
  */
 function notifyStorageChange() {
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('storage-updated', { 
-      detail: { key: STORAGE_KEY, timestamp: new Date() } 
+    window.dispatchEvent(new CustomEvent('storage-updated', {
+      detail: { key: STORAGE_KEY, timestamp: new Date() }
     }));
   }
 }
@@ -56,12 +56,12 @@ export function loadConversationsFromStorage(): Conversation[] {
     if (!data) {
       return [];
     }
-    
+
     // Try to parse the data directly first (for backward compatibility)
     try {
       const parsedData = JSON.parse(data);
       const conversations = Array.isArray(parsedData) ? parsedData : [];
-      
+
       // Fix timestamp format (convert string to Date)
       return conversations.map(conversation => ({
         ...conversation,
@@ -78,10 +78,10 @@ export function loadConversationsFromStorage(): Conversation[] {
         if (!decryptedData) {
           return [];
         }
-        
+
         const parsedData = JSON.parse(decryptedData);
         const conversations = Array.isArray(parsedData) ? parsedData : [];
-        
+
         // Fix timestamp format (convert string to Date)
         const formattedConversations = conversations.map(conversation => ({
           ...conversation,
@@ -91,12 +91,12 @@ export function loadConversationsFromStorage(): Conversation[] {
             timestamp: new Date(message.timestamp)
           }))
         }));
-        
+
         // Apply retention policy - filter out old conversations
         const retentionDate = new Date();
         retentionDate.setDate(retentionDate.getDate() - MAX_CONVERSATION_AGE_DAYS);
-        
-        return formattedConversations.filter(conv => 
+
+        return formattedConversations.filter(conv =>
           new Date(conv.timestamp) > retentionDate
         );
       } catch (decryptError) {
@@ -132,14 +132,14 @@ export async function markConversationAsRead(conversationId: string): Promise<vo
   return withRetry(() => {
     try {
       const conversations = loadConversationsFromStorage();
-      const updatedConversations = conversations.map(c => 
+      const updatedConversations = conversations.map(c =>
         c.id === conversationId ? { ...c, unread: false } : c
       );
-      
+
       // Encrypt data before storing
       const encryptedData = encryptData(JSON.stringify(updatedConversations));
       localStorage.setItem(STORAGE_KEY, encryptedData);
-      
+
       // Notify other tabs
       notifyStorageChange();
     } catch (error) {
@@ -156,14 +156,14 @@ export async function markConversationAsUnread(conversationId: string): Promise<
   return withRetry(() => {
     try {
       const conversations = loadConversationsFromStorage();
-      const updatedConversations = conversations.map(c => 
+      const updatedConversations = conversations.map(c =>
         c.id === conversationId ? { ...c, unread: true } : c
       );
-      
+
       // Encrypt data before storing
       const encryptedData = encryptData(JSON.stringify(updatedConversations));
       localStorage.setItem(STORAGE_KEY, encryptedData);
-      
+
       // Notify other tabs
       notifyStorageChange();
     } catch (error) {
@@ -179,7 +179,7 @@ export async function markConversationAsUnread(conversationId: string): Promise<
 export function getSessionConversations(): Conversation[] {
   const sessionId = getChatSessionId();
   if (!sessionId) return [];
-  
+
   try {
     const conversations = loadConversationsFromStorage();
     return conversations.filter(conversation => conversation.sessionId === sessionId);
@@ -202,33 +202,33 @@ export async function saveConversationToStorage(conversation: Conversation): Pro
         ...conversation,
         sessionId: sessionId
       };
-      
+
       // Get existing conversations
       let conversations = loadConversationsFromStorage();
-      
+
       // Find if this conversation already exists
       const existingIndex = conversations.findIndex(c => c.id === conversation.id);
-      
+
       if (existingIndex >= 0) {
         // Update existing conversation
         conversations[existingIndex] = conversationWithSession;
       } else {
         // Add new conversation to the beginning of the array
         conversations = [conversationWithSession, ...conversations];
-        
+
         // Limit the number of stored conversations
         if (conversations.length > MAX_STORED_CONVERSATIONS) {
           conversations = conversations.slice(0, MAX_STORED_CONVERSATIONS);
         }
       }
-      
+
       // Apply retention policy
       const retentionDate = new Date();
       retentionDate.setDate(retentionDate.getDate() - MAX_CONVERSATION_AGE_DAYS);
-      conversations = conversations.filter(conv => 
+      conversations = conversations.filter(conv =>
         new Date(conv.timestamp) > retentionDate
       );
-      
+
       try {
         // First try storing without encryption for backward compatibility testing
         const jsonData = JSON.stringify(conversations);
@@ -238,7 +238,7 @@ export async function saveConversationToStorage(conversation: Conversation): Pro
         const encryptedData = encryptData(JSON.stringify(conversations));
         localStorage.setItem(STORAGE_KEY, encryptedData);
       }
-      
+
       // Notify other tabs
       notifyStorageChange();
     } catch (error) {
@@ -252,19 +252,19 @@ export async function saveConversationToStorage(conversation: Conversation): Pro
  * Save a new message to a conversation and mark as unread
  */
 export async function saveMessageToConversation(
-  conversationId: string, 
-  message: any, 
+  conversationId: string,
+  message: any,
   markUnread = false
 ): Promise<void> {
   return withRetry(() => {
     try {
       const conversations = loadConversationsFromStorage();
       const existingIndex = conversations.findIndex(c => c.id === conversationId);
-      
+
       if (existingIndex >= 0) {
         const conversation = conversations[existingIndex];
         const messages = [...(conversation.messages || []), message];
-        
+
         conversations[existingIndex] = {
           ...conversation,
           messages,
@@ -272,11 +272,11 @@ export async function saveMessageToConversation(
           timestamp: message.timestamp,
           unread: markUnread ? true : conversation.unread
         };
-        
+
         // Encrypt data before storing
         const encryptedData = encryptData(JSON.stringify(conversations));
         localStorage.setItem(STORAGE_KEY, encryptedData);
-        
+
         // Notify other tabs
         notifyStorageChange();
       }
@@ -296,11 +296,11 @@ export async function deleteConversationFromStorage(conversationId: string): Pro
     try {
       const conversations = loadConversationsFromStorage();
       const updatedConversations = conversations.filter(c => c.id !== conversationId);
-      
+
       // Encrypt data before storing
       const encryptedData = encryptData(JSON.stringify(updatedConversations));
       localStorage.setItem(STORAGE_KEY, encryptedData);
-      
+
       // Notify other tabs
       notifyStorageChange();
     } catch (error) {
@@ -318,7 +318,7 @@ export async function clearConversationsFromStorage(): Promise<void> {
   return withRetry(() => {
     try {
       localStorage.removeItem(STORAGE_KEY);
-      
+
       // Notify other tabs
       notifyStorageChange();
     } catch (error) {
@@ -327,3 +327,25 @@ export async function clearConversationsFromStorage(): Promise<void> {
     }
   });
 }
+
+
+/* Set workspace id and api key in localStorage */
+export function setWorkspaceIdAndApiKey(workspaceId: string, apiKey: string): void {
+  localStorage.setItem('workspaceId', workspaceId);
+  localStorage.setItem('apiKey', apiKey);
+}
+
+/* Get workspace id and api key from localStorage */
+export function getWorkspaceIdAndApiKey(): { workspaceId: string, apiKey: string } {
+  return {
+    workspaceId: localStorage.getItem('workspaceId') || '',
+    apiKey: localStorage.getItem('apiKey') || ''
+  };
+}
+
+/* Clear workspace id and api key from localStorage */
+export function clearWorkspaceIdAndApiKey(): void {
+  localStorage.removeItem('workspaceId');
+  localStorage.removeItem('apiKey');
+}
+

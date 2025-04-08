@@ -7,17 +7,32 @@ import { ChatEventType, ChatEventPayload } from '../config';
  * Add a utility function to get default config
  */
 export const getDefaultConfig = (workspaceId: string) => {
+  // TODO: Remove this once we have a real config from the server
   return {
     workspaceId,
     welcomeMessage: 'How can I help you today?',
-    branding: {
-      primaryColor: '#6366f1',
-      showBrandingBar: true
+    "colors": {
+      "primaryColor": "#6366F1",
+      "backgroundColor": "#F9FAFB",
+      "textColor": "#111827",
+      "userMessageBackgroundColor": "#EEF2FF",
+      "agentMessageBackgroundColor": "#F3F4F6"
     },
-    position: {
-      placement: 'bottom-right',
-      offsetX: 4,
-      offsetY: 4
+    "brandAssets": {
+      "headerLogo": "https://assets.pullse.io/workspaces/123/logo-header.png",
+      "launcherIcon": "https://assets.pullse.io/workspaces/123/launcher-icon.svg"
+    },
+    "layout": {
+      "position": "bottom-right",
+      "xOffset": "20px",
+      "yOffset": "20px",
+      "isCompact": false
+    },
+    "labels": {
+      "welcomeTitle": "Welcome to Acme Support",
+      "welcomeSubtitle": "We typically reply within a few minutes",
+      "askQuestionButtonText": "Ask a question",
+      "welcomeMessage": "👋 Hi there! How can we help you today?"
     }
   };
 };
@@ -50,7 +65,7 @@ export const validateScriptIntegrity = async (
   try {
     const response = await fetch(scriptUrl);
     const text = await response.text();
-    
+
     // In a real implementation, we would calculate the hash here
     // For demonstration, we'll just check if the resource exists
     return !!text;
@@ -69,15 +84,15 @@ export const validateScriptIntegrity = async (
 export const compareVersions = (v1: string, v2: string): number => {
   const v1Parts = v1.split('.').map(Number);
   const v2Parts = v2.split('.').map(Number);
-  
+
   for (let i = 0; i < Math.max(v1Parts.length, v2Parts.length); i++) {
     const v1Part = v1Parts[i] || 0;
     const v2Part = v2Parts[i] || 0;
-    
+
     if (v1Part > v2Part) return 1;
     if (v1Part < v2Part) return -1;
   }
-  
+
   return 0;
 };
 
@@ -91,10 +106,10 @@ export const checkForUpdates = async () => {
     if (!response.ok) {
       throw new Error(`Failed to check for updates: ${response.status}`);
     }
-    
+
     const data = await response.json();
     const hasUpdate = compareVersions(WIDGET_VERSION, data.version) < 0;
-    
+
     return {
       currentVersion: WIDGET_VERSION,
       latestVersion: data.version,
@@ -113,8 +128,8 @@ export const checkForUpdates = async () => {
   }
 };
 
-export type { 
-  PullseChatWidgetOptions, 
+export type {
+  PullseChatWidgetOptions,
   EventCallback,
   ChatEventType,
   ChatEventPayload

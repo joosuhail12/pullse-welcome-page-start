@@ -4,7 +4,6 @@
  */
 
 export interface PreChatFormField {
-  id: string;
   name: string;
   type: 'text' | 'email' | 'tel' | 'select';
   label: string;
@@ -14,9 +13,7 @@ export interface PreChatFormField {
 }
 
 export interface PreChatForm {
-  enabled: boolean;
-  title?: string;
-  fields: PreChatFormField[];
+  contactFields: PreChatFormField[];
 }
 
 export interface ChatBranding {
@@ -28,17 +25,33 @@ export interface ChatBranding {
   widgetTitle?: string;
 }
 
+export interface ChatColors {
+  border?: string;
+  primary?: string;
+  background?: string;
+  foreground?: string;
+  userMessage?: string;
+  agentMessage?: string;
+  inputBackground?: string;
+  userMessageText?: string;
+  agentMessageText?: string;
+  primaryForeground?: string;
+  primaryColor?: string;
+};
+
+export interface ChatLabels {
+  welcomeTitle?: string;
+  welcomeSubtitle?: string;
+  askQuestionButtonText?: string;
+  welcomeMessage?: string;
+};
+
 // Update the ChatPosition type to include both string literals and object type
-export type ChatPosition = 
-  | 'bottom-right' 
-  | 'bottom-left' 
-  | 'top-right' 
-  | 'top-left'
-  | {
-      placement: string;
-      offsetX: number;
-      offsetY: number;
-    };
+export type ChatLayout = {
+  placement: 'left' | 'right';
+  offsetX: number;
+  offsetY: number;
+};
 
 export interface ChatFeatures {
   fileUpload?: boolean;
@@ -58,7 +71,7 @@ export interface ChatRealtime {
   authEndpoint?: string;
 }
 
-export type ChatEventType = 
+export type ChatEventType =
   | 'chat:open'
   | 'chat:close'
   | 'chat:messageSent'
@@ -79,14 +92,33 @@ export interface ChatEventPayload {
   data?: any;
 }
 
+export interface ChatBrandAssets {
+  headerLogo?: string;
+  launcherIcon?: string;
+  avatarUrl?: string;
+}
+
+export interface ChatInterfaceSettings {
+  showBrandingBar?: boolean;
+  showAgentPresence?: boolean;
+  showTicketStatusBar?: boolean;
+  enableMessageReaction?: boolean;
+  allowVisitorsToEndChat?: boolean;
+  enableConversationRating?: boolean;
+  enableDeliveryReadReceipts?: boolean;
+  showAgentChatStatus?: boolean;
+  showOfficeHours
+}
+
 export interface ChatWidgetConfig {
   workspaceId: string;
-  welcomeMessage: string;
-  preChatForm: PreChatForm;
-  branding?: ChatBranding;
-  position?: ChatPosition;
+  widgetfield: PreChatForm;
+  brandAssets?: ChatBrandAssets;
+  colors?: ChatColors;
+  labels?: ChatLabels;
+  layout?: ChatLayout;
   features?: ChatFeatures;
-  realtime?: ChatRealtime;
+  interfaceSettings?: ChatInterfaceSettings;
   sessionId?: string;
   onEvent?: (event: ChatEventPayload) => void;
   // Added to support advanced event subscription
@@ -124,7 +156,27 @@ export const defaultConfig: ChatWidgetConfig = {
     primaryColor: '#8B5CF6',
     showBrandingBar: true
   },
-  position: 'bottom-right',
+  colors: {
+    border: '#E1E1E1',
+    primary: '#9b87f5',
+    background: '#FFFFFF',
+    foreground: '#1A1F2C',
+    userMessage: '#9b87f5',
+    agentMessage: '#F1F1F1',
+    inputBackground: '#F9F9F9',
+    userMessageText: '#FFFFFF',
+    agentMessageText: '#1A1F2C',
+    primaryForeground: '#FFFFFF'
+  },
+  labels: {
+    welcomeTitle: 'hello',
+    welcomeSubtitle: 'welcomeSubtitle'
+  },
+  layout: {
+    placement: 'right',
+    offsetX: 20,
+    offsetY: 20
+  },
   features: {
     fileUpload: true,
     messageRating: false,

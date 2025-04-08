@@ -42,12 +42,12 @@ export async function serverSideEncrypt(data: string): Promise<string> {
       logger.warn('Security API circuit is open, using fallback', 'api.serverSideEncrypt');
       return `SERVER_ENCRYPT:${btoa(data)}`;
     }
-    
+
     // Development fallback
     if (import.meta.env.DEV) {
       return `SERVER_ENCRYPT:${btoa(data)}`;
     }
-    
+
     return await withResilience(
       async () => {
         const response = await fetch('/api/chat-widget/encrypt', {
@@ -57,11 +57,11 @@ export async function serverSideEncrypt(data: string): Promise<string> {
           },
           body: JSON.stringify({ data })
         });
-        
+
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`);
         }
-        
+
         const result = await response.json();
         return result.encryptedData;
       },
@@ -75,11 +75,11 @@ export async function serverSideEncrypt(data: string): Promise<string> {
     );
   } catch (error) {
     logger.error(
-      'Server-side encryption failed', 
-      'api.serverSideEncrypt', 
+      'Server-side encryption failed',
+      'api.serverSideEncrypt',
       { error: sanitizeErrorMessage(error) }
     );
-    
+
     // Fallback for failures
     return requiresServerImplementation('encrypt', { dataLength: data.length });
   }
@@ -98,7 +98,7 @@ export async function serverSideDecrypt(encryptedData: string): Promise<string> 
   if (!encryptedData || !encryptedData.startsWith('SERVER_ENCRYPT:')) {
     return encryptedData;
   }
-  
+
   try {
     // Check if circuit is open
     if (isCircuitOpen(SECURITY_CIRCUIT)) {
@@ -106,12 +106,12 @@ export async function serverSideDecrypt(encryptedData: string): Promise<string> 
       // For development fallback only
       return atob(encryptedData.substring(14));
     }
-    
+
     // Development fallback
     if (import.meta.env.DEV) {
       return atob(encryptedData.substring(14));
     }
-    
+
     return await withResilience(
       async () => {
         const response = await fetch('/api/chat-widget/decrypt', {
@@ -121,11 +121,11 @@ export async function serverSideDecrypt(encryptedData: string): Promise<string> 
           },
           body: JSON.stringify({ encryptedData })
         });
-        
+
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`);
         }
-        
+
         const result = await response.json();
         return result.decryptedData;
       },
@@ -139,11 +139,11 @@ export async function serverSideDecrypt(encryptedData: string): Promise<string> 
     );
   } catch (error) {
     logger.error(
-      'Server-side decryption failed', 
-      'api.serverSideDecrypt', 
+      'Server-side decryption failed',
+      'api.serverSideDecrypt',
       { error: sanitizeErrorMessage(error) }
     );
-    
+
     // Return original encrypted data on failure
     return encryptedData;
   }
@@ -158,17 +158,17 @@ export async function serverSideDecrypt(encryptedData: string): Promise<string> 
  * TODO: Add caching with security headers for performance
  * TODO: Implement tiered fallbacks for critical configuration
  */
-export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWidgetConfig> => {
+export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string): Promise<ChatWidgetConfig> => {
   try {
     // Enforce HTTPS for security
     if (!enforceHttps()) {
       // If redirecting to HTTPS, return default config temporarily
       return { ...defaultConfig, workspaceId: sanitizeInput(workspaceId) };
     }
-    
+
     // Validate and sanitize workspaceId
     const sanitizedWorkspaceId = sanitizeInput(workspaceId);
-    
+
     // In development/demo mode, we'll just use default config
     // since the API may not be available or may return HTML instead of JSON
     if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
@@ -179,34 +179,34 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
         ...getDefaultConfig(sanitizedWorkspaceId)
       };
     }
-    
+
     // Check if circuit is already open (too many failures)
     if (isCircuitOpen(CONFIG_CIRCUIT)) {
       console.warn('Config API circuit is open, using default config');
-      return { 
-        ...defaultConfig, 
+      return {
+        ...defaultConfig,
         workspaceId: sanitizedWorkspaceId,
         ...getDefaultConfig(sanitizedWorkspaceId)
       };
     }
-    
+
     return await withResilience(
       async () => {
         // Check if we have a session ID
         const sessionId = getChatSessionId();
-        let url = `/api/chat-widget/config?workspaceId=${encodeURIComponent(sanitizedWorkspaceId)}`;
-        
+        let url = `http://localhost:4000/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(sanitizedWorkspaceId)}`;
+
         // Append session ID if available
         if (sessionId) {
           url += `&sessionId=${encodeURIComponent(sessionId)}`;
         }
-        
+
         // Generate timestamp for request signing
         const timestamp = Date.now();
-        
+
         // Generate CSRF token with nonce
         const { token: csrfToken, nonce: csrfNonce } = generateCsrfToken();
-        
+
         // Include CSRF token, nonce and timestamp in headers
         const headers: HeadersInit = {
           'X-CSRF-Token': csrfToken,
@@ -214,55 +214,59 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
           'X-Request-Timestamp': timestamp.toString(),
           'X-Request-Signature': signMessage(sanitizedWorkspaceId, timestamp)
         };
-        
+
         const response = await fetch(url, {
           headers,
           credentials: 'include' // Include cookies in request
         });
-        
+
         if (!response.ok) {
           // If we get an error response, throw an error to trigger retry
           const errorText = await response.text().catch(() => 'Unknown error');
           throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
         }
-        
+
         // Check content-type to ensure we're getting JSON
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/json')) {
           console.error('Received non-JSON response when fetching chat widget config');
           throw new Error('Invalid content type received from API');
         }
-        
+
         const config = await response.json();
-        
+
         // Verify response integrity if signature is provided
         const responseSignature = response.headers.get('X-Response-Signature');
         const responseTimestamp = response.headers.get('X-Response-Timestamp');
-        
+
         if (responseSignature && responseTimestamp) {
           const isValid = verifyMessageSignature(
-            JSON.stringify(config), 
+            JSON.stringify(config),
             parseInt(responseTimestamp, 10),
             responseSignature
           );
-          
+
           if (!isValid) {
             console.error('Response signature verification failed');
             throw new Error('Response integrity check failed');
           }
         }
-        
+
         // Check if response contains a sessionId and store it
         if (config.sessionId && !sessionId) {
           setChatSessionId(config.sessionId);
         }
-        
-        return config;
+
+        return {
+          ...config.data.widgettheme[0],
+          widgetfield: config.data.widgetfield[0]
+        };
       },
       CONFIG_CIRCUIT,
       // Custom retry options for config API
+      // TODO: Update retries to 2
       {
-        maxRetries: 2,
+        maxRetries: 0,
         initialDelayMs: 200,
         maxDelayMs: 1000
       },
@@ -274,14 +278,14 @@ export const fetchChatWidgetConfig = async (workspaceId: string): Promise<ChatWi
     );
   } catch (error) {
     // Log the error with sanitized details
-    errorHandler.handleStandardError(error instanceof Error 
+    errorHandler.handleStandardError(error instanceof Error
       ? new Error(sanitizeErrorMessage(error.message))
       : new Error('Failed to fetch config')
     );
-    
+
     // Always fall back to default config for reliability
-    return { 
-      ...defaultConfig, 
+    return {
+      ...defaultConfig,
       workspaceId: sanitizeInput(workspaceId),
       ...getDefaultConfig(sanitizeInput(workspaceId))
     };
@@ -309,7 +313,7 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
       });
       throw new Error('Redirecting to HTTPS');
     }
-    
+
     // Check rate limiting first
     if (isRateLimited()) {
       toast({
@@ -319,7 +323,7 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
       });
       throw new Error('Rate limit exceeded');
     }
-    
+
     // Check if circuit is already open (too many failures)
     if (isCircuitOpen(MESSAGE_CIRCUIT)) {
       toast({
@@ -329,7 +333,7 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
       });
       throw new Error('Message API circuit is open');
     }
-    
+
     // Use resilience pattern for sending messages
     return await withResilience(
       async () => {
@@ -337,23 +341,23 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
         const sanitizedMessage = validateMessage(message);
         const sanitizedWorkspaceId = sanitizeInput(workspaceId);
         const sessionId = getChatSessionId();
-        
+
         // Generate CSRF token and nonce
         const { token: csrfToken, nonce: csrfNonce } = generateCsrfToken();
-        
+
         // Generate timestamp for request signing
         const timestamp = Date.now();
-        
+
         const payload = {
           message: sanitizedMessage,
           workspaceId: sanitizedWorkspaceId,
           sessionId,
           timestamp
         };
-        
+
         // Sign the message payload
         const signature = signMessage(sanitizedMessage + sanitizedWorkspaceId, timestamp);
-        
+
         const response = await fetch('/api/chat-widget/message', {
           method: 'POST',
           headers: {
@@ -366,36 +370,36 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
           credentials: 'include', // Include cookies in request
           body: JSON.stringify(payload)
         });
-        
+
         if (!response.ok) {
           const errorText = await response.text().catch(() => 'Unknown error');
           throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
         }
-        
+
         const data = await response.json();
-        
+
         // Verify response integrity if signature is provided
         const responseSignature = response.headers.get('X-Response-Signature');
         const responseTimestamp = response.headers.get('X-Response-Timestamp');
-        
+
         if (responseSignature && responseTimestamp) {
           const isValid = verifyMessageSignature(
-            JSON.stringify(data), 
+            JSON.stringify(data),
             parseInt(responseTimestamp, 10),
             responseSignature
           );
-          
+
           if (!isValid) {
             console.error('Response signature verification failed');
             throw new Error('Response integrity check failed');
           }
         }
-        
+
         // Store session ID from response if available
         if (data.sessionId && !sessionId) {
           setChatSessionId(data.sessionId);
         }
-        
+
         return data;
       },
       MESSAGE_CIRCUIT,
@@ -414,7 +418,7 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
   } catch (error) {
     // Get sanitized error message for logging and display
     const safeErrorMessage = sanitizeErrorMessage(error);
-    
+
     // Show appropriate error message based on error type
     if (error instanceof Error) {
       if (error.message.includes('circuit is open')) {
@@ -432,7 +436,7 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
         });
       }
     }
-    
+
     throw error;
   }
 };

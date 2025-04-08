@@ -13,12 +13,17 @@ import ChatWidgetErrorBoundary from './components/ChatWidgetErrorBoundary';
 import ConnectionManager from './components/ConnectionManager';
 import { ConnectionStatus } from './utils/reconnectionManager';
 import ChatKeyboardHandler from './components/ChatKeyboardHandler';
+import { setWorkspaceIdAndApiKey } from './utils/storage';
 
 export interface ChatWidgetProps {
   workspaceId: string;
+  apiKey: string;
 }
 
-const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
+const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
+  // Set workspace id and api key in localStorage
+  setWorkspaceIdAndApiKey(workspaceId, apiKey);
+
   const {
     viewState,
     activeConversation,
@@ -30,8 +35,8 @@ const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     userFormData,
     setUserFormData
   } = useChatState();
-  
-  const { config, loading, error } = useWidgetConfig(workspaceId);
+
+  const { config, loading, error } = useWidgetConfig();
   const [isOpen, setIsOpen] = useState(false);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
@@ -40,22 +45,22 @@ const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
 
   const widgetStyle = useMemo(() => ({
-    ...(config.branding?.primaryColor && {
-      '--vivid-purple': config.branding.primaryColor,
+    ...(config.colors?.primaryColor && {
+      '--vivid-purple': config.colors.primaryColor,
     } as React.CSSProperties)
-  }), [config.branding?.primaryColor]);
+  }), [config.colors?.primaryColor]);
 
   const toggleChat = useCallback(() => {
     const newIsOpen = !isOpen;
     setIsOpen(newIsOpen);
-    
+
     setTimeout(() => {
       if (newIsOpen) {
         clearUnreadMessages();
       }
     }, isMobile ? 50 : 0);
   }, [isOpen, clearUnreadMessages, isMobile]);
-  
+
   // Global keyboard shortcut to toggle chat widget open/close with Alt+C
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -64,12 +69,12 @@ const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         toggleChat();
       }
     };
-    
+
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [toggleChat]);
 
-  if (loading) {
+  if (loading && isOpen) {
     return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles} config={config} />;
   }
 
@@ -77,11 +82,11 @@ const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
     <ChatWidgetErrorBoundary workspaceId={workspaceId}>
       <ConnectionManager
         workspaceId={workspaceId}
-        enabled={config.realtime?.enabled}
+        enabled={true}
         onStatusChange={setConnectionStatus}
       />
-      
-      <WidgetContainer 
+
+      <WidgetContainer
         isOpen={isOpen}
         viewState={viewState}
         activeConversation={activeConversation}
@@ -98,7 +103,7 @@ const ChatWidget = ({ workspaceId }: ChatWidgetProps) => {
         playMessageSound={playMessageSound}
       />
 
-      <LauncherButton 
+      <LauncherButton
         isOpen={isOpen}
         unreadCount={unreadCount}
         onClick={toggleChat}

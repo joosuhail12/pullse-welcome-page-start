@@ -12,28 +12,28 @@ import { ChatWidgetConfig } from '../config';
  * @returns Timeout ID
  */
 export const simulateAgentTyping = (
-  setIsTyping: React.Dispatch<React.SetStateAction<boolean>>, 
+  setIsTyping: React.Dispatch<React.SetStateAction<boolean>>,
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
   config?: ChatWidgetConfig,
   playMessageSound?: () => void
 ): ReturnType<typeof setTimeout> => {
   // Start typing
   setIsTyping(true);
-  
+
   // Determine message delay based on complexity
   const typingDelay = Math.floor(Math.random() * 3000) + 1000; // 1-4 seconds
-  
+
   // After delay, send a response
   return setTimeout(() => {
     // Stop typing
     setIsTyping(false);
-    
+
     // Get simulated agent response
     const response = getAgentResponse(config);
-    
+
     // Add message to the list
     setMessages(prev => [...prev, response]);
-    
+
     // Play sound if available
     if (playMessageSound) {
       playMessageSound();
@@ -54,14 +54,14 @@ export const getAgentResponse = (config?: ChatWidgetConfig): Message => {
     "Thanks for your message. How can I help?",
     "I'd be happy to help with that. Could you provide more details?"
   ];
-  
+
   // Select a random response
-  const responses = config?.welcomeMessage 
-    ? [config.welcomeMessage, ...defaultResponses]
+  const responses = config?.labels.welcomeTitle
+    ? [config.labels.welcomeTitle, ...defaultResponses]
     : defaultResponses;
-  
+
   const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-  
+
   return {
     id: `msg-${uuidv4()}`,
     text: randomResponse,

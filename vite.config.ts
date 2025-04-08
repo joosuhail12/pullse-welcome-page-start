@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  define: {
+    'import.meta.env.DEV': false,
+  },
   plugins: [
     react(),
     mode === 'development' &&

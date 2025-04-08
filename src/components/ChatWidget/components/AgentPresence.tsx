@@ -14,25 +14,25 @@ interface AgentPresenceProps {
 
 const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
   const [agents, setAgents] = useState<Agent[]>([]);
-  const { config } = useWidgetConfig(workspaceId);
+  const { config } = useWidgetConfig();
   const maxDisplayed = 5;
-  
+
   useEffect(() => {
-    if (!workspaceId || !config.realtime?.enabled) {
+    if (!workspaceId || !config.interfaceSettings?.showAgentPresence) {
       // Use mock data when real-time is disabled
       const mockAgents = [
         { id: '1', name: 'John Doe', avatar: '/placeholder.svg', status: 'online' as const },
         { id: '2', name: 'Jane Smith', avatar: '/placeholder.svg', status: 'online' as const },
         { id: '3', name: 'Alex Johnson', avatar: '/placeholder.svg', status: 'online' as const },
       ];
-      
+
       setAgents(mockAgents);
       return;
     }
-    
+
     // Channel for workspace-level presence with proper scoping
     const channelName = `workspace:${workspaceId}:presence`;
-    
+
     // Subscribe to presence updates using the new subscription function
     const unsubscribe = subscribeToPresence(channelName, (presenceData) => {
       const agentData: Agent[] = presenceData.map(member => ({
@@ -41,20 +41,20 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
         avatar: member.data?.avatar,
         status: 'online'
       }));
-      
+
       setAgents(agentData);
     });
-    
+
     // Return cleanup function
     return () => {
       unsubscribe();
     };
-  }, [workspaceId, config.realtime?.enabled]);
-  
+  }, [workspaceId, config.interfaceSettings?.showAgentPresence]);
+
   if (agents.length === 0) {
     return null;
   }
-  
+
   return (
     <div className="flex items-center mt-2">
       <span className="text-xs text-gray-100 mr-2 opacity-80">Online:</span>
@@ -70,7 +70,7 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
                       {agent.name.split(' ').map(part => part[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
-                  
+
                   {/* Pulsing dot for online status */}
                   <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-green-500 border border-white">
                     <span className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75"></span>
@@ -84,7 +84,7 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
             </Tooltip>
           ))}
         </TooltipProvider>
-        
+
         {agents.length > maxDisplayed && (
           <Avatar className="h-6 w-6 border-2 border-white">
             <AvatarFallback className="text-[10px] bg-gray-500 text-white">
