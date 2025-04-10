@@ -11,28 +11,30 @@ export const getDefaultConfig = (workspaceId: string) => {
   return {
     workspaceId,
     welcomeMessage: 'How can I help you today?',
-    "colors": {
-      "primaryColor": "#6366F1",
-      "backgroundColor": "#F9FAFB",
-      "textColor": "#111827",
-      "userMessageBackgroundColor": "#EEF2FF",
-      "agentMessageBackgroundColor": "#F3F4F6"
+    colors: {
+      primaryColor: "#6366F1",
+      backgroundColor: "#F9FAFB",
+      textColor: "#111827",
+      userMessageBackgroundColor: "#EEF2FF",
+      agentMessageBackgroundColor: "#F3F4F6"
     },
-    "brandAssets": {
-      "headerLogo": "https://assets.pullse.io/workspaces/123/logo-header.png",
-      "launcherIcon": "https://assets.pullse.io/workspaces/123/launcher-icon.svg"
+    brandAssets: {
+      headerLogo: "https://assets.pullse.io/workspaces/123/logo-header.png",
+      launcherIcon: "https://assets.pullse.io/workspaces/123/launcher-icon.svg"
     },
-    "layout": {
-      "position": "bottom-right",
-      "xOffset": "20px",
-      "yOffset": "20px",
-      "isCompact": false
+    layout: {
+      placement: 'right',
+      offsetX: 20,
+      offsetY: 20
     },
-    "labels": {
-      "welcomeTitle": "Welcome to Acme Support",
-      "welcomeSubtitle": "We typically reply within a few minutes",
-      "askQuestionButtonText": "Ask a question",
-      "welcomeMessage": "👋 Hi there! How can we help you today?"
+    labels: {
+      welcomeTitle: "Welcome to Acme Support",
+      welcomeSubtitle: "We typically reply within a few minutes",
+      askQuestionButtonText: "Ask a question",
+      welcomeMessage: "👋 Hi there! How can we help you today?"
+    },
+    realtime: {
+      enabled: false
     }
   };
 };

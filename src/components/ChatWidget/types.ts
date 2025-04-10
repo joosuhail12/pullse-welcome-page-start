@@ -1,8 +1,10 @@
+
 export interface Message {
   id: string;
   text: string;
   sender: UserType;
   createdAt: Date;
+  timestamp?: Date; // Add timestamp field to prevent errors
   type?: MessageType;
   fileUrl?: string;
   fileName?: string;
@@ -28,6 +30,8 @@ export interface Conversation {
   title: string;
   messages?: Message[];
   createdAt: Date;
+  timestamp?: Date; // Add timestamp field to prevent errors
+  updated_at?: Date; // For API compatibility
   lastMessage?: string;
   status?: 'active' | 'ended';
   agentInfo?: {
@@ -60,6 +64,7 @@ export interface MessageSearchResult {
   messageId: string;
   matchText: string;
   createdAt: Date;
+  timestamp?: Date; // Add timestamp field
 }
 
 // Define standard message types
@@ -74,6 +79,7 @@ export type MessageReadStatus = 'unread' | 'delivered' | 'read';
 export interface MessageReadReceipt {
   status: MessageReadStatus;
   createdAt?: Date;
+  timestamp?: Date; // Add timestamp field
 }
 
 // Define MessageReaction types
@@ -123,3 +129,6 @@ export type ChatPosition =
     offsetX: number;
     offsetY: number;
   };
+
+// Add FormDataStructure interface for form compatibility
+export interface FormDataStructure extends Record<string, string> {}

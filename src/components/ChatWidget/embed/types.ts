@@ -1,5 +1,5 @@
 
-import { ChatEventType, ChatEventPayload, ChatPosition, ChatBranding } from '../config';
+import { ChatEventType, ChatEventPayload } from '../config';
 
 /**
  * Configuration options for the Pullse Chat Widget

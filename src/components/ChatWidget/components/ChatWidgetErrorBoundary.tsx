@@ -12,12 +12,12 @@ import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 
 interface ChatWidgetErrorBoundaryProps {
   children: React.ReactNode;
-  workspaceId: string;
+  workspaceId?: string;
 }
 
 const ChatWidgetErrorBoundary = ({ children, workspaceId }: ChatWidgetErrorBoundaryProps) => {
   const [error, setError] = useState<Error | null>(null);
-  const { config } = useWidgetConfig(workspaceId);
+  const { config } = useWidgetConfig(); // Remove the parameter
   const isMobile = useIsMobile();
   const { getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   
