@@ -9,11 +9,15 @@ export interface PreChatFormField {
   label: string;
   placeholder?: string;
   required: boolean;
+  entityname: string;
+  columnname: string;
   options?: { value: string; label: string }[];
 }
 
 export interface PreChatForm {
   contactFields: PreChatFormField[];
+  companyFields: PreChatFormField[];
+  customDataFields: PreChatFormField[];
 }
 
 export interface ChatBranding {
@@ -119,6 +123,7 @@ export interface ChatWidgetConfig {
   layout?: ChatLayout;
   features?: ChatFeatures;
   interfaceSettings?: ChatInterfaceSettings;
+  accessToken?: string;
   sessionId?: string;
   onEvent?: (event: ChatEventPayload) => void;
   // Added to support advanced event subscription
@@ -129,32 +134,13 @@ export interface ChatWidgetConfig {
 
 export const defaultConfig: ChatWidgetConfig = {
   workspaceId: 'default',
-  welcomeMessage: 'Welcome! How can we help you today?',
-  preChatForm: {
-    enabled: true,
-    title: 'Start a Conversation',
-    fields: [
-      {
-        id: 'name-field',
-        name: 'name',
-        type: 'text',
-        label: 'Name',
-        placeholder: 'Enter your name',
-        required: true
-      },
-      {
-        id: 'email-field',
-        name: 'email',
-        type: 'email',
-        label: 'Email',
-        placeholder: 'Enter your email',
-        required: true
-      }
+  widgetfield: {
+    contactFields: [
+    ],
+    companyFields: [
+    ],
+    customDataFields: [
     ]
-  },
-  branding: {
-    primaryColor: '#8B5CF6',
-    showBrandingBar: true
   },
   colors: {
     border: '#E1E1E1',
@@ -188,9 +174,4 @@ export const defaultConfig: ChatWidgetConfig = {
     typingIndicators: true,
     searchMessages: true
   },
-  realtime: {
-    enabled: false,
-    // Using auth endpoint instead of direct API key
-    authEndpoint: '/api/chat-widget/token'
-  }
 };

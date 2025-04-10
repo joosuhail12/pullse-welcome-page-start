@@ -17,7 +17,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
 
   useEffect(() => {
     let ablyCleanup: (() => void) | null = null;
-    return;
+
     if (!enabled || !workspaceId) return;
 
     const authUrl = getAblyAuthUrl(workspaceId);

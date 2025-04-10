@@ -349,3 +349,27 @@ export function clearWorkspaceIdAndApiKey(): void {
   localStorage.removeItem('apiKey');
 }
 
+/* Set access token in localStorage */
+export function setAccessToken(accessToken: string): void {
+  localStorage.setItem('accessToken', accessToken);
+}
+
+/* Get access token from localStorage */
+export function getAccessToken(): string {
+  return localStorage.getItem('accessToken') || '';
+}
+
+/* Clear access token from localStorage */
+export function clearAccessToken(): void {
+  localStorage.removeItem('accessToken');
+}
+
+/* Set user form data in localStorage */
+export function setUserFormDataInLocalStorage(userFormData: any): void {
+  localStorage.setItem('userFormData', JSON.stringify(userFormData));
+}
+
+/* Get user form data from localStorage */
+export function getUserFormDataFromLocalStorage(): any {
+  return JSON.parse(localStorage.getItem('userFormData') || '{}');
+}

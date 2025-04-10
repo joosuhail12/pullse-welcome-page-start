@@ -14,7 +14,7 @@ import { useUnreadMessages } from '../hooks/useUnreadMessages';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
-
+import { fetchConversations } from '../services/api';
 interface MessagesViewProps {
   onSelectConversation: (conversation: Conversation) => void;
 }
@@ -30,7 +30,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [
     id: 'mock-1',
     title: 'Support Chat',
     lastMessage: 'Thank you for contacting us. How can we help you today?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 10), // 10 minutes ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 10), // 10 minutes ago
     status: 'active',
     agentInfo: {
       name: 'Support Agent',
@@ -41,7 +41,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [
     id: 'mock-2',
     title: 'Technical Support',
     lastMessage: 'Have you tried restarting the application?',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
     status: 'ended',
     agentInfo: {
       name: 'Tech Support',
@@ -52,7 +52,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [
     id: 'mock-3',
     title: 'Billing Inquiry',
     lastMessage: 'Your subscription will renew on the 15th of next month.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
     status: 'ended',
     agentInfo: {
       name: 'Billing Department',
@@ -91,7 +91,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
 
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('storage-updated', handleCustomStorageChange as EventListener);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('storage-updated', handleCustomStorageChange as EventListener);
@@ -105,10 +105,16 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     try {
       let retries = 3;
       let conversationsData: Conversation[] = [];
-      
+
       while (retries > 0) {
         try {
-          conversationsData = loadConversationsFromStorage();
+          // Fetch from Server
+          // conversationsData = //loadConversationsFromStorage();
+          const response = await fetchConversations();
+          if (response && response?.data && response?.data?.length > 0) {
+            conversationsData = response.data;
+          }
+
           setUseMockData(false);
           break;
         } catch (error) {
@@ -147,8 +153,9 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
 
   const formatTime = useCallback((date: Date): string => {
     const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    
+    const setDate = new Date(date);
+    const diff = now.getTime() - setDate.getTime();
+
     if (diff < 1000 * 60 * 60) {
       return `${Math.floor(diff / (1000 * 60))}m ago`;
     } else if (diff < 1000 * 60 * 60 * 24) {
@@ -163,7 +170,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       id: `conv-${Date.now()}`,
       title: 'New Conversation',
       lastMessage: '',
-      timestamp: new Date(),
+      createdAt: new Date(),
       status: 'active'
     });
     clearUnreadMessages();
@@ -172,12 +179,12 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
     setIsSearching(true);
-    
-    const results = conversations.filter(conv => 
-      conv.title.toLowerCase().includes(term.toLowerCase()) || 
+
+    const results = conversations.filter(conv =>
+      conv.title.toLowerCase().includes(term.toLowerCase()) ||
       (conv.lastMessage && conv.lastMessage.toLowerCase().includes(term.toLowerCase()))
     );
-    
+
     setSearchResults(results);
     setIsSearching(false);
   }, [conversations]);
@@ -201,25 +208,25 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     if (groupBy === 'none') {
       return { 'All Conversations': conversations };
     }
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     const lastWeek = new Date(today);
     lastWeek.setDate(lastWeek.getDate() - 7);
-    
+
     const lastMonth = new Date(today);
     lastMonth.setMonth(lastMonth.getMonth() - 1);
-    
+
     return conversations.reduce((groups: Record<string, Conversation[]>, conversation) => {
-      const convoDate = new Date(conversation.timestamp);
+      const convoDate = new Date(conversation.createdAt);
       convoDate.setHours(0, 0, 0, 0);
-      
+
       let groupName = 'Older';
-      
+
       if (convoDate.getTime() === today.getTime()) {
         groupName = 'Today';
       } else if (convoDate.getTime() === yesterday.getTime()) {
@@ -229,11 +236,11 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       } else if (convoDate > lastMonth) {
         groupName = 'This Month';
       }
-      
+
       if (!groups[groupName]) {
         groups[groupName] = [];
       }
-      
+
       groups[groupName].push(conversation);
       return groups;
     }, {});
@@ -241,16 +248,16 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
 
   const filteredAndSortedConversations = useMemo(() => {
     let filtered = searchTerm ? searchResults : [...conversations];
-    
+
     if (statusFilter !== 'all') {
       filtered = filtered.filter(conv => conv.status === statusFilter);
     }
-    
+
     return filtered.sort((a, b) => {
       if (sortOrder === 'newest') {
-        return b.timestamp.getTime() - a.timestamp.getTime();
+        return b.createdAt.getTime() - a.createdAt.getTime();
       } else {
-        return a.timestamp.getTime() - b.timestamp.getTime();
+        return a.createdAt.getTime() - b.createdAt.getTime();
       }
     });
   }, [conversations, sortOrder, statusFilter, searchTerm, searchResults]);
@@ -261,7 +268,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
 
   const orderedGroups = useMemo(() => {
     if (groupBy === 'none') return ['All Conversations'];
-    
+
     const priorityOrder = ['Today', 'Yesterday', 'This Week', 'This Month', 'Older'];
     return priorityOrder.filter(group => groupedConversations[group] && groupedConversations[group].length > 0);
   }, [groupedConversations, groupBy]);
@@ -272,40 +279,40 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
 
   const paginationData = useMemo(() => {
     const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
-    
+
     const validCurrentPage = Math.min(currentPage, totalPages);
     if (validCurrentPage !== currentPage) {
       setCurrentPage(validCurrentPage);
     }
-    
+
     const startIndex = (validCurrentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
-    
+
     const pagedGroupedConversations: Record<string, Conversation[]> = {};
-    
+
     if (groupBy === 'none') {
       pagedGroupedConversations['All Conversations'] = filteredAndSortedConversations.slice(startIndex, endIndex);
     } else {
       let currentIdx = 0;
-      
+
       for (const group of orderedGroups) {
         const groupConversations = groupedConversations[group];
-        
+
         if (currentIdx + groupConversations.length > startIndex) {
           const groupStartIdx = Math.max(0, startIndex - currentIdx);
           const groupEndIdx = Math.min(groupConversations.length, endIndex - currentIdx);
-          
+
           if (groupStartIdx < groupEndIdx) {
             pagedGroupedConversations[group] = groupConversations.slice(groupStartIdx, groupEndIdx);
           }
         }
-        
+
         currentIdx += groupConversations.length;
-        
+
         if (currentIdx >= endIndex) break;
       }
     }
-    
+
     return {
       totalItems,
       totalPages,
@@ -384,9 +391,9 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
             </div>
           </>
         )}
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           className="mt-2 mx-auto text-vivid-purple border-vivid-purple hover:text-vivid-purple/90 hover:bg-vivid-purple/5"
           onClick={handleStartNewChat}
           aria-label="Start a new conversation"
@@ -404,8 +411,8 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         <h2 className="font-semibold text-gray-700" id="messagesViewTitle">Recent Conversations</h2>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               className="text-vivid-purple hover:text-vivid-purple/90 relative"
               onClick={handleStartNewChat}
@@ -425,20 +432,20 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         </Tooltip>
       </div>
 
-      <SearchBar 
+      <SearchBar
         onSearch={handleSearch}
         onClear={clearSearch}
         resultCount={searchTerm ? filteredAndSortedConversations.length : 0}
         isSearching={isSearching}
       />
-      
+
       {loadingError && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-xs p-2 rounded-md mb-2 flex items-center">
           <Info size={14} className="mr-1.5 flex-shrink-0" />
           <span className="flex-1">{loadingError}</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             className="ml-2 h-6 px-2 py-0 text-xs hover:bg-yellow-100"
             onClick={handleRetryLoading}
           >
@@ -446,11 +453,11 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
           </Button>
         </div>
       )}
-      
+
       <div className="flex items-center justify-between px-2 py-2 bg-white/60 backdrop-blur-sm rounded-md mb-2 shadow-sm" role="toolbar" aria-label="Conversation sorting and filtering options">
         <div className="flex items-center gap-2">
-          <Select 
-            value={statusFilter} 
+          <Select
+            value={statusFilter}
             onValueChange={(value: StatusFilter) => setStatusFilter(value)}
             aria-label="Filter by status"
           >
@@ -463,10 +470,10 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
               <SelectItem value="ended">Ended</SelectItem>
             </SelectContent>
           </Select>
-          
-          <Button 
-            variant="ghost" 
-            size="sm" 
+
+          <Button
+            variant="ghost"
+            size="sm"
             className="h-8 gap-1 text-xs text-vivid-purple hover:bg-vivid-purple/10"
             onClick={toggleGrouping}
             aria-pressed={groupBy !== 'none'}
@@ -475,10 +482,10 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
             {groupBy === 'none' ? 'Group by Date' : 'No Grouping'}
           </Button>
         </div>
-        
-        <Button 
-          variant="ghost" 
-          size="sm" 
+
+        <Button
+          variant="ghost"
+          size="sm"
           className="h-8 gap-1 text-xs text-vivid-purple hover:bg-vivid-purple/10"
           onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
           aria-label={`Sort by ${sortOrder === 'newest' ? 'oldest first' : 'newest first'}`}
@@ -490,7 +497,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
           )}
         </Button>
       </div>
-      
+
       <ScrollArea className="flex-1" role="region" aria-label="Conversations list">
         {isLoading ? (
           <div className="p-4 space-y-4">
@@ -535,9 +542,9 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                       </div>
                     </>
                   )}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="mt-2 mx-auto text-vivid-purple border-vivid-purple hover:text-vivid-purple/90 hover:bg-vivid-purple/5"
                     onClick={handleStartNewChat}
                     aria-label="Start a new conversation"
@@ -551,7 +558,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
               Object.entries(paginationData.pagedGroupedConversations).map(([group, groupConversations]) => (
                 <div key={group} className="mb-4">
                   {groupBy !== 'none' && (
-                    <div className="text-xs font-medium text-vivid-purple mb-2 px-2" 
+                    <div className="text-xs font-medium text-vivid-purple mb-2 px-2"
                       role="heading" aria-level={2}>
                       {group}
                     </div>
@@ -561,11 +568,9 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                       <Card
                         key={conversation.id}
                         onClick={() => handleSelectConversation(conversation)}
-                        className={`p-3 hover:bg-soft-purple-50 cursor-pointer border bg-white/60 backdrop-blur-sm ${
-                          conversation.unread ? 'border-l-4 border-l-vivid-purple' : 'border-white/30'
-                        } transition-colors group relative ${
-                          animateOut === conversation.id ? 'animate-fade-out' : 'animate-fade-in'
-                        } shadow-sm`}
+                        className={`p-3 hover:bg-soft-purple-50 cursor-pointer border bg-white/60 backdrop-blur-sm ${conversation.unread ? 'border-l-4 border-l-vivid-purple' : 'border-white/30'
+                          } transition-colors group relative ${animateOut === conversation.id ? 'animate-fade-out' : 'animate-fade-in'
+                          } shadow-sm`}
                         tabIndex={0}
                         role="button"
                         aria-label={`Conversation: ${conversation.title}${conversation.unread ? ', unread' : ''}`}
@@ -580,10 +585,10 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                             <div className="relative">
                               <MessageSquare size={16} className="text-vivid-purple mr-2 flex-shrink-0" aria-hidden="true" />
                               {conversation.status && (
-                                <div 
-                                  className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-white" 
+                                <div
+                                  className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-white"
                                   style={{
-                                    backgroundColor: conversation.status === 'active' ? '#10b981' : '#9ca3af'  
+                                    backgroundColor: conversation.status === 'active' ? '#10b981' : '#9ca3af'
                                   }}
                                   aria-hidden="true"
                                 />
@@ -595,13 +600,12 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                                   {conversation.title}
                                 </span>
                                 {conversation.status && (
-                                  <Badge 
+                                  <Badge
                                     variant={conversation.status === 'active' ? 'default' : 'secondary'}
-                                    className={`text-[10px] px-1.5 py-0 ${
-                                      conversation.status === 'active' 
-                                        ? 'bg-green-100 text-green-800 hover:bg-green-100' 
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
-                                    }`}
+                                    className={`text-[10px] px-1.5 py-0 ${conversation.status === 'active'
+                                      ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
+                                      }`}
                                   >
                                     {conversation.status === 'active' ? 'Active' : 'Ended'}
                                   </Badge>
@@ -612,9 +616,9 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                               </div>
                             </div>
                           </div>
-                          <span className="text-xs text-gray-500">{formatTime(conversation.timestamp)}</span>
+                          <span className="text-xs text-gray-500">{formatTime(conversation.createdAt)}</span>
                         </div>
-                        
+
                         <p className={`text-sm ${conversation.unread ? 'text-gray-700' : 'text-gray-500'} mt-1.5 ml-6 line-clamp-1 font-normal`}>
                           {conversation.lastMessage || 'No messages yet'}
                         </p>
@@ -624,11 +628,11 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                             <TooltipTrigger asChild>
                               <div className="flex items-center">
                                 <Calendar size={12} className="mr-1" />
-                                <span>Started {formatDateDisplay(conversation.timestamp)}</span>
+                                <span>Started {formatDateDisplay(conversation.createdAt)}</span>
                               </div>
                             </TooltipTrigger>
                             <TooltipContent>
-                              Created on {format(conversation.timestamp, 'MMMM d, yyyy')} at {format(conversation.timestamp, 'h:mm a')}
+                              Created on {format(conversation.createdAt, 'MMMM d, yyyy')} at {format(conversation.createdAt, 'h:mm a')}
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -646,17 +650,17 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         <Pagination className="mt-4">
           <PaginationContent role="navigation" aria-label="Conversation pagination">
             <PaginationItem>
-              <PaginationPrevious 
+              <PaginationPrevious
                 onClick={() => handlePageChange(Math.max(1, paginationData.currentPage - 1))}
                 aria-disabled={paginationData.currentPage === 1}
                 className={`${paginationData.currentPage === 1 ? "pointer-events-none opacity-50" : ""} text-vivid-purple hover:bg-vivid-purple/10`}
                 aria-label="Previous page"
               />
             </PaginationItem>
-            
+
             {Array.from({ length: paginationData.totalPages }, (_, i) => i + 1).map(page => (
               <PaginationItem key={page}>
-                <PaginationLink 
+                <PaginationLink
                   isActive={page === paginationData.currentPage}
                   onClick={() => handlePageChange(page)}
                   aria-current={page === paginationData.currentPage ? "page" : undefined}
@@ -667,9 +671,9 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                 </PaginationLink>
               </PaginationItem>
             ))}
-            
+
             <PaginationItem>
-              <PaginationNext 
+              <PaginationNext
                 onClick={() => handlePageChange(Math.min(paginationData.totalPages, paginationData.currentPage + 1))}
                 aria-disabled={paginationData.currentPage === paginationData.totalPages}
                 className={`${paginationData.currentPage === paginationData.totalPages ? "pointer-events-none opacity-50" : ""} text-vivid-purple hover:bg-vivid-purple/10`}

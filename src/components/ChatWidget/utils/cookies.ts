@@ -16,12 +16,12 @@ export function setCookie(name: string, value: string, maxAgeSeconds: number = C
   // Build secure cookie string with secure and SameSite flags
   // Using SameSite=Lax for better user experience while maintaining security
   let cookieString = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax`;
-  
+
   // Only add Secure flag if not on a local development environment and if using HTTPS
   if (window.location.protocol === 'https:' && !window.location.hostname.includes('localhost')) {
     cookieString += '; Secure';
   }
-  
+
   document.cookie = cookieString;
 }
 
@@ -30,13 +30,13 @@ export function setCookie(name: string, value: string, maxAgeSeconds: number = C
  */
 export function getCookie(name: string): string | null {
   const cookies = document.cookie.split(';').map(cookie => cookie.trim());
-  
+
   for (const cookie of cookies) {
     if (cookie.startsWith(`${name}=`)) {
       return decodeURIComponent(cookie.substring(name.length + 1));
     }
   }
-  
+
   return null;
 }
 
@@ -45,12 +45,12 @@ export function getCookie(name: string): string | null {
  */
 export function deleteCookie(name: string): void {
   let cookieString = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax`;
-  
+
   // Only add Secure flag if not on a local development environment and if using HTTPS
   if (window.location.protocol === 'https:' && !window.location.hostname.includes('localhost')) {
     cookieString += '; Secure';
   }
-  
+
   document.cookie = cookieString;
 }
 
@@ -66,13 +66,13 @@ export function getChatSessionId(): string | null {
     invalidateSession();
     return null;
   }
-  
+
   // Try to get from cookie first
   const cookieValue = getCookie(COOKIE_NAME);
   if (cookieValue) {
     return cookieValue;
   }
-  
+
   // Fallback to localStorage for mobile browsers with cookie restrictions
   return localStorage.getItem(COOKIE_NAME);
 }
@@ -86,10 +86,10 @@ export function getChatSessionId(): string | null {
 export function setChatSessionId(sessionId: string, expiryTimeMs: number = COOKIE_MAX_AGE * 1000): void {
   // Set in cookie
   setCookie(COOKIE_NAME, sessionId);
-  
+
   // Also set in localStorage as fallback for mobile browsers
   localStorage.setItem(COOKIE_NAME, sessionId);
-  
+
   // Store the expiration timestamp
   const expiryTimestamp = Date.now() + expiryTimeMs;
   localStorage.setItem(SESSION_EXPIRY_KEY, expiryTimestamp.toString());
@@ -109,7 +109,7 @@ export function getSessionExpiry(): number | null {
 export function invalidateSession(): void {
   // Remove the session cookie
   deleteCookie(COOKIE_NAME);
-  
+
   // Clear session data from localStorage
   localStorage.removeItem(COOKIE_NAME);
   localStorage.removeItem(SESSION_EXPIRY_KEY);
@@ -131,7 +131,7 @@ export function refreshSessionExpiry(expiryTimeMs: number = COOKIE_MAX_AGE * 100
 export function isSessionValid(): boolean {
   const sessionId = getChatSessionId();
   if (!sessionId) return false;
-  
+
   const expiry = getSessionExpiry();
   return expiry !== null && expiry > Date.now();
 }

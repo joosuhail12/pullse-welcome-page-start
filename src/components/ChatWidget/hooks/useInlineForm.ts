@@ -14,6 +14,7 @@ export function useInlineForm(
   setUserFormData?: (data: Record<string, string>) => void,
   onUpdateConversation?: (updatedConversation: Conversation) => void
 ) {
+  console.log(conversation, userFormData, config)
   const [showInlineForm, setShowInlineForm] = useState(
     !userFormData && !conversation.contactIdentified
   );

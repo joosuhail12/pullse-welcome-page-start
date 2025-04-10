@@ -95,7 +95,7 @@ const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
                     <div className="text-xs">
                       <p className="font-medium">Conversation Details</p>
                       <p className="text-black/80 mt-1">
-                        Started on {conversation.timestamp.toLocaleDateString()} at {conversation.timestamp.toLocaleTimeString()}
+                        Started on {new Date(conversation.createdAt).toLocaleDateString()} at {new Date(conversation.createdAt).toLocaleTimeString()}
                       </p>
                       {conversation.status && (
                         <p className="mt-1">

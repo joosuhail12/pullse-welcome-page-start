@@ -23,12 +23,12 @@ export function useChatMessages(
   const [isTyping, setIsTyping] = useState(false);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const [page, setPage] = useState(1);
-  
+
   // Get session ID
   const sessionId = getChatSessionId();
   // Create channel name based on conversation
   const chatChannelName = `conversation:${conversation.id}`;
-  
+
   // Mark the conversation as read when opened
   useEffect(() => {
     if (conversation.id && conversation.unread) {
@@ -36,7 +36,7 @@ export function useChatMessages(
         .catch(err => console.error('Failed to mark conversation as read:', err));
     }
   }, [conversation.id, conversation.unread]);
-  
+
   // Use the real-time hook
   const {
     remoteIsTyping,
@@ -51,7 +51,7 @@ export function useChatMessages(
     config,
     playMessageSound
   );
-  
+
   // Use the message actions hook
   const {
     messageText,
@@ -77,7 +77,7 @@ export function useChatMessages(
         ...conversation,
         messages: messages,
         lastMessage: messages[messages.length - 1].text,
-        timestamp: messages[messages.length - 1].timestamp,
+        timestamp: messages[messages.length - 1].createdAt,
         sessionId: sessionId,
         unread: false // Mark as read when we update the conversation
       };
@@ -88,7 +88,7 @@ export function useChatMessages(
   // Wrap the handleUserTyping function to also handle typing timeout
   const handleUserTyping = () => {
     baseHandleUserTyping();
-    if (config?.realtime?.enabled) {
+    if (config?.interfaceSettings?.showAgentPresence) {
       handleTypingTimeout();
     }
   };
@@ -102,7 +102,7 @@ export function useChatMessages(
         setPage(prevPage => prevPage + 1);
         // In a real implementation, you would fetch more messages here
         // and prepend them to the messages array
-        
+
         // For now, we'll just resolve the Promise
         resolve();
       }, 1000);

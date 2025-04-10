@@ -20,6 +20,7 @@ import { errorHandler } from '@/lib/error-handler';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 import { logger } from '@/lib/logger';
 import { requiresServerImplementation } from '../utils/serverSideAuth';
+import { getAccessToken, getWorkspaceIdAndApiKey, setAccessToken } from '../utils/storage';
 
 // Circuit names for different API endpoints
 const CONFIG_CIRCUIT = 'chat-widget-config';
@@ -212,12 +213,19 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
           'X-CSRF-Token': csrfToken,
           'X-CSRF-Nonce': csrfNonce,
           'X-Request-Timestamp': timestamp.toString(),
-          'X-Request-Signature': signMessage(sanitizedWorkspaceId, timestamp)
+          'X-Request-Signature': signMessage(sanitizedWorkspaceId, timestamp),
+          'Content-Type': 'application/json'
         };
+
+        const body = {
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        }
 
         const response = await fetch(url, {
           headers,
-          credentials: 'include' // Include cookies in request
+          credentials: 'include', // Include cookies in request,
+          method: 'POST',
+          body: JSON.stringify(body)
         });
 
         if (!response.ok) {
@@ -255,6 +263,10 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
         // Check if response contains a sessionId and store it
         if (config.sessionId && !sessionId) {
           setChatSessionId(config.sessionId);
+        }
+
+        if (config.data.accessToken) {
+          setAccessToken(config.data.accessToken);
         }
 
         return {
@@ -440,3 +452,15 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
     throw error;
   }
 };
+
+export const fetchConversations = async () => {
+  const accessToken = getAccessToken();
+  const response = await fetch(`http://localhost:4000/api/widgets/getContactDeviceTickets`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + accessToken
+    }
+  });
+  const data = await response.json();
+  return data;
+}

@@ -1,7 +1,7 @@
-
+import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import { Conversation } from '../types';
-import { saveConversationToStorage, loadConversationsFromStorage } from '../utils/storage';
+import { saveConversationToStorage, loadConversationsFromStorage, getWorkspaceIdAndApiKey, getAccessToken, setUserFormDataInLocalStorage } from '../utils/storage';
 import { logout, checkSessionValidity } from '../utils/security';
 
 type ViewState = 'home' | 'messages' | 'chat';
@@ -15,7 +15,8 @@ export function useChatState() {
   // and verify session validity
   useEffect(() => {
     if (checkSessionValidity()) {
-      loadConversationsFromStorage();
+      // Fetch conversations from server
+      // loadConversationsFromStorage();
     } else {
       // If session is invalid, redirect to home view
       setViewState('home');
@@ -42,6 +43,30 @@ export function useChatState() {
 
     setActiveConversation(newConversation);
     setViewState('chat');
+  }, []);
+
+  const handleSetFormData = useCallback(async (formData: Record<string, string>) => {
+    // Check if the form data is already set
+    if (userFormData === undefined) {
+      // Create new contact in database
+      const { apiKey } = getWorkspaceIdAndApiKey();
+      const accessToken = getAccessToken();
+      const data = await fetch("http://localhost:4000/api/widgets/createContactDevice/" + apiKey, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + accessToken
+        },
+        body: JSON.stringify(formData)
+      });
+      const json = await data.json();
+      if (json.success == "success") {
+        setUserFormData(formData);
+        setUserFormDataInLocalStorage(formData);
+      } else {
+        toast.error(json.message);
+      }
+    }
   }, []);
 
   const handleBackToMessages = useCallback(() => {
@@ -96,6 +121,6 @@ export function useChatState() {
     handleUpdateConversation,
     handleLogout,
     userFormData,
-    setUserFormData,
+    setUserFormData: handleSetFormData,
   };
 }
