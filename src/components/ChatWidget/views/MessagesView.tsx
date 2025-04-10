@@ -254,10 +254,12 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     }
 
     return filtered.sort((a, b) => {
+      const aDate = new Date(a.createdAt);
+      const bDate = new Date(b.createdAt);
       if (sortOrder === 'newest') {
-        return b.createdAt.getTime() - a.createdAt.getTime();
+        return bDate.getTime() - aDate.getTime();
       } else {
-        return a.createdAt.getTime() - b.createdAt.getTime();
+        return aDate.getTime() - bDate.getTime();
       }
     });
   }, [conversations, sortOrder, statusFilter, searchTerm, searchResults]);
