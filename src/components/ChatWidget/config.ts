@@ -1,4 +1,3 @@
-
 /**
  * Chat Widget Configuration Types
  */
@@ -114,6 +113,14 @@ export interface ChatInterfaceSettings {
   showOfficeHours
 }
 
+export interface ContactInfo {
+  id: string;
+  email: string;
+  firstname: string;
+  lastname: string;
+  [key: string]: any; // For other properties that may exist in the contact data
+}
+
 export interface ChatWidgetConfig {
   workspaceId: string;
   widgetfield: PreChatForm;
@@ -125,6 +132,7 @@ export interface ChatWidgetConfig {
   interfaceSettings?: ChatInterfaceSettings;
   accessToken?: string;
   sessionId?: string;
+  contact?: ContactInfo; // Add contact information to config
   onEvent?: (event: ChatEventPayload) => void;
   // Added to support advanced event subscription
   eventHandlers?: {

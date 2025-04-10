@@ -2,17 +2,17 @@
 import { useState, useEffect } from 'react';
 import { fetchChatWidgetConfig } from '../services/api';
 import { ChatWidgetConfig, defaultConfig } from '../config';
-import { getDefaultConfig } from '../embed/api';
 import { logger } from '@/lib/logger';
-import { getWorkspaceIdAndApiKey } from '../utils/storage';
+import { getWorkspaceIdAndApiKey, getUserFormDataFromLocalStorage } from '../utils/storage';
 
 export function useWidgetConfig() {
   const [config, setConfig] = useState<ChatWidgetConfig>(defaultConfig);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const [contactData, setContactData] = useState<any>(null);
 
   // Get workspace id and api key from localStorage
-  const { workspaceId, apiKey } = getWorkspaceIdAndApiKey();
+  const { workspaceId } = getWorkspaceIdAndApiKey();
 
   useEffect(() => {
     async function loadConfig() {
@@ -25,36 +25,37 @@ export function useWidgetConfig() {
       try {
         setLoading(true);
 
-        // Log that we're in development mode
-        // if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
-        if (import.meta.env.DEV) {
-          logger.debug(
-            `Using default config for workspace ${workspaceId} in development mode`,
-            'useWidgetConfig'
-          );
-
-          // Use the default config for development mode
-          const devConfig = {
-            ...defaultConfig,
-            workspaceId,
-            // Merge with our simple default config
-            ...getDefaultConfig(workspaceId)
-          };
-
-          setConfig(devConfig);
-          setError(null);
-          return;
-        }
+        // Use hardcoded API key instead of relying on localStorage
+        const apiKey = "85c7756b-f333-4ec9-a440-c4d1850482c3";
 
         logger.info(`Fetching config for workspace ${workspaceId}`, 'useWidgetConfig');
         const fetchedConfig = await fetchChatWidgetConfig(workspaceId, apiKey);
-        console.log(fetchedConfig)
-
 
         logger.debug('Config fetched successfully', 'useWidgetConfig', {
           hasRealtime: true,
           hasBranding: !!fetchedConfig.brandAssets
         });
+
+        // Check if contact data exists in the API response
+        if (fetchedConfig.contact) {
+          // Store contact data in state
+          setContactData(fetchedConfig.contact);
+          
+          // Create user form data based on contact information
+          const formData = {
+            email: fetchedConfig.contact.email,
+            name: `${fetchedConfig.contact.firstname} ${fetchedConfig.contact.lastname}`.trim()
+          };
+          
+          // Store this in local storage for subsequent widget loads
+          localStorage.setItem('pullse_user_form_data', JSON.stringify(formData));
+        } else {
+          // Check if we have previously stored user data
+          const storedUserData = getUserFormDataFromLocalStorage();
+          if (storedUserData) {
+            setContactData(storedUserData);
+          }
+        }
 
         setConfig(fetchedConfig);
         setError(null);
@@ -63,22 +64,17 @@ export function useWidgetConfig() {
         logger.error('Failed to fetch widget config', 'useWidgetConfig', errorInstance);
 
         setError(errorInstance);
-        // Still use default config as fallback
-        setConfig({
-          ...defaultConfig,
-          workspaceId,
-          // Merge with our simple default config
-          ...getDefaultConfig(workspaceId)
-        });
+        // Use default config as fallback
+        setConfig(defaultConfig);
       } finally {
         setLoading(false);
       }
     }
 
     loadConfig();
-  }, [workspaceId, apiKey]);
+  }, [workspaceId]);
 
-  return { config, loading, error };
+  return { config, loading, error, contactData };
 }
 
 export default useWidgetConfig;

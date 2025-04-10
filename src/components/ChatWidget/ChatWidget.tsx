@@ -36,13 +36,25 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
     setUserFormData
   } = useChatState();
 
-  const { config, loading, error } = useWidgetConfig();
+  const { config, loading, error, contactData } = useWidgetConfig();
   const [isOpen, setIsOpen] = useState(false);
   const { unreadCount, clearUnreadMessages } = useUnreadMessages();
   const { playMessageSound } = useSound();
   const isMobile = useIsMobile();
   const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
+
+  // If contactData is available from the API but userFormData is not set, initialize it
+  useEffect(() => {
+    if (contactData && !userFormData) {
+      // Create form data from contact
+      const formData = {
+        email: contactData.email,
+        name: `${contactData.firstname} ${contactData.lastname}`.trim()
+      };
+      setUserFormData(formData);
+    }
+  }, [contactData, userFormData, setUserFormData]);
 
   const widgetStyle = useMemo(() => ({
     ...(config.colors?.primaryColor && {
@@ -78,6 +90,12 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
     return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles} config={config} />;
   }
 
+  // Add contact data to config for component access
+  const enhancedConfig = {
+    ...config,
+    contact: contactData
+  };
+
   return (
     <ChatWidgetErrorBoundary workspaceId={workspaceId}>
       <ConnectionManager
@@ -90,7 +108,7 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
         isOpen={isOpen}
         viewState={viewState}
         activeConversation={activeConversation}
-        config={config}
+        config={enhancedConfig}
         widgetStyle={widgetStyle}
         containerStyles={getWidgetContainerPositionStyles}
         userFormData={userFormData}
@@ -107,7 +125,7 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
         isOpen={isOpen}
         unreadCount={unreadCount}
         onClick={toggleChat}
-        config={config}
+        config={enhancedConfig}
         positionStyles={getLauncherPositionStyles}
       />
     </ChatWidgetErrorBoundary>

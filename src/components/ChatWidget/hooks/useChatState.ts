@@ -1,7 +1,8 @@
+
 import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import { Conversation } from '../types';
-import { saveConversationToStorage, loadConversationsFromStorage, getWorkspaceIdAndApiKey, getAccessToken, setUserFormDataInLocalStorage } from '../utils/storage';
+import { saveConversationToStorage, loadConversationsFromStorage, getWorkspaceIdAndApiKey, getAccessToken, setUserFormDataInLocalStorage, getUserFormDataFromLocalStorage } from '../utils/storage';
 import { logout, checkSessionValidity } from '../utils/security';
 
 type ViewState = 'home' | 'messages' | 'chat';
@@ -9,7 +10,7 @@ type ViewState = 'home' | 'messages' | 'chat';
 export function useChatState() {
   const [viewState, setViewState] = useState<ViewState>('messages'); // Default to messages view
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
-  const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(undefined);
+  const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(getUserFormDataFromLocalStorage());
 
   // Load any existing conversations when component mounts
   // and verify session validity
@@ -28,11 +29,14 @@ export function useChatState() {
   const handleStartChat = useCallback((formData?: Record<string, string>) => {
     // Create a new conversation even without form data
     // Form data will be collected in the ChatView component
-    const newConversation = {
+    const newConversation: Conversation = {
       id: `conv-${Date.now()}`,
       title: formData?.name ? `Chat with ${formData.name}` : 'New Conversation',
       lastMessage: '',
       timestamp: new Date(),
+      createdAt: new Date(),
+      updated_at: new Date(),
+      messages: [],
       agentInfo: {
         name: 'Support Agent',
         avatar: undefined // You could set a default avatar URL here
@@ -67,7 +71,7 @@ export function useChatState() {
         toast.error(json.message);
       }
     }
-  }, []);
+  }, [userFormData]);
 
   const handleBackToMessages = useCallback(() => {
     // Update the conversation in localStorage before going back

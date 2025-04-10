@@ -14,17 +14,17 @@ export function useInlineForm(
   setUserFormData?: (data: Record<string, string>) => void,
   onUpdateConversation?: (updatedConversation: Conversation) => void
 ) {
-  console.log(conversation, userFormData, config)
+  // Check if conversation already has contact identified or user form data exists
   const [showInlineForm, setShowInlineForm] = useState(
-    !userFormData && !conversation.contactIdentified
+    !userFormData && !conversation.contactIdentified && !config.contact
   );
 
-  // Update form visibility when user data or contact status changes
+  // Update form visibility when user data, contact status, or config contact changes
   useEffect(() => {
-    if (userFormData || conversation.contactIdentified) {
+    if (userFormData || conversation.contactIdentified || config.contact) {
       setShowInlineForm(false);
     }
-  }, [userFormData, conversation.contactIdentified]);
+  }, [userFormData, conversation.contactIdentified, config.contact]);
 
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     setShowInlineForm(false);
@@ -33,13 +33,12 @@ export function useInlineForm(
       setUserFormData(formData);
     }
 
-    // TODO: create a contact here!
-    // if (onUpdateConversation) {
-    //   onUpdateConversation({
-    //     ...conversation,
-    //     contactIdentified: true
-    //   });
-    // }
+    if (onUpdateConversation) {
+      onUpdateConversation({
+        ...conversation,
+        contactIdentified: true
+      });
+    }
 
     dispatchChatEvent('contact:formCompleted', { formData }, config);
   }, [setUserFormData, onUpdateConversation, conversation, config]);
