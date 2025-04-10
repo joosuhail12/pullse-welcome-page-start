@@ -26,7 +26,8 @@ export function useWidgetConfig() {
         setLoading(true);
 
         // Log that we're in development mode
-        if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
+        // if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
+        if (import.meta.env.DEV) {
           logger.debug(
             `Using default config for workspace ${workspaceId} in development mode`,
             'useWidgetConfig'

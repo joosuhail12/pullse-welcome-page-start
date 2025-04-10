@@ -172,8 +172,10 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
 
     // In development/demo mode, we'll just use default config
     // since the API may not be available or may return HTML instead of JSON
-    if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
+    // if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
+    if (import.meta.env.DEV) {
       console.log(`Using default config for workspace ${sanitizedWorkspaceId} in development mode`);
+
       return {
         ...defaultConfig,
         workspaceId: sanitizedWorkspaceId,
