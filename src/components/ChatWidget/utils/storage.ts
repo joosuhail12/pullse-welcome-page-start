@@ -84,7 +84,18 @@ export function setChatSessionId(sessionId: string): void {
 export function saveConversationToStorage(conversation: any): void {
   try {
     const conversations = JSON.parse(localStorage.getItem('pullse_conversations') || '[]');
-    conversations.push(conversation);
+    
+    // Check if conversation already exists
+    const existingIndex = conversations.findIndex((c: any) => c.id === conversation.id);
+    
+    if (existingIndex >= 0) {
+      // Update existing conversation
+      conversations[existingIndex] = conversation;
+    } else {
+      // Add new conversation
+      conversations.push(conversation);
+    }
+    
     localStorage.setItem('pullse_conversations', JSON.stringify(conversations));
   } catch (error) {
     console.error('Error saving conversation to localStorage:', error);
@@ -170,4 +181,11 @@ export function setUserFormDataInLocalStorage(formData: Record<string, string>):
   } catch (error) {
     console.error('Error setting user form data in localStorage:', error);
   }
+}
+
+/**
+ * Check if user is authenticated by checking if form data exists
+ */
+export function isUserAuthenticated(): boolean {
+  return getUserFormDataFromLocalStorage() !== undefined;
 }

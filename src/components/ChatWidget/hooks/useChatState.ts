@@ -33,9 +33,7 @@ export function useChatState() {
       id: `conv-${Date.now()}`,
       title: formData?.name ? `Chat with ${formData.name}` : 'New Conversation',
       lastMessage: '',
-      timestamp: new Date(),
       createdAt: new Date(),
-      updated_at: new Date(),
       messages: [],
       agentInfo: {
         name: 'Support Agent',
@@ -55,23 +53,40 @@ export function useChatState() {
       // Create new contact in database
       const { apiKey } = getWorkspaceIdAndApiKey();
       const accessToken = getAccessToken();
-      const data = await fetch("https://dev-socket.pullseai.com/api/widgets/createContactDevice/" + apiKey, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + accessToken
-        },
-        body: JSON.stringify(formData)
-      });
-      const json = await data.json();
-      if (json.success == "success") {
-        setUserFormData(formData);
-        setUserFormDataInLocalStorage(formData);
-      } else {
-        toast.error(json.message);
+      try {
+        const response = await fetch("https://dev-socket.pullseai.com/api/widgets/createContactDevice/85c7756b-f333-4ec9-a440-c4d1850482c3", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': accessToken ? `Bearer ${accessToken}` : ''
+          },
+          body: JSON.stringify(formData)
+        });
+        
+        const data = await response.json();
+        if (data.status === "success") {
+          setUserFormData(formData);
+          setUserFormDataInLocalStorage(formData);
+          
+          // If there's contact data in the response, update it
+          if (data.data) {
+            // Update any active conversation to mark it as identified
+            if (activeConversation) {
+              setActiveConversation({
+                ...activeConversation,
+                contactIdentified: true
+              });
+            }
+          }
+        } else {
+          toast.error(data.message || "Failed to create contact");
+        }
+      } catch (error) {
+        console.error("Error creating contact:", error);
+        toast.error("Failed to connect to the server");
       }
     }
-  }, [userFormData]);
+  }, [userFormData, activeConversation]);
 
   const handleBackToMessages = useCallback(() => {
     // Update the conversation in localStorage before going back
@@ -96,8 +111,8 @@ export function useChatState() {
   // Update conversation with new message
   const handleUpdateConversation = useCallback((updatedConversation: Conversation) => {
     setActiveConversation(updatedConversation);
-    // TODO: Save the updated conversation to localStorage
-    // saveConversationToStorage(updatedConversation);
+    // Save the updated conversation to localStorage
+    saveConversationToStorage(updatedConversation);
   }, []);
 
   // Handle logout and session invalidation

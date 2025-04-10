@@ -1,4 +1,3 @@
-
 /**
  * Chat Widget API Service
  * 
@@ -154,10 +153,6 @@ export async function serverSideDecrypt(encryptedData: string): Promise<string> 
  * Fetch chat widget configuration from the API
  * @param workspaceId The workspace ID to fetch configuration for
  * @returns Promise resolving to the chat widget configuration
- * 
- * TODO: Implement full signature verification for all responses
- * TODO: Add caching with security headers for performance
- * TODO: Implement tiered fallbacks for critical configuration
  */
 export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string): Promise<ChatWidgetConfig> => {
   try {
@@ -170,26 +165,12 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
     // Validate and sanitize workspaceId
     const sanitizedWorkspaceId = sanitizeInput(workspaceId);
 
-    // In development/demo mode, we'll just use default config
-    // since the API may not be available or may return HTML instead of JSON
-    // if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
-    if (import.meta.env.DEV) {
-      console.log(`Using default config for workspace ${sanitizedWorkspaceId} in development mode`);
-
-      return {
-        ...defaultConfig,
-        workspaceId: sanitizedWorkspaceId,
-        ...getDefaultConfig(sanitizedWorkspaceId)
-      };
-    }
-
     // Check if circuit is already open (too many failures)
     if (isCircuitOpen(CONFIG_CIRCUIT)) {
       console.warn('Config API circuit is open, using default config');
       return {
         ...defaultConfig,
         workspaceId: sanitizedWorkspaceId,
-        ...getDefaultConfig(sanitizedWorkspaceId)
       };
     }
 
@@ -263,7 +244,8 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
         }
 
         // Check if response contains a sessionId and store it
-        if (config.sessionId && !sessionId) {
+        const chatSessionId = getChatSessionId();
+        if (config.sessionId && !chatSessionId) {
           setChatSessionId(config.sessionId);
         }
 
@@ -271,14 +253,19 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
           setAccessToken(config.data.accessToken);
         }
 
-        return {
+        // Add realtime flag to support existing code
+        const configWithRealtime = {
           ...config.data.widgettheme[0],
-          widgetfield: config.data.widgetfield[0]
+          widgetfield: config.data.widgetfield[0],
+          realtime: true, // Add realtime flag for existing code
+          workspaceId: sanitizedWorkspaceId,
+          contact: config.data.contact || null,
         };
+
+        return configWithRealtime;
       },
       CONFIG_CIRCUIT,
       // Custom retry options for config API
-      // TODO: Update retries to 2
       {
         maxRetries: 0,
         initialDelayMs: 200,
@@ -301,7 +288,7 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
     return {
       ...defaultConfig,
       workspaceId: sanitizeInput(workspaceId),
-      ...getDefaultConfig(sanitizeInput(workspaceId))
+      realtime: true // Add realtime flag for existing code
     };
   }
 };

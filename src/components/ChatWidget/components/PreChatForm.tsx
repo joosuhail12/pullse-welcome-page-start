@@ -9,7 +9,7 @@ import { User, AtSign } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 // First, let's define our interfaces
-interface FormFieldData {
+export interface FormFieldData {
   entityname: string;
   columnname: string;
   value: string;
@@ -19,7 +19,7 @@ interface FormFieldData {
   placeholder?: string;
 }
 
-interface FormDataStructure {
+export interface FormDataStructure {
   contact: FormFieldData[];
   company: FormFieldData[];
   customData: FormFieldData[];
@@ -27,7 +27,7 @@ interface FormDataStructure {
 
 interface PreChatFormProps {
   config: ChatWidgetConfig;
-  onFormComplete: (formData: FormDataStructure) => void;
+  onFormComplete: (formData: Record<string, string>) => void;
 }
 
 const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
@@ -110,55 +110,31 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
   const submitForm = () => {
     if (!formValid) return;
 
-    const structuredData: FormDataStructure = {
-      contact: [],
-      company: [],
-      customData: []
-    };
+    const flatFormData: Record<string, string> = {};
 
-    // Get all fields from config for metadata
-    const allFields = [
-      ...config.widgetfield.contactFields,
-      ...config.widgetfield.companyFields,
-      ...config.widgetfield.customDataFields
-    ];
-
-    // Process each entity's data
     Object.entries(formData).forEach(([entityName, columnData]) => {
       Object.entries(columnData).forEach(([columnName, value]) => {
-        // Find the field configuration
-        const fieldConfig = allFields.find(
-          field => field.entityname === entityName && field.columnname === columnName
-        );
-
-        if (fieldConfig) {
-          const fieldData: FormFieldData = {
-            entityname: fieldConfig.entityname,
-            columnname: fieldConfig.columnname,
-            value: value,
-            type: fieldConfig.type,
-            label: fieldConfig.label,
-            required: fieldConfig.required,
-            placeholder: fieldConfig.placeholder
-          };
-
-          // Add to appropriate array
-          if (entityName === 'contact') {
-            structuredData.contact.push(fieldData);
-          } else if (entityName === 'company') {
-            structuredData.company.push(fieldData);
-          } else {
-            structuredData.customData.push(fieldData);
+        if (entityName === 'contact') {
+          if (columnName === 'email') {
+            flatFormData.email = value;
+          }
+          if (columnName === 'firstname') {
+            flatFormData.firstname = value;
+          }
+          if (columnName === 'lastname') {
+            flatFormData.lastname = value;
+          }
+          if (columnName === 'name') {
+            flatFormData.name = value;
           }
         }
+        
+        flatFormData[`${entityName}_${columnName}`] = value;
       });
     });
 
-    // Dispatch form completion event
-    dispatchChatEvent('contact:formCompleted', { formData: structuredData }, config);
-
-    // Pass structured data back to parent
-    onFormComplete(structuredData);
+    dispatchChatEvent('contact:formCompleted', { formData: flatFormData }, config);
+    onFormComplete(flatFormData);
   };
 
   // Compute primary color based on config or fallback

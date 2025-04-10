@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { fetchChatWidgetConfig } from '../services/api';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import { logger } from '@/lib/logger';
-import { getWorkspaceIdAndApiKey, getUserFormDataFromLocalStorage } from '../utils/storage';
+import { getWorkspaceIdAndApiKey, getUserFormDataFromLocalStorage, setUserFormDataInLocalStorage } from '../utils/storage';
 
 export function useWidgetConfig() {
   const [config, setConfig] = useState<ChatWidgetConfig>(defaultConfig);
@@ -25,14 +25,14 @@ export function useWidgetConfig() {
       try {
         setLoading(true);
 
-        // Use hardcoded API key instead of relying on localStorage
+        // Use hardcoded API key as requested
         const apiKey = "85c7756b-f333-4ec9-a440-c4d1850482c3";
 
         logger.info(`Fetching config for workspace ${workspaceId}`, 'useWidgetConfig');
         const fetchedConfig = await fetchChatWidgetConfig(workspaceId, apiKey);
 
         logger.debug('Config fetched successfully', 'useWidgetConfig', {
-          hasRealtime: true,
+          hasRealtime: !!fetchedConfig.realtime,
           hasBranding: !!fetchedConfig.brandAssets
         });
 
@@ -48,7 +48,7 @@ export function useWidgetConfig() {
           };
           
           // Store this in local storage for subsequent widget loads
-          localStorage.setItem('pullse_user_form_data', JSON.stringify(formData));
+          setUserFormDataInLocalStorage(formData);
         } else {
           // Check if we have previously stored user data
           const storedUserData = getUserFormDataFromLocalStorage();

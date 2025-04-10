@@ -18,6 +18,7 @@ export interface Message {
   important?: boolean; // New field to mark important messages
   unread?: boolean;    // New field to mark unread messages
   metadata?: Record<string, any>; // Add metadata field for flexibility
+  timestamp?: Date;    // For backward compatibility
 }
 
 // Standardized agent status type
@@ -73,6 +74,7 @@ export type MessageReadStatus = 'unread' | 'delivered' | 'read';
 
 export interface MessageReadReceipt {
   status: MessageReadStatus;
+  timestamp?: Date;
   createdAt?: Date;
 }
 

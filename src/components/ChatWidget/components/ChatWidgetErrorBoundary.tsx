@@ -17,7 +17,7 @@ interface ChatWidgetErrorBoundaryProps {
 
 const ChatWidgetErrorBoundary = ({ children, workspaceId }: ChatWidgetErrorBoundaryProps) => {
   const [error, setError] = useState<Error | null>(null);
-  const { config } = useWidgetConfig(workspaceId);
+  const { config } = useWidgetConfig();
   const isMobile = useIsMobile();
   const { getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   
@@ -45,7 +45,7 @@ const ChatWidgetErrorBoundary = ({ children, workspaceId }: ChatWidgetErrorBound
       fallback={
         <ErrorFallback 
           error={error} 
-          positionStyles={getWidgetContainerPositionStyles} 
+          positionStyles={getWidgetContainerPositionStyles()} 
           config={config}
           resetErrorBoundary={() => window.location.reload()} 
         />

@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from '../utils/events';
+import { isUserAuthenticated } from '../utils/storage';
 
 /**
  * Hook for managing pre-chat form state and interactions
@@ -16,12 +17,12 @@ export function useInlineForm(
 ) {
   // Check if conversation already has contact identified or user form data exists
   const [showInlineForm, setShowInlineForm] = useState(
-    !userFormData && !conversation.contactIdentified && !config.contact
+    !userFormData && !conversation.contactIdentified && !config.contact && !isUserAuthenticated()
   );
 
   // Update form visibility when user data, contact status, or config contact changes
   useEffect(() => {
-    if (userFormData || conversation.contactIdentified || config.contact) {
+    if (userFormData || conversation.contactIdentified || config.contact || isUserAuthenticated()) {
       setShowInlineForm(false);
     }
   }, [userFormData, conversation.contactIdentified, config.contact]);
