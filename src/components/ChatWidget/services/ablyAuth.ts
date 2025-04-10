@@ -5,7 +5,7 @@
  * @returns Authentication URL
  */
 export const getAblyAuthUrl = (workspaceId: string): string => {
-  const baseUrl = 'http://localhost:4000/api/ably/widgetToken';
+  const baseUrl = 'https://dev-socket.pullseai.com/api/ably/widgetToken';
   return `${baseUrl}`;
 };
 

@@ -195,7 +195,7 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
       async () => {
         // Check if we have a session ID
         const sessionId = getChatSessionId();
-        let url = `http://localhost:4000/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(sanitizedWorkspaceId)}`;
+        let url = `https://dev-socket.pullseai.com/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(sanitizedWorkspaceId)}`;
 
         // Append session ID if available
         if (sessionId) {
@@ -455,7 +455,7 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
 
 export const fetchConversations = async () => {
   const accessToken = getAccessToken();
-  const response = await fetch(`http://localhost:4000/api/widgets/getContactDeviceTickets`, {
+  const response = await fetch(`https://dev-socket.pullseai.com/api/widgets/getContactDeviceTickets`, {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + accessToken

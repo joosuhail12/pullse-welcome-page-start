@@ -51,7 +51,7 @@ export function useChatState() {
       // Create new contact in database
       const { apiKey } = getWorkspaceIdAndApiKey();
       const accessToken = getAccessToken();
-      const data = await fetch("http://localhost:4000/api/widgets/createContactDevice/" + apiKey, {
+      const data = await fetch("https://dev-socket.pullseai.com/api/widgets/createContactDevice/" + apiKey, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
