@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for managing storage and cookies
  */
@@ -100,6 +101,33 @@ export function loadConversationsFromStorage(): any[] {
   } catch (error) {
     console.error('Error loading conversations from localStorage:', error);
     return [];
+  }
+}
+
+/**
+ * Mark a conversation as read
+ */
+export function markConversationAsRead(conversationId: string): Promise<void> {
+  try {
+    // Get all conversations from storage
+    const conversations = JSON.parse(localStorage.getItem('pullse_conversations') || '[]');
+    
+    // Find the conversation with the matching ID and update it
+    const updatedConversations = conversations.map((conv: any) => {
+      if (conv.id === conversationId) {
+        return { ...conv, unread: false };
+      }
+      return conv;
+    });
+    
+    // Save the updated conversations back to storage
+    localStorage.setItem('pullse_conversations', JSON.stringify(updatedConversations));
+    
+    // For future API integration
+    return Promise.resolve();
+  } catch (error) {
+    console.error('Error marking conversation as read:', error);
+    return Promise.reject(error);
   }
 }
 
