@@ -8,8 +8,7 @@ import { ChatWidgetConfig, PreChatFormField } from '../config';
 import { User, AtSign } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-// First, let's define our interfaces
-export interface FormFieldData {
+interface FormField {
   entityname: string;
   columnname: string;
   value: string;
@@ -19,15 +18,15 @@ export interface FormFieldData {
   placeholder?: string;
 }
 
-export interface FormDataStructure {
-  contact: FormFieldData[];
-  company: FormFieldData[];
-  customData: FormFieldData[];
+interface FormDataStructure {
+  contact: FormField[];
+  company: FormField[];
+  customData: FormField[];
 }
 
 interface PreChatFormProps {
   config: ChatWidgetConfig;
-  onFormComplete: (formData: Record<string, string>) => void;
+  onFormComplete: (formData: FormDataStructure) => void;
 }
 
 const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
@@ -41,7 +40,6 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const isMobile = useIsMobile();
 
-  // Handle input change for form
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     field: PreChatFormField
@@ -49,25 +47,20 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
     const { value } = e.target;
     const { entityname, columnname } = field;
 
-    // Mark field as touched
     setTouched(prev => ({
       ...prev,
       [`${entityname}.${columnname}`]: true
     }));
 
-    // Validate this specific field
     const error = validateField(`${entityname}.${columnname}`, value, field.required || false);
 
-    // Update error state
     setFormErrors(prev => ({
       ...prev,
       [`${entityname}.${columnname}`]: error || ''
     }));
 
-    // Sanitize input before storing
     const sanitized = sanitizeInput(value);
 
-    // Update form data
     setFormData(prev => ({
       ...prev,
       [entityname]: {
@@ -85,7 +78,6 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
     });
   };
 
-  // Validate if the form is complete and valid
   const validateFormCompletion = (data: Record<string, any>) => {
     const allFields = [
       ...config.widgetfield.contactFields,
@@ -106,41 +98,55 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
     setFormValid(allRequiredFilled);
   };
 
-  // Submit form
   const submitForm = () => {
     if (!formValid) return;
 
-    const flatFormData: Record<string, string> = {};
+    const structuredData: FormDataStructure = {
+      contact: [],
+      company: [],
+      customData: []
+    };
+
+    const allFields = [
+      ...config.widgetfield.contactFields,
+      ...config.widgetfield.companyFields,
+      ...config.widgetfield.customDataFields
+    ];
 
     Object.entries(formData).forEach(([entityName, columnData]) => {
       Object.entries(columnData).forEach(([columnName, value]) => {
-        if (entityName === 'contact') {
-          if (columnName === 'email') {
-            flatFormData.email = value;
-          }
-          if (columnName === 'firstname') {
-            flatFormData.firstname = value;
-          }
-          if (columnName === 'lastname') {
-            flatFormData.lastname = value;
-          }
-          if (columnName === 'name') {
-            flatFormData.name = value;
+        const fieldConfig = allFields.find(
+          field => field.entityname === entityName && field.columnname === columnName
+        );
+
+        if (fieldConfig) {
+          const fieldData: FormField = {
+            entityname: fieldConfig.entityname,
+            columnname: fieldConfig.columnname,
+            value: value,
+            type: fieldConfig.type,
+            label: fieldConfig.label,
+            required: fieldConfig.required,
+            placeholder: fieldConfig.placeholder
+          };
+
+          if (entityName === 'contact') {
+            structuredData.contact.push(fieldData);
+          } else if (entityName === 'company') {
+            structuredData.company.push(fieldData);
+          } else {
+            structuredData.customData.push(fieldData);
           }
         }
-        
-        flatFormData[`${entityName}_${columnName}`] = value;
       });
     });
 
-    dispatchChatEvent('contact:formCompleted', { formData: flatFormData }, config);
-    onFormComplete(flatFormData);
+    dispatchChatEvent('contact:formCompleted', { formData: structuredData }, config);
+    onFormComplete(structuredData);
   };
 
-  // Compute primary color based on config or fallback
   const primaryColor = config.colors?.primaryColor || '#8B5CF6';
 
-  // Handle blur event to mark field as touched
   const handleBlur = (field: string) => {
     setTouched(prev => ({
       ...prev,
@@ -148,7 +154,6 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
     }));
   };
 
-  // Get icon for input field
   const getFieldIcon = (fieldName: string) => {
     if (fieldName.includes('name') || fieldName.includes('first'))
       return <User className="text-gray-400 w-4 h-4" />;
@@ -319,7 +324,6 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
               )}
           </div>
         ))}
-
       </div>
 
       <div className="mt-4 sm:mt-6">
