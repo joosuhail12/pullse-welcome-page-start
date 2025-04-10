@@ -106,14 +106,14 @@ const ChatViewPresentation = ({
   // Track agent status changes
   useEffect(() => {
     const currentStatus = conversation.agentInfo?.status;
-    
+
     if (currentStatus && currentStatus !== previousAgentStatus) {
       setPreviousAgentStatus(currentStatus);
     }
   }, [conversation.agentInfo?.status, previousAgentStatus]);
 
   const inlineFormComponent = useMemo(() => {
-    if (showInlineForm && config?.preChatForm) {
+    if (showInlineForm) {
       return (
         <div className="absolute inset-0 bg-white z-50">
           <PreChatForm
@@ -125,7 +125,7 @@ const ChatViewPresentation = ({
     }
     return null;
   }, [showInlineForm, config, handleFormComplete]);
-  
+
   // Custom keyboard shortcuts for this view
   const customShortcuts: KeyboardShortcutProps[] = [
     { key: 'Alt + /', description: 'Search messages', category: 'search' },
@@ -150,6 +150,7 @@ const ChatViewPresentation = ({
           conversation={conversation}
           onBack={onBack}
           showSearch={showSearch}
+          config={config}
           toggleSearch={toggleSearch}
           searchMessages={searchMessages}
           clearSearch={clearSearch}
@@ -190,13 +191,13 @@ const ChatViewPresentation = ({
       </ChatKeyboardHandler>
 
       {/* Use simple PoweredByBar without config prop */}
-      {config?.branding?.showBrandingBar !== false && (
+      {config?.interfaceSettings?.showBrandingBar !== false && (
         <PoweredByBar />
       )}
 
       {/* Enhanced keyboard shortcuts with customizable shortcuts */}
       <div className="absolute bottom-16 right-2">
-        <KeyboardShortcutsInfo 
+        <KeyboardShortcutsInfo
           shortcuts={customShortcuts}
           compact={true}
         />

@@ -14,8 +14,9 @@ export function useInlineForm(
   setUserFormData?: (data: Record<string, string>) => void,
   onUpdateConversation?: (updatedConversation: Conversation) => void
 ) {
+  console.log(conversation, userFormData, config)
   const [showInlineForm, setShowInlineForm] = useState(
-    config?.preChatForm?.enabled && !userFormData && !conversation.contactIdentified
+    !userFormData && !conversation.contactIdentified
   );
 
   // Update form visibility when user data or contact status changes
@@ -27,18 +28,19 @@ export function useInlineForm(
 
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     setShowInlineForm(false);
-    
+
     if (setUserFormData) {
       setUserFormData(formData);
     }
-    
-    if (onUpdateConversation) {
-      onUpdateConversation({
-        ...conversation,
-        contactIdentified: true
-      });
-    }
-    
+
+    // TODO: create a contact here!
+    // if (onUpdateConversation) {
+    //   onUpdateConversation({
+    //     ...conversation,
+    //     contactIdentified: true
+    //   });
+    // }
+
     dispatchChatEvent('contact:formCompleted', { formData }, config);
   }, [setUserFormData, onUpdateConversation, conversation, config]);
 

@@ -24,10 +24,10 @@ interface ChatViewContainerProps {
  * for the chat view. This component doesn't render any UI directly,
  * but passes all necessary props to the presentation component.
  */
-const ChatViewContainer = ({ 
-  conversation, 
-  onBack, 
-  onUpdateConversation, 
+const ChatViewContainer = ({
+  conversation,
+  onBack,
+  onUpdateConversation,
   config = defaultConfig,
   playMessageSound,
   userFormData,
@@ -115,7 +115,7 @@ const ChatViewContainer = ({
 
   const handleLoadMoreMessages = useCallback(async () => {
     if (!loadPreviousMessages) return;
-    
+
     setIsLoadingMore(true);
     try {
       await loadPreviousMessages();
@@ -126,23 +126,23 @@ const ChatViewContainer = ({
 
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     setShowInlineForm(false);
-    
+
     if (setUserFormData) {
       setUserFormData(formData);
     }
-    
+
     onUpdateConversation({
       ...conversation,
       contactIdentified: true
     });
-    
+
     dispatchChatEvent('contact:formCompleted', { formData }, config);
   }, [setUserFormData, onUpdateConversation, conversation, config]);
 
   // Handler for toggling message importance
   const handleToggleMessageImportance = useCallback((messageId: string) => {
     setMessages(currentMessages => {
-      return currentMessages.map(msg => 
+      return currentMessages.map(msg =>
         msg.id === messageId
           ? { ...msg, important: !msg.important }
           : msg
@@ -157,39 +157,39 @@ const ChatViewContainer = ({
     });
   }, [setMessages]);
 
-  const agentAvatar = useMemo(() => 
-    conversation.agentInfo?.avatar || config?.branding?.avatarUrl, 
-    [conversation.agentInfo?.avatar, config?.branding?.avatarUrl]
+  const agentAvatar = useMemo(() =>
+    conversation.agentInfo?.avatar || config?.brandAssets?.avatarUrl,
+    [conversation.agentInfo?.avatar, config?.brandAssets?.avatarUrl]
   );
-  
+
   const userAvatar = undefined;
   const hasMoreMessages = messages.length >= 20;
 
   // Styling based on branding config
   const chatViewStyle = useMemo(() => {
     return {
-      ...(config?.branding?.primaryColor && {
-        '--chat-header-bg': config.branding.primaryColor,
+      ...(config?.colors?.primaryColor && {
+        '--chat-header-bg': config.colors.primaryColor,
         '--chat-header-text': '#ffffff',
-        '--user-bubble-bg': config.branding.primaryColor,
+        '--user-bubble-bg': config.colors.primaryColor,
         '--user-bubble-text': '#ffffff',
         '--system-bubble-bg': '#F5F3FF',
         '--system-bubble-text': '#1f2937',
         '--chat-bg': 'linear-gradient(to bottom, #F5F3FF, #E5DEFF)',
       } as React.CSSProperties)
     };
-  }, [config?.branding?.primaryColor]);
+  }, [config?.colors?.primaryColor]);
 
   // Create proper highlightText function with the correct signature
   const highlightText = useCallback((text: string, term: string) => {
-    if (!term) return [{text, highlighted: false}];
-    
+    if (!term) return [{ text, highlighted: false }];
+
     // Simple highlight function implementation
-    const parts: {text: string; highlighted: boolean}[] = [];
+    const parts: { text: string; highlighted: boolean }[] = [];
     const lowerText = text.toLowerCase();
     const lowerTerm = term.toLowerCase();
     let lastIndex = 0;
-    
+
     let index = lowerText.indexOf(lowerTerm);
     while (index !== -1) {
       // Add non-matching part
@@ -199,17 +199,17 @@ const ChatViewContainer = ({
           highlighted: false
         });
       }
-      
+
       // Add matching part
       parts.push({
         text: text.substring(index, index + term.length),
         highlighted: true
       });
-      
+
       lastIndex = index + term.length;
       index = lowerText.indexOf(lowerTerm, lastIndex);
     }
-    
+
     // Add remaining text
     if (lastIndex < text.length) {
       parts.push({
@@ -217,14 +217,14 @@ const ChatViewContainer = ({
         highlighted: false
       });
     }
-    
+
     return parts;
   }, []);
 
   // Convert readReceipts to the format expected by ChatViewPresentation
   const formattedReadReceipts = useMemo(() => {
     if (!readReceipts) return {};
-    
+
     const result: Record<string, { status: MessageReadStatus; timestamp?: Date }> = {};
     Object.entries(readReceipts).forEach(([id, receipt]) => {
       result[id] = {
@@ -236,7 +236,7 @@ const ChatViewContainer = ({
   }, [readReceipts]);
 
   return (
-    <ChatViewPresentation 
+    <ChatViewPresentation
       conversation={conversation}
       chatViewStyle={chatViewStyle}
       messages={messages}

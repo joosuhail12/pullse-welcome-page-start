@@ -1,7 +1,7 @@
-
+import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import { Conversation } from '../types';
-import { saveConversationToStorage, loadConversationsFromStorage } from '../utils/storage';
+import { saveConversationToStorage, loadConversationsFromStorage, getWorkspaceIdAndApiKey, getAccessToken, setUserFormDataInLocalStorage } from '../utils/storage';
 import { logout, checkSessionValidity } from '../utils/security';
 
 type ViewState = 'home' | 'messages' | 'chat';
@@ -10,12 +10,13 @@ export function useChatState() {
   const [viewState, setViewState] = useState<ViewState>('messages'); // Default to messages view
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(undefined);
-  
+
   // Load any existing conversations when component mounts
   // and verify session validity
   useEffect(() => {
     if (checkSessionValidity()) {
-      loadConversationsFromStorage();
+      // Fetch conversations from server
+      // loadConversationsFromStorage();
     } else {
       // If session is invalid, redirect to home view
       setViewState('home');
@@ -39,21 +40,42 @@ export function useChatState() {
       // Flag to indicate whether contact has been identified yet
       contactIdentified: !!formData
     };
-    
+
     setActiveConversation(newConversation);
     setViewState('chat');
-    
-    // Save the new conversation to localStorage
-    saveConversationToStorage(newConversation);
+  }, []);
+
+  const handleSetFormData = useCallback(async (formData: Record<string, string>) => {
+    // Check if the form data is already set
+    if (userFormData === undefined) {
+      // Create new contact in database
+      const { apiKey } = getWorkspaceIdAndApiKey();
+      const accessToken = getAccessToken();
+      const data = await fetch("http://localhost:4000/api/widgets/createContactDevice/" + apiKey, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + accessToken
+        },
+        body: JSON.stringify(formData)
+      });
+      const json = await data.json();
+      if (json.success == "success") {
+        setUserFormData(formData);
+        setUserFormDataInLocalStorage(formData);
+      } else {
+        toast.error(json.message);
+      }
+    }
   }, []);
 
   const handleBackToMessages = useCallback(() => {
     // Update the conversation in localStorage before going back
-    if (activeConversation) {
+    if (activeConversation && userFormData !== undefined) {
       saveConversationToStorage(activeConversation);
     }
     setViewState('messages');
-  }, [activeConversation]);
+  }, [activeConversation, userFormData]);
 
   const handleChangeView = useCallback((view: ViewState) => {
     if (view !== 'chat') {
@@ -70,21 +92,21 @@ export function useChatState() {
   // Update conversation with new message
   const handleUpdateConversation = useCallback((updatedConversation: Conversation) => {
     setActiveConversation(updatedConversation);
-    // Save the updated conversation to localStorage
-    saveConversationToStorage(updatedConversation);
+    // TODO: Save the updated conversation to localStorage
+    // saveConversationToStorage(updatedConversation);
   }, []);
 
   // Handle logout and session invalidation
   const handleLogout = useCallback(() => {
     // Clear active conversation
     setActiveConversation(null);
-    
+
     // Return to home view
     setViewState('home');
-    
+
     // Clear form data
     setUserFormData(undefined);
-    
+
     // Invalidate the session
     logout();
   }, []);
@@ -99,6 +121,6 @@ export function useChatState() {
     handleUpdateConversation,
     handleLogout,
     userFormData,
-    setUserFormData,
+    setUserFormData: handleSetFormData,
   };
 }

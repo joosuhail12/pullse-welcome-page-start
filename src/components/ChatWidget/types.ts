@@ -2,7 +2,7 @@ export interface Message {
   id: string;
   text: string;
   sender: UserType;
-  timestamp: Date;
+  createdAt: Date;
   type?: MessageType;
   fileUrl?: string;
   fileName?: string;
@@ -27,7 +27,7 @@ export interface Conversation {
   id: string;
   title: string;
   messages?: Message[];
-  timestamp: Date;
+  createdAt: Date;
   lastMessage?: string;
   status?: 'active' | 'ended';
   agentInfo?: {
@@ -53,13 +53,13 @@ export interface MessageReaction {
   messageId: string;
   reaction: 'thumbsUp' | 'thumbsDown';
   userId: string;
-  timestamp: Date;
+  createdAt: Date;
 }
 
 export interface MessageSearchResult {
   messageId: string;
   matchText: string;
-  timestamp: Date;
+  createdAt: Date;
 }
 
 // Define standard message types
@@ -73,7 +73,7 @@ export type MessageReadStatus = 'unread' | 'delivered' | 'read';
 
 export interface MessageReadReceipt {
   status: MessageReadStatus;
-  timestamp?: Date;
+  createdAt?: Date;
 }
 
 // Define MessageReaction types
@@ -113,13 +113,13 @@ export interface QuickReplyMessageProps {
 }
 
 // Fixed ChatPosition type
-export type ChatPosition = 
-  | 'bottom-right' 
-  | 'bottom-left' 
-  | 'top-right' 
+export type ChatPosition =
+  | 'bottom-right'
+  | 'bottom-left'
+  | 'top-right'
   | 'top-left'
   | {
-      placement: string;
-      offsetX: number;
-      offsetY: number;
-    };
+    placement: string;
+    offsetX: number;
+    offsetY: number;
+  };

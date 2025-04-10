@@ -18,44 +18,44 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
   config
 }) => {
   const [isRetrying, setIsRetrying] = useState(false);
-  
+
   // Use branding color if available
-  const brandColor = config?.branding?.primaryColor || '#6366f1';
-  
+  const brandColor = config?.colors?.primaryColor || '#6366f1';
+
   const handleRetry = () => {
     if (!resetErrorBoundary) return;
-    
+
     setIsRetrying(true);
-    
+
     // Add a small delay to show the retrying state
     setTimeout(() => {
       resetErrorBoundary();
       setIsRetrying(false);
     }, 1000);
   };
-  
+
   // Get sanitized error message
   const safeErrorMessage = error ? sanitizeErrorMessage(error.message) : "We're having trouble loading the chat widget at the moment.";
-  
+
   return (
-    <div 
+    <div
       className="fixed bottom-16 sm:bottom-24 right-4 w-[90vw] sm:w-80 md:w-96 h-[300px] max-h-[50vh] rounded-lg shadow-lg bg-white dark:bg-gray-800 p-6 font-sans"
       style={positionStyles}
     >
       <div className="flex flex-col items-center justify-center h-full text-center">
-        <AlertTriangle 
-          className="mb-4 w-12 h-12" 
-          style={{ color: brandColor }} 
+        <AlertTriangle
+          className="mb-4 w-12 h-12"
+          style={{ color: brandColor }}
         />
-        
+
         <h3 className="text-lg font-semibold mb-2">
           Unable to load chat widget
         </h3>
-        
+
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-6 max-w-[90%]">
           {safeErrorMessage}
         </p>
-        
+
         {resetErrorBoundary && (
           <button
             onClick={handleRetry}
@@ -63,8 +63,8 @@ const ErrorFallback: React.FC<ErrorFallbackProps> = ({
             style={{ backgroundColor: brandColor }}
             disabled={isRetrying}
           >
-            <RefreshCw 
-              className={`w-4 h-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} 
+            <RefreshCw
+              className={`w-4 h-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`}
             />
             {isRetrying ? 'Retrying...' : 'Try Again'}
           </button>

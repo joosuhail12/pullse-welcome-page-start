@@ -27,16 +27,21 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [showTooltip, setShowTooltip] = useState(false);
-  
+  const showPresence = config?.interfaceSettings?.showAgentPresence;
+
   // Adjust button size based on screen size
-  const buttonSizeClass = isMobile 
-    ? "w-10 h-10" 
+  const buttonSizeClass = isMobile
+    ? "w-10 h-10"
     : "w-12 h-12 sm:w-14 sm:h-14";
-    
+
   const iconSize = isMobile ? 18 : 24;
 
   // Get appropriate status indicator color
   const getStatusColor = () => {
+    if (!config?.interfaceSettings?.showAgentPresence) {
+      return 'bg-gray-400';
+    }
+
     switch (agentStatus) {
       case 'online': return 'bg-green-500';
       case 'busy': return 'bg-amber-500';
@@ -56,23 +61,23 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
       default: return 'Status unknown';
     }
   };
-  
+
   return (
     <div className="fixed flex flex-col items-end z-40" style={positionStyles}>
       {/* Status indicator tooltip that shows on hover */}
-      {!isOpen && showTooltip && (
+      {!isOpen && showTooltip && showPresence && (
         <div className="mb-2 px-3 py-1.5 bg-white rounded-lg shadow-md text-xs flex items-center">
           <span className={`inline-block w-2 h-2 rounded-full ${getStatusColor()} mr-1.5 animate-pulse`}></span>
           <span>{getStatusText()}</span>
         </div>
       )}
-      
+
       <TooltipProvider>
-        <Tooltip open={showTooltip && !isOpen}>
+        <Tooltip open={showTooltip && !isOpen && showPresence}>
           <TooltipTrigger asChild>
             <Button
               className={`rounded-full ${buttonSizeClass} flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105 shadow-md`}
-              style={config.branding?.primaryColor ? { backgroundColor: config.branding.primaryColor, borderColor: config.branding.primaryColor } : {}}
+              style={config.colors?.primaryColor ? { backgroundColor: config.colors.primaryColor, borderColor: config.colors.primaryColor } : {}}
               onClick={onClick}
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
@@ -80,28 +85,30 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
             >
               <MessageSquare size={iconSize} className="text-white" />
               {!isOpen && unreadCount > 0 && (
-                <Badge 
-                  className="absolute -top-1 -right-1 bg-red-500 text-white border-white border-2 animate-pulse text-xs min-w-5 h-5 flex items-center justify-center" 
+                <Badge
+                  className="absolute -top-1 -right-1 bg-red-500 text-white border-white border-2 animate-pulse text-xs min-w-5 h-5 flex items-center justify-center"
                   variant="destructive"
                 >
                   {unreadCount}
                 </Badge>
               )}
-              
+
               {/* Status indicator dot on the button */}
-              {!isOpen && (
+              {!isOpen && showPresence && (
                 <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-white ${getStatusColor()}`}>
                   <span className={`absolute inset-0 rounded-full ${getStatusColor()} animate-ping opacity-75`}></span>
                 </span>
               )}
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="left" className="p-2">
-            <div className="flex items-center gap-2">
-              <span className={`inline-block w-2 h-2 rounded-full ${getStatusColor()}`}></span>
-              <span>{getStatusText()}</span>
-            </div>
-          </TooltipContent>
+          {
+            showPresence && (<TooltipContent side="left" className="p-2">
+              <div className="flex items-center gap-2">
+                <span className={`inline-block w-2 h-2 rounded-full ${getStatusColor()}`}></span>
+                <span>{getStatusText()}</span>
+              </div>
+            </TooltipContent>)
+          }
         </Tooltip>
       </TooltipProvider>
     </div>

@@ -1,15 +1,12 @@
 
-import { getChatSessionId } from '../utils/cookies';
-
 /**
  * Generate the URL to use for Ably authentication
  * @param workspaceId Workspace ID to authenticate against
  * @returns Authentication URL
  */
 export const getAblyAuthUrl = (workspaceId: string): string => {
-  const baseUrl = '/api/chat/ably-auth';
-  const sessionId = getChatSessionId();
-  return `${baseUrl}?workspaceId=${encodeURIComponent(workspaceId)}&sessionId=${encodeURIComponent(sessionId)}`;
+  const baseUrl = 'http://localhost:4000/api/ably/widgetToken';
+  return `${baseUrl}`;
 };
 
 /**
@@ -26,11 +23,11 @@ export const getAuthSignature = async (tokenRequest: any): Promise<{ signature: 
       },
       body: JSON.stringify(tokenRequest)
     });
-    
+
     if (!response.ok) {
       throw new Error(`Auth request failed: ${response.status}`);
     }
-    
+
     return await response.json();
   } catch (error) {
     console.error('Error getting auth signature:', error);

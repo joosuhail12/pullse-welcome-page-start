@@ -24,22 +24,22 @@ export function initLazyLoadViaScroll(
       launcherElement.style.display = 'none';
     });
   }
-  
+
   document.body.appendChild(launcherElement);
-  
+
   // Create a sentinel element for the observer
   const sentinel = document.createElement('div');
   sentinel.style.height = '1px';
   sentinel.style.width = '1px';
-  sentinel.style.position = 'absolute'; 
+  sentinel.style.position = 'absolute';
   sentinel.style.visibility = 'hidden';
-  
+
   // Position the sentinel near the bottom of the page
   const scrollThreshold = options.scrollThreshold || 0.7; // Default 70% down the page
   sentinel.style.top = (window.innerHeight * scrollThreshold) + 'px';
-  
+
   document.body.appendChild(sentinel);
-  
+
   // Use Intersection Observer to detect when user scrolls to the sentinel
   const observer = new IntersectionObserver((entries) => {
     if (entries[0].isIntersecting) {
@@ -47,15 +47,15 @@ export function initLazyLoadViaScroll(
       createContainer();
       const config = prepareWidgetConfig(options, position, offsetX, offsetY);
       loadFullWidget(config);
-      
+
       // Stop observing
       observer.disconnect();
-      
+
       // Remove sentinel
       if (sentinel.parentNode) {
         sentinel.parentNode.removeChild(sentinel);
       }
-      
+
       // Hide launcher button
       if (launcherElement) {
         launcherElement.style.display = 'none';
@@ -64,10 +64,10 @@ export function initLazyLoadViaScroll(
   }, {
     threshold: 0.1 // Trigger when 10% visible
   });
-  
+
   // Start observing
   observer.observe(sentinel);
-  
+
   return observer;
 }
 
@@ -86,7 +86,7 @@ export function prepareWidgetConfig(
     offsetX: offsetX / 16, // Convert px to rem
     offsetY: offsetY / 16  // Convert px to rem
   };
-  
+
   // Create branding configuration
   const branding = {
     primaryColor: options.primaryColor,
@@ -95,11 +95,11 @@ export function prepareWidgetConfig(
     widgetTitle: options.widgetTitle,
     showBrandingBar: !options.hideBranding
   };
-  
+
   // Create full config object with version for cache busting
   return {
     workspaceId: options.workspaceId,
-    welcomeMessage: options.welcomeMessage,
+    welcomeMessage: options.labels.welcomeTitle,
     branding: branding,
     position: positionConfig,
     autoOpen: options.autoOpen,
