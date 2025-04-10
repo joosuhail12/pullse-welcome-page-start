@@ -45,7 +45,7 @@ const ChatWidgetErrorBoundary = ({ children, workspaceId }: ChatWidgetErrorBound
       fallback={
         <ErrorFallback 
           error={error} 
-          positionStyles={getWidgetContainerPositionStyles()} 
+          positionStyles={getWidgetContainerPositionStyles}
           config={config}
           resetErrorBoundary={() => window.location.reload()} 
         />
