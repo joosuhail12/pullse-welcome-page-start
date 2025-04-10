@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { initializeAbly, cleanupAbly, reconnectAbly } from '../utils/ably';
 import { getAblyAuthUrl } from '../services/ablyAuth';
 import { ConnectionStatus, getReconnectionManager } from '../utils/reconnectionManager';
@@ -15,12 +15,29 @@ interface ConnectionManagerProps {
 
 const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionManagerProps) => {
   const reconnectionAttempts = useRef(0);
+  const [accessToken, setAccessToken] = useState<string | null>(getAccessToken());
+
+  // Monitor access token changes
+  useEffect(() => {
+    const checkToken = () => {
+      const currentToken = getAccessToken();
+      if (currentToken !== accessToken) {
+        setAccessToken(currentToken);
+      }
+    };
+
+    // Check for token changes periodically
+    const tokenCheckInterval = setInterval(checkToken, 2000);
+    
+    return () => {
+      clearInterval(tokenCheckInterval);
+    };
+  }, [accessToken]);
 
   useEffect(() => {
     let ablyCleanup: (() => void) | null = null;
 
     // Check if the connection is enabled, workspaceId exists, and we have an access token
-    const accessToken = getAccessToken();
     if (!enabled || !workspaceId || !accessToken) {
       onStatusChange(ConnectionStatus.DISCONNECTED);
       logger.info('Realtime disabled: missing required parameters', 'ConnectionManager');
@@ -37,6 +54,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
 
     const initRealtime = async () => {
       try {
+        logger.info('Initializing real-time with token', 'ConnectionManager');
         await initializeAbly(authUrl);
         onStatusChange(ConnectionStatus.CONNECTED);
         logger.info('Real-time communication initialized', 'ConnectionManager');
@@ -96,7 +114,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
     return () => {
       if (ablyCleanup) ablyCleanup();
     };
-  }, [enabled, workspaceId, onStatusChange]);
+  }, [enabled, workspaceId, onStatusChange, accessToken]);
 
   return null;
 };

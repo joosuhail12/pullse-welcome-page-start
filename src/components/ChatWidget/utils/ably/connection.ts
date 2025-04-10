@@ -1,3 +1,4 @@
+
 import Ably from 'ably';
 import { v4 as uuidv4 } from 'uuid';
 import { getChatSessionId } from '../cookies';
@@ -25,7 +26,7 @@ export function getAblyClientConfig(apiKey?: string, userToken?: string): Ably.T
     authHeaders: { 'Content-Type': 'application/json' },
     disconnectedRetryTimeout: 15000,
     suspendedRetryTimeout: 30000,
-    transports: ['websocket', 'xhr'] as any, // Cast to any to avoid type issues
+    transports: ['websocket', 'xhr_streaming'] as any, // Use the updated transport name
     fallbackHosts: [
       'a.ably-realtime.com',
       'b.ably-realtime.com',
@@ -41,12 +42,15 @@ export function getAblyClientConfig(apiKey?: string, userToken?: string): Ably.T
  * @param authUrl URL to fetch tokens from
  */
 export const initializeAbly = async (authUrl: string): Promise<void> => {
-  const client = getAblyClient();
-  if (client && client.connection.state === 'connected') {
-    return; // Already initialized and connected
-  }
-
   try {
+    const client = getAblyClient();
+    
+    // If client already exists and is connected, just return
+    if (client && client.connection.state === 'connected') {
+      console.log('Ably already connected, skipping initialization');
+      return;
+    }
+    
     // Verify that we have an access token before proceeding
     const accessToken = getAccessToken();
     if (!accessToken) {
@@ -55,34 +59,42 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
       throw new Error('Access token not available');
     }
 
-    // Create a new client if we don't have one or previous connection failed
-    if (!client || ['failed', 'closed', 'suspended'].includes(client.connection.state)) {
-      const { workspaceId, apiKey } = getWorkspaceIdAndApiKey();
-      
-      if (!workspaceId) {
-        console.warn('Workspace ID not found, Ably initialization aborted');
-        throw new Error('Workspace ID not available');
-      }
-      
-      const newClient = new Ably.Realtime({
-        authUrl: authUrl,
-        authHeaders: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'x-workspace-id': workspaceId,
-          'x-api-key': apiKey || ''
-        },
-        // Connection recovery options
-        disconnectedRetryTimeout: 2000,  // Time to wait before attempting reconnection when disconnected
-        suspendedRetryTimeout: 10000,    // Time to wait before attempting reconnection when suspended
-        // Transport options
-        transports: ['websocket', 'xhr'] as any,  // Cast to any to avoid type issues
-        fallbackHosts: ['b-fallback.ably.io', 'c-fallback.ably.io'], // Fallback hosts if primary fails
-      });
-
-      setAblyClient(newClient);
+    const { workspaceId, apiKey } = getWorkspaceIdAndApiKey();
+    
+    if (!workspaceId) {
+      console.warn('Workspace ID not found, Ably initialization aborted');
+      enableLocalFallback();
+      throw new Error('Workspace ID not available');
     }
+    
+    console.log(`Initializing Ably with token for workspace ${workspaceId}`);
+    
+    // Close existing client if it's in a bad state
+    if (client && ['failed', 'closed', 'suspended'].includes(client.connection.state)) {
+      console.log('Closing existing client in bad state before creating new one');
+      client.close();
+      setAblyClient(null);
+    }
+    
+    // Create a new client
+    const newClient = new Ably.Realtime({
+      authUrl: authUrl,
+      authHeaders: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'x-workspace-id': workspaceId,
+        'x-api-key': apiKey || ''
+      },
+      // Connection recovery options
+      disconnectedRetryTimeout: 2000,  // Time to wait before attempting reconnection when disconnected
+      suspendedRetryTimeout: 10000,    // Time to wait before attempting reconnection when suspended
+      // Transport options
+      transports: ['websocket', 'xhr_streaming'] as any,  // Use the updated transport name
+      fallbackHosts: ['b-fallback.ably.io', 'c-fallback.ably.io'], // Fallback hosts if primary fails
+    });
 
+    setAblyClient(newClient);
+    
     // Reset fallback mode when initializing
     setFallbackMode(false);
 
@@ -91,55 +103,62 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
 
     // Wait for connection to be established
     return new Promise((resolve, reject) => {
-      const client = getAblyClient();
-      if (!client) {
+      const timeoutMs = 15000; // 15 seconds timeout
+      const currentClient = getAblyClient();
+      
+      if (!currentClient) {
         enableLocalFallback();
         reject(new Error('Ably client not initialized'));
         return;
       }
 
+      // Set a timeout for the connection attempt
+      const connectionTimeout = setTimeout(() => {
+        console.warn('Ably connection timed out, enabling fallback');
+        enableLocalFallback();
+        reject(new Error('Connection timeout'));
+      }, timeoutMs);
+
       // Handle immediate connection state
-      switch (client.connection.state) {
+      switch (currentClient.connection.state) {
         case 'connected':
+          clearTimeout(connectionTimeout);
           console.log('Ably already connected');
           resolve();
           break;
+          
         case 'connecting':
-          client.connection.once('connected', () => {
+          currentClient.connection.once('connected', () => {
+            clearTimeout(connectionTimeout);
             console.log('Ably connected successfully');
             processQueuedMessages();
             resolve();
           });
 
-          client.connection.once('failed', (err) => {
+          currentClient.connection.once('failed', (err) => {
+            clearTimeout(connectionTimeout);
             console.error('Ably connection failed:', err);
             enableLocalFallback();
             reject(err);
           });
           break;
+          
         default:
-          client.connection.connect();
+          currentClient.connection.connect();
 
-          client.connection.once('connected', () => {
+          currentClient.connection.once('connected', () => {
+            clearTimeout(connectionTimeout);
             console.log('Ably connected successfully');
             processQueuedMessages();
             resolve();
           });
 
-          client.connection.once('failed', (err) => {
+          currentClient.connection.once('failed', (err) => {
+            clearTimeout(connectionTimeout);
             console.error('Ably connection failed:', err);
             enableLocalFallback();
             reject(err);
           });
-
-          // Set a timeout for the initial connection
-          setTimeout(() => {
-            if (client && client.connection.state !== 'connected') {
-              console.warn('Ably connection timed out, enabling fallback');
-              enableLocalFallback();
-              reject(new Error('Connection timeout'));
-            }
-          }, 10000);
       }
     });
   } catch (error) {
@@ -378,6 +397,7 @@ export const handleConnectionStateChange = (
   }
 };
 
-function getWorkspaceId(): string {
-  throw new Error('Function not implemented.');
-}
+// Remove unused function to avoid TypeScript errors
+// function getWorkspaceId(): string {
+//   throw new Error('Function not implemented.');
+// }
