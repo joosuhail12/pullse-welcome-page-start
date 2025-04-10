@@ -196,13 +196,8 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
     return await withResilience(
       async () => {
         // Check if we have a session ID
-        const sessionId = getChatSessionId();
-        let url = `https://dev-socket.pullseai.com/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(sanitizedWorkspaceId)}`;
-
-        // Append session ID if available
-        if (sessionId) {
-          url += `&sessionId=${encodeURIComponent(sessionId)}`;
-        }
+        const accessToken = getAccessToken();
+        const url = `https://dev-socket.pullseai.com/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(sanitizedWorkspaceId)}`;
 
         // Generate timestamp for request signing
         const timestamp = Date.now();
@@ -219,9 +214,14 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
           'Content-Type': 'application/json'
         };
 
+        if (accessToken) {
+          headers['Authorization'] = 'Bearer ' + accessToken;
+        }
+
         const body = {
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
         }
+        logger.debug('Fetching chat widget config', 'api.fetchChatWidgetConfig', { url, headers, body });
 
         const response = await fetch(url, {
           headers,
