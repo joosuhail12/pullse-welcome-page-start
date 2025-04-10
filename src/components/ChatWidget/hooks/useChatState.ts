@@ -33,6 +33,7 @@ export function useChatState() {
       id: `conv-${Date.now()}`,
       title: formData?.name ? `Chat with ${formData.name}` : 'New Conversation',
       lastMessage: '',
+      timestamp: new Date(),
       createdAt: new Date(),
       updated_at: new Date(),
       messages: [],

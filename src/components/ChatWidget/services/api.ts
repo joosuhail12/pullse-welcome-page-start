@@ -1,3 +1,4 @@
+
 /**
  * Chat Widget API Service
  * 
@@ -153,6 +154,10 @@ export async function serverSideDecrypt(encryptedData: string): Promise<string> 
  * Fetch chat widget configuration from the API
  * @param workspaceId The workspace ID to fetch configuration for
  * @returns Promise resolving to the chat widget configuration
+ * 
+ * TODO: Implement full signature verification for all responses
+ * TODO: Add caching with security headers for performance
+ * TODO: Implement tiered fallbacks for critical configuration
  */
 export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string): Promise<ChatWidgetConfig> => {
   try {
@@ -164,6 +169,19 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
 
     // Validate and sanitize workspaceId
     const sanitizedWorkspaceId = sanitizeInput(workspaceId);
+
+    // In development/demo mode, we'll just use default config
+    // since the API may not be available or may return HTML instead of JSON
+    // if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
+    if (import.meta.env.DEV) {
+      console.log(`Using default config for workspace ${sanitizedWorkspaceId} in development mode`);
+
+      return {
+        ...defaultConfig,
+        workspaceId: sanitizedWorkspaceId,
+        ...getDefaultConfig(sanitizedWorkspaceId)
+      };
+    }
 
     // Check if circuit is already open (too many failures)
     if (isCircuitOpen(CONFIG_CIRCUIT)) {
@@ -245,8 +263,7 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
         }
 
         // Check if response contains a sessionId and store it
-        const existingSessionId = getChatSessionId();
-        if (config.sessionId && !existingSessionId) {
+        if (config.sessionId && !sessionId) {
           setChatSessionId(config.sessionId);
         }
 
@@ -254,22 +271,14 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
           setAccessToken(config.data.accessToken);
         }
 
-        // Create a properly formatted ChatWidgetConfig
-        const widgetConfig: ChatWidgetConfig = {
+        return {
           ...config.data.widgettheme[0],
-          widgetfield: config.data.widgetfield[0],
-          workspaceId: sanitizedWorkspaceId,
-          accessToken: config.data.accessToken,
-          contact: config.data.contact,
-          realtime: {
-            enabled: false
-          }
+          widgetfield: config.data.widgetfield[0]
         };
-
-        return widgetConfig;
       },
       CONFIG_CIRCUIT,
       // Custom retry options for config API
+      // TODO: Update retries to 2
       {
         maxRetries: 0,
         initialDelayMs: 200,

@@ -1,4 +1,3 @@
-
 /**
  * Chat Widget Configuration Types
  */
@@ -51,17 +50,6 @@ export interface ChatLabels {
 };
 
 // Update the ChatPosition type to include both string literals and object type
-export type ChatPosition =
-  | 'bottom-right'
-  | 'bottom-left'
-  | 'top-right'
-  | 'top-left'
-  | {
-    placement: string;
-    offsetX: number;
-    offsetY: number;
-  };
-
 export type ChatLayout = {
   placement: 'left' | 'right';
   offsetX: number;
@@ -122,7 +110,7 @@ export interface ChatInterfaceSettings {
   enableConversationRating?: boolean;
   enableDeliveryReadReceipts?: boolean;
   showAgentChatStatus?: boolean;
-  showOfficeHours?: boolean;
+  showOfficeHours
 }
 
 export interface ContactInfo {
@@ -150,7 +138,6 @@ export interface ChatWidgetConfig {
   eventHandlers?: {
     [key in ChatEventType]?: (payload: ChatEventPayload) => void;
   };
-  realtime?: ChatRealtime; // Add realtime property for WebSocket configurations
 }
 
 export const defaultConfig: ChatWidgetConfig = {
@@ -195,7 +182,4 @@ export const defaultConfig: ChatWidgetConfig = {
     typingIndicators: true,
     searchMessages: true
   },
-  realtime: {
-    enabled: false
-  }
 };

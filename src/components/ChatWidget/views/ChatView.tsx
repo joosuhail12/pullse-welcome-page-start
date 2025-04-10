@@ -1,242 +1,211 @@
-
-import React, { useState, useRef, useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { Conversation, FormDataStructure } from '../types';
-import { ChatWidgetConfig } from '../config';
-import ChatViewHeader from '../components/ChatViewHeader';
-import ChatBody from '../components/ChatBody';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { Conversation } from '../types';
+import { ChatWidgetConfig, defaultConfig } from '../config';
+import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
-import LoadingIndicator from '../components/LoadingIndicator';
+import ChatViewHeader from '../components/ChatViewHeader';
 import PreChatForm from '../components/PreChatForm';
 import { useChatMessages } from '../hooks/useChatMessages';
-import { useInlineForm } from '../hooks/useInlineForm';
-import { useSound } from '../hooks/useSound';
-import { useSearchToggle } from '../hooks/useSearchToggle';
-import SearchBar from '../components/SearchBar';
+import { useMessageReactions } from '../hooks/useMessageReactions';
 import { useMessageSearch } from '../hooks/useMessageSearch';
-import KeyboardShortcutsInfo from '../components/KeyboardShortcutsInfo';
-import ChatKeyboardHandler from '../components/ChatKeyboardHandler';
-import AgentPresence from '../components/AgentPresence';
-import StatusChangeNotification from '../components/StatusChangeNotification';
-import TicketProgressBar from '../components/TicketProgressBar';
-import EstimatedResponseTime from '../components/EstimatedResponseTime';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useInlineForm } from '../hooks/useInlineForm';
+import { dispatchChatEvent } from '../utils/events';
 
 interface ChatViewProps {
   conversation: Conversation;
   onBack: () => void;
   onUpdateConversation: (updatedConversation: Conversation) => void;
   config?: ChatWidgetConfig;
-  playMessageSound: () => void;
+  playMessageSound?: () => void;
   userFormData?: Record<string, string>;
-  setUserFormData: (data: Record<string, string>) => void;
+  setUserFormData?: (data: Record<string, string>) => void;
 }
 
-const ChatView: React.FC<ChatViewProps> = ({
+const ChatView = React.memo(({
   conversation,
   onBack,
   onUpdateConversation,
-  config,
+  config = defaultConfig,
   playMessageSound,
   userFormData,
   setUserFormData
-}) => {
-  const isMobile = useIsMobile();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [showShortcutsInfo, setShowShortcutsInfo] = useState<boolean>(false);
-  const [showStatusNotification, setShowStatusNotification] = useState<boolean>(false);
-  const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'away'>('online');
-  const messageListRef = useRef<HTMLDivElement>(null);
+}: ChatViewProps) => {
+  const [showSearch, setShowSearch] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
-  // Initialize the message sound
-  const { playSound } = useSound();
-
-  // Use the message search hook
-  const { 
-    searchTerm, 
-    setSearchTerm,
-    searchResults,
-    currentMatchIndex,
-    totalMatches,
-    handlePrevMatch,
-    handleNextMatch,
-    highlightedMessageId
-  } = useMessageSearch(conversation.messages || []);
-
-  // Use the search toggle hook
-  const { 
-    isSearchVisible, 
-    toggleSearch, 
-    handleSearchKeyDown,
-    searchInputRef
-  } = useSearchToggle(() => setSearchTerm(''));
-
-  // Use the chat messages hook
-  const {
-    messages,
-    messageText,
-    setMessageText,
-    isTyping,
-    remoteIsTyping,
-    hasUserSentMessage,
-    handleSendMessage,
-    handleUserTyping,
-    handleFileUpload,
-    handleEndChat,
-    readReceipts,
-    loadPreviousMessages
-  } = useChatMessages(
-    conversation,
-    config,
-    onUpdateConversation,
-    playMessageSound
-  );
-
-  // Handle the inline form visibility and submission
-  const handleFormComplete = (formData: FormDataStructure) => {
-    setUserFormData(formData as Record<string, string>);
-  };
-  
-  // Use the inline form hook
   const {
     showInlineForm,
-    setShowInlineForm,
-    handleFormComplete: handleInlineFormComplete
+    handleFormComplete
   } = useInlineForm(
     conversation,
-    config || { workspaceId: '', widgetfield: { contactFields: [], companyFields: [], customDataFields: [] } },
+    config,
     userFormData,
     setUserFormData,
     onUpdateConversation
   );
 
-  // Show header information based on configuration
-  const showAgentPresence = config?.interfaceSettings?.showAgentPresence !== false;
-  const showTicketProgress = config?.interfaceSettings?.showTicketStatusBar !== false;
-  const enableEndChat = config?.interfaceSettings?.allowVisitorsToEndChat !== false;
+  const {
+    messages,
+    messageText,
+    setMessageText,
+    isTyping,
+    hasUserSentMessage,
+    handleSendMessage,
+    handleUserTyping,
+    handleFileUpload,
+    handleEndChat,
+    remoteIsTyping,
+    readReceipts,
+    loadPreviousMessages
+  } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
+
+  const {
+    handleMessageReaction
+  } = useMessageReactions(
+    messages,
+    message => setMessages(message),
+    `conversation:${conversation.id}`,
+    conversation.sessionId || '',
+    config
+  );
+
+  const {
+    searchTerm,
+    setSearchTerm,
+    searchMessages,
+    clearSearch,
+    highlightText: originalHighlightText,
+    messageIds,
+    isSearching
+  } = useMessageSearch(messages);
+
+  const setMessages = useCallback((updatedMessages: React.SetStateAction<typeof messages>) => {
+    if (typeof updatedMessages === 'function') {
+      const newMessages = updatedMessages(messages);
+      onUpdateConversation({
+        ...conversation,
+        messages: newMessages
+      });
+    } else {
+      onUpdateConversation({
+        ...conversation,
+        messages: updatedMessages
+      });
+    }
+  }, [messages, conversation, onUpdateConversation]);
+
+  const toggleSearch = useCallback(() => {
+    setShowSearch(prev => !prev);
+    if (showSearch) {
+      clearSearch();
+    }
+  }, [showSearch, clearSearch]);
+
+  const handleLoadMoreMessages = useCallback(async () => {
+    if (!loadPreviousMessages) return;
+
+    setIsLoadingMore(true);
+    try {
+      await loadPreviousMessages();
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [loadPreviousMessages]);
+
+  const highlightText = useCallback((text: string): string[] => {
+    if (!searchTerm) return [text];
+
+    return originalHighlightText(text, searchTerm)
+      .map(part => part.text);
+  }, [searchTerm, originalHighlightText]);
+
+  const agentAvatar = useMemo(() => conversation.agentInfo?.avatar || config?.brandAssets?.avatarUrl,
+    [conversation.agentInfo?.avatar, config?.brandAssets?.avatarUrl]);
+
+  const userAvatar = undefined;
+  const hasMoreMessages = messages.length >= 20;
+
+  const inlineFormComponent = useMemo(() => {
+    if (showInlineForm) {
+      return <PreChatForm config={config} onFormComplete={handleFormComplete} />;
+    }
+    return null;
+  }, [showInlineForm, config, handleFormComplete]);
+
+  const chatViewStyle = useMemo(() => {
+    return {
+      ...(config?.colors?.primaryColor && {
+        '--chat-header-bg': config.colors.primaryColor,
+        '--chat-header-text': '#ffffff',
+        '--user-bubble-bg': config.colors.primaryColor,
+        '--user-bubble-text': '#ffffff',
+        '--system-bubble-bg': '#F5F3FF',
+        '--system-bubble-text': '#1f2937',
+        '--chat-bg': 'linear-gradient(to bottom, #F5F3FF, #E5DEFF)',
+      } as React.CSSProperties)
+    };
+  }, [config?.colors?.primaryColor]);
 
   return (
-    <div className="flex flex-col h-full bg-white">
-      <ChatKeyboardHandler
-        onToggleSearch={toggleSearch}
-        onToggleShortcuts={() => setShowShortcutsInfo(prev => !prev)}
-        isSearchVisible={isSearchVisible}
-        messages={messages}
-        setMessageText={setMessageText}
-        handleSendMessage={handleSendMessage}
-        isInputDisabled={showInlineForm}
-      />
-
-      <ChatViewHeader 
-        title={conversation.title}
+    <div
+      className="flex flex-col h-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100"
+      style={chatViewStyle}
+    >
+      <ChatViewHeader
+        conversation={conversation}
         onBack={onBack}
-        onSearch={toggleSearch}
-        onEndChat={enableEndChat ? handleEndChat : undefined}
+        config={config}
+        showSearch={showSearch}
+        toggleSearch={toggleSearch}
+        searchMessages={searchMessages}
+        clearSearch={clearSearch}
+        searchResultCount={messageIds.length}
+        isSearching={isSearching}
+        showSearchFeature={!!config?.features?.searchMessages}
       />
 
-      {showAgentPresence && (
-        <AgentPresence 
-          agent={conversation.agentInfo}
-          onStatusChange={(status) => {
-            setAgentStatus(status as 'online' | 'offline' | 'away');
-            setShowStatusNotification(true);
-            setTimeout(() => setShowStatusNotification(false), 3000);
-          }}
-        />
-      )}
-
-      {showTicketProgress && conversation.metadata?.ticketProgress !== undefined && (
-        <TicketProgressBar 
-          progress={conversation.metadata.ticketProgress} 
-          status={conversation.status === 'ended' ? 'resolved' : 'in-progress'}
-        />
-      )}
-
-      {isSearchVisible && (
-        <SearchBar
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          currentMatch={currentMatchIndex + 1}
-          totalMatches={totalMatches}
-          onPrevMatch={handlePrevMatch}
-          onNextMatch={handleNextMatch}
-          onClose={toggleSearch}
-          inputRef={searchInputRef}
-          onKeyDown={handleSearchKeyDown}
-        />
-      )}
-
-      <AnimatePresence>
-        {showStatusNotification && (
-          <StatusChangeNotification 
-            status={agentStatus}
-            onClose={() => setShowStatusNotification(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <div className="flex-grow overflow-hidden relative">
+      <div className="flex-grow overflow-hidden flex flex-col">
         {showInlineForm ? (
-          <div className="h-full p-4 overflow-y-auto">
-            <PreChatForm
-              onSubmit={handleInlineFormComplete}
-              config={config}
-            />
+          <div className="flex-grow flex flex-col justify-center items-center p-4 bg-gradient-to-br from-[#f8f7ff] to-[#f5f3ff]">
+            <div className="w-full max-w-md">
+              {inlineFormComponent}
+            </div>
           </div>
         ) : (
-          <ChatBody
+          <MessageList
             messages={messages}
-            isLoading={isLoading}
             isTyping={isTyping || remoteIsTyping}
-            onLoadPrevious={loadPreviousMessages}
-            highlightedMessageId={highlightedMessageId}
-            searchTerm={searchTerm}
-            searchResults={searchResults}
-            ref={messageListRef}
-            userAvatar={config?.brandAssets?.avatarUrl || ''}
-            agentAvatar={conversation.agentInfo?.avatar || ''}
-            agentStatus={conversation.agentInfo?.status}
+            setMessageText={setMessageText}
             readReceipts={readReceipts}
+            onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
+            searchResults={messageIds}
+            highlightMessage={highlightText}
+            searchTerm={searchTerm}
+            agentAvatar={agentAvatar}
+            userAvatar={userAvatar}
+            onScrollTop={handleLoadMoreMessages}
+            hasMoreMessages={hasMoreMessages}
+            isLoadingMore={isLoadingMore}
+            conversationId={conversation.id}
+            agentStatus={conversation.agentInfo?.status}
           />
-        )}
-
-        {agentStatus === 'online' && !showInlineForm && (
-          <div className="absolute bottom-0 w-full px-4 pb-1">
-            <EstimatedResponseTime responseTime="typically within 5 minutes" />
-          </div>
         )}
       </div>
 
-      {!showInlineForm && (
-        <MessageInput
-          value={messageText}
-          onChange={(e) => {
-            setMessageText(e.target.value);
-            handleUserTyping();
-          }}
-          onSend={handleSendMessage}
-          onFileUpload={handleFileUpload}
-          placeholder="Type your message..."
-          disabled={conversation.status === 'ended'}
-          showFileUpload={config?.features?.fileUpload !== false}
-          showEmojiPicker
-        />
-      )}
-
-      <AnimatePresence>
-        {showShortcutsInfo && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="absolute bottom-16 left-0 right-0 z-50"
-          >
-            <KeyboardShortcutsInfo onClose={() => setShowShortcutsInfo(false)} />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <MessageInput
+        messageText={messageText}
+        setMessageText={setMessageText}
+        handleSendMessage={handleSendMessage}
+        handleFileUpload={handleFileUpload}
+        handleEndChat={handleEndChat}
+        hasUserSentMessage={hasUserSentMessage}
+        onTyping={handleUserTyping}
+        disabled={showInlineForm}
+      />
     </div>
   );
-};
+});
+
+ChatView.displayName = 'ChatView';
 
 export default ChatView;
