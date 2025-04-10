@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from '../utils/events';
+import { isUserLoggedIn } from '../utils/storage';
 
 /**
  * Hook for managing pre-chat form state and interactions
@@ -14,17 +15,17 @@ export function useInlineForm(
   setUserFormData?: (data: Record<string, string>) => void,
   onUpdateConversation?: (updatedConversation: Conversation) => void
 ) {
-  console.log(conversation, userFormData, config)
+  // Only show inline form if user is not logged in and conversation doesn't have contact identified
   const [showInlineForm, setShowInlineForm] = useState(
-    !userFormData && !conversation.contactIdentified
+    !userFormData && !conversation.contactIdentified && !isUserLoggedIn() && !config.isLoggedIn
   );
 
-  // Update form visibility when user data or contact status changes
+  // Update form visibility when user data, contact status, or login state changes
   useEffect(() => {
-    if (userFormData || conversation.contactIdentified) {
+    if (userFormData || conversation.contactIdentified || isUserLoggedIn() || config.isLoggedIn) {
       setShowInlineForm(false);
     }
-  }, [userFormData, conversation.contactIdentified]);
+  }, [userFormData, conversation.contactIdentified, config.isLoggedIn]);
 
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     setShowInlineForm(false);
@@ -33,13 +34,12 @@ export function useInlineForm(
       setUserFormData(formData);
     }
 
-    // TODO: create a contact here!
-    // if (onUpdateConversation) {
-    //   onUpdateConversation({
-    //     ...conversation,
-    //     contactIdentified: true
-    //   });
-    // }
+    if (onUpdateConversation) {
+      onUpdateConversation({
+        ...conversation,
+        contactIdentified: true
+      });
+    }
 
     dispatchChatEvent('contact:formCompleted', { formData }, config);
   }, [setUserFormData, onUpdateConversation, conversation, config]);

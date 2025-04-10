@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
@@ -5,6 +6,9 @@ import './index.css';
 import PullseChatWidgetLoader from './components/ChatWidget/embed';
 import { initializeEmbedSecurity } from './components/ChatWidget/utils/embedSecurity';
 import { errorHandler } from '@/lib/error-handler';
+
+// Default API key
+const DEFAULT_API_KEY = '85c7756b-f333-4ec9-a440-c4d1850482c3';
 
 // Create PullseNamespace to contain all global functions and variables
 const PullseNamespace = {
@@ -42,7 +46,7 @@ const PullseNamespace = {
           }>
             <PullseNamespace.ChatWidget
               workspaceId={config.workspaceId}
-              apiKey={config.apiKey}
+              apiKey={config.apiKey || DEFAULT_API_KEY}
             />
           </React.Suspense>
         );

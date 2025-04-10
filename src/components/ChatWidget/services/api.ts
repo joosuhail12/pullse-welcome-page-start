@@ -1,4 +1,3 @@
-
 /**
  * Chat Widget API Service
  * 
@@ -15,26 +14,24 @@ import { sanitizeInput, validateMessage } from '../utils/validation';
 import { isRateLimited, generateCsrfToken, enforceHttps, signMessage, verifyMessageSignature } from '../utils/security';
 import { withResilience, withRetry, isCircuitOpen } from '../utils/resilience';
 import { toast } from '@/components/ui/use-toast';
-import { getDefaultConfig } from '../embed/api';
 import { errorHandler } from '@/lib/error-handler';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 import { logger } from '@/lib/logger';
 import { requiresServerImplementation } from '../utils/serverSideAuth';
-import { getAccessToken, getWorkspaceIdAndApiKey, setAccessToken } from '../utils/storage';
+import { getAccessToken, getWorkspaceIdAndApiKey, setAccessToken, setContactDetailsInLocalStorage } from '../utils/storage';
 
 // Circuit names for different API endpoints
 const CONFIG_CIRCUIT = 'chat-widget-config';
 const MESSAGE_CIRCUIT = 'chat-widget-message';
 const SECURITY_CIRCUIT = 'chat-widget-security';
 
+// Default API Key
+const DEFAULT_API_KEY = '85c7756b-f333-4ec9-a440-c4d1850482c3';
+
 /**
  * Server-side encryption API call
  * @param data Data to encrypt
  * @returns Encrypted data or placeholder in development
- * 
- * TODO: Implement proper encryption with key rotation
- * TODO: Add additional input validation for encryption requests
- * TODO: Consider using Web Crypto API where available
  */
 export async function serverSideEncrypt(data: string): Promise<string> {
   try {
@@ -90,9 +87,6 @@ export async function serverSideEncrypt(data: string): Promise<string> {
  * Server-side decryption API call
  * @param encryptedData Data to decrypt
  * @returns Decrypted data or original if not encrypted
- * 
- * TODO: Add additional validation of decrypted data
- * TODO: Implement key versioning for seamless key rotation
  */
 export async function serverSideDecrypt(encryptedData: string): Promise<string> {
   // If not encrypted data, return as is
@@ -154,12 +148,8 @@ export async function serverSideDecrypt(encryptedData: string): Promise<string> 
  * Fetch chat widget configuration from the API
  * @param workspaceId The workspace ID to fetch configuration for
  * @returns Promise resolving to the chat widget configuration
- * 
- * TODO: Implement full signature verification for all responses
- * TODO: Add caching with security headers for performance
- * TODO: Implement tiered fallbacks for critical configuration
  */
-export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string): Promise<ChatWidgetConfig> => {
+export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string = DEFAULT_API_KEY): Promise<ChatWidgetConfig> => {
   try {
     // Enforce HTTPS for security
     if (!enforceHttps()) {
@@ -170,26 +160,12 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
     // Validate and sanitize workspaceId
     const sanitizedWorkspaceId = sanitizeInput(workspaceId);
 
-    // In development/demo mode, we'll just use default config
-    // since the API may not be available or may return HTML instead of JSON
-    // if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
-    if (import.meta.env.DEV) {
-      console.log(`Using default config for workspace ${sanitizedWorkspaceId} in development mode`);
-
-      return {
-        ...defaultConfig,
-        workspaceId: sanitizedWorkspaceId,
-        ...getDefaultConfig(sanitizedWorkspaceId)
-      };
-    }
-
     // Check if circuit is already open (too many failures)
     if (isCircuitOpen(CONFIG_CIRCUIT)) {
       console.warn('Config API circuit is open, using default config');
       return {
         ...defaultConfig,
-        workspaceId: sanitizedWorkspaceId,
-        ...getDefaultConfig(sanitizedWorkspaceId)
+        workspaceId: sanitizedWorkspaceId
       };
     }
 
@@ -243,15 +219,15 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
           throw new Error('Invalid content type received from API');
         }
 
-        const config = await response.json();
-
+        const configResponse = await response.json();
+        
         // Verify response integrity if signature is provided
         const responseSignature = response.headers.get('X-Response-Signature');
         const responseTimestamp = response.headers.get('X-Response-Timestamp');
 
         if (responseSignature && responseTimestamp) {
           const isValid = verifyMessageSignature(
-            JSON.stringify(config),
+            JSON.stringify(configResponse),
             parseInt(responseTimestamp, 10),
             responseSignature
           );
@@ -262,25 +238,30 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
           }
         }
 
-        // Check if response contains a sessionId and store it
-        if (config.sessionId && !sessionId) {
-          setChatSessionId(config.sessionId);
+        // Store the access token if provided
+        if (configResponse.data && configResponse.data.accessToken) {
+          setAccessToken(configResponse.data.accessToken);
         }
 
-        if (config.data.accessToken) {
-          setAccessToken(config.data.accessToken);
+        // Store contact details if provided
+        if (configResponse.data && configResponse.data.contact) {
+          setContactDetailsInLocalStorage(configResponse.data.contact);
         }
 
-        return {
-          ...config.data.widgettheme[0],
-          widgetfield: config.data.widgetfield[0]
+        // Format the response to match our expected structure
+        const config = {
+          ...configResponse.data.widgettheme[0],
+          widgetfield: configResponse.data.widgetfield[0],
+          workspaceId: sanitizedWorkspaceId,
+          isLoggedIn: !!configResponse.data.contact
         };
+
+        return config;
       },
       CONFIG_CIRCUIT,
       // Custom retry options for config API
-      // TODO: Update retries to 2
       {
-        maxRetries: 0,
+        maxRetries: 2,
         initialDelayMs: 200,
         maxDelayMs: 1000
       },
@@ -300,8 +281,7 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
     // Always fall back to default config for reliability
     return {
       ...defaultConfig,
-      workspaceId: sanitizeInput(workspaceId),
-      ...getDefaultConfig(sanitizeInput(workspaceId))
+      workspaceId: sanitizeInput(workspaceId)
     };
   }
 };
@@ -311,10 +291,6 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
  * @param message The message to send
  * @param workspaceId The workspace ID
  * @returns Promise resolving to the API response
- * 
- * TODO: Add message content filtering for security
- * TODO: Implement secure file uploads with content scanning
- * TODO: Add end-to-end encryption options for sensitive communications
  */
 export const sendChatMessage = async (message: string, workspaceId: string): Promise<any> => {
   try {

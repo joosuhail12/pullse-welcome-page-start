@@ -12,15 +12,15 @@ import EnhancedLoadingIndicator from './components/EnhancedLoadingIndicator';
 import ChatWidgetErrorBoundary from './components/ChatWidgetErrorBoundary';
 import ConnectionManager from './components/ConnectionManager';
 import { ConnectionStatus } from './utils/reconnectionManager';
-import ChatKeyboardHandler from './components/ChatKeyboardHandler';
 import { setWorkspaceIdAndApiKey } from './utils/storage';
+import { toast } from 'sonner';
 
 export interface ChatWidgetProps {
   workspaceId: string;
   apiKey: string;
 }
 
-const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
+const ChatWidget = ({ workspaceId, apiKey = '85c7756b-f333-4ec9-a440-c4d1850482c3' }: ChatWidgetProps) => {
   // Set workspace id and api key in localStorage
   setWorkspaceIdAndApiKey(workspaceId, apiKey);
 
@@ -43,6 +43,13 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
   const isMobile = useIsMobile();
   const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
+
+  // Show error toast if there was an error fetching the config
+  useEffect(() => {
+    if (error) {
+      toast.error('Failed to load chat widget configuration');
+    }
+  }, [error]);
 
   const widgetStyle = useMemo(() => ({
     ...(config.colors?.primaryColor && {

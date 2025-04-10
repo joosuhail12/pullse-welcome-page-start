@@ -13,10 +13,18 @@ import { WIDGET_VERSION, checkForUpdates } from './embed/api';
 import { getEventManager, EventPriority, dispatchValidatedEvent } from './embed/enhancedEvents';
 import { validateEventPayload } from './utils/eventValidation';
 
+// Default API key
+const DEFAULT_API_KEY = '85c7756b-f333-4ec9-a440-c4d1850482c3';
+
 // Create global Pullse object
 (window as any).Pullse = (window as any).Pullse || {};
 (window as any).Pullse.initChatWidget = (options: PullseChatWidgetOptions) => {
-  return initializeWidget(options);
+  // Add default API key if not provided
+  const configWithApiKey = {
+    ...options,
+    apiKey: options.apiKey || DEFAULT_API_KEY
+  };
+  return initializeWidget(configWithApiKey);
 };
 
 // Add version information
