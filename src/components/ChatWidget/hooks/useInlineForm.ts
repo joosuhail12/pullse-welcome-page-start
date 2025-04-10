@@ -22,7 +22,10 @@ export function useInlineForm(
 
   // Update form visibility when user data, contact status, or config contact changes
   useEffect(() => {
-    if (userFormData || conversation.contactIdentified || config.contact || isUserAuthenticated()) {
+    // Make sure to show the form if no user data or contact is identified
+    if (!userFormData && !conversation.contactIdentified && !config.contact && !isUserAuthenticated()) {
+      setShowInlineForm(true);
+    } else if (userFormData || conversation.contactIdentified || config.contact || isUserAuthenticated()) {
       setShowInlineForm(false);
     }
   }, [userFormData, conversation.contactIdentified, config.contact]);

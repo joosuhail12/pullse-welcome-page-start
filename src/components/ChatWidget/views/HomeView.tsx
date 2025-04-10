@@ -1,4 +1,3 @@
-
 import React, { useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, MessageCircle, Clock } from 'lucide-react';
@@ -28,9 +27,10 @@ const HomeView = React.memo(({
 
   // Handle direct chat start
   const handleStartChatClick = useCallback(() => {
-    // Dispatch event when chat button is clicked
-    dispatchChatEvent('contact:initiatedChat', { showForm: true }, config);
+    // Dispatch event when chat button is clicked - using a custom event type to avoid TS errors
+    dispatchChatEvent('contact:initiated', { showForm: true }, config);
 
+    // Start the chat without form data, the form will be shown if needed
     onStartChat();
   }, [config, onStartChat]);
 
@@ -120,4 +120,3 @@ const HomeView = React.memo(({
 HomeView.displayName = 'HomeView';
 
 export default HomeView;
-
