@@ -1,67 +1,94 @@
-// Add isLoggedIn to the ChatWidgetConfig interface
-export interface ChatWidgetConfig {
-  workspaceId: string;
-  colors?: {
-    primaryColor?: string;
-    backgroundColor?: string;
-    textColor?: string;
-    userMessageBackgroundColor?: string;
-    agentMessageBackgroundColor?: string;
-  };
-  layout?: {
-    position?: string;
-    xOffset?: string;
-    yOffset?: string;
-    isCompact?: boolean;
-    placement?: string;
-    offsetX?: number;
-    offsetY?: number;
-  };
-  labels?: {
-    welcomeTitle?: string;
-    welcomeSubtitle?: string;
-    askQuestionButtonText?: string;
-    welcomeMessage?: string;
-  };
-  brandAssets?: {
-    headerLogo?: string;
-    launcherIcon?: string;
-  };
-  widgetSettings?: {
-    allowedDomains?: string[];
-  };
-  interfaceSettings?: {
-    showBrandingBar?: boolean;
-    showOfficeHours?: boolean;
-    showAgentPresence?: boolean;
-    showAgentChatStatus?: boolean;
-    showTicketStatusBar?: boolean;
-    enableMessageReaction?: boolean;
-    allowVisitorsToEndChat?: boolean;
-    enableConversationRating?: boolean;
-    enableDeliveryReadReceipts?: boolean;
-  };
-  widgetfield?: {
-    id?: string;
-    widgetId?: string;
-    contactFields?: PreChatFormField[];
-    companyFields?: PreChatFormField[];
-    customDataFields?: PreChatFormField[];
-    customObjectFields?: any[];
-  };
-  isLoggedIn?: boolean;
+
+/**
+ * Chat Widget Configuration Types
+ */
+
+export interface PreChatFormField {
+  name: string;
+  type: 'text' | 'email' | 'tel' | 'select';
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  entityname: string;
+  columnname: string;
+  options?: { value: string; label: string }[];
 }
 
-// Keep all existing interfaces and constants
-export interface PreChatFormField {
-  type: string;
-  label: string;
-  options: any[];
-  required: boolean;
-  columnname: string;
-  entityname: string;
-  placeholder?: string;
+export interface PreChatForm {
+  contactFields: PreChatFormField[];
+  companyFields: PreChatFormField[];
+  customDataFields: PreChatFormField[];
 }
+
+export interface ChatBranding {
+  primaryColor?: string;
+  fontFamily?: string;
+  avatarUrl?: string;
+  logoUrl?: string;
+  showBrandingBar?: boolean;
+  widgetTitle?: string;
+}
+
+export interface ChatColors {
+  border?: string;
+  primary?: string;
+  background?: string;
+  foreground?: string;
+  userMessage?: string;
+  agentMessage?: string;
+  inputBackground?: string;
+  userMessageText?: string;
+  agentMessageText?: string;
+  primaryForeground?: string;
+  primaryColor?: string;
+};
+
+export interface ChatLabels {
+  welcomeTitle?: string;
+  welcomeSubtitle?: string;
+  askQuestionButtonText?: string;
+  welcomeMessage?: string;
+};
+
+// Update the ChatPosition type to include both string literals and object type
+export type ChatLayout = {
+  placement: 'left' | 'right';
+  offsetX: number;
+  offsetY: number;
+};
+
+export interface ChatFeatures {
+  fileUpload?: boolean;
+  messageRating?: boolean;
+  readReceipts?: boolean;
+  quickReplies?: boolean;
+  cards?: boolean;
+  chatSuggestions?: boolean;
+  messageReactions?: boolean;
+  typingIndicators?: boolean;
+  searchMessages?: boolean;
+}
+
+export interface ChatRealtime {
+  enabled: boolean;
+  // No longer storing API key directly here
+  authEndpoint?: string;
+}
+
+export type ChatEventType =
+  | 'chat:open'
+  | 'chat:close'
+  | 'chat:messageSent'
+  | 'chat:messageReceived'
+  | 'contact:initiatedChat'
+  | 'contact:formCompleted'
+  | 'message:reacted'
+  | 'chat:typingStarted'
+  | 'chat:typingStopped'
+  | 'message:fileUploaded'
+  | 'chat:ended'
+  | 'chat:connectionChange' // Add connection change event type
+  | 'chat:error';          // Add error event type
 
 export interface ChatEventPayload {
   type: ChatEventType;
@@ -69,70 +96,82 @@ export interface ChatEventPayload {
   data?: any;
 }
 
-export type ChatEventType =
-  | 'chat:open'
-  | 'chat:close'
-  | 'chat:start'
-  | 'chat:end'
-  | 'chat:minimize'
-  | 'chat:restore'
-  | 'message:sent'
-  | 'message:received'
-  | 'message:read'
-  | 'message:reaction'
-  | 'typing:start'
-  | 'typing:end'
-  | 'contact:formCompleted'
-  | 'error'
-  | 'status:online'
-  | 'status:offline'
-  | 'status:away'
-  | 'custom';
+export interface ChatBrandAssets {
+  headerLogo?: string;
+  launcherIcon?: string;
+  avatarUrl?: string;
+}
+
+export interface ChatInterfaceSettings {
+  showBrandingBar?: boolean;
+  showAgentPresence?: boolean;
+  showTicketStatusBar?: boolean;
+  enableMessageReaction?: boolean;
+  allowVisitorsToEndChat?: boolean;
+  enableConversationRating?: boolean;
+  enableDeliveryReadReceipts?: boolean;
+  showAgentChatStatus?: boolean;
+  showOfficeHours
+}
+
+export interface ChatWidgetConfig {
+  workspaceId: string;
+  widgetfield: PreChatForm;
+  brandAssets?: ChatBrandAssets;
+  colors?: ChatColors;
+  labels?: ChatLabels;
+  layout?: ChatLayout;
+  features?: ChatFeatures;
+  interfaceSettings?: ChatInterfaceSettings;
+  accessToken?: string;
+  sessionId?: string;
+  onEvent?: (event: ChatEventPayload) => void;
+  // Added to support advanced event subscription
+  eventHandlers?: {
+    [key in ChatEventType]?: (payload: ChatEventPayload) => void;
+  };
+}
 
 export const defaultConfig: ChatWidgetConfig = {
-  workspaceId: 'demo-workspace-123',
-  colors: {
-    primaryColor: '#6366F1',
-    backgroundColor: '#F9FAFB',
-    textColor: '#111827',
-    userMessageBackgroundColor: '#EEF2FF',
-    agentMessageBackgroundColor: '#F3F4F6',
-  },
-  layout: {
-    position: 'bottom-right',
-    xOffset: '20px',
-    yOffset: '20px',
-    isCompact: false
-  },
-  labels: {
-    welcomeTitle: 'Welcome to Support',
-    welcomeSubtitle: 'How can we help you today?',
-    askQuestionButtonText: 'Ask a Question',
-    welcomeMessage: 'Hi there! How can we help you today?'
-  },
+  workspaceId: 'default',
   widgetfield: {
     contactFields: [
-      {
-        type: 'text',
-        label: 'Name',
-        options: [],
-        required: true,
-        columnname: 'name',
-        entityname: 'contact',
-        placeholder: 'Your name'
-      },
-      {
-        type: 'email',
-        label: 'Email',
-        options: [],
-        required: true,
-        columnname: 'email',
-        entityname: 'contact',
-        placeholder: 'Your email address'
-      }
     ],
-    companyFields: [],
-    customDataFields: []
+    companyFields: [
+    ],
+    customDataFields: [
+    ]
   },
-  isLoggedIn: false
+  colors: {
+    border: '#E1E1E1',
+    primary: '#9b87f5',
+    background: '#FFFFFF',
+    foreground: '#1A1F2C',
+    userMessage: '#9b87f5',
+    agentMessage: '#F1F1F1',
+    inputBackground: '#F9F9F9',
+    userMessageText: '#FFFFFF',
+    agentMessageText: '#1A1F2C',
+    primaryForeground: '#FFFFFF'
+  },
+  labels: {
+    welcomeTitle: 'hello',
+    welcomeSubtitle: 'welcomeSubtitle'
+  },
+  layout: {
+    placement: 'right',
+    offsetX: 20,
+    offsetY: 20
+  },
+  features: {
+    fileUpload: true,
+    messageRating: false,
+    readReceipts: true,
+    quickReplies: true,
+    cards: true,
+    chatSuggestions: false,
+    messageReactions: true,
+    typingIndicators: true,
+    searchMessages: true
+  },
 };

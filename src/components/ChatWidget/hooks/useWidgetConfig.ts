@@ -1,8 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { fetchChatWidgetConfig } from '../services/api';
 import { ChatWidgetConfig, defaultConfig } from '../config';
+import { getDefaultConfig } from '../embed/api';
 import { logger } from '@/lib/logger';
-import { getWorkspaceIdAndApiKey, getContactDetailsFromLocalStorage } from '../utils/storage';
+import { getWorkspaceIdAndApiKey } from '../utils/storage';
 
 export function useWidgetConfig() {
   const [config, setConfig] = useState<ChatWidgetConfig>(defaultConfig);
@@ -22,35 +24,51 @@ export function useWidgetConfig() {
 
       try {
         setLoading(true);
+
+        // Log that we're in development mode
+        // if (import.meta.env.DEV || window.location.hostname.includes('lovableproject.com')) {
+        if (import.meta.env.DEV) {
+          logger.debug(
+            `Using default config for workspace ${workspaceId} in development mode`,
+            'useWidgetConfig'
+          );
+
+          // Use the default config for development mode
+          const devConfig = {
+            ...defaultConfig,
+            workspaceId,
+            // Merge with our simple default config
+            ...getDefaultConfig(workspaceId)
+          };
+
+          setConfig(devConfig);
+          setError(null);
+          return;
+        }
+
         logger.info(`Fetching config for workspace ${workspaceId}`, 'useWidgetConfig');
-        
         const fetchedConfig = await fetchChatWidgetConfig(workspaceId, apiKey);
-        
-        // Check if we have contact details in localStorage to determine login state
-        const contactDetails = getContactDetailsFromLocalStorage();
-        
+        console.log(fetchedConfig)
+
+
         logger.debug('Config fetched successfully', 'useWidgetConfig', {
-          hasContacts: !!contactDetails,
-          isLoggedIn: fetchedConfig.isLoggedIn
+          hasRealtime: true,
+          hasBranding: !!fetchedConfig.brandAssets
         });
 
-        // Set whether the user is logged in based on the presence of contact details
-        const finalConfig = {
-          ...fetchedConfig,
-          isLoggedIn: fetchedConfig.isLoggedIn || !!contactDetails
-        };
-
-        setConfig(finalConfig);
+        setConfig(fetchedConfig);
         setError(null);
       } catch (err) {
         const errorInstance = err instanceof Error ? err : new Error('Failed to fetch config');
         logger.error('Failed to fetch widget config', 'useWidgetConfig', errorInstance);
 
         setError(errorInstance);
-        // Still use default config as fallback but keep the workspace ID
+        // Still use default config as fallback
         setConfig({
           ...defaultConfig,
-          workspaceId
+          workspaceId,
+          // Merge with our simple default config
+          ...getDefaultConfig(workspaceId)
         });
       } finally {
         setLoading(false);
