@@ -47,18 +47,30 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
   }
 
   try {
+    // Verify that we have an access token before proceeding
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      console.warn('Access token not found, Ably initialization aborted');
+      enableLocalFallback();
+      throw new Error('Access token not available');
+    }
+
     // Create a new client if we don't have one or previous connection failed
     if (!client || ['failed', 'closed', 'suspended'].includes(client.connection.state)) {
-      // Use token authentication instead of API key
-
       const { workspaceId, apiKey } = getWorkspaceIdAndApiKey();
+      
+      if (!workspaceId) {
+        console.warn('Workspace ID not found, Ably initialization aborted');
+        throw new Error('Workspace ID not available');
+      }
+      
       const newClient = new Ably.Realtime({
         authUrl: authUrl,
         authHeaders: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAccessToken()}`,
+          'Authorization': `Bearer ${accessToken}`,
           'x-workspace-id': workspaceId,
-          'x-api-key': apiKey
+          'x-api-key': apiKey || ''
         },
         // Connection recovery options
         disconnectedRetryTimeout: 2000,  // Time to wait before attempting reconnection when disconnected
@@ -204,6 +216,14 @@ export function enableLocalFallback(): void {
  * @returns Promise resolving to a boolean indicating success or failure
  */
 export const reconnectAbly = async (authUrl: string): Promise<boolean> => {
+  // Check for access token before attempting reconnection
+  const accessToken = getAccessToken();
+  if (!accessToken) {
+    console.warn('Access token not found, Ably reconnection aborted');
+    enableLocalFallback();
+    return false;
+  }
+
   const client = getAblyClient();
   if (!client) {
     try {
@@ -357,7 +377,7 @@ export const handleConnectionStateChange = (
       break;
   }
 };
+
 function getWorkspaceId(): string {
   throw new Error('Function not implemented.');
 }
-

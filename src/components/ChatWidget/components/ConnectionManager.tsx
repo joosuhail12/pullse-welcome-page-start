@@ -5,6 +5,7 @@ import { getAblyAuthUrl } from '../services/ablyAuth';
 import { ConnectionStatus, getReconnectionManager } from '../utils/reconnectionManager';
 import { toasts } from '@/lib/toast-utils';
 import { logger } from '@/lib/logger';
+import { getAccessToken } from '../utils/storage';
 
 interface ConnectionManagerProps {
   workspaceId: string;
@@ -18,7 +19,13 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
   useEffect(() => {
     let ablyCleanup: (() => void) | null = null;
 
-    if (!enabled || !workspaceId) return;
+    // Check if the connection is enabled, workspaceId exists, and we have an access token
+    const accessToken = getAccessToken();
+    if (!enabled || !workspaceId || !accessToken) {
+      onStatusChange(ConnectionStatus.DISCONNECTED);
+      logger.info('Realtime disabled: missing required parameters', 'ConnectionManager');
+      return;
+    }
 
     const authUrl = getAblyAuthUrl(workspaceId);
     const reconnectionManager = getReconnectionManager({
