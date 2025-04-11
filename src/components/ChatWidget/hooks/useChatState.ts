@@ -35,7 +35,6 @@ export function useChatState() {
               unread: false,
               lastMessage: conversationData.lastMessage || '',
               messages: conversationData.messages || [],
-              assignedAgent: conversationData.assignedAgent || null,
               sessionId: event.data.sessionId
             };
 
@@ -68,7 +67,6 @@ export function useChatState() {
       unread: false,
       lastMessage: '',
       messages: [],
-      assignedAgent: null,
       sessionId: getChatSessionId()
     });
   }, []);
@@ -94,7 +92,6 @@ export function useChatState() {
       unread: false,
       lastMessage: ticket.description || '',
       messages: [],
-      assignedAgent: null,
       sessionId: getChatSessionId()
     });
     setViewState('chat');

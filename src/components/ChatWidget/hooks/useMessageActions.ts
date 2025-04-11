@@ -20,7 +20,7 @@ export function useMessageActions(
   const [isUploading, setIsUploading] = useState(false);
 
   // The issue is that this effect is being re-triggered on each re-render because chatChannelName
-  // is likely changing. Let's add a ref to track whether we've already set up the listener.
+  // is likely changing. Let's add a state to track whether we've already set up the listener.
   const [hasSetupListener, setHasSetupListener] = useState(false);
 
   // Move the event subscription into a useEffect to prevent infinite loop
