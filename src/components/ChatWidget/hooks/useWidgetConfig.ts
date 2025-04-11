@@ -6,17 +6,39 @@ import { logger } from '@/lib/logger';
 import { getWorkspaceIdAndApiKey, getUserFormDataFromLocalStorage, setUserFormDataInLocalStorage } from '../utils/storage';
 import { setChatSessionId } from '../utils/storage';
 
+// Create a global config cache to prevent multiple fetch calls
+let globalConfigCache: ChatWidgetConfig | null = null;
+let configFetchInProgress = false;
+
 export function useWidgetConfig() {
-  const [config, setConfig] = useState<ChatWidgetConfig>(defaultConfig);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [config, setConfig] = useState<ChatWidgetConfig>(globalConfigCache || defaultConfig);
+  const [loading, setLoading] = useState<boolean>(!globalConfigCache);
   const [error, setError] = useState<Error | null>(null);
   const [contactData, setContactData] = useState<any>(null);
-  const configFetchedRef = useRef<boolean>(false);
+  const configFetchedRef = useRef<boolean>(!!globalConfigCache);
 
   const { workspaceId } = getWorkspaceIdAndApiKey();
 
   useEffect(() => {
     async function loadConfig() {
+      // If we already have a global cache, use it and skip API call
+      if (globalConfigCache) {
+        logger.info('Using cached config, skipping API call', 'useWidgetConfig');
+        setConfig(globalConfigCache);
+        setLoading(false);
+        
+        // Set contact data from cache if available
+        if (globalConfigCache.contact) {
+          setContactData(globalConfigCache.contact);
+        } else {
+          const storedUserData = getUserFormDataFromLocalStorage();
+          if (storedUserData) {
+            setContactData(storedUserData);
+          }
+        }
+        return;
+      }
+
       if (!workspaceId) {
         setConfig(defaultConfig);
         setLoading(false);
@@ -30,8 +52,15 @@ export function useWidgetConfig() {
         return;
       }
 
+      // Skip if another fetch is already in progress
+      if (configFetchInProgress) {
+        logger.info('Config fetch already in progress, waiting for result', 'useWidgetConfig');
+        return;
+      }
+
       try {
         setLoading(true);
+        configFetchInProgress = true;
 
         const apiKey = "85c7756b-f333-4ec9-a440-c4d1850482c3";
 
@@ -45,6 +74,9 @@ export function useWidgetConfig() {
 
         // Mark that we've fetched the config
         configFetchedRef.current = true;
+        
+        // Store in global cache
+        globalConfigCache = fetchedConfig;
 
         if (fetchedConfig.contact) {
           setContactData(fetchedConfig.contact);
@@ -77,6 +109,7 @@ export function useWidgetConfig() {
         setConfig(defaultConfig);
       } finally {
         setLoading(false);
+        configFetchInProgress = false;
       }
     }
 
