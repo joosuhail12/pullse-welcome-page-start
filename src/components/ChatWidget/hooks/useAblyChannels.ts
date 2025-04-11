@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { subscribeToChannel, unsubscribeFromChannel } from '../utils/ably/messaging';
 import { getAblyClient } from '../utils/ably/config';
@@ -22,7 +21,6 @@ export function useAblyChannels(config: AblyChannelConfig) {
   const channels = useRef<AblyChannels>({});
   const [sessionId, setSessionId] = useState<string | null>(getChatSessionId());
   
-  // Function to subscribe to channels
   const subscribeToChannels = () => {
     const client = getAblyClient();
     if (!client || client.connection.state !== 'connected') {
@@ -32,11 +30,11 @@ export function useAblyChannels(config: AblyChannelConfig) {
     
     unsubscribeAllChannels();
     
-    // Only proceed if we have a session ID
+    // Only subscribe to session channels if enabled and have a valid session ID
     if (config.sessionChannels && sessionId) {
       console.log(`Subscribing to session channels for ${sessionId}`);
       
-      // Subscribe to session channels with widget: prefix
+      // Subscribe to events channel for the session
       channels.current.events = subscribeToChannel(
         `widget:events:${sessionId}`,
         'message',
@@ -45,14 +43,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
         }
       );
       
-      channels.current.notifications = subscribeToChannel(
-        `widget:notifications:${sessionId}`,
-        'message',
-        (message) => {
-          console.log('Received notification message:', message);
-        }
-      );
-      
+      // Subscribe to contact event channel for the session
       channels.current.contactEvent = subscribeToChannel(
         `widget:contactevent:${sessionId}`,
         'message',
@@ -62,8 +53,8 @@ export function useAblyChannels(config: AblyChannelConfig) {
       );
     }
     
-    // Subscribe to conversation channel if provided, with widget: prefix
-    if (config.conversationChannel) {
+    // Only subscribe to conversation channel if it has a ticket ID
+    if (config.conversationChannel && config.conversationChannel.includes('ticket-')) {
       console.log(`Subscribing to conversation channel: widget:conversation:${config.conversationChannel}`);
       channels.current.conversation = subscribeToChannel(
         `widget:conversation:${config.conversationChannel}`,
@@ -74,8 +65,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
       );
     }
   };
-  
-  // Function to unsubscribe from all channels
+
   const unsubscribeAllChannels = () => {
     Object.entries(channels.current).forEach(([key, channel]) => {
       if (channel) {
@@ -85,16 +75,14 @@ export function useAblyChannels(config: AblyChannelConfig) {
     });
     channels.current = {};
   };
-  
-  // Watch for sessionId changes (e.g., when loaded from storage)
+
   useEffect(() => {
     const storedSessionId = getChatSessionId();
     if (storedSessionId !== sessionId) {
       setSessionId(storedSessionId);
     }
   }, [sessionId]);
-  
-  // Watch for connection state changes
+
   useEffect(() => {
     const client = getAblyClient();
     if (!client) return;
@@ -126,6 +114,6 @@ export function useAblyChannels(config: AblyChannelConfig) {
       unsubscribeAllChannels();
     };
   }, [config.sessionChannels, config.conversationChannel, sessionId]);
-  
+
   return { isConnected, channels: channels.current };
 }

@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Message } from '../types';
 import { publishToChannel } from '../utils/ably';
@@ -54,9 +53,14 @@ export function useMessageActions(
       setHasUserSentMessage(true);
     }
     
-    // If realtime is enabled, publish the message to the channel
+    // If realtime is enabled, publish the message
     if (config?.realtime?.enabled) {
-      publishToChannel(chatChannelName, 'message', {
+      // If no ticket ID, publish to contact event channel
+      const channelToUse = chatChannelName.includes('ticket-') 
+        ? chatChannelName 
+        : `widget:contactevent:${sessionId}`;
+
+      publishToChannel(channelToUse, 'message', {
         id: userMessage.id,
         text: userMessage.text,
         sender: userMessage.sender,
@@ -64,9 +68,7 @@ export function useMessageActions(
         type: userMessage.type
       });
       
-      // Stop typing indicator when sending a message
       sendTypingIndicator(chatChannelName, sessionId, 'stop');
-      // Dispatch typing stopped event
       dispatchChatEvent('chat:typingStopped', { userId: sessionId }, config);
     } else {
       // Fallback to the original behavior
@@ -223,4 +225,3 @@ export function useMessageActions(
     handleEndChat
   };
 }
-
