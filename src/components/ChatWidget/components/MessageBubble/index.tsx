@@ -1,3 +1,4 @@
+
 import React, { useState, lazy, Suspense } from 'react';
 import { MessageType, UserType, AgentStatus } from '../../types';
 import TextMessage from '../MessageTypes/TextMessage';
@@ -117,10 +118,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     return '';
   };
 
+  // Updated message bubble classes for better continuous messaging
   const messageTypeClass = isUserMessage
-    ? `chat-message-user text-white ${isConsecutive ? 'rounded-t-md rounded-bl-md rounded-br-sm mt-1' : 'rounded-t-2xl rounded-bl-2xl rounded-br-sm'}`
+    ? `chat-message-user text-white ${isConsecutive ? 'rounded-2xl rounded-tr-sm mt-1' : 'rounded-2xl rounded-br-sm'}`
     : isBotMessage
-      ? `chat-message-system text-system-bubble-text ${isConsecutive ? 'rounded-t-md rounded-br-md rounded-bl-sm mt-1' : 'rounded-t-2xl rounded-br-2xl rounded-bl-sm'} border border-gray-100 ${getStatusBasedClasses()}`
+      ? `chat-message-system text-system-bubble-text ${isConsecutive ? 'rounded-2xl rounded-tl-sm mt-1' : 'rounded-2xl rounded-bl-sm'} border border-gray-100 ${getStatusBasedClasses()}`
       : 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200';
 
   const messageContainerClass = isUserMessage
@@ -252,6 +254,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     );
   }
 
+  // Use a smaller vertical spacing for consecutive messages
+  const verticalSpacing = isConsecutive ? 'my-0.5' : 'mb-3 mt-2';
   const avatarSpacing = showAvatar ? '' : isUserMessage ? 'mr-8' : 'ml-8';
 
   return (
@@ -259,7 +263,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       className={cn(
         'group flex items-end relative animate-fade-in',
         messageContainerClass,
-        isConsecutive ? 'mb-1' : 'mb-4'
+        verticalSpacing
       )}
       onContextMenu={handleLongPress}
     >
@@ -280,11 +284,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
 
       <div
         className={cn(
-          'relative max-w-[80%] sm:max-w-md px-4 py-3',
+          'relative max-w-[80%] sm:max-w-md px-4 py-2.5',
           messageTypeClass,
           isHighlighted && 'bg-yellow-100 border-yellow-300',
           isSystemMessage && 'py-2 px-3',
-          avatarSpacing
+          avatarSpacing,
+          isConsecutive && 'shadow-sm' // smaller shadow for consecutive messages
         )}
         onClick={onToggleHighlight}
       >

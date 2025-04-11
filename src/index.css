@@ -10,7 +10,6 @@
     box-shadow: 0 3px 12px rgba(139, 92, 246, 0.3);
     border-radius: 20px;
     border-bottom-right-radius: 4px;
-    padding: 14px 16px;
     position: relative;
     z-index: 1;
     margin-left: auto;
@@ -34,5 +33,20 @@
     background: linear-gradient(225deg, #8b5cf6 0%, #8b5cf6 100%);
     border-bottom-left-radius: 16px;
     z-index: -1;
+  }
+  
+  /* New styles for consecutive messages */
+  .chat-message-user.mt-1 {
+    margin-top: 2px;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+  }
+  
+  .chat-message-user.mt-1:after {
+    display: none;
+  }
+  
+  .chat-message-system.mt-1 {
+    margin-top: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 }

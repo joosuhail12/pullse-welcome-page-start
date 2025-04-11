@@ -11,6 +11,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { MessageReadStatus } from '../../components/MessageReadReceipt';
 import MessageInput from '../../components/MessageInput';
 import PoweredByBar from '../../components/PoweredByBar';
+import { FormDataStructure } from '../../types';
 
 interface ChatViewPresentationProps {
   conversation: Conversation;
@@ -43,10 +44,11 @@ interface ChatViewPresentationProps {
   hasMoreMessages: boolean;
   isLoadingMore: boolean;
   showInlineForm: boolean;
-  handleFormComplete: (formData: Record<string, string>) => void;
+  handleFormComplete: (formData: FormDataStructure) => void;
   config: ChatWidgetConfig;
   onToggleMessageImportance: (messageId: string) => void;
   ticketProgress: number;
+  connectionStatus?: string;
 }
 
 const ChatViewPresentation = ({

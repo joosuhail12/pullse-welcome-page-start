@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Conversation } from '../types';
+import { Conversation, FormDataStructure } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
@@ -131,7 +131,7 @@ const ChatView = React.memo(({
 
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
-      return <PreChatForm config={config} onFormComplete={handleFormComplete} />;
+      return <PreChatForm config={config} onFormComplete={handleFormComplete as (data: FormDataStructure) => void} />;
     }
     return null;
   }, [showInlineForm, config, handleFormComplete]);

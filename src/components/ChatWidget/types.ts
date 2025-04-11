@@ -1,4 +1,3 @@
-
 export interface Message {
   id: string;
   text: string;
@@ -86,12 +85,11 @@ export interface TicketMessage {
 }
 
 // Define MessageReadStatus type 
-export type MessageReadStatus = 'unread' | 'delivered' | 'read';
+export type MessageReadStatus = 'sent' | 'delivered' | 'read';
 
-export interface MessageReadReceipt {
+export interface ReadReceipt {
   status: MessageReadStatus;
   timestamp?: Date;
-  createdAt?: Date;
 }
 
 // Define MessageReaction types

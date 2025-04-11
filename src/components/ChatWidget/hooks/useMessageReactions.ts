@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { Message } from '../types';
 import { publishToChannel } from '../utils/ably';
@@ -7,16 +6,18 @@ import { ChatWidgetConfig } from '../config';
 
 export function useMessageReactions(
   messages: Message[],
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-  chatChannelName: string,
+  updateMessages: (updatedMessages: React.SetStateAction<Message[]>) => void,
+  channelName: string,
   sessionId: string,
   config?: ChatWidgetConfig
 ) {
   const [reactionsMap, setReactionsMap] = useState<Record<string, 'thumbsUp' | 'thumbsDown'>>({});
 
+  const isReactionsEnabled = config?.features?.messageReactions === true;
+
   const handleMessageReaction = useCallback((messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => {
     // Update local state with the reaction
-    setMessages(prevMessages => 
+    updateMessages(prevMessages => 
       prevMessages.map(message => 
         message.id === messageId 
           ? { ...message, reaction: message.reaction === reaction ? null : reaction } 
@@ -37,7 +38,7 @@ export function useMessageReactions(
 
     // If realtime is enabled, publish reaction to the channel
     if (config?.realtime?.enabled) {
-      publishToChannel(chatChannelName, 'reaction', {
+      publishToChannel(channelName, 'reaction', {
         messageId,
         reaction,
         userId: sessionId,
@@ -51,7 +52,7 @@ export function useMessageReactions(
       reaction,
       timestamp: new Date() 
     }, config);
-  }, [messages, setMessages, chatChannelName, sessionId, config]);
+  }, [messages, updateMessages, channelName, sessionId, config]);
 
   return {
     reactionsMap,
