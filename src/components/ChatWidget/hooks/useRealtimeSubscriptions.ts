@@ -11,9 +11,7 @@ export function useRealtimeSubscriptions(
   sessionId: string,
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
   config?: ChatWidgetConfig,
-  playMessageSound?: () => void,
-  setIsCreatingTicket?: React.Dispatch<React.SetStateAction<boolean>>,
-  onTicketCreated?: (ticketId: string) => void
+  playMessageSound?: () => void
 ) {
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const [readReceipts, setReadReceipts] = useState<Record<string, MessageReadReceipt>>({});
@@ -82,41 +80,11 @@ export function useRealtimeSubscriptions(
     // Subscribe to contact event channel
     if (isValidChannelName(contactEventChannelName) && !subscriptionAttempted.current[contactEventChannelName]) {
       subscriptionAttempted.current[contactEventChannelName] = true;
-      
-      // Handle normal messages
       activeChannels.current.contactEventChannel = subscribeToChannel(
         contactEventChannelName,
         'message',
         (message) => {
           console.log('Received contact event message:', message);
-        }
-      );
-      
-      // Handle typing events 
-      activeChannels.current.contactEventTypingChannel = subscribeToChannel(
-        contactEventChannelName,
-        'typing',
-        (message) => {
-          if (message.data && message.data.status && message.data.userId !== sessionId) {
-            setRemoteIsTyping(message.data.status === 'start');
-          }
-        }
-      );
-      
-      // Handle new ticket response
-      activeChannels.current.contactNewTicketResponseChannel = subscribeToChannel(
-        contactEventChannelName,
-        'new_ticket_response',
-        (message) => {
-          console.log('Received new ticket response:', message);
-          if (message.data && message.data.ticketId && setIsCreatingTicket) {
-            setIsCreatingTicket(false);
-            
-            // Call the callback with the ticketId
-            if (onTicketCreated) {
-              onTicketCreated(message.data.ticketId);
-            }
-          }
         }
       );
     }
