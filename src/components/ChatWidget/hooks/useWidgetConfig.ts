@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { fetchChatWidgetConfig } from '../services/api';
 import { ChatWidgetConfig, defaultConfig } from '../config';
@@ -50,6 +51,7 @@ export function useWidgetConfig() {
           }
         }
 
+        // Store the session ID if it exists in the response
         if (fetchedConfig.sessionId) {
           setChatSessionId(fetchedConfig.sessionId);
         }

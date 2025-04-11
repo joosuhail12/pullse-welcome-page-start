@@ -105,6 +105,7 @@ export interface ChatWidgetConfig {
   scrollThreshold?: number;
   contact?: any;
   widgetfield?: WidgetField;
+  sessionId?: string;
   realtime?: boolean; // Add realtime flag for backward compatibility
 }
 

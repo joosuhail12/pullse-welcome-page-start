@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for managing storage and cookies
  */
@@ -52,29 +53,26 @@ export function setAccessToken(accessToken: string): void {
 }
 
 /**
- * Get chat session id from cookies
+ * Get chat session id from localStorage
  */
 export function getChatSessionId(): string | null {
-  const name = 'pullse_chat_session_id=';
-  const decodedCookie = decodeURIComponent(document.cookie);
-  const ca = decodedCookie.split(';');
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') {
-      c = c.substring(1);
-    }
-    if (c.indexOf(name) === 0) {
-      return c.substring(name.length, c.length);
-    }
+  try {
+    return localStorage.getItem('pullse_session_id');
+  } catch (error) {
+    console.error('Error getting session ID from localStorage:', error);
+    return null;
   }
-  return null;
 }
 
 /**
- * Set chat session id in cookies
+ * Set chat session id in localStorage
  */
 export function setChatSessionId(sessionId: string): void {
-  document.cookie = `pullse_chat_session_id=${sessionId};path=/`;
+  try {
+    localStorage.setItem('pullse_session_id', sessionId);
+  } catch (error) {
+    console.error('Error setting session ID in localStorage:', error);
+  }
 }
 
 /**
@@ -187,27 +185,4 @@ export function setUserFormDataInLocalStorage(formData: Record<string, string>):
  */
 export function isUserAuthenticated(): boolean {
   return getUserFormDataFromLocalStorage() !== undefined;
-}
-
-/**
- * Get session ID from localStorage
- */
-export function getChatSessionId(): string | null {
-  try {
-    return localStorage.getItem('pullse_session_id');
-  } catch (error) {
-    console.error('Error getting session ID from localStorage:', error);
-    return null;
-  }
-}
-
-/**
- * Set session ID in localStorage
- */
-export function setChatSessionId(sessionId: string): void {
-  try {
-    localStorage.setItem('pullse_session_id', sessionId);
-  } catch (error) {
-    console.error('Error setting session ID in localStorage:', error);
-  }
 }
