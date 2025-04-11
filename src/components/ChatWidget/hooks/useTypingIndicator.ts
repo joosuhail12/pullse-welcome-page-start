@@ -90,7 +90,7 @@ export function useTypingIndicator(
     }, debounceTime);
     
     setTypingTimeout(timeout);
-  }, [chatChannelName, sessionId, clearTypingTimeoutCallback, realtimeEnabled, sendTypingStart, sendTypingStop, getDebounceTime]);
+  }, [clearTypingTimeoutCallback, realtimeEnabled, sendTypingStart, sendTypingStop, getDebounceTime]);
 
   // Force stop typing when unmounting or disabling realtime
   useEffect(() => {
