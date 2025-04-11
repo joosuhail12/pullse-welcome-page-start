@@ -1,268 +1,131 @@
 
-import { Message, TicketMessage } from '../types';
+import { v4 as uuidv4 } from 'uuid';
+import { Message, MessageStatus, ReadReceipt } from '../types';
 import { publishToChannel } from './ably';
 import { dispatchChatEvent } from './events';
 import { ChatWidgetConfig } from '../config';
+import { toast } from '@/components/ui/use-toast';
+import DOMPurify from 'dompurify';
 
 /**
- * Handles sending a read receipt for a message
+ * Create a user message
+ * @param text Message text
+ * @param type Message type (text, file, etc.)
+ * @param metadata Optional metadata for the message
  */
-export const sendReadReceipt = (
-  chatChannelName: string,
-  messageId: string,
-  sessionId: string
-): void => {
-  publishToChannel(chatChannelName, 'read', {
-    messageId,
-    userId: sessionId,
-    timestamp: new Date()
-  });
-};
-
-/**
- * Handles sending a delivery receipt for a message
- */
-export const sendDeliveryReceipt = (
-  chatChannelName: string,
-  messageId: string,
-  sessionId: string
-): void => {
-  publishToChannel(chatChannelName, 'delivered', {
-    messageId,
-    userId: sessionId,
-    timestamp: new Date()
-  });
-};
-
-/**
- * Creates a system response message
- */
-export const createSystemMessage = (text: string): Message => {
+export function createUserMessage(
+  text: string,
+  type: 'text' | 'file' | 'card' = 'text',
+  metadata?: Record<string, any>
+): Message {
+  const now = new Date();
   return {
-    id: `msg-${Date.now()}-system`,
-    text,
-    sender: 'system',
-    createdAt: new Date(),
-    type: 'text',
-    status: 'sent'
-  };
-};
-
-/**
- * Creates a user message
- */
-export const createUserMessage = (text: string, type: 'text' | 'file' = 'text', fileData?: {
-  fileName: string;
-  fileUrl: string;
-}): Message => {
-  return {
-    id: `msg-${Date.now()}-user${type === 'file' ? '-file' : ''}`,
-    text,
+    id: `msg-${now.getTime()}-${uuidv4().slice(0, 8)}`,
+    text: DOMPurify.sanitize(text),
     sender: 'user',
-    createdAt: new Date(),
+    createdAt: now,
+    timestamp: now,
     type,
     status: 'sent',
-    ...(fileData && {
-      fileName: fileData.fileName,
-      fileUrl: fileData.fileUrl
-    })
+    ...(metadata && { metadata })
   };
-};
+}
 
 /**
- * Create an agent message from ticket format
+ * Create a system message
+ * @param text Message text
+ * @param type Message type (text, file, etc.)
+ * @param metadata Optional metadata for the message
  */
-export const createAgentMessageFromTicket = (ticketMessage: TicketMessage): Message => {
+export function createSystemMessage(
+  text: string,
+  type: 'text' | 'file' | 'card' | 'quick-reply' = 'text',
+  metadata?: Record<string, any>
+): Message {
+  const now = new Date();
   return {
-    id: ticketMessage.id,
-    text: ticketMessage.message,
-    sender: 'agent',
-    createdAt: new Date(ticketMessage.createdAt),
-    type: 'text',
-    status: 'sent'
+    id: `msg-${now.getTime()}-system-${uuidv4().slice(0, 8)}`,
+    text: DOMPurify.sanitize(text),
+    sender: 'system',
+    createdAt: now,
+    timestamp: now,
+    type,
+    status: 'sent',
+    ...(metadata && { metadata })
   };
-};
+}
 
 /**
- * Create a user message from ticket format
+ * Send typing indicator to a channel
+ * @param channelName Channel name
+ * @param userId User ID
+ * @param status 'start' or 'stop'
  */
-export const createUserMessageFromTicket = (ticketMessage: TicketMessage): Message => {
-  return {
-    id: ticketMessage.id,
-    text: ticketMessage.message,
-    sender: 'user',
-    createdAt: new Date(ticketMessage.createdAt),
-    type: 'text',
-    status: 'sent'
-  };
-};
-
-/**
- * Convert ticket messages to chat messages
- */
-export const convertTicketMessagesToMessages = (ticketMessages: TicketMessage[]): Message[] => {
-  return ticketMessages.map(msg => {
-    if (msg.userType === 'customer') {
-      return createUserMessageFromTicket(msg);
-    } else {
-      return createAgentMessageFromTicket(msg);
-    }
-  });
-};
-
-/**
- * Get a random response message for non-realtime mode
- */
-export const getRandomResponse = (): string => {
-  const responses = [
-    "Thank you for your message. Is there anything else I can help with?",
-    "I appreciate your inquiry. Let me know if you need further assistance.",
-    "I've made a note of your request. Is there any other information you'd like to provide?",
-    "Thanks for sharing that information. Do you have any other questions?"
-  ];
-  
-  return responses[Math.floor(Math.random() * responses.length)];
-};
-
-/**
- * Process system message and handle side effects
- */
-export const processSystemMessage = (
-  message: Message,
-  chatChannelName: string,
-  sessionId: string,
-  config?: ChatWidgetConfig,
-  playMessageSound?: () => void
-): void => {
-  // Play sound notification if provided and chat is not visible
-  if (playMessageSound && document.visibilityState !== 'visible') {
-    playMessageSound();
-  }
-  
-  // Dispatch message received event
-  dispatchChatEvent('chat:messageReceived', { message });
-  
-  // Update message status to delivered
-  if (config?.features?.readReceipts) {
-    // Send delivered receipt immediately
-    sendDeliveryReceipt(chatChannelName, message.id, sessionId);
-    
-    // Send read receipt after a short delay
-    setTimeout(() => {
-      sendReadReceipt(chatChannelName, message.id, sessionId);
-    }, 2000);
-  }
-};
-
-/**
- * Send typing indicator
- */
-export const sendTypingIndicator = (
-  chatChannelName: string,
-  sessionId: string,
+export function sendTypingIndicator(
+  channelName: string,
+  userId: string,
   status: 'start' | 'stop'
-): void => {
-  publishToChannel(chatChannelName, 'typing', {
+): void {
+  publishToChannel(channelName, 'typing', {
+    userId,
     status,
-    userId: sessionId
-  });
-};
-
-/**
- * Send message reaction
- */
-export const sendMessageReaction = (
-  chatChannelName: string,
-  messageId: string,
-  sessionId: string,
-  reaction: 'thumbsUp' | 'thumbsDown' | null
-): void => {
-  publishToChannel(chatChannelName, 'reaction', {
-    messageId,
-    reaction,
-    userId: sessionId,
     timestamp: new Date()
   });
-};
+}
 
 /**
- * Generate mock conversations when loading fails
+ * Process a system message
+ * @param message The message to process
+ * @param channelName Optional channel name for real-time updates
+ * @param sessionId Optional session ID
+ * @param config Optional widget configuration
  */
-export const getMockConversations = (): any[] => {
-  const now = new Date();
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const twoDaysAgo = new Date(now);
-  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+export function processSystemMessage(
+  message: Message,
+  channelName?: string,
+  sessionId?: string,
+  config?: ChatWidgetConfig
+): void {
+  // Show toast notification for system messages if enabled
+  if (config?.features?.notifications) {
+    toast({
+      title: "New message",
+      description: message.text,
+      duration: 4000
+    });
+  }
   
-  return [
-    {
-      id: 'mock-conv-1',
-      title: 'Technical Support',
-      timestamp: now,
-      lastMessage: 'We\'ll look into your issue right away.',
-      status: 'active',
-      agentInfo: {
-        name: 'Support Agent',
-        avatar: '',
-        status: 'online'
-      },
-      metadata: {
-        ticketProgress: 75
-      },
-      messages: [
-        {
-          id: 'msg-mock-1',
-          text: 'Hello! How can I help you today?',
-          sender: 'system',
-          timestamp: now,
-          status: 'read'
-        },
-        {
-          id: 'msg-mock-2',
-          text: 'I\'m having trouble with my account.',
-          sender: 'user',
-          timestamp: new Date(now.getTime() + 60000),
-          status: 'read'
-        },
-        {
-          id: 'msg-mock-3',
-          text: 'We\'ll look into your issue right away.',
-          sender: 'system',
-          timestamp: new Date(now.getTime() + 120000),
-          status: 'delivered'
-        }
-      ]
-    },
-    {
-      id: 'mock-conv-2',
-      title: 'Billing Support',
-      timestamp: yesterday,
-      lastMessage: 'Your invoice has been updated.',
-      status: 'active',
-      agentInfo: {
-        name: 'Billing Specialist',
-        avatar: '',
-        status: 'away'
-      },
-      metadata: {
-        ticketProgress: 35
-      }
-    },
-    {
-      id: 'mock-conv-3',
-      title: 'Product Inquiry',
-      timestamp: twoDaysAgo,
-      lastMessage: 'Thank you for your interest in our product.',
-      status: 'ended',
-      agentInfo: {
-        name: 'Sales Agent',
-        avatar: '',
-        status: 'offline'
-      },
-      metadata: {
-        ticketProgress: 100
-      }
+  // Dispatch event for the message
+  dispatchChatEvent('chat:messageReceived', { message }, config);
+  
+  // Publish to real-time channel if provided
+  if (channelName && sessionId && config?.realtime) {
+    publishToChannel(channelName, 'message', {
+      id: message.id,
+      text: message.text,
+      sender: message.sender,
+      timestamp: message.createdAt,
+      type: message.type
+    });
+  }
+}
+
+/**
+ * Mark a message as read
+ * @param messageId The ID of the message to mark as read
+ * @param status The new status of the message
+ * @param setReadReceipts Function to update read receipts
+ */
+export function markMessageAsRead(
+  messageId: string,
+  status: MessageStatus,
+  setReadReceipts: React.Dispatch<React.SetStateAction<Record<string, ReadReceipt>>>
+): void {
+  setReadReceipts(prevReceipts => ({
+    ...prevReceipts,
+    [messageId]: {
+      status,
+      timestamp: new Date()
     }
-  ];
-};
+  }));
+}

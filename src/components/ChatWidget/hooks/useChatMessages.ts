@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Message, Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
@@ -13,27 +14,36 @@ export function useChatMessages(
   onUpdateConversation?: (updatedConversation: Conversation) => void,
   playMessageSound?: () => void
 ) {
-  // Use welcomeMessage from config if available, otherwise use default
-  const initialMessages = conversation.messages?.length 
-    ? conversation.messages 
-    : [
-        createSystemMessage(
-          config?.labels?.welcomeMessage || 
-          config?.welcomeMessage || 
-          'Hello! How can I help you today?'
-        )
-      ];
+  // Initialize with conversation messages or a welcome message from config
+  const getInitialMessages = (): Message[] => {
+    if (conversation.messages?.length) {
+      return conversation.messages;
+    }
+    
+    // Use welcomeMessage from config if available, otherwise use default
+    const welcomeMessage = config?.labels?.welcomeMessage || 
+                          config?.welcomeMessage || 
+                          'Hello! How can I help you today?';
+    
+    return [createSystemMessage(welcomeMessage)];
+  };
 
   // Initialize with conversation messages or a welcome message
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>(getInitialMessages());
   const [isTyping, setIsTyping] = useState(false);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const [page, setPage] = useState(1);
 
   // Get session ID
   const sessionId = getChatSessionId();
+  
+  // Determine if this is a new conversation (no ticket ID)
+  const isNewConversation = !conversation.id.includes('ticket-');
+  
   // Create channel name based on conversation
-  const chatChannelName = `conversation:${conversation.id}`;
+  const chatChannelName = isNewConversation 
+    ? `widget:contactevent:${sessionId}` 
+    : `widget:conversation:${conversation.id}`;
 
   // Mark the conversation as read when opened
   useEffect(() => {

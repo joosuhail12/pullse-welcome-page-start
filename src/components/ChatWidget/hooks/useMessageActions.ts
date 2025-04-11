@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { Message } from '../types';
 import { publishToChannel } from '../utils/ably';
@@ -54,17 +55,12 @@ export function useMessageActions(
     }
     
     // If realtime is enabled, publish the message
-    if (config?.realtime?.enabled) {
-      // If no ticket ID, publish to contact event channel
-      const channelToUse = chatChannelName.includes('ticket-') 
-        ? chatChannelName 
-        : `widget:contactevent:${sessionId}`;
-
-      publishToChannel(channelToUse, 'message', {
+    if (config?.realtime && config.realtime === true) {
+      publishToChannel(chatChannelName, 'message', {
         id: userMessage.id,
         text: userMessage.text,
         sender: userMessage.sender,
-        timestamp: userMessage.timestamp,
+        timestamp: userMessage.createdAt,
         type: userMessage.type
       });
       
@@ -102,7 +98,7 @@ export function useMessageActions(
 
   const handleUserTyping = useCallback(() => {
     // If realtime is enabled, send typing indicator
-    if (config?.realtime?.enabled) {
+    if (config?.realtime && config.realtime === true) {
       sendTypingIndicator(chatChannelName, sessionId, 'start');
     }
     
@@ -162,12 +158,12 @@ export function useMessageActions(
     e.target.value = '';
     
     // If realtime is enabled, publish the file message to the channel
-    if (config?.realtime?.enabled) {
+    if (config?.realtime && config.realtime === true) {
       publishToChannel(chatChannelName, 'message', {
         id: fileMessage.id,
         text: fileMessage.text,
         sender: fileMessage.sender,
-        timestamp: fileMessage.timestamp,
+        timestamp: fileMessage.createdAt,
         type: fileMessage.type,
         fileName: fileMessage.fileName
       });
@@ -195,7 +191,8 @@ export function useMessageActions(
       text: 'Chat ended',
       sender: 'status',
       timestamp: new Date(),
-      type: 'status'
+      type: 'status',
+      createdAt: new Date() // Adding createdAt to fix TypeScript error
     };
     
     setMessages(prev => [...prev, statusMessage]);
@@ -207,7 +204,7 @@ export function useMessageActions(
     dispatchChatEvent('chat:close', { endedByUser: true }, config);
     
     // If realtime is enabled, publish the end chat event
-    if (config?.realtime?.enabled) {
+    if (config?.realtime && config.realtime === true) {
       publishToChannel(chatChannelName, 'end', {
         timestamp: new Date(),
         userId: sessionId

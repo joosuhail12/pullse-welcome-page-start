@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
@@ -10,6 +11,7 @@ import { useMessageReactions } from '../hooks/useMessageReactions';
 import { useMessageSearch } from '../hooks/useMessageSearch';
 import { useInlineForm } from '../hooks/useInlineForm';
 import { dispatchChatEvent } from '../utils/events';
+import { ConnectionStatus } from '../utils/reconnectionManager';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -19,6 +21,7 @@ interface ChatViewProps {
   playMessageSound?: () => void;
   userFormData?: Record<string, string>;
   setUserFormData?: (data: Record<string, string>) => void;
+  connectionStatus?: ConnectionStatus;
 }
 
 const ChatView = React.memo(({
@@ -28,7 +31,8 @@ const ChatView = React.memo(({
   config = defaultConfig,
   playMessageSound,
   userFormData,
-  setUserFormData
+  setUserFormData,
+  connectionStatus
 }: ChatViewProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);

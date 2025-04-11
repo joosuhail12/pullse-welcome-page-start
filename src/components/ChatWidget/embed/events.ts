@@ -1,106 +1,108 @@
 
-import { ChatEventType, ChatEventPayload } from '../config';
-import { EventCallback } from './types';
-import { debounce } from './utils';
+import { ChatEventType, EventPayload, WidgetOptions } from './types';
+import { safelyDispatchEvent } from './utils';
+
+// Enhanced typing status tracking
+const typingStatus: Record<string, boolean> = {};
 
 /**
- * Event management for the chat widget
+ * Dispatch typing events with necessary throttling and safety checks
+ * @param type Event type
+ * @param detail Event details
+ * @param options Widget options
  */
-export class EventManager {
-  protected eventListeners: Map<string, EventCallback[]> = new Map();
-  private debouncedDispatch: (event: ChatEventPayload) => void;
-  
-  constructor() {
-    this.debouncedDispatch = debounce((event: ChatEventPayload) => {
-      this.dispatchToListeners(event);
-    }, 300);
-  }
-  
-  /**
-   * Handle widget events (debounce typing events)
-   */
-  public handleEvent(event: ChatEventPayload): void {
-    // Handle typing events with debouncing
-    if (event.type === 'chat:typingStarted' || event.type === 'chat:typingStopped') {
-      this.debouncedDispatch(event);
-    } else {
-      // Handle other events immediately
-      this.dispatchToListeners(event);
-    }
-  }
-  
-  /**
-   * Subscribe to widget events
-   */
-  public on(eventType: ChatEventType | 'all', callback: EventCallback): () => void {
-    const key = eventType;
+export function dispatchTypingEvent(type: 'chat:typingStarted' | 'chat:typingStopped', detail: any, options?: WidgetOptions): void {
+  // Type safety check - typingStarted and typingStopped are special cases
+  if (type === 'chat:typingStarted' || type === 'chat:typingStopped') {
+    const userId = detail?.userId || 'unknown';
     
-    if (!this.eventListeners.has(key)) {
-      this.eventListeners.set(key, []);
-    }
-    
-    this.eventListeners.get(key)!.push(callback);
-    
-    // Return unsubscribe function
-    return () => this.off(eventType, callback);
-  }
-  
-  /**
-   * Unsubscribe from widget events
-   */
-  public off(eventType: ChatEventType | 'all', callback?: EventCallback): void {
-    const key = eventType;
-    
-    if (!this.eventListeners.has(key)) {
+    // Prevent duplicate events for same state
+    if (type === 'chat:typingStarted' && typingStatus[userId]) {
       return;
     }
     
-    if (callback) {
-      // Remove specific callback
-      const listeners = this.eventListeners.get(key)!;
-      const index = listeners.indexOf(callback);
-      if (index !== -1) {
-        listeners.splice(index, 1);
-      }
-    } else {
-      // Remove all callbacks for this event
-      this.eventListeners.delete(key);
-    }
-  }
-  
-  /**
-   * Dispatch event to registered listeners
-   */
-  protected dispatchToListeners(event: ChatEventPayload): void {
-    // Dispatch to specific event listeners
-    const listeners = this.eventListeners.get(event.type);
-    if (listeners) {
-      listeners.forEach(callback => {
-        try {
-          callback(event);
-        } catch (e) {
-          console.error(`Error in ${event.type} listener:`, e);
-        }
-      });
+    if (type === 'chat:typingStopped' && typingStatus[userId] === false) {
+      return;
     }
     
-    // Dispatch to 'all' event listeners
-    const allListeners = this.eventListeners.get('all');
-    if (allListeners) {
-      allListeners.forEach(callback => {
-        try {
-          callback(event);
-        } catch (e) {
-          console.error(`Error in 'all' listener:`, e);
-        }
-      });
-    }
+    // Update typing status
+    typingStatus[userId] = type === 'chat:typingStarted';
+    
+    // Create event payload
+    const payload: EventPayload = {
+      type: type as ChatEventType,
+      timestamp: new Date(),
+      data: detail
+    };
+    
+    // Dispatch the event
+    safelyDispatchEvent(type, payload, options);
   }
+}
 
-  /**
-   * Protected method to allow subclasses to access listeners
-   */
-  protected getListenersFromParent(eventType: ChatEventType | 'all'): EventCallback[] | undefined {
-    return this.eventListeners.get(eventType);
-  }
+/**
+ * Safely dispatch chat widget events
+ * @param type Event type
+ * @param detail Event details 
+ * @param options Widget options
+ */
+export function dispatchWidgetEvent(type: ChatEventType, detail: any, options?: WidgetOptions): void {
+  // Create event payload
+  const payload: EventPayload = {
+    type,
+    timestamp: new Date(),
+    data: detail
+  };
+  
+  // Dispatch the event
+  safelyDispatchEvent(type, payload, options);
+}
+
+/**
+ * Register global event handler for the widget
+ * @param callback Callback function
+ * @param options Widget options
+ */
+export function registerGlobalEventHandler(
+  callback: (event: EventPayload) => void,
+  options?: WidgetOptions
+): () => void {
+  // Define the event listener function
+  const eventListener = (event: Event) => {
+    try {
+      const customEvent = event as CustomEvent;
+      callback(customEvent.detail as EventPayload);
+    } catch (error) {
+      console.error('Error in chat widget event handler', error);
+    }
+  };
+  
+  // List of events to listen to
+  const eventTypes = [
+    'pullse:chat:open',
+    'pullse:chat:close',
+    'pullse:chat:messageSent',
+    'pullse:chat:messageReceived',
+    'pullse:chat:typingStarted',
+    'pullse:chat:typingStopped',
+    'pullse:widget:loaded',
+    'pullse:widget:error',
+    'pullse:contact:initiated',
+    'pullse:contact:formCompleted',
+    'pullse:message:fileUploaded',
+    'pullse:message:reacted',
+    'pullse:chat:ended'
+  ];
+  
+  // Register event listeners
+  eventTypes.forEach(eventType => {
+    window.addEventListener(eventType, eventListener);
+  });
+  
+  // Return function to remove event listeners
+  return () => {
+    eventTypes.forEach(eventType => {
+      window.removeEventListener(eventType, eventListener);
+    });
+  };
 }

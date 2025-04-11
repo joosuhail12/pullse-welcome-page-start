@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Conversation } from '../../types';
+import { Conversation, FormDataStructure } from '../../types';
 import { ChatWidgetConfig, defaultConfig } from '../../config';
 import { useChatMessages } from '../../hooks/useChatMessages';
 import { useMessageReactions } from '../../hooks/useMessageReactions';
@@ -8,6 +8,7 @@ import { useInlineForm } from '../../hooks/useInlineForm';
 import { dispatchChatEvent } from '../../utils/events';
 import ChatViewPresentation from './ChatViewPresentation';
 import { MessageReadStatus } from '../../components/MessageReadReceipt';
+import { ConnectionStatus } from '../../utils/reconnectionManager';
 
 interface ChatViewContainerProps {
   conversation: Conversation;
@@ -17,6 +18,7 @@ interface ChatViewContainerProps {
   playMessageSound?: () => void;
   userFormData?: Record<string, string>;
   setUserFormData?: (data: Record<string, string>) => void;
+  connectionStatus?: ConnectionStatus;
 }
 
 /**
@@ -31,7 +33,8 @@ const ChatViewContainer = ({
   config = defaultConfig,
   playMessageSound,
   userFormData,
-  setUserFormData
+  setUserFormData,
+  connectionStatus
 }: ChatViewContainerProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -124,11 +127,16 @@ const ChatViewContainer = ({
     }
   }, [loadPreviousMessages]);
 
-  const handleFormComplete = useCallback((formData: Record<string, string>) => {
+  const handleFormComplete = useCallback((formData: FormDataStructure) => {
     setShowInlineForm(false);
 
     if (setUserFormData) {
-      setUserFormData(formData);
+      const stringFormData: Record<string, string> = {};
+      Object.entries(formData).forEach(([key, value]) => {
+        stringFormData[key] = String(value);
+      });
+      
+      setUserFormData(stringFormData);
     }
 
     onUpdateConversation({
@@ -139,7 +147,6 @@ const ChatViewContainer = ({
     dispatchChatEvent('contact:formCompleted', { formData }, config);
   }, [setUserFormData, onUpdateConversation, conversation, config]);
 
-  // Handler for toggling message importance
   const handleToggleMessageImportance = useCallback((messageId: string) => {
     setMessages(currentMessages => {
       return currentMessages.map(msg =>
@@ -149,9 +156,7 @@ const ChatViewContainer = ({
       );
     });
 
-    // When a message is marked important, update ticket progress as well
     setTicketProgress(prevProgress => {
-      // Randomly increment progress between 5-15% when message is marked important
       const increment = Math.floor(Math.random() * 10) + 5;
       return Math.min(prevProgress + increment, 100);
     });
@@ -165,7 +170,6 @@ const ChatViewContainer = ({
   const userAvatar = undefined;
   const hasMoreMessages = messages.length >= 20;
 
-  // Styling based on branding config
   const chatViewStyle = useMemo(() => {
     return {
       ...(config?.colors?.primaryColor && {
@@ -180,11 +184,9 @@ const ChatViewContainer = ({
     };
   }, [config?.colors?.primaryColor]);
 
-  // Create proper highlightText function with the correct signature
   const highlightText = useCallback((text: string, term: string) => {
     if (!term) return [{ text, highlighted: false }];
 
-    // Simple highlight function implementation
     const parts: { text: string; highlighted: boolean }[] = [];
     const lowerText = text.toLowerCase();
     const lowerTerm = term.toLowerCase();
@@ -192,7 +194,6 @@ const ChatViewContainer = ({
 
     let index = lowerText.indexOf(lowerTerm);
     while (index !== -1) {
-      // Add non-matching part
       if (index > lastIndex) {
         parts.push({
           text: text.substring(lastIndex, index),
@@ -200,7 +201,6 @@ const ChatViewContainer = ({
         });
       }
 
-      // Add matching part
       parts.push({
         text: text.substring(index, index + term.length),
         highlighted: true
@@ -210,7 +210,6 @@ const ChatViewContainer = ({
       index = lowerText.indexOf(lowerTerm, lastIndex);
     }
 
-    // Add remaining text
     if (lastIndex < text.length) {
       parts.push({
         text: text.substring(lastIndex),
@@ -221,7 +220,6 @@ const ChatViewContainer = ({
     return parts;
   }, []);
 
-  // Convert readReceipts to the format expected by ChatViewPresentation
   const formattedReadReceipts = useMemo(() => {
     if (!readReceipts) return {};
 
@@ -271,6 +269,7 @@ const ChatViewContainer = ({
       config={config}
       onToggleMessageImportance={handleToggleMessageImportance}
       ticketProgress={ticketProgress}
+      connectionStatus={connectionStatus}
     />
   );
 };

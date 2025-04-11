@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { subscribeToChannel, unsubscribeFromChannel } from '../utils/ably/messaging';
 import { getAblyClient } from '../utils/ably/config';
@@ -54,7 +55,8 @@ export function useAblyChannels(config: AblyChannelConfig) {
     }
     
     // Only subscribe to conversation channel if it has a ticket ID
-    if (config.conversationChannel && config.conversationChannel.includes('ticket-')) {
+    if (config.conversationChannel && 
+        config.conversationChannel.includes('ticket-')) {
       console.log(`Subscribing to conversation channel: widget:conversation:${config.conversationChannel}`);
       channels.current.conversation = subscribeToChannel(
         `widget:conversation:${config.conversationChannel}`,
