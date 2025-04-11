@@ -6,7 +6,6 @@ import { useUnreadMessages } from './hooks/useUnreadMessages';
 import { useSound } from './hooks/useSound';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useWidgetPosition } from './hooks/useWidgetPosition';
-import { useAblyChannels } from './hooks/useAblyChannels';
 import LauncherButton from './components/LauncherButton';
 import WidgetContainer from './components/WidgetContainer';
 import EnhancedLoadingIndicator from './components/EnhancedLoadingIndicator';
@@ -15,6 +14,7 @@ import ConnectionManager from './components/ConnectionManager';
 import { ConnectionStatus } from './utils/reconnectionManager';
 import ChatKeyboardHandler from './components/ChatKeyboardHandler';
 import { setWorkspaceIdAndApiKey } from './utils/storage';
+import { dispatchChatEvent } from './utils/events';
 
 export interface ChatWidgetProps {
   workspaceId: string;
@@ -46,9 +46,17 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
   const isMobile = useIsMobile();
   const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
-  
-  // Subscribe to session-based Ably channels
-  useAblyChannels();
+
+  // Dispatch loading event once
+  useEffect(() => {
+    if (config) {
+      dispatchChatEvent('widget:loaded', { config });
+    }
+
+    if (error) {
+      dispatchChatEvent('widget:error', { error });
+    }
+  }, [config, error]);
 
   // If contactData is available from the API but userFormData is not set, initialize it
   useEffect(() => {
