@@ -1,10 +1,11 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { Message, MessageReadReceipt, MessageReadStatus } from '../types';
-import { subscribeToChannel, publishToChannel, isInFallbackMode } from '../utils/ably';
+import { subscribeToChannel, publishToChannel, isInFallbackMode, getAblyClient } from '../utils/ably';
 import { ChatWidgetConfig, ChatEventType } from '../config';
 import { processSystemMessage, sendDeliveryReceipt } from '../utils/messageHandlers';
-import { dispatchValidatedEvent } from '../embed/enhancedEvents';
+import { dispatchValidatedEvent } from '../utils/events';
+import { logger } from '@/lib/logger';
 
 export function useRealtimeSubscriptions(
   chatChannelName: string,
@@ -42,6 +43,7 @@ export function useRealtimeSubscriptions(
             text: message.data.text,
             sender: 'system',
             timestamp: new Date(message.data.timestamp || Date.now()),
+            createdAt: new Date(message.data.timestamp || Date.now()), // Add createdAt field
             type: message.data.type || 'text',
             status: 'sent'
           };
@@ -136,16 +138,51 @@ export function useRealtimeSubscriptions(
         reaction: reactionHandler
       };
       
-      // Setup subscriptions
-      messageChannel = subscribeToChannel(chatChannelName, 'message', messageHandler);
-      typingChannel = subscribeToChannel(chatChannelName, 'typing', typingHandler);
-      readChannel = subscribeToChannel(chatChannelName, 'read', readHandler);
-      deliveredChannel = subscribeToChannel(chatChannelName, 'delivered', deliveredHandler);
-      reactionChannel = subscribeToChannel(chatChannelName, 'reaction', reactionHandler);
+      // Check if Ably is connected before setting up subscriptions
+      const ablyClient = getAblyClient();
+      if (!ablyClient || ablyClient.connection.state !== 'connected') {
+        // If not connected, wait for connection before subscribing
+        logger.info('Waiting for Ably connection before subscribing to channels...', 'useRealtimeSubscriptions');
+        
+        const setupSubscriptions = () => {
+          messageChannel = subscribeToChannel(chatChannelName, 'message', messageHandler);
+          typingChannel = subscribeToChannel(chatChannelName, 'typing', typingHandler);
+          readChannel = subscribeToChannel(chatChannelName, 'read', readHandler);
+          deliveredChannel = subscribeToChannel(chatChannelName, 'delivered', deliveredHandler);
+          reactionChannel = subscribeToChannel(chatChannelName, 'reaction', reactionHandler);
+        };
+        
+        // Set up a one-time connection event listener
+        const onConnected = () => {
+          logger.info('Ably connected, setting up subscriptions', 'useRealtimeSubscriptions');
+          setupSubscriptions();
+          document.removeEventListener('pullse:ably:connected', onConnected);
+        };
+        
+        document.addEventListener('pullse:ably:connected', onConnected);
+        
+        // Also listen for Ably connection change event
+        document.addEventListener('pullse:chat:connectionChange', (event: any) => {
+          connectionHandler(event.detail);
+        });
+        
+        // If already connected (race condition), set up now
+        if (ablyClient && ablyClient.connection.state === 'connected') {
+          setupSubscriptions();
+        }
+      } else {
+        // Ably is already connected, set up subscriptions immediately
+        messageChannel = subscribeToChannel(chatChannelName, 'message', messageHandler);
+        typingChannel = subscribeToChannel(chatChannelName, 'typing', typingHandler);
+        readChannel = subscribeToChannel(chatChannelName, 'read', readHandler);
+        deliveredChannel = subscribeToChannel(chatChannelName, 'delivered', deliveredHandler);
+        reactionChannel = subscribeToChannel(chatChannelName, 'reaction', reactionHandler);
+      }
       
       // Subscribe to connection state changes
-      connectionChannel = document.addEventListener('pullse:chat:connectionChange', 
-        (event: any) => connectionHandler(event.detail));
+      document.addEventListener('pullse:chat:connectionChange', (event: any) => {
+        connectionHandler(event.detail);
+      });
       
       // Set up fallback mode listeners if needed
       if (isInFallbackMode() && !fallbackSetupDone.current) {
@@ -184,6 +221,9 @@ export function useRealtimeSubscriptions(
         // Clean up connection state listener
         document.removeEventListener('pullse:chat:connectionChange', 
           (event: any) => connectionHandler(event.detail));
+        
+        // Clean up Ably connected event listener
+        document.removeEventListener('pullse:ably:connected', () => {});
         
         // Clean up local fallback listeners
         if (fallbackSetupDone.current) {
