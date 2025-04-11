@@ -172,19 +172,18 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat }: Mes
     return format(new Date(date), 'MMM d, yyyy');
   }, []);
 
-  const formatTime = useCallback((date: Date | string): string => {
-    const now = new Date();
-    const setDate = new Date(date);
-    const diff = now.getTime() - setDate.getTime();
+  const formatTimestamp = (msg: any) => {
+    if (!msg || !msg.createdAt) return '';
+    
+    return format(new Date(msg.createdAt), 'h:mm a');
+  };
 
-    if (diff < 1000 * 60 * 60) {
-      return `${Math.floor(diff / (1000 * 60))}m ago`;
-    } else if (diff < 1000 * 60 * 60 * 24) {
-      return `${Math.floor(diff / (1000 * 60 * 60))}h ago`;
-    } else {
-      return format(setDate, 'h:mm a');
+  const getFormattedDate = (msg: any) => {
+    if (msg && msg.createdAt) {
+      return format(new Date(msg.createdAt), 'MMM dd, yyyy');
     }
-  }, []);
+    return '';
+  };
 
   const handleStartNewChat = useCallback(() => {
     onStartChat();
@@ -517,7 +516,7 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat }: Mes
             <TooltipTrigger asChild>
               <div className="flex items-center">
                 <Calendar size={12} className="mr-1" />
-                <span>Started {formatDateDisplay(createdDate)}</span>
+                <span>Started {getFormattedDate(createdDate)}</span>
               </div>
             </TooltipTrigger>
             <TooltipContent>

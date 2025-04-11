@@ -1,5 +1,6 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Conversation } from '../../types';
+import { Conversation, FormDataStructure } from '../../types';
 import { ChatWidgetConfig, defaultConfig } from '../../config';
 import { useChatMessages } from '../../hooks/useChatMessages';
 import { useMessageReactions } from '../../hooks/useMessageReactions';
@@ -8,6 +9,7 @@ import { useInlineForm } from '../../hooks/useInlineForm';
 import { dispatchChatEvent } from '../../utils/events';
 import ChatViewPresentation from './ChatViewPresentation';
 import { MessageReadStatus } from '../../components/MessageReadReceipt';
+import { getConversationChannelName } from '../../utils/conversationUtils';
 
 interface ChatViewContainerProps {
   conversation: Conversation;
@@ -71,12 +73,18 @@ const ChatViewContainer = ({
     loadPreviousMessages
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
 
+  // Get channel name for reactions
+  const chatChannel = useMemo(() => {
+    const channelName = getConversationChannelName(conversation);
+    return channelName || `conversation:${conversation.id}`;
+  }, [conversation]);
+
   const {
     handleMessageReaction
   } = useMessageReactions(
     messages,
     message => setMessages(message),
-    `conversation:${conversation.id}`,
+    chatChannel,
     conversation.sessionId || '',
     config
   );
@@ -124,11 +132,17 @@ const ChatViewContainer = ({
     }
   }, [loadPreviousMessages]);
 
-  const handleFormComplete = useCallback((formData: Record<string, string>) => {
+  // Create a wrapper for form completion that accepts FormDataStructure
+  const handleFormComplete = useCallback((formData: FormDataStructure) => {
+    // Convert to Record<string, string> if needed
+    const stringFormData = Object.fromEntries(
+      Object.entries(formData).map(([key, value]) => [key, String(value)])
+    );
+    
     setShowInlineForm(false);
 
     if (setUserFormData) {
-      setUserFormData(formData);
+      setUserFormData(stringFormData);
     }
 
     onUpdateConversation({
@@ -235,6 +249,13 @@ const ChatViewContainer = ({
     return result;
   }, [readReceipts]);
 
+  // Create a wrapper for file upload to handle the event
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (handleFileUpload) {
+      handleFileUpload(e);
+    }
+  }, [handleFileUpload]);
+
   return (
     <ChatViewPresentation
       conversation={conversation}
@@ -246,7 +267,7 @@ const ChatViewContainer = ({
       remoteIsTyping={remoteIsTyping}
       handleSendMessage={handleSendMessage}
       handleUserTyping={handleUserTyping}
-      handleFileUpload={handleFileUpload}
+      handleFileUpload={handleFileInputChange}
       handleEndChat={handleEndChat}
       readReceipts={formattedReadReceipts}
       onBack={onBack}

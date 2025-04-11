@@ -5,8 +5,8 @@ import { publishToChannel } from '../utils/ably/messaging';
 import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig } from '../config';
 
-// Possible reaction types
-export type ReactionType = 'like' | 'dislike' | 'heart' | 'laugh' | 'confused' | 'none';
+// Possible reaction types that align with the Message type
+export type ReactionType = 'thumbsUp' | 'thumbsDown';
 
 export function useMessageReactions(
   messages: Message[],

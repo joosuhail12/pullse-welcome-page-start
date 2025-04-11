@@ -1,6 +1,6 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
-import { Conversation, Message, AgentStatus } from '../../types';
+import { Conversation, Message, AgentStatus, FormDataStructure } from '../../types';
 import { ChatWidgetConfig } from '../../config';
 import ChatViewHeader from '../../components/ChatViewHeader';
 import PreChatForm from '../../components/PreChatForm';
@@ -43,7 +43,7 @@ interface ChatViewPresentationProps {
   hasMoreMessages: boolean;
   isLoadingMore: boolean;
   showInlineForm: boolean;
-  handleFormComplete: (formData: Record<string, string>) => void;
+  handleFormComplete: (formData: FormDataStructure) => void; 
   config: ChatWidgetConfig;
   onToggleMessageImportance: (messageId: string) => void;
   ticketProgress: number;

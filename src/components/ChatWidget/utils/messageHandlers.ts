@@ -55,7 +55,7 @@ export function createAgentMessage(text: string, type: 'text' | 'file' = 'text')
  */
 export function processSystemMessage(
   message: Message,
-  channelName: string,
+  channelName: string | null,
   sessionId: string,
   config?: ChatWidgetConfig,
   playMessageSound?: () => void
@@ -72,7 +72,7 @@ export function processSystemMessage(
     timestamp: message.createdAt
   });
 
-  // Only send read receipt if enabled
+  // Only send read receipt if enabled and channel exists
   if (config?.features?.readReceipts && channelName && sessionId) {
     sendReadReceipt(channelName, message.id, sessionId);
   }
@@ -83,7 +83,7 @@ export function processSystemMessage(
  */
 export function processMessageStatusChange(
   messageId: string,
-  status: MessageReadStatus,
+  status: 'sent' | 'sending' | 'delivered' | 'read',
   messages: Message[],
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>
 ): void {

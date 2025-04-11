@@ -30,7 +30,8 @@ export const subscribeToChannel = (
       channelName.includes('null') || 
       channelName.includes('undefined') || 
       channelName === 'widget:session:null' ||
-      channelName === 'session:null') {
+      channelName === 'session:null' ||
+      channelName === 'widget:conversation:null') {
     console.warn(`Invalid channel name: ${channelName}, skipping subscription`);
     return;
   }
@@ -104,7 +105,8 @@ export const publishToChannel = (
       channelName.includes('null') || 
       channelName.includes('undefined') || 
       channelName === 'widget:session:null' ||
-      channelName === 'session:null') {
+      channelName === 'session:null' ||
+      channelName === 'widget:conversation:null') {
     console.warn(`Invalid channel name: ${channelName}, skipping publish`);
     return;
   }

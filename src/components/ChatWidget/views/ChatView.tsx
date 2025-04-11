@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Conversation } from '../types';
+import { Conversation, FormDataStructure } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
@@ -11,6 +11,7 @@ import { useMessageReactions } from '../hooks/useMessageReactions';
 import { useMessageSearch } from '../hooks/useMessageSearch';
 import { useInlineForm } from '../hooks/useInlineForm';
 import { dispatchChatEvent } from '../utils/events';
+import { getConversationChannelName } from '../utils/conversationUtils';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -36,7 +37,7 @@ const ChatView = React.memo(({
 
   const {
     showInlineForm,
-    handleFormComplete
+    handleFormComplete: inlineFormComplete
   } = useInlineForm(
     conversation,
     config,
@@ -45,6 +46,7 @@ const ChatView = React.memo(({
     onUpdateConversation
   );
 
+  // Use the chat messages hook to handle messages and channels
   const {
     messages,
     messageText,
@@ -60,12 +62,18 @@ const ChatView = React.memo(({
     loadPreviousMessages
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
 
+  // Get channel name for reaction handling
+  const chatChannel = useMemo(() => {
+    const channelName = getConversationChannelName(conversation);
+    return channelName || `conversation:${conversation.id}`;
+  }, [conversation]);
+
   const {
     handleMessageReaction
   } = useMessageReactions(
     messages,
     message => setMessages(message),
-    `conversation:${conversation.id}`,
+    chatChannel,
     conversation.sessionId || '',
     config
   );
@@ -113,6 +121,19 @@ const ChatView = React.memo(({
     }
   }, [loadPreviousMessages]);
 
+  // Create a wrapper for form completion that accepts the right type
+  const handleFormComplete = useCallback((formData: FormDataStructure) => {
+    // Convert to Record<string, string> if needed
+    const stringFormData = Object.fromEntries(
+      Object.entries(formData).map(([key, value]) => [key, String(value)])
+    );
+    
+    if (inlineFormComplete) {
+      inlineFormComplete(stringFormData);
+    }
+    
+  }, [inlineFormComplete]);
+
   const highlightText = useCallback((text: string): string[] => {
     if (!searchTerm) return [text];
 
@@ -146,6 +167,13 @@ const ChatView = React.memo(({
       } as React.CSSProperties)
     };
   }, [config?.colors?.primaryColor]);
+
+  // Create a wrapper for file upload
+  const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (handleFileUpload) {
+      handleFileUpload(e);
+    }
+  }, [handleFileUpload]);
 
   return (
     <div
@@ -197,7 +225,7 @@ const ChatView = React.memo(({
         messageText={messageText}
         setMessageText={setMessageText}
         handleSendMessage={handleSendMessage}
-        handleFileUpload={handleFileUpload}
+        handleFileUpload={handleFileInputChange}
         handleEndChat={handleEndChat}
         hasUserSentMessage={hasUserSentMessage}
         onTyping={handleUserTyping}

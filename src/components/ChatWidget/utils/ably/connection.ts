@@ -1,4 +1,3 @@
-
 import Ably from 'ably';
 import { v4 as uuidv4 } from 'uuid';
 import { getChatSessionId } from '../cookies';
@@ -9,7 +8,6 @@ import {
 import { getAblyAuthUrl } from '../../services/ablyAuth';
 import { ChatEventType } from '../../config';
 import { dispatchValidatedEvent, EventPriority } from '../../embed/enhancedEvents';
-import { getAgentResponse } from '../simulateAgentTyping';
 import { getAccessToken, getWorkspaceIdAndApiKey } from '../storage';
 
 // Function to get Ably client configuration
@@ -399,5 +397,17 @@ export const handleConnectionStateChange = (
       console.log('Ably connection closed');
       dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'closed' }, EventPriority.HIGH);
       break;
+  }
+};
+
+// Simplified agent response simulator function
+const simulateAgentResponse = (message: string) => {
+  // Simple response logic to replace the missing getAgentResponse
+  if (message.toLowerCase().includes('hello')) {
+    return "Hello! How can I assist you today?";
+  } else if (message.toLowerCase().includes('help')) {
+    return "I'm here to help. What do you need assistance with?";
+  } else {
+    return "Thank you for your message. An agent will respond shortly.";
   }
 };

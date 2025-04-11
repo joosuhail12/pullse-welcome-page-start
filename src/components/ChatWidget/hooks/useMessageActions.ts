@@ -11,8 +11,8 @@ import { dispatchChatEvent } from '../utils/events';
 export function useMessageActions(
   messages: Message[],
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-  channelName: string,
-  sessionId: string,
+  channelName: string | null,
+  sessionId: string | null,
   config?: ChatWidgetConfig,
   setHasUserSentMessage?: React.Dispatch<React.SetStateAction<boolean>>,
   setIsTyping?: React.Dispatch<React.SetStateAction<boolean>>
@@ -128,12 +128,10 @@ export function useMessageActions(
         createdAt: new Date(),
         type: 'file',
         status: 'sending',
-        fileData: {
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          url: URL.createObjectURL(file)
-        }
+        fileUrl: URL.createObjectURL(file),
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
       };
       
       // Update local state
@@ -155,12 +153,10 @@ export function useMessageActions(
           timestamp: fileMessage.createdAt,
           type: fileMessage.type,
           status: fileMessage.status,
-          fileData: {
-            name: file.name,
-            size: file.size,
-            type: file.type
-            // URL would come from server
-          }
+          fileUrl: fileMessage.fileUrl,
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type
         });
       }
       
