@@ -443,28 +443,13 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
 };
 
 export const fetchConversations = async () => {
-  try {
-    const accessToken = getAccessToken();
-    if (!accessToken) {
-      return { status: 'error', message: 'No access token available', data: [] };
+  const accessToken = getAccessToken();
+  const response = await fetch(`https://dev-socket.pullseai.com/api/widgets/getContactDeviceTickets`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + accessToken
     }
-
-    const response = await fetch(`https://dev-socket.pullseai.com/api/widgets/getContactDeviceTickets`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + accessToken
-      }
-    });
-    
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      throw new Error(`API error: ${response.status} ${response.statusText} - ${errorText}`);
-    }
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error fetching conversations:', error);
-    return { status: 'error', message: 'Failed to fetch conversations', data: [] };
-  }
+  });
+  const data = await response.json();
+  return data;
 }

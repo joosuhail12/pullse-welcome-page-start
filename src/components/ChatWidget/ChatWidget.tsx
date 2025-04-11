@@ -1,47 +1,28 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { ChatWidgetConfig, defaultConfig } from './config';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useChatState } from './hooks/useChatState';
-import MessagesView from './views/MessagesView';
-import ChatView from './views/ChatView';
-import { fetchChatWidgetConfig } from './services/api';
-import { getWorkspaceIdAndApiKey } from './utils/storage';
-import { dispatchChatEvent } from './utils/events';
-import useSound from 'use-sound';
-import notificationSound from '@/assets/sounds/notification.mp3';
-import { useAblyConnection } from './hooks/useAblyConnection';
+import useWidgetConfig from './hooks/useWidgetConfig';
+import { useUnreadMessages } from './hooks/useUnreadMessages';
+import { useSound } from './hooks/useSound';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useWidgetPosition } from './hooks/useWidgetPosition';
+import LauncherButton from './components/LauncherButton';
+import WidgetContainer from './components/WidgetContainer';
+import EnhancedLoadingIndicator from './components/EnhancedLoadingIndicator';
+import ChatWidgetErrorBoundary from './components/ChatWidgetErrorBoundary';
+import ConnectionManager from './components/ConnectionManager';
+import { ConnectionStatus } from './utils/reconnectionManager';
+import ChatKeyboardHandler from './components/ChatKeyboardHandler';
+import { setWorkspaceIdAndApiKey } from './utils/storage';
 
-const ChatWidget = () => {
-  const [widgetConfig, setWidgetConfig] = useState<ChatWidgetConfig>(defaultConfig);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchParams] = useSearchParams();
-  const [playMessageSound] = useSound(notificationSound, { volume: 0.5 });
+export interface ChatWidgetProps {
+  workspaceId: string;
+  apiKey: string;
+}
 
-  const { apiKey, workspaceId } = getWorkspaceIdAndApiKey();
-
-  // Initialize Ably connection
-  useAblyConnection(widgetConfig);
-
-  useEffect(() => {
-    const loadConfig = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const config = await fetchChatWidgetConfig(workspaceId, apiKey);
-        setWidgetConfig(config);
-        dispatchChatEvent('widget:loaded', {}, config);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load configuration.');
-        dispatchChatEvent('widget:error', { error: err.message }, defaultConfig);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadConfig();
-  }, [workspaceId, apiKey]);
+const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
+  // Set workspace id and api key in localStorage
+  setWorkspaceIdAndApiKey(workspaceId, apiKey);
 
   const {
     viewState,
@@ -50,54 +31,104 @@ const ChatWidget = () => {
     handleBackToMessages,
     handleChangeView,
     handleSelectConversation,
-    handleSelectTicket,
     handleUpdateConversation,
-    handleLogout,
     userFormData,
-    setUserFormData,
-    isLoadingConversation
+    setUserFormData
   } = useChatState();
 
-  const enhancedHandleSelectConversation = useCallback((conversation: any) => {
-    handleChangeView('chat');
-  }, [handleChangeView]);
+  const { config, loading, error, contactData } = useWidgetConfig();
+  const [isOpen, setIsOpen] = useState(false);
+  const { unreadCount, clearUnreadMessages } = useUnreadMessages();
+  const { playMessageSound } = useSound();
+  const isMobile = useIsMobile();
+  const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
 
-  if (isLoading) {
-    return <div className="w-full h-full flex items-center justify-center">Loading...</div>;
+  // If contactData is available from the API but userFormData is not set, initialize it
+  useEffect(() => {
+    if (contactData && !userFormData) {
+      // Create form data from contact
+      const formData = {
+        email: contactData.email,
+        name: `${contactData.firstname} ${contactData.lastname}`.trim()
+      };
+      setUserFormData(formData);
+    }
+  }, [contactData, userFormData, setUserFormData]);
+
+  const widgetStyle = useMemo(() => ({
+    ...(config.colors?.primaryColor && {
+      '--vivid-purple': config.colors.primaryColor,
+    } as React.CSSProperties)
+  }), [config.colors?.primaryColor]);
+
+  const toggleChat = useCallback(() => {
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+
+    setTimeout(() => {
+      if (newIsOpen) {
+        clearUnreadMessages();
+      }
+    }, isMobile ? 50 : 0);
+  }, [isOpen, clearUnreadMessages, isMobile]);
+
+  // Global keyboard shortcut to toggle chat widget open/close with Alt+C
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && e.key === 'c') {
+        e.preventDefault();
+        toggleChat();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [toggleChat]);
+
+  if (loading && isOpen) {
+    return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles} config={config} />;
   }
 
-  if (error) {
-    return <div className="w-full h-full flex items-center justify-center text-red-500">Error: {error}</div>;
-  }
+  // Add contact data to config for component access
+  const enhancedConfig = {
+    ...config,
+    contact: contactData
+  };
 
   return (
-    <div className="h-full overflow-hidden flex flex-col">
-      {viewState === 'home' && (
-        <div className="flex-grow flex items-center justify-center">
-          <button onClick={handleStartChat}>Start New Chat</button>
-        </div>
-      )}
-      
-      {viewState === 'messages' && (
-        <MessagesView
-          onStartChat={handleStartChat}
-          onSelectConversation={handleSelectConversation}
-          onSelectTicket={handleSelectTicket}
-        />
-      )}
-      
-      {viewState === 'chat' && activeConversation && (
-        <ChatView
-          conversation={activeConversation}
-          onBack={handleBackToMessages}
-          onUpdateConversation={handleUpdateConversation}
-          config={widgetConfig}
-          playMessageSound={playMessageSound}
-          userFormData={userFormData}
-          setUserFormData={setUserFormData}
-        />
-      )}
-    </div>
+    <ChatWidgetErrorBoundary workspaceId={workspaceId}>
+      <ConnectionManager
+        workspaceId={workspaceId}
+        enabled={true}
+        onStatusChange={setConnectionStatus}
+      />
+
+      <WidgetContainer
+        isOpen={isOpen}
+        viewState={viewState}
+        activeConversation={activeConversation}
+        config={enhancedConfig}
+        widgetStyle={widgetStyle}
+        containerStyles={getWidgetContainerPositionStyles}
+        userFormData={userFormData}
+        handleSelectConversation={handleSelectConversation}
+        handleUpdateConversation={handleUpdateConversation}
+        handleChangeView={handleChangeView}
+        handleBackToMessages={handleBackToMessages}
+        handleStartChat={handleStartChat}
+        setUserFormData={setUserFormData}
+        playMessageSound={playMessageSound}
+      />
+
+      <LauncherButton
+        isOpen={isOpen}
+        unreadCount={unreadCount}
+        onClick={toggleChat}
+        config={enhancedConfig}
+        positionStyles={getLauncherPositionStyles}
+      />
+    </ChatWidgetErrorBoundary>
   );
 };
 

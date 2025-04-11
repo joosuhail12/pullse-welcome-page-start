@@ -38,13 +38,11 @@ export const sendDeliveryReceipt = (
  * Creates a system response message
  */
 export const createSystemMessage = (text: string): Message => {
-  const timestamp = new Date();
   return {
     id: `msg-${Date.now()}-system`,
     text,
     sender: 'system',
-    timestamp,
-    createdAt: timestamp,
+    timestamp: new Date(),
     type: 'text',
     status: 'sent'
   };
@@ -57,13 +55,11 @@ export const createUserMessage = (text: string, type: 'text' | 'file' = 'text', 
   fileName: string;
   fileUrl: string;
 }): Message => {
-  const timestamp = new Date();
   return {
     id: `msg-${Date.now()}-user${type === 'file' ? '-file' : ''}`,
     text,
     sender: 'user',
-    timestamp,
-    createdAt: timestamp,
+    timestamp: new Date(),
     type,
     status: 'sent',
     ...(fileData && {

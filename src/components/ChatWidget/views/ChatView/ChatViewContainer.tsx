@@ -16,7 +16,7 @@ interface ChatViewContainerProps {
   config?: ChatWidgetConfig;
   playMessageSound?: () => void;
   userFormData?: Record<string, string>;
-  setUserFormData?: (data: FormDataStructure) => void;
+  setUserFormData?: (data: Record<string, string>) => void;
 }
 
 /**
@@ -124,7 +124,7 @@ const ChatViewContainer = ({
     }
   }, [loadPreviousMessages]);
 
-  const handleFormComplete = useCallback((formData: FormDataStructure) => {
+  const handleFormComplete = useCallback((formData: Record<string, string>) => {
     setShowInlineForm(false);
 
     if (setUserFormData) {
