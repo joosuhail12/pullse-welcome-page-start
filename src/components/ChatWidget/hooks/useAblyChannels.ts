@@ -22,12 +22,12 @@ export function useAblyChannels(config: AblyChannelConfig) {
   const channels = useRef<AblyChannels>({});
   const [sessionId, setSessionId] = useState<string | null>(getChatSessionId());
   const subscribedChannels = useRef<Set<string>>(new Set());
-  
+
   // Validate channel name to ensure it's safe to subscribe
   const isValidChannelName = (channelName: string): boolean => {
     return Boolean(
-      channelName && 
-      !channelName.includes('null') && 
+      channelName &&
+      !channelName.includes('null') &&
       !channelName.includes('undefined') &&
       channelName !== 'widget:events:null' &&
       channelName !== 'widget:events:undefined' &&
@@ -37,14 +37,14 @@ export function useAblyChannels(config: AblyChannelConfig) {
       channelName !== 'widget:contactevent:undefined'
     );
   };
-  
+
   const subscribeToChannels = () => {
     const client = getAblyClient();
     if (!client || client.connection.state !== 'connected') {
       console.warn('Ably client not connected, skipping channel subscriptions');
       return;
     }
-    
+
     // Only subscribe to session channels if enabled and have a valid session ID
     if (config.sessionChannels && sessionId) {
       // Subscribe to events channel for the session
@@ -66,7 +66,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
           console.error(`Error subscribing to ${eventsChannel}:`, error);
         }
       }
-      
+
       // Subscribe to notifications channel for the session
       const notificationsChannel = `widget:notifications:${sessionId}`;
       if (isValidChannelName(notificationsChannel) && !subscribedChannels.current.has(notificationsChannel)) {
@@ -86,7 +86,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
           console.error(`Error subscribing to ${notificationsChannel}:`, error);
         }
       }
-      
+
       // Subscribe to contact event channel for the session
       const contactChannel = `widget:contactevent:${sessionId}`;
       if (isValidChannelName(contactChannel) && !subscribedChannels.current.has(contactChannel)) {
@@ -94,7 +94,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
         try {
           channels.current.contactEvent = subscribeToChannel(
             contactChannel,
-            'message',
+            'new_ticket',
             (message) => {
               console.log('Received contact event message:', message);
             }
@@ -107,11 +107,11 @@ export function useAblyChannels(config: AblyChannelConfig) {
         }
       }
     }
-    
+
     // Only subscribe to conversation channel if it has a ticket ID
-    if (config.conversationChannel && 
-        config.conversationChannel.includes('ticket-') &&
-        !subscribedChannels.current.has(`widget:conversation:${config.conversationChannel}`)) {
+    if (config.conversationChannel &&
+      config.conversationChannel.includes('ticket-') &&
+      !subscribedChannels.current.has(`widget:conversation:${config.conversationChannel}`)) {
       const conversationChannel = `widget:conversation:${config.conversationChannel}`;
       console.log(`Subscribing to conversation channel: ${conversationChannel}`);
       try {
@@ -156,10 +156,10 @@ export function useAblyChannels(config: AblyChannelConfig) {
   useEffect(() => {
     const client = getAblyClient();
     if (!client) return;
-    
+
     const handleConnectionStateChange = (state: Ably.Types.ConnectionStateChange) => {
       console.log(`Ably connection state changed to: ${state.current}`);
-      
+
       if (state.current === 'connected') {
         setIsConnected(true);
         subscribeToChannels();
@@ -167,20 +167,20 @@ export function useAblyChannels(config: AblyChannelConfig) {
         setIsConnected(false);
       }
     };
-    
+
     // Subscribe to connection state changes
     client.connection.on(handleConnectionStateChange);
-    
+
     // Check initial connection state
     if (client.connection.state === 'connected') {
       setIsConnected(true);
       subscribeToChannels();
     }
-    
+
     return () => {
       // Clean up event listener on unmount
       client.connection.off(handleConnectionStateChange);
-      
+
       // Don't unsubscribe channels here to prevent disconnecting
       // We'll let the Ably client manager handle this
     };
@@ -193,7 +193,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
       // Only subscribe to new channels
       subscribeToChannels();
     }
-    
+
     // Clean up when component unmounts
     return () => {
       // Explicitly unsubscribe from conversation channel when unmounting or when conversation changes
