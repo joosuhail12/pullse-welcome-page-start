@@ -1,4 +1,3 @@
-
 /**
  * Utility functions for managing storage and cookies
  */
@@ -188,4 +187,27 @@ export function setUserFormDataInLocalStorage(formData: Record<string, string>):
  */
 export function isUserAuthenticated(): boolean {
   return getUserFormDataFromLocalStorage() !== undefined;
+}
+
+/**
+ * Get session ID from localStorage
+ */
+export function getChatSessionId(): string | null {
+  try {
+    return localStorage.getItem('pullse_session_id');
+  } catch (error) {
+    console.error('Error getting session ID from localStorage:', error);
+    return null;
+  }
+}
+
+/**
+ * Set session ID in localStorage
+ */
+export function setChatSessionId(sessionId: string): void {
+  try {
+    localStorage.setItem('pullse_session_id', sessionId);
+  } catch (error) {
+    console.error('Error setting session ID in localStorage:', error);
+  }
 }
