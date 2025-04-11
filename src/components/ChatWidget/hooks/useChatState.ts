@@ -1,16 +1,42 @@
 
 import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
-import { Conversation } from '../types';
+import { Conversation, Message } from '../types';
 import { saveConversationToStorage, loadConversationsFromStorage, getWorkspaceIdAndApiKey, getAccessToken, setUserFormDataInLocalStorage, getUserFormDataFromLocalStorage } from '../utils/storage';
 import { logout, checkSessionValidity } from '../utils/security';
+import { fetchConversationByTicketId } from '../services/api';
 
 type ViewState = 'home' | 'messages' | 'chat';
+
+interface ApiTicket {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  lastMessage: string;
+  lastMessageAt: string;
+  createdAt: string;
+  updatedAt: string;
+  unread: number;
+  deviceId: string;
+  assigneeId: string | null;
+}
+
+interface ApiMessage {
+  id: string;
+  message: string;
+  type: string;
+  createdAt: string;
+  updatedAt: string;
+  ticketId: string;
+  userType: 'customer' | 'agent';
+}
 
 export function useChatState() {
   const [viewState, setViewState] = useState<ViewState>('messages'); // Default to messages view
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(getUserFormDataFromLocalStorage());
+  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
 
   // Load any existing conversations when component mounts
   // and verify session validity
@@ -102,6 +128,64 @@ export function useChatState() {
     }
   }, []);
 
+  // Convert API ticket messages to our Message format
+  const convertApiMessagesToMessages = useCallback((apiMessages: ApiMessage[]): Message[] => {
+    return apiMessages.map(msg => ({
+      id: msg.id,
+      text: msg.message,
+      sender: msg.userType === 'customer' ? 'user' : 'agent',
+      timestamp: new Date(msg.createdAt),
+      createdAt: new Date(msg.createdAt),
+      type: 'text',
+      status: 'sent'
+    }));
+  }, []);
+
+  // Handler for when a ticket is selected from the messages view
+  const handleSelectTicket = useCallback(async (ticket: ApiTicket) => {
+    setIsLoadingConversation(true);
+
+    try {
+      // Fetch conversation history for this ticket
+      const response = await fetchConversationByTicketId(ticket.id);
+      
+      if (response.status === 'success' && response.data) {
+        // Convert API messages to our format
+        const messages = convertApiMessagesToMessages(response.data);
+
+        // Create conversation object from ticket
+        const conversation: Conversation = {
+          id: ticket.id,
+          title: ticket.title || 'Support Conversation',
+          lastMessage: ticket.lastMessage || '',
+          createdAt: new Date(ticket.createdAt),
+          messages: messages,
+          agentInfo: {
+            name: 'Support Agent',
+            status: 'online',
+            avatar: undefined
+          },
+          contactIdentified: true,
+          ticketId: ticket.id,
+          metadata: {
+            ticketProgress: Math.floor(Math.random() * 100),
+            status: ticket.status
+          }
+        };
+
+        setActiveConversation(conversation);
+        setViewState('chat');
+      } else {
+        toast.error('Failed to load conversation history');
+      }
+    } catch (error) {
+      console.error('Error fetching ticket conversation:', error);
+      toast.error('Failed to load conversation history');
+    } finally {
+      setIsLoadingConversation(false);
+    }
+  }, [convertApiMessagesToMessages]);
+
   // Handler for when a conversation is selected from the messages view
   const handleSelectConversation = useCallback((conversation: Conversation) => {
     setActiveConversation(conversation);
@@ -137,9 +221,11 @@ export function useChatState() {
     handleBackToMessages,
     handleChangeView,
     handleSelectConversation,
+    handleSelectTicket,
     handleUpdateConversation,
     handleLogout,
     userFormData,
     setUserFormData: handleSetFormData,
+    isLoadingConversation
   };
 }

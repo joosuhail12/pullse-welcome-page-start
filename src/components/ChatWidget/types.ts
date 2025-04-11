@@ -1,127 +1,113 @@
-export interface Message {
-  id: string;
-  text: string;
-  sender: UserType;
-  createdAt: Date;
-  type?: MessageType;
-  fileUrl?: string;
-  fileName?: string;
-  status?: 'sending' | 'sent' | 'delivered' | 'read';
-  reaction?: 'thumbsUp' | 'thumbsDown' | null;
-  cardData?: {
-    title: string;
-    description: string;
-    imageUrl?: string;
-    buttons?: Array<{ text: string; action: string }>;
-  };
-  quickReplies?: Array<{ text: string; action: string }>;
-  important?: boolean; // New field to mark important messages
-  unread?: boolean;    // New field to mark unread messages
-  metadata?: Record<string, any>; // Add metadata field for flexibility
-  timestamp?: Date;    // For backward compatibility
-}
+export type ChatEventType = 
+  | 'chat:open'
+  | 'chat:close'
+  | 'chat:minimize'
+  | 'chat:maximize'
+  | 'chat:messageSent'
+  | 'chat:messageReceived'
+  | 'chat:typingStarted'
+  | 'chat:typingStopped'
+  | 'message:reacted'
+  | 'message:fileUploaded'
+  | 'contact:initiated'
+  | 'contact:formCompleted'
+  | 'notification:read'
+  | 'notification:clicked'
+  | 'widget:loaded'
+  | 'widget:error'
+  | `local:${string}:${string}`;
 
-// Standardized agent status type
-export type AgentStatus = 'online' | 'offline' | 'away' | 'busy';
-
-export interface Conversation {
+export interface Ticket {
   id: string;
+  sno: number;
   title: string;
-  messages?: Message[];
-  createdAt: Date;
-  lastMessage?: string;
-  status?: 'active' | 'ended';
-  agentInfo?: {
-    name?: string;
-    avatar?: string;
-    status?: AgentStatus;
-  };
-  metadata?: any;
-  sessionId?: string;
-  contactIdentified?: boolean;
-  unread?: boolean; // New property to track unread status
-  isResolved?: boolean; // Property to track if conversation is resolved
+  description: string | null;
+  status: string;
+  unread: number;
+  lastMessage: string;
+  lastMessageAt: string;
+  lastMessageBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deviceId: string | null;
+  assigneeId: string | null;
 }
-
-export interface Agent {
-  id: string;
-  name: string;
-  avatar?: string;
-  status?: AgentStatus;
-}
-
-export interface MessageReaction {
-  messageId: string;
-  reaction: 'thumbsUp' | 'thumbsDown';
-  userId: string;
-  createdAt: Date;
-}
-
-export interface MessageSearchResult {
-  messageId: string;
-  matchText: string;
-  createdAt: Date;
-}
-
-// Define standard message types
-export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
-
-// Define standard user types
-export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status';
-
-// Define MessageReadStatus type 
-export type MessageReadStatus = 'unread' | 'delivered' | 'read';
 
 export interface MessageReadReceipt {
   status: MessageReadStatus;
   timestamp?: Date;
-  createdAt?: Date;
 }
 
-// Define MessageReaction types
-export interface MessageReactionButtonsProps {
-  onReact: (emoji: string) => void;
-  onClose: () => void;
+export interface Message {
+  id: string;
+  text: string;
+  sender: UserType;
+  timestamp: Date;
+  createdAt: Date;
+  type?: MessageType;
+  status?: MessageStatus;
+  metadata?: Record<string, any>;
+  fileName?: string;
+  fileUrl?: string;
+  reaction?: 'thumbsUp' | 'thumbsDown' | null;
+  important?: boolean;
 }
 
-// Define MessageAvatar props
-export interface MessageAvatarProps {
-  isUserMessage: boolean;
-  userAvatar: string;
-  agentAvatar: string;
-  agentStatus?: AgentStatus;
+export interface MessageSearchResult {
+  id: string;
+  index: number;
 }
 
-// Update MessageBubbleProps with the missing properties
-export interface MessageBubbleProps {
-  message: Message;
-  highlightText?: string;
-  isHighlighted?: boolean;
-  userAvatar: string;
-  agentAvatar: string;
-  onReply: (text: string) => void;
-  onReaction: (messageId: string, emoji: string) => void;
-  agentStatus?: AgentStatus;
-  readStatus?: MessageReadStatus;
-  readTimestamp?: Date;
-  searchTerm?: string; // Added searchTerm property
-  onToggleHighlight?: () => void; // Added onToggleHighlight property
+export interface FormDataStructure {
+  contact?: Array<{
+    entityname: string;
+    columnname: string;
+    value: string;
+    type: string;
+    label: string;
+    required: boolean;
+    placeholder?: string;
+  }>;
+  company?: Array<{
+    entityname: string;
+    columnname: string;
+    value: string;
+    type: string;
+    label: string;
+    required: boolean;
+    placeholder?: string;
+  }>;
+  customData?: Array<{
+    entityname: string;
+    columnname: string;
+    value: string;
+    type: string;
+    label: string;
+    required: boolean;
+    placeholder?: string;
+  }>;
 }
 
-// Define QuickReplyMessage props
-export interface QuickReplyMessageProps {
-  metadata: Record<string, any>;
-  onReply: (text: string) => void;
-}
+export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
+export type UserType = 'user' | 'agent' | 'system' | 'bot' | 'status';
+export type MessageStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+export type AgentStatus = 'online' | 'offline' | 'away' | 'busy';
+export type MessageReadStatus = 'sent' | 'delivered' | 'read';
 
-// Fixed ChatPosition type
-export type ChatPosition =
-  | 'bottom-right'
-  | 'bottom-left'
-  | 'top-right'
-  | 'top-left'
-  | {
-    placement: string;
-    offsetX: number;
-    offsetY: number;
+export interface Conversation {
+  id: string;
+  title: string;
+  lastMessage: string;
+  createdAt: Date;
+  messages: Message[];
+  agentInfo?: {
+    name: string;
+    avatar?: string;
+    status?: AgentStatus;
   };
+  unread?: boolean;
+  contactIdentified?: boolean;
+  sessionId?: string;
+  ticketId?: string;
+  metadata?: Record<string, any>;
+}
