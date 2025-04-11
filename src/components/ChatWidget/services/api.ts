@@ -453,3 +453,30 @@ export const fetchConversations = async () => {
   const data = await response.json();
   return data;
 }
+
+export const fetchConversationByTicketId = async (ticketId: string) => {
+  try {
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      throw new Error('No access token found');
+    }
+
+    const response = await fetch(`https://dev-socket.pullseai.com/api/widgets/getConversationWithTicketId/${ticketId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching conversation by ticket ID:', error);
+    throw error;
+  }
+}

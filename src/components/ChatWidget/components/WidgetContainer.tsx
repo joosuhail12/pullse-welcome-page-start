@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { Conversation } from '../types';
+import { Conversation, Ticket } from '../types';
 import { ChatWidgetConfig } from '../config';
 import HomeView from '../views/HomeView';
 import MessagesView from '../views/MessagesView';
@@ -18,6 +18,7 @@ interface WidgetContainerProps {
   containerStyles: React.CSSProperties;
   userFormData?: Record<string, string>;
   handleSelectConversation: (conversation: Conversation) => void;
+  handleSelectTicket?: (ticket: Ticket) => void;
   handleUpdateConversation: (updatedConversation: Conversation) => void;
   handleChangeView: (view: 'home' | 'messages' | 'chat') => void;
   handleBackToMessages: () => void;
@@ -35,6 +36,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
   containerStyles,
   userFormData,
   handleSelectConversation,
+  handleSelectTicket,
   handleUpdateConversation,
   handleChangeView,
   handleBackToMessages,
@@ -45,9 +47,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
 
   if (!isOpen) return null;
 
-
   const isMobile = useIsMobile();
-
 
   // Enhanced responsive width and height classes - memoized to prevent recalculation
   const widgetClasses = useMemo(() => {
@@ -82,7 +82,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
       );
     }
 
-
     return (
       <div className="flex flex-col h-full">
         <div className="flex-grow overflow-y-auto">
@@ -93,7 +92,11 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
             />
           )}
           {viewState === 'messages' && (
-            <MessagesView onSelectConversation={handleSelectConversation} />
+            <MessagesView 
+              onSelectConversation={handleSelectConversation} 
+              onSelectTicket={handleSelectTicket || (() => {})}
+              onStartChat={() => handleStartChat()}
+            />
           )}
         </div>
 
@@ -111,6 +114,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
     setUserFormData,
     handleStartChat,
     handleSelectConversation,
+    handleSelectTicket,
     handleChangeView
   ]);
 

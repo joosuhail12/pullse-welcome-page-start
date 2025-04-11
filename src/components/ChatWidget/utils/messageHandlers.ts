@@ -1,5 +1,5 @@
 
-import { Message } from '../types';
+import { Message, TicketMessage } from '../types';
 import { publishToChannel } from './ably';
 import { dispatchChatEvent } from './events';
 import { ChatWidgetConfig } from '../config';
@@ -42,7 +42,7 @@ export const createSystemMessage = (text: string): Message => {
     id: `msg-${Date.now()}-system`,
     text,
     sender: 'system',
-    timestamp: new Date(),
+    createdAt: new Date(),
     type: 'text',
     status: 'sent'
   };
@@ -59,7 +59,7 @@ export const createUserMessage = (text: string, type: 'text' | 'file' = 'text', 
     id: `msg-${Date.now()}-user${type === 'file' ? '-file' : ''}`,
     text,
     sender: 'user',
-    timestamp: new Date(),
+    createdAt: new Date(),
     type,
     status: 'sent',
     ...(fileData && {
@@ -67,6 +67,47 @@ export const createUserMessage = (text: string, type: 'text' | 'file' = 'text', 
       fileUrl: fileData.fileUrl
     })
   };
+};
+
+/**
+ * Create an agent message from ticket format
+ */
+export const createAgentMessageFromTicket = (ticketMessage: TicketMessage): Message => {
+  return {
+    id: ticketMessage.id,
+    text: ticketMessage.message,
+    sender: 'agent',
+    createdAt: new Date(ticketMessage.createdAt),
+    type: 'text',
+    status: 'sent'
+  };
+};
+
+/**
+ * Create a user message from ticket format
+ */
+export const createUserMessageFromTicket = (ticketMessage: TicketMessage): Message => {
+  return {
+    id: ticketMessage.id,
+    text: ticketMessage.message,
+    sender: 'user',
+    createdAt: new Date(ticketMessage.createdAt),
+    type: 'text',
+    status: 'sent'
+  };
+};
+
+/**
+ * Convert ticket messages to chat messages
+ */
+export const convertTicketMessagesToMessages = (ticketMessages: TicketMessage[]): Message[] => {
+  return ticketMessages.map(msg => {
+    if (msg.userType === 'customer') {
+      return createUserMessageFromTicket(msg);
+    } else {
+      return createAgentMessageFromTicket(msg);
+    }
+  });
 };
 
 /**
@@ -99,7 +140,7 @@ export const processSystemMessage = (
   }
   
   // Dispatch message received event
-  dispatchChatEvent('chat:messageReceived', { message }, config);
+  dispatchChatEvent('chat:messageReceived', { message });
   
   // Update message status to delivered
   if (config?.features?.readReceipts) {

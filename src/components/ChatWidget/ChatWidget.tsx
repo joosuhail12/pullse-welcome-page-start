@@ -14,6 +14,7 @@ import ConnectionManager from './components/ConnectionManager';
 import { ConnectionStatus } from './utils/reconnectionManager';
 import ChatKeyboardHandler from './components/ChatKeyboardHandler';
 import { setWorkspaceIdAndApiKey } from './utils/storage';
+import { dispatchChatEvent } from './utils/events';
 
 export interface ChatWidgetProps {
   workspaceId: string;
@@ -27,10 +28,12 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
   const {
     viewState,
     activeConversation,
+    isLoadingTicket,
     handleStartChat,
     handleBackToMessages,
     handleChangeView,
     handleSelectConversation,
+    handleSelectTicket,
     handleUpdateConversation,
     userFormData,
     setUserFormData
@@ -43,6 +46,17 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
   const isMobile = useIsMobile();
   const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
+
+  // Dispatch loading event once
+  useEffect(() => {
+    if (config) {
+      dispatchChatEvent('widget:loaded', { config });
+    }
+
+    if (error) {
+      dispatchChatEvent('widget:error', { error });
+    }
+  }, [config, error]);
 
   // If contactData is available from the API but userFormData is not set, initialize it
   useEffect(() => {
@@ -86,7 +100,7 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [toggleChat]);
 
-  if (loading && isOpen) {
+  if ((loading || isLoadingTicket) && isOpen) {
     return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles} config={config} />;
   }
 
@@ -113,6 +127,7 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
         containerStyles={getWidgetContainerPositionStyles}
         userFormData={userFormData}
         handleSelectConversation={handleSelectConversation}
+        handleSelectTicket={handleSelectTicket}
         handleUpdateConversation={handleUpdateConversation}
         handleChangeView={handleChangeView}
         handleBackToMessages={handleBackToMessages}

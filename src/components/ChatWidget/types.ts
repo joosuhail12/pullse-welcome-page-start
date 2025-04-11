@@ -30,7 +30,7 @@ export interface Conversation {
   messages?: Message[];
   createdAt: Date;
   lastMessage?: string;
-  status?: 'active' | 'ended';
+  status?: 'active' | 'ended' | 'open'; // Updated to include 'open'
   agentInfo?: {
     name?: string;
     avatar?: string;
@@ -41,6 +41,7 @@ export interface Conversation {
   contactIdentified?: boolean;
   unread?: boolean; // New property to track unread status
   isResolved?: boolean; // Property to track if conversation is resolved
+  ticketId?: string; // Added to link conversation to a ticket
 }
 
 export interface Agent {
@@ -50,24 +51,38 @@ export interface Agent {
   status?: AgentStatus;
 }
 
-export interface MessageReaction {
-  messageId: string;
-  reaction: 'thumbsUp' | 'thumbsDown';
-  userId: string;
-  createdAt: Date;
-}
-
-export interface MessageSearchResult {
-  messageId: string;
-  matchText: string;
-  createdAt: Date;
-}
-
 // Define standard message types
 export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
 
 // Define standard user types
-export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status';
+export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status' | 'customer';
+
+// Ticket Interface to match API response
+export interface Ticket {
+  id: string;
+  title: string;
+  description?: string;
+  status?: string;
+  priority?: number;
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: string;
+  lastMessageAt?: string;
+  unread?: number;
+  teamId?: string;
+  deviceId?: string;
+}
+
+// Ticket Message Interface to match API response
+export interface TicketMessage {
+  id: string;
+  message: string;
+  type: string;
+  createdAt: string;
+  updatedAt: string;
+  ticketId: string;
+  userType: 'customer' | 'agent';
+}
 
 // Define MessageReadStatus type 
 export type MessageReadStatus = 'unread' | 'delivered' | 'read';

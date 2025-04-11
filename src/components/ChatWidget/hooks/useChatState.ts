@@ -1,9 +1,11 @@
 
 import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
-import { Conversation } from '../types';
+import { Conversation, Ticket, TicketMessage } from '../types';
 import { saveConversationToStorage, loadConversationsFromStorage, getWorkspaceIdAndApiKey, getAccessToken, setUserFormDataInLocalStorage, getUserFormDataFromLocalStorage } from '../utils/storage';
 import { logout, checkSessionValidity } from '../utils/security';
+import { fetchConversationByTicketId, fetchConversations } from '../services/api';
+import { createSystemMessage, createUserMessage } from '../utils/messageHandlers';
 
 type ViewState = 'home' | 'messages' | 'chat';
 
@@ -11,6 +13,7 @@ export function useChatState() {
   const [viewState, setViewState] = useState<ViewState>('messages'); // Default to messages view
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(getUserFormDataFromLocalStorage());
+  const [isLoadingTicket, setIsLoadingTicket] = useState(false);
 
   // Load any existing conversations when component mounts
   // and verify session validity
@@ -108,6 +111,74 @@ export function useChatState() {
     setViewState('chat');
   }, []);
 
+  // Handler for when a ticket is selected
+  const handleSelectTicket = useCallback(async (ticket: Ticket) => {
+    setIsLoadingTicket(true);
+    try {
+      // Fetch conversation messages for this ticket
+      const response = await fetchConversationByTicketId(ticket.id);
+      
+      if (response && response.status === "success" && response.data) {
+        // Convert API response to Message objects
+        const messages = response.data.map((msg: TicketMessage) => {
+          return {
+            id: msg.id,
+            text: msg.message,
+            sender: msg.userType === 'customer' ? 'user' : 'agent',
+            createdAt: new Date(msg.createdAt),
+            type: 'text',
+            status: 'sent'
+          };
+        });
+
+        // Create conversation object from ticket
+        const conversation: Conversation = {
+          id: `ticket-${ticket.id}`,
+          ticketId: ticket.id,
+          title: ticket.title || 'Support Ticket',
+          lastMessage: ticket.lastMessage || '',
+          createdAt: new Date(ticket.createdAt),
+          messages: messages,
+          status: ticket.status as 'active' | 'ended' | 'open',
+          agentInfo: {
+            name: 'Support Agent',
+            status: 'online'
+          },
+          unread: ticket.unread ? true : false
+        };
+
+        setActiveConversation(conversation);
+        setViewState('chat');
+      } else {
+        // If no messages, create a conversation with a welcome message
+        const conversation: Conversation = {
+          id: `ticket-${ticket.id}`,
+          ticketId: ticket.id,
+          title: ticket.title || 'Support Ticket',
+          lastMessage: ticket.lastMessage || '',
+          createdAt: new Date(ticket.createdAt),
+          messages: [
+            createSystemMessage('Welcome to your support ticket. How can we help you today?')
+          ],
+          status: ticket.status as 'active' | 'ended' | 'open',
+          agentInfo: {
+            name: 'Support Agent',
+            status: 'online'
+          },
+          unread: ticket.unread ? true : false
+        };
+
+        setActiveConversation(conversation);
+        setViewState('chat');
+      }
+    } catch (error) {
+      console.error('Error fetching ticket conversation:', error);
+      toast.error('Failed to load ticket conversation');
+    } finally {
+      setIsLoadingTicket(false);
+    }
+  }, []);
+
   // Update conversation with new message
   const handleUpdateConversation = useCallback((updatedConversation: Conversation) => {
     setActiveConversation(updatedConversation);
@@ -133,10 +204,12 @@ export function useChatState() {
   return {
     viewState,
     activeConversation,
+    isLoadingTicket,
     handleStartChat,
     handleBackToMessages,
     handleChangeView,
     handleSelectConversation,
+    handleSelectTicket,
     handleUpdateConversation,
     handleLogout,
     userFormData,

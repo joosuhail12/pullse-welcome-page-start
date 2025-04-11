@@ -4,7 +4,7 @@ import { MessageSquare, Plus, ArrowUp, ArrowDown, Info, Calendar } from 'lucide-
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Conversation } from '../types';
+import { Conversation, Ticket } from '../types';
 import SearchBar from '../components/SearchBar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -15,12 +15,15 @@ import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchConversations } from '../services/api';
+
 interface MessagesViewProps {
   onSelectConversation: (conversation: Conversation) => void;
+  onSelectTicket: (ticket: Ticket) => void;
+  onStartChat: () => void;
 }
 
 type SortOrder = 'newest' | 'oldest';
-type StatusFilter = 'all' | 'active' | 'ended';
+type StatusFilter = 'all' | 'active' | 'ended' | 'open';
 type GroupBy = 'none' | 'date';
 
 const ITEMS_PER_PAGE = 10;
@@ -61,8 +64,9 @@ const MOCK_CONVERSATIONS: Conversation[] = [
   }
 ];
 
-const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
+const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat }: MessagesViewProps) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [useMockData, setUseMockData] = useState(false);
@@ -70,7 +74,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [groupBy, setGroupBy] = useState<GroupBy>('date');
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<Conversation[]>([]);
+  const [searchResults, setSearchResults] = useState<(Conversation | Ticket)[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [animateOut, setAnimateOut] = useState<string | null>(null);
@@ -98,6 +102,23 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     };
   }, []);
 
+  const convertApiTicketsToTickets = useCallback((ticketsData: any[]): Ticket[] => {
+    return ticketsData.map(ticket => ({
+      id: ticket.id,
+      title: ticket.title || 'Untitled Ticket',
+      description: ticket.description,
+      status: ticket.status || 'open',
+      priority: ticket.priority || 0,
+      createdAt: ticket.createdAt,
+      updatedAt: ticket.updatedAt,
+      lastMessage: ticket.lastMessage,
+      lastMessageAt: ticket.lastMessageAt,
+      unread: ticket.unread,
+      teamId: ticket.teamId,
+      deviceId: ticket.deviceId
+    }));
+  }, []);
+
   const loadConversationsData = useCallback(async () => {
     setIsLoading(true);
     setLoadingError(null);
@@ -105,14 +126,14 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     try {
       let retries = 3;
       let conversationsData: Conversation[] = [];
+      let ticketsData: Ticket[] = [];
 
       while (retries > 0) {
         try {
-          // Fetch from Server
-          // conversationsData = //loadConversationsFromStorage();
           const response = await fetchConversations();
           if (response && response?.data && response?.data?.length > 0) {
-            conversationsData = response.data;
+            ticketsData = convertApiTicketsToTickets(response.data);
+            setTickets(ticketsData);
           }
 
           setUseMockData(false);
@@ -141,17 +162,17 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [convertApiTicketsToTickets]);
 
   useEffect(() => {
     loadConversationsData();
   }, [loadConversationsData]);
 
-  const formatDateDisplay = useCallback((date: Date): string => {
-    return format(date, 'MMM d, yyyy');
+  const formatDateDisplay = useCallback((date: Date | string): string => {
+    return format(new Date(date), 'MMM d, yyyy');
   }, []);
 
-  const formatTime = useCallback((date: Date): string => {
+  const formatTime = useCallback((date: Date | string): string => {
     const now = new Date();
     const setDate = new Date(date);
     const diff = now.getTime() - setDate.getTime();
@@ -161,33 +182,33 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     } else if (diff < 1000 * 60 * 60 * 24) {
       return `${Math.floor(diff / (1000 * 60 * 60))}h ago`;
     } else {
-      return format(date, 'h:mm a');
+      return format(setDate, 'h:mm a');
     }
   }, []);
 
   const handleStartNewChat = useCallback(() => {
-    onSelectConversation({
-      id: `conv-${Date.now()}`,
-      title: 'New Conversation',
-      lastMessage: '',
-      createdAt: new Date(),
-      status: 'active'
-    });
+    onStartChat();
     clearUnreadMessages();
-  }, [onSelectConversation, clearUnreadMessages]);
+  }, [onStartChat, clearUnreadMessages]);
 
   const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
     setIsSearching(true);
 
-    const results = conversations.filter(conv =>
-      conv.title.toLowerCase().includes(term.toLowerCase()) ||
-      (conv.lastMessage && conv.lastMessage.toLowerCase().includes(term.toLowerCase()))
-    );
+    const results = [
+      ...conversations.filter(conv => 
+        conv.title.toLowerCase().includes(term.toLowerCase()) ||
+        (conv.lastMessage && conv.lastMessage.toLowerCase().includes(term.toLowerCase()))
+      ),
+      ...tickets.filter(ticket => 
+        ticket.title.toLowerCase().includes(term.toLowerCase()) ||
+        (ticket.lastMessage && ticket.lastMessage.toLowerCase().includes(term.toLowerCase()))
+      )
+    ];
 
     setSearchResults(results);
     setIsSearching(false);
-  }, [conversations]);
+  }, [conversations, tickets]);
 
   useEffect(() => {
     const debouncedSearch = setTimeout(() => {
@@ -204,9 +225,13 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     setSearchResults([]);
   }, []);
 
-  const groupConversations = useCallback((conversations: Conversation[]) => {
+  const dateToTimestamp = (date: Date | string): number => {
+    return new Date(date).getTime();
+  };
+
+  const groupItems = useCallback((items: (Conversation | Ticket)[]) => {
     if (groupBy === 'none') {
-      return { 'All Conversations': conversations };
+      return { 'All Items': items };
     }
 
     const today = new Date();
@@ -221,19 +246,19 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     const lastMonth = new Date(today);
     lastMonth.setMonth(lastMonth.getMonth() - 1);
 
-    return conversations.reduce((groups: Record<string, Conversation[]>, conversation) => {
-      const convoDate = new Date(conversation.createdAt);
-      convoDate.setHours(0, 0, 0, 0);
+    return items.reduce((groups: Record<string, (Conversation | Ticket)[]>, item) => {
+      const itemDate = new Date('createdAt' in item ? item.createdAt : item.createdAt);
+      itemDate.setHours(0, 0, 0, 0);
 
       let groupName = 'Older';
 
-      if (convoDate.getTime() === today.getTime()) {
+      if (itemDate.getTime() === today.getTime()) {
         groupName = 'Today';
-      } else if (convoDate.getTime() === yesterday.getTime()) {
+      } else if (itemDate.getTime() === yesterday.getTime()) {
         groupName = 'Yesterday';
-      } else if (convoDate > lastWeek) {
+      } else if (itemDate > lastWeek) {
         groupName = 'This Week';
-      } else if (convoDate > lastMonth) {
+      } else if (itemDate > lastMonth) {
         groupName = 'This Month';
       }
 
@@ -241,43 +266,46 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
         groups[groupName] = [];
       }
 
-      groups[groupName].push(conversation);
+      groups[groupName].push(item);
       return groups;
     }, {});
   }, [groupBy]);
 
-  const filteredAndSortedConversations = useMemo(() => {
-    let filtered = searchTerm ? searchResults : [...conversations];
+  const filteredAndSortedItems = useMemo(() => {
+    let filtered = searchTerm ? searchResults : [...conversations, ...tickets];
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(conv => conv.status === statusFilter);
+      filtered = filtered.filter(item => {
+        if ('ticketId' in item) {
+          return item.status === statusFilter;
+        } else {
+          return (item as Ticket).status === statusFilter;
+        }
+      });
     }
 
     return filtered.sort((a, b) => {
-      const aDate = new Date(a.createdAt);
-      const bDate = new Date(b.createdAt);
-      if (sortOrder === 'newest') {
-        return bDate.getTime() - aDate.getTime();
-      } else {
-        return aDate.getTime() - bDate.getTime();
-      }
+      const aDate = 'createdAt' in a ? dateToTimestamp(a.createdAt) : dateToTimestamp(a.createdAt);
+      const bDate = 'createdAt' in b ? dateToTimestamp(b.createdAt) : dateToTimestamp(b.createdAt);
+      
+      return sortOrder === 'newest' ? bDate - aDate : aDate - bDate;
     });
-  }, [conversations, sortOrder, statusFilter, searchTerm, searchResults]);
+  }, [conversations, tickets, sortOrder, statusFilter, searchTerm, searchResults]);
 
-  const groupedConversations = useMemo(() => {
-    return groupConversations(filteredAndSortedConversations);
-  }, [filteredAndSortedConversations, groupConversations]);
+  const groupedItems = useMemo(() => {
+    return groupItems(filteredAndSortedItems);
+  }, [filteredAndSortedItems, groupItems]);
 
   const orderedGroups = useMemo(() => {
-    if (groupBy === 'none') return ['All Conversations'];
+    if (groupBy === 'none') return ['All Items'];
 
     const priorityOrder = ['Today', 'Yesterday', 'This Week', 'This Month', 'Older'];
-    return priorityOrder.filter(group => groupedConversations[group] && groupedConversations[group].length > 0);
-  }, [groupedConversations, groupBy]);
+    return priorityOrder.filter(group => groupedItems[group] && groupedItems[group].length > 0);
+  }, [groupedItems, groupBy]);
 
   const totalItems = useMemo(() => {
-    return filteredAndSortedConversations.length;
-  }, [filteredAndSortedConversations]);
+    return filteredAndSortedItems.length;
+  }, [filteredAndSortedItems]);
 
   const paginationData = useMemo(() => {
     const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE));
@@ -290,26 +318,26 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     const startIndex = (validCurrentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, totalItems);
 
-    const pagedGroupedConversations: Record<string, Conversation[]> = {};
+    const pagedGroupedItems: Record<string, (Conversation | Ticket)[]> = {};
 
     if (groupBy === 'none') {
-      pagedGroupedConversations['All Conversations'] = filteredAndSortedConversations.slice(startIndex, endIndex);
+      pagedGroupedItems['All Items'] = filteredAndSortedItems.slice(startIndex, endIndex);
     } else {
       let currentIdx = 0;
 
       for (const group of orderedGroups) {
-        const groupConversations = groupedConversations[group];
+        const groupItems = groupedItems[group];
 
-        if (currentIdx + groupConversations.length > startIndex) {
+        if (currentIdx + groupItems.length > startIndex) {
           const groupStartIdx = Math.max(0, startIndex - currentIdx);
-          const groupEndIdx = Math.min(groupConversations.length, endIndex - currentIdx);
+          const groupEndIdx = Math.min(groupItems.length, endIndex - currentIdx);
 
           if (groupStartIdx < groupEndIdx) {
-            pagedGroupedConversations[group] = groupConversations.slice(groupStartIdx, groupEndIdx);
+            pagedGroupedItems[group] = groupItems.slice(groupStartIdx, groupEndIdx);
           }
         }
 
-        currentIdx += groupConversations.length;
+        currentIdx += groupItems.length;
 
         if (currentIdx >= endIndex) break;
       }
@@ -321,9 +349,9 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       startIndex,
       endIndex,
       currentPage: validCurrentPage,
-      pagedGroupedConversations
+      pagedGroupedItems
     };
-  }, [filteredAndSortedConversations, currentPage, groupBy, groupedConversations, orderedGroups, totalItems]);
+  }, [filteredAndSortedItems, currentPage, groupBy, groupedItems, orderedGroups, totalItems]);
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
@@ -334,10 +362,15 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     loadConversationsData();
   }, [loadConversationsData]);
 
-  const handleSelectConversation = useCallback((conversation: Conversation) => {
+  const handleItemSelect = useCallback((item: Conversation | Ticket) => {
     clearUnreadMessages();
-    onSelectConversation(conversation);
-  }, [clearUnreadMessages, onSelectConversation]);
+    
+    if ('ticketId' in item) {
+      onSelectConversation(item);
+    } else {
+      onSelectTicket(item as Ticket);
+    }
+  }, [clearUnreadMessages, onSelectConversation, onSelectTicket]);
 
   const toggleGrouping = useCallback(() => {
     setGroupBy(prev => prev === 'none' ? 'date' : 'none');
@@ -407,6 +440,95 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
     </div>
   );
 
+  const renderItem = (item: Conversation | Ticket) => {
+    const isTicket = !('ticketId' in item);
+    const title = item.title;
+    const status = isTicket ? (item as Ticket).status : (item as Conversation).status;
+    const createdDate = isTicket 
+      ? new Date((item as Ticket).createdAt)
+      : (item as Conversation).createdAt;
+    const lastMessage = isTicket 
+      ? (item as Ticket).lastMessage || 'No description available'
+      : (item as Conversation).lastMessage || 'No messages yet';
+    const isUnread = isTicket 
+      ? Boolean((item as Ticket).unread)
+      : (item as Conversation).unread;
+
+    return (
+      <Card
+        key={item.id}
+        onClick={() => handleItemSelect(item)}
+        className={`p-3 hover:bg-soft-purple-50 cursor-pointer border bg-white/60 backdrop-blur-sm ${isUnread ? 'border-l-4 border-l-vivid-purple' : 'border-white/30'
+          } transition-colors group relative animate-fade-in shadow-sm`}
+        tabIndex={0}
+        role="button"
+        aria-label={`${isTicket ? 'Ticket' : 'Conversation'}: ${title}${isUnread ? ', unread' : ''}`}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            handleItemSelect(item);
+          }
+        }}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex items-center">
+            <div className="relative">
+              <MessageSquare size={16} className="text-vivid-purple mr-2 flex-shrink-0" aria-hidden="true" />
+              {status && (
+                <div
+                  className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-white"
+                  style={{
+                    backgroundColor: status === 'active' || status === 'open' ? '#10b981' : '#9ca3af'
+                  }}
+                  aria-hidden="true"
+                />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className={`font-semibold text-gray-800 truncate ${isUnread ? 'font-bold' : ''}`}>
+                  {title}
+                </span>
+                {status && (
+                  <Badge
+                    variant={status === 'active' || status === 'open' ? 'default' : 'secondary'}
+                    className={`text-[10px] px-1.5 py-0 ${status === 'active' || status === 'open'
+                      ? 'bg-green-100 text-green-800 hover:bg-green-100'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
+                      }`}
+                  >
+                    {status === 'active' ? 'Active' : status === 'open' ? 'Open' : 'Ended'}
+                  </Badge>
+                )}
+                {isUnread && (
+                  <span className="w-2 h-2 bg-vivid-purple rounded-full" aria-label="Unread conversation"></span>
+                )}
+              </div>
+            </div>
+          </div>
+          <span className="text-xs text-gray-500">{formatTime(createdDate)}</span>
+        </div>
+
+        <p className={`text-sm ${isUnread ? 'text-gray-700' : 'text-gray-500'} mt-1.5 ml-6 line-clamp-1 font-normal`}>
+          {lastMessage}
+        </p>
+
+        <div className="flex items-center gap-1 ml-6 mt-2 text-xs text-gray-400">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center">
+                <Calendar size={12} className="mr-1" />
+                <span>Started {formatDateDisplay(createdDate)}</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div>Created on {format(new Date(createdDate), 'MMMM d, yyyy')} at {format(new Date(createdDate), 'h:mm a')}</div>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </Card>
+    );
+  };
+
   return (
     <div className="flex flex-col p-2 h-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100">
       <div className="mb-3 flex justify-between items-center px-2">
@@ -437,7 +559,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
       <SearchBar
         onSearch={handleSearch}
         onClear={clearSearch}
-        resultCount={searchTerm ? filteredAndSortedConversations.length : 0}
+        resultCount={searchTerm ? filteredAndSortedItems.length : 0}
         isSearching={isSearching}
       />
 
@@ -469,6 +591,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
             <SelectContent>
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="open">Open</SelectItem>
               <SelectItem value="ended">Ended</SelectItem>
             </SelectContent>
           </Select>
@@ -505,59 +628,14 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
           <div className="p-4 space-y-4">
             {renderSkeletons()}
           </div>
-        ) : filteredAndSortedConversations.length === 0 ? (
+        ) : filteredAndSortedItems.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="space-y-4 px-1">
-            {Object.keys(paginationData.pagedGroupedConversations).length === 0 ? (
-              <div className="text-center py-8 text-gray-500 animate-fade-in">
-                <div className="bg-white/70 backdrop-blur-sm p-6 rounded-lg max-w-xs mx-auto shadow-sm">
-                  <div className="flex justify-center mb-4">
-                    <div className="relative">
-                      <MessageSquare className="mx-auto text-gray-300" size={40} strokeWidth={1.5} />
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm">
-                        <Plus className="text-vivid-purple" size={18} />
-                      </div>
-                    </div>
-                  </div>
-                  <h3 className="font-medium text-gray-700 mb-2">No conversations found</h3>
-                  {searchTerm ? (
-                    <p className="text-sm mb-4">Try adjusting your search or filters to find what you're looking for.</p>
-                  ) : statusFilter !== 'all' ? (
-                    <p className="text-sm mb-4">No {statusFilter} conversations found. Try changing your filter.</p>
-                  ) : (
-                    <>
-                      <p className="text-sm mb-4">Start your first conversation to receive support or information.</p>
-                      <div className="flex flex-col gap-2 text-sm text-gray-600 mb-4">
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">1</div>
-                          <span>Click the "+" button to start chatting</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">2</div>
-                          <span>Ask questions or request assistance</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full bg-vivid-purple/10 flex items-center justify-center text-xs text-vivid-purple">3</div>
-                          <span>Get answers from our support team</span>
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2 mx-auto text-vivid-purple border-vivid-purple hover:text-vivid-purple/90 hover:bg-vivid-purple/5"
-                    onClick={handleStartNewChat}
-                    aria-label="Start a new conversation"
-                  >
-                    <Plus size={16} className="mr-1" />
-                    Start a new conversation
-                  </Button>
-                </div>
-              </div>
+            {Object.keys(paginationData.pagedGroupedItems).length === 0 ? (
+              <EmptyState />
             ) : (
-              Object.entries(paginationData.pagedGroupedConversations).map(([group, groupConversations]) => (
+              Object.entries(paginationData.pagedGroupedItems).map(([group, groupItems]) => (
                 <div key={group} className="mb-4">
                   {groupBy !== 'none' && (
                     <div className="text-xs font-medium text-vivid-purple mb-2 px-2"
@@ -566,80 +644,7 @@ const MessagesView = ({ onSelectConversation }: MessagesViewProps) => {
                     </div>
                   )}
                   <div className="space-y-2">
-                    {groupConversations.map((conversation) => (
-                      <Card
-                        key={conversation.id}
-                        onClick={() => handleSelectConversation(conversation)}
-                        className={`p-3 hover:bg-soft-purple-50 cursor-pointer border bg-white/60 backdrop-blur-sm ${conversation.unread ? 'border-l-4 border-l-vivid-purple' : 'border-white/30'
-                          } transition-colors group relative ${animateOut === conversation.id ? 'animate-fade-out' : 'animate-fade-in'
-                          } shadow-sm`}
-                        tabIndex={0}
-                        role="button"
-                        aria-label={`Conversation: ${conversation.title}${conversation.unread ? ', unread' : ''}`}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            handleSelectConversation(conversation);
-                          }
-                        }}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center">
-                            <div className="relative">
-                              <MessageSquare size={16} className="text-vivid-purple mr-2 flex-shrink-0" aria-hidden="true" />
-                              {conversation.status && (
-                                <div
-                                  className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-white"
-                                  style={{
-                                    backgroundColor: conversation.status === 'active' ? '#10b981' : '#9ca3af'
-                                  }}
-                                  aria-hidden="true"
-                                />
-                              )}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className={`font-semibold text-gray-800 truncate ${conversation.unread ? 'font-bold' : ''}`}>
-                                  {conversation.title}
-                                </span>
-                                {conversation.status && (
-                                  <Badge
-                                    variant={conversation.status === 'active' ? 'default' : 'secondary'}
-                                    className={`text-[10px] px-1.5 py-0 ${conversation.status === 'active'
-                                      ? 'bg-green-100 text-green-800 hover:bg-green-100'
-                                      : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
-                                      }`}
-                                  >
-                                    {conversation.status === 'active' ? 'Active' : 'Ended'}
-                                  </Badge>
-                                )}
-                                {conversation.unread && (
-                                  <span className="w-2 h-2 bg-vivid-purple rounded-full" aria-label="Unread conversation"></span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <span className="text-xs text-gray-500">{formatTime(conversation.createdAt)}</span>
-                        </div>
-
-                        <p className={`text-sm ${conversation.unread ? 'text-gray-700' : 'text-gray-500'} mt-1.5 ml-6 line-clamp-1 font-normal`}>
-                          {conversation.lastMessage || 'No messages yet'}
-                        </p>
-
-                        <div className="flex items-center gap-1 ml-6 mt-2 text-xs text-gray-400">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center">
-                                <Calendar size={12} className="mr-1" />
-                                <span>Started {formatDateDisplay(conversation.createdAt)}</span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              Created on {format(conversation.createdAt, 'MMMM d, yyyy')} at {format(conversation.createdAt, 'h:mm a')}
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </Card>
-                    ))}
+                    {groupItems.map((item) => renderItem(item))}
                   </div>
                 </div>
               ))
