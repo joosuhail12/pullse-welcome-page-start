@@ -1,189 +1,278 @@
 
 import Ably from 'ably';
-import { getAblyClient, setAblyClient, setFallbackMode, processQueuedMessages, resubscribeToActiveChannels } from './config';
-import { dispatchChatEvent } from '../events';
+import { logger } from '@/lib/logger';
+import {
+  setAblyClient, getAblyClient,
+  isInFallbackMode, setFallbackMode,
+  getActiveSubscriptions,
+  getPendingMessages, clearPendingMessages
+} from './config';
+import { subscribeToChannel, publishToChannel } from './messaging';
+import { getAccessToken, getWorkspaceIdAndApiKey } from '../storage';
 
-// A simple backoff algorithm for reconnection attempts
-let reconnectAttempts = 0;
-const getReconnectDelay = () => Math.min(1000 * Math.pow(1.5, reconnectAttempts), 30000);
+// Keep track of initialization attempts
+let initializationInProgress = false;
+let lastAuthUrl: string | null = null;
 
 /**
- * Initialize Ably with authentication URL
- * @param authUrl Authentication URL for Ably
+ * Initialize Ably client
+ * @param authUrl URL for Ably auth
+ * @returns Promise resolving to true when connected
  */
-export const initializeAbly = async (authUrl: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    try {
-      const client = initializeAblyClient(undefined, authUrl);
-      
-      if (!client) {
-        reject(new Error('Failed to initialize Ably client'));
-        return;
-      }
-      
-      // Wait for connection to be established
-      client.connection.once('connected', () => {
-        console.log('Ably connected successfully');
-        resolve();
+export const initializeAbly = async (authUrl: string): Promise<boolean> => {
+  const accessToken = getAccessToken();
+  const { workspaceId, apiKey } = getWorkspaceIdAndApiKey();
+
+  // Don't initialize multiple times with the same auth URL
+  if (initializationInProgress) {
+    console.warn('Ably initialization already in progress, skipping duplicate call');
+    return false;
+  }
+
+  // If we have the same auth URL and an existing client, just check connection
+  const existingClient = getAblyClient();
+  if (existingClient && lastAuthUrl === authUrl) {
+    if (existingClient.connection.state === 'connected') {
+      console.log('Ably already initialized and connected with the same auth URL');
+      return true;
+    } else if (['connecting', 'disconnected'].includes(existingClient.connection.state)) {
+      console.log('Ably already initializing with the same auth URL, waiting for connection');
+      return new Promise((resolve) => {
+        const handleConnect = () => {
+          existingClient.connection.off(handleConnect);
+          resolve(true);
+        };
+        existingClient.connection.once('connected', handleConnect);
+
+        // Set a timeout in case it never connects
+        setTimeout(() => {
+          existingClient.connection.off(handleConnect);
+          resolve(false);
+        }, 10000);
       });
-      
-      // Handle connection failure
-      client.connection.once('failed', (err) => {
-        console.error('Ably connection failed', err);
-        reject(err);
-      });
-      
-    } catch (error) {
-      console.error('Error initializing Ably:', error);
-      reject(error);
     }
-  });
+  }
+
+  // Track that we're initializing
+  initializationInProgress = true;
+  lastAuthUrl = authUrl;
+
+  try {
+    const clientOptions: Ably.Types.ClientOptions = {
+      authUrl,
+      authHeaders: {
+        'Authorization': `Bearer ${accessToken}`,
+        'x-workspace-id': workspaceId,
+        'x-api-Key': apiKey
+      },
+      autoConnect: true,
+      echoMessages: false,
+      closeOnUnload: true,
+      logLevel: 2,
+      // Explicitly specify all available transports to fix "no requested transports available" error
+      transports: ['websocket', 'xhr_streaming', 'xhr_polling'],
+    };
+
+    logger.info('Initializing Ably with token', 'ably');
+
+    const realtime = new Ably.Realtime(clientOptions);
+
+    // Return a promise that resolves when connected or rejects on error
+    return new Promise((resolve, reject) => {
+      const connectTimeout = setTimeout(() => {
+        logger.error('Ably connection timed out after 10s', 'ably');
+        setFallbackMode(true);
+        initializationInProgress = false;
+        reject(new Error('Connection timed out'));
+      }, 10000);
+
+      // Handle connection state changes
+      const handleConnectionStateChange = (stateChange: Ably.Types.ConnectionStateChange) => {
+        const { current, reason } = stateChange;
+
+        if (current === 'connected') {
+          logger.info('Ably connected successfully', 'ably');
+          clearTimeout(connectTimeout);
+
+          // Store client once connected
+          setAblyClient(realtime);
+          initializationInProgress = false;
+
+          // Resubscribe to active channels from before
+          resubscribeToActiveChannels();
+
+          // Send any pending messages
+          sendPendingMessages();
+
+          // Remove listener after successful connection
+          realtime.connection.off(handleConnectionStateChange);
+
+          resolve(true);
+        } else if (current === 'failed') {
+          logger.error('Ably connection failed', 'ably', reason);
+          clearTimeout(connectTimeout);
+          setFallbackMode(true);
+          initializationInProgress = false;
+
+          // Remove listener after failure
+          realtime.connection.off(handleConnectionStateChange);
+
+          reject(reason);
+        }
+      };
+
+      realtime.connection.on(handleConnectionStateChange);
+
+      // If connection is already in desired state, trigger manually
+      if (realtime.connection.state === 'connected') {
+        handleConnectionStateChange({ current: 'connected' } as Ably.Types.ConnectionStateChange);
+      }
+    });
+  } catch (err) {
+    logger.error('Failed to initialize Ably', 'ably', err);
+    initializationInProgress = false;
+    setFallbackMode(true);
+    throw err;
+  }
 };
 
 /**
- * Reconnect Ably with authentication URL
- * @param authUrl Authentication URL for Ably
+ * Reconnect Ably client
+ * @param authUrl URL for Ably auth
+ * @returns Promise resolving to true when reconnected
  */
 export const reconnectAbly = async (authUrl: string): Promise<boolean> => {
-  try {
-    await closeAblyConnection();
-    await initializeAbly(authUrl);
+  const client = getAblyClient();
+
+  // If we don't have a client, just initialize a new one
+  if (!client) {
+    return initializeAbly(authUrl);
+  }
+
+  // If the client is already connected, just return true
+  if (client.connection.state === 'connected') {
     return true;
-  } catch (error) {
-    console.error('Error reconnecting to Ably:', error);
+  }
+
+  try {
+    // If the client is disconnected or suspended, try to reconnect
+    if (['disconnected', 'suspended', 'failed', 'closed'].includes(client.connection.state)) {
+      logger.info('Reconnecting to Ably', 'ably');
+
+      // For clean reconnection, create a new client
+      return initializeAbly(authUrl);
+    }
+
+    // If the client is connecting, wait for it to connect
+    if (client.connection.state === 'connecting') {
+      logger.info('Ably is already connecting, waiting', 'ably');
+
+      return new Promise((resolve) => {
+        const handleState = (stateChange: Ably.Types.ConnectionStateChange) => {
+          if (stateChange.current === 'connected') {
+            client.connection.off(handleState);
+            resolve(true);
+          } else if (['disconnected', 'suspended', 'failed', 'closed'].includes(stateChange.current)) {
+            client.connection.off(handleState);
+            // Fall back to initializing a new client
+            initializeAbly(authUrl)
+              .then(() => resolve(true))
+              .catch(() => resolve(false));
+          }
+        };
+
+        client.connection.on(handleState);
+
+        // Set a timeout in case it never connects
+        setTimeout(() => {
+          client.connection.off(handleState);
+          // Fall back to initializing a new client
+          initializeAbly(authUrl)
+            .then(() => resolve(true))
+            .catch(() => resolve(false));
+        }, 5000);
+      });
+    }
+
+    logger.info('Ably is already connected', 'ably');
+    return true;
+  } catch (err) {
+    logger.error('Failed to reconnect to Ably', 'ably', err);
     return false;
   }
 };
 
 /**
- * Clean up Ably connection and resources
+ * Resubscribe to all active channels
+ * Called after reconnection
  */
-export const cleanupAbly = async (): Promise<void> => {
-  try {
-    await closeAblyConnection();
-    console.log('Ably connection cleaned up');
-  } catch (error) {
-    console.error('Error cleaning up Ably connection:', error);
-  }
-};
+const resubscribeToActiveChannels = () => {
+  const activeSubscriptions = getActiveSubscriptions();
 
-// Initialize Ably client with options
-export const initializeAblyClient = (
-  apiKey?: string,
-  authUrl?: string,
-  clientId?: string,
-  jwtToken?: string
-): Ably.Realtime | null => {
-  if (getAblyClient()) {
-    console.log('Ably client already initialized');
-    return getAblyClient();
+  if (activeSubscriptions.length === 0) {
+    return;
   }
-  
-  if (!apiKey && !authUrl && !jwtToken) {
-    console.warn('No Ably credentials provided, entering fallback mode');
-    setFallbackMode(true);
-    return null;
-  }
-  
-  try {
-    const options: Ably.Types.ClientOptions = {
-      clientId: clientId || 'widget-' + Math.random().toString(36).substring(2, 9),
-      closeOnUnload: true,
-      idempotentRestPublishing: true,
-      echoMessages: false,
-      recover: function(lastConnectionDetails, cb) {
-        // Decide whether to recover
-        cb(true);
-      },
-      transportParams: {
-        heartbeatInterval: 15000, // 15 seconds
-        remainPresentFor: 30000    // 30 seconds
-      }
-    };
-    
-    // Prioritize different auth methods
-    if (jwtToken) {
-      options.token = jwtToken;
-    } else if (authUrl) {
-      options.authUrl = authUrl;
-    } else if (apiKey) {
-      options.key = apiKey;
-    }
-    
-    // In production environments, prefer websockets
-    if (import.meta.env.PROD) {
-      options.transports = ['web_socket'];
-    }
-    
-    // Create client
-    const client = new Ably.Realtime(options);
-    
-    // Handle connection state changes
-    client.connection.on((stateChange: Ably.Types.ConnectionStateChange) => {
-      console.log(`Ably: Connection state: ${stateChange.current}${stateChange.reason ? `; reason: ${stateChange.reason}` : ''}`);
-      
-      // Dispatch connection state change event for UI updates
-      dispatchChatEvent('chat:connectionChange', {
-        state: stateChange.current,
-        previous: stateChange.previous,
-        reason: stateChange.reason
-      });
-      
-      // Handle reconnection
-      if (stateChange.current === 'connected') {
-        // Reset reconnect attempts on successful connection
-        reconnectAttempts = 0;
-        
-        // Process queued messages and resubscribe to channels
-        processQueuedMessages();
-        resubscribeToActiveChannels();
-      } else if (stateChange.current === 'disconnected' || stateChange.current === 'suspended') {
-        // Increment reconnect attempts for backoff calculation
-        reconnectAttempts++;
-      }
+
+  logger.info(`Resubscribing to ${activeSubscriptions.length} active channels`, 'ably');
+
+  // For each channel and its events, resubscribe
+  for (const sub of activeSubscriptions) {
+    // We don't have the original callback, so we use a placeholder
+    // The real components should resubscribe with their own callbacks
+    subscribeToChannel(sub.channelName, sub.eventName, () => {
+      logger.debug(`Received message from resubscribed channel ${sub.channelName} (${sub.eventName})`, 'ably');
     });
-    
-    // Set client in shared state
-    setAblyClient(client);
-    setFallbackMode(false);
-    
-    return client;
-  } catch (error) {
-    console.error('Failed to initialize Ably client:', error);
-    setFallbackMode(true);
-    return null;
   }
 };
 
 /**
- * Close the Ably client connection safely
+ * Send all pending messages
+ * Called after reconnection
  */
-export const closeAblyConnection = (): Promise<void> => {
-  const client = getAblyClient();
-  if (!client) {
-    return Promise.resolve();
+const sendPendingMessages = () => {
+  const pendingMessages = getPendingMessages();
+
+  if (pendingMessages.length === 0) {
+    return;
   }
-  
-  return new Promise((resolve) => {
-    try {
-      client.connection.once('closed', () => {
-        setAblyClient(null);
-        resolve();
-      });
-      
-      client.close();
-      
-      // Set a timeout to force resolve if the closed event doesn't fire
-      setTimeout(() => {
-        if (getAblyClient() === client) {
-          setAblyClient(null);
-        }
-        resolve();
-      }, 3000);
-    } catch (error) {
-      console.error('Error closing Ably connection:', error);
-      setAblyClient(null);
-      resolve();
-    }
+
+  logger.info(`Sending ${pendingMessages.length} pending messages`, 'ably');
+
+  // For each pending message, attempt to send it
+  pendingMessages.forEach((message) => {
+    publishToChannel(message.channelName, message.eventName, message.data);
   });
+
+  // Clear pending messages that have been sent
+  clearPendingMessages();
+};
+
+/**
+ * Clean up Ably client
+ */
+export const cleanupAbly = (): void => {
+  const client = getAblyClient();
+
+  if (!client) {
+    return;
+  }
+
+  // Just detach channels without closing the connection to allow reuse
+  try {
+    const channels = client.channels;
+    
+    // Use a different approach to iterate through channels
+    Object.keys(channels).forEach((channelName) => {
+      const channel = channels.get(channelName);
+      if (channel && channel.state === 'attached') {
+        channel.detach();
+      }
+    });
+
+    // We won't close the connection here to avoid reconnection issues
+    // The connection will be reused for new channels
+    logger.info('Ably connection preserved for reuse', 'ably');
+  } catch (error) {
+    logger.error('Error cleaning up Ably channels', 'ably', error);
+  }
 };

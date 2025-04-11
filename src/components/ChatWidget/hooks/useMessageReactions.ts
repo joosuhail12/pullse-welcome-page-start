@@ -1,64 +1,60 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Message } from '../types';
 import { publishToChannel } from '../utils/ably';
+import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig } from '../config';
 
-interface UseMessageReactionsOptions {
-  conversationId: string;
-  sessionId: string;
-  config?: ChatWidgetConfig;
-}
+export function useMessageReactions(
+  messages: Message[],
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+  chatChannelName: string,
+  sessionId: string,
+  config?: ChatWidgetConfig
+) {
+  const [reactionsMap, setReactionsMap] = useState<Record<string, 'thumbsUp' | 'thumbsDown'>>({});
 
-export function useMessageReactions({
-  conversationId,
-  sessionId,
-  config
-}: UseMessageReactionsOptions) {
-  const [reactions, setReactions] = useState<Record<string, string>>({});
-  
-  // Handle adding a reaction to a message
-  const addReaction = useCallback((messageId: string, reaction: string) => {
-    setReactions(prev => ({
-      ...prev,
-      [messageId]: reaction
-    }));
-    
-    // Publish reaction to channel if realtime is enabled
-    if (config?.realtime && conversationId.includes('ticket-')) {
-      const channelName = `widget:conversation:${conversationId}`;
-      publishToChannel(channelName, 'reaction', {
+  const handleMessageReaction = useCallback((messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => {
+    // Update local state with the reaction
+    setMessages(prevMessages => 
+      prevMessages.map(message => 
+        message.id === messageId 
+          ? { ...message, reaction: message.reaction === reaction ? null : reaction } 
+          : message
+      )
+    );
+
+    // Track reaction in the map
+    setReactionsMap(prev => {
+      const newMap = { ...prev };
+      if (prev[messageId] === reaction) {
+        delete newMap[messageId]; // Toggle off if same reaction
+      } else {
+        newMap[messageId] = reaction;
+      }
+      return newMap;
+    });
+
+    // If realtime is enabled, publish reaction to the channel
+    if (config?.realtime?.enabled) {
+      publishToChannel(chatChannelName, 'reaction', {
         messageId,
         reaction,
         userId: sessionId,
         timestamp: new Date()
       });
     }
-  }, [conversationId, sessionId, config]);
-  
-  // Handle removing a reaction from a message
-  const removeReaction = useCallback((messageId: string) => {
-    setReactions(prev => {
-      const newReactions = { ...prev };
-      delete newReactions[messageId];
-      return newReactions;
-    });
-    
-    // Publish reaction removal to channel if realtime is enabled
-    if (config?.realtime === true && conversationId.includes('ticket-')) {
-      const channelName = `widget:conversation:${conversationId}`;
-      publishToChannel(channelName, 'reaction', {
-        messageId,
-        reaction: null,
-        userId: sessionId,
-        timestamp: new Date()
-      });
-    }
-  }, [conversationId, sessionId, config]);
-  
+
+    // Dispatch reaction event
+    dispatchChatEvent('message:reacted', { 
+      messageId, 
+      reaction,
+      timestamp: new Date() 
+    }, config);
+  }, [messages, setMessages, chatChannelName, sessionId, config]);
+
   return {
-    reactions,
-    addReaction,
-    removeReaction
+    reactionsMap,
+    handleMessageReaction
   };
 }

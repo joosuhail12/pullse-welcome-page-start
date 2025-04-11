@@ -87,7 +87,7 @@ export function processSystemMessage(
   config?: ChatWidgetConfig
 ): void {
   // Show toast notification for system messages if enabled
-  if (config?.features?.notifications === true) {
+  if (config?.features?.notifications) {
     toast({
       title: "New message",
       description: message.text,

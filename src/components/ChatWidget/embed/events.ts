@@ -1,5 +1,6 @@
 
-import { dispatchEvent } from '../utils/events';
+import { WidgetOptions } from './types';
+import { safelyDispatchEvent } from './utils';
 
 // Enhanced typing status tracking
 const typingStatus: Record<string, boolean> = {};
@@ -8,8 +9,9 @@ const typingStatus: Record<string, boolean> = {};
  * Dispatch typing events with necessary throttling and safety checks
  * @param type Event type
  * @param detail Event details
+ * @param options Widget options
  */
-export function dispatchTypingEvent(type: 'chat:typingStarted' | 'chat:typingStopped', detail: any): void {
+export function dispatchTypingEvent(type: 'chat:typingStarted' | 'chat:typingStopped', detail: any, options?: WidgetOptions): void {
   // Type safety check - typingStarted and typingStopped are special cases
   if (type === 'chat:typingStarted' || type === 'chat:typingStopped') {
     const userId = detail?.userId || 'unknown';
@@ -27,11 +29,11 @@ export function dispatchTypingEvent(type: 'chat:typingStarted' | 'chat:typingSto
     typingStatus[userId] = type === 'chat:typingStarted';
     
     // Dispatch the event
-    dispatchEvent(type, {
+    safelyDispatchEvent(type, {
       type,
       timestamp: new Date(),
       data: detail
-    });
+    }, options);
   }
 }
 
@@ -39,8 +41,9 @@ export function dispatchTypingEvent(type: 'chat:typingStarted' | 'chat:typingSto
  * Safely dispatch chat widget events
  * @param type Event type
  * @param detail Event details 
+ * @param options Widget options
  */
-export function dispatchWidgetEvent(type: string, detail: any): void {
+export function dispatchWidgetEvent(type: string, detail: any, options?: WidgetOptions): void {
   // Create event payload
   const payload = {
     type,
@@ -49,15 +52,17 @@ export function dispatchWidgetEvent(type: string, detail: any): void {
   };
   
   // Dispatch the event
-  dispatchEvent(type, payload);
+  safelyDispatchEvent(type, payload, options);
 }
 
 /**
  * Register global event handler for the widget
  * @param callback Callback function
+ * @param options Widget options
  */
 export function registerGlobalEventHandler(
-  callback: (event: any) => void
+  callback: (event: any) => void,
+  options?: WidgetOptions
 ): () => void {
   // Define the event listener function
   const eventListener = (event: Event) => {

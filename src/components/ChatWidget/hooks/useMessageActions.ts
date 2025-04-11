@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Message } from '../types';
 import { createUserMessage, createSystemMessage, sendTypingIndicator } from '../utils/messageHandlers';
 import { publishToChannel } from '../utils/ably';
@@ -17,42 +17,6 @@ export function useMessageActions(
 ) {
   const [messageText, setMessageText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [waitingForTicketId, setWaitingForTicketId] = useState(false);
-  const [ticketId, setTicketId] = useState<string | null>(null);
-
-  // Handle new ticket response
-  useEffect(() => {
-    if (!waitingForTicketId) return;
-    
-    const client = config?.realtime ? true : false;
-    if (!client || !chatChannelName) return;
-    
-    // Subscribe to new_ticket event response
-    const handleNewTicket = (message: any) => {
-      if (message.data && message.data.ticketId) {
-        setTicketId(message.data.ticketId);
-        setWaitingForTicketId(false);
-        
-        // Dispatch event for ticket creation
-        dispatchChatEvent('chat:ticketCreated', { 
-          ticketId: message.data.ticketId,
-          sessionId 
-        }, config);
-      }
-    };
-    
-    // Set up subscription
-    if (config?.realtime) {
-      // In a real implementation, this would use subscribeToChannel
-      // For now we'll use a timeout to simulate the response
-      // This is where you would add the real subscription code
-    }
-    
-    // Cleanup
-    return () => {
-      // Cleanup subscription
-    };
-  }, [waitingForTicketId, chatChannelName, sessionId, config]);
 
   // Handle sending messages
   const handleSendMessage = useCallback(async (text?: string, type: 'text' | 'file' | 'card' = 'text', metadata?: Record<string, any>) => {
@@ -86,32 +50,15 @@ export function useMessageActions(
     
     // Publish message to the appropriate channel
     if (config?.realtime) {
-      if (isNewConversation) {
-        // For new conversations, send a new_ticket event
-        publishToChannel(chatChannelName, 'new_ticket', {
-          id: userMessage.id,
-          text: userMessage.text,
-          sender: userMessage.sender,
-          sessionId: sessionId,
-          timestamp: userMessage.createdAt,
-          type: userMessage.type,
-          ...(metadata && { metadata })
-        });
-        
-        // Set waiting for ticket ID
-        setWaitingForTicketId(true);
-      } else {
-        // For existing conversations, send a regular message
-        publishToChannel(chatChannelName, 'message', {
-          id: userMessage.id,
-          text: userMessage.text,
-          sender: userMessage.sender,
-          sessionId: sessionId,
-          timestamp: userMessage.createdAt,
-          type: userMessage.type,
-          ...(metadata && { metadata })
-        });
-      }
+      publishToChannel(chatChannelName, 'message', {
+        id: userMessage.id,
+        text: userMessage.text,
+        sender: userMessage.sender,
+        sessionId: sessionId, // Include sessionId for contact events
+        timestamp: userMessage.createdAt,
+        type: userMessage.type,
+        ...(metadata && { metadata })
+      });
       
       // Dispatch event for the message
       dispatchChatEvent('chat:messageSent', { message: userMessage }, config);
@@ -190,8 +137,6 @@ export function useMessageActions(
     messageText,
     setMessageText,
     isUploading,
-    waitingForTicketId,
-    ticketId,
     handleSendMessage,
     handleUserTyping,
     handleFileUpload,
