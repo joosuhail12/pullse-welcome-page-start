@@ -82,7 +82,7 @@ export function useUnreadMessages() {
   useEffect(() => {
     const checkSessionId = () => {
       const currentSessionId = getChatSessionId();
-      if (currentSessionId !== sessionId) {
+      if (currentSessionId !== sessionId && currentSessionId !== null) {
         setSessionId(currentSessionId);
       }
     };

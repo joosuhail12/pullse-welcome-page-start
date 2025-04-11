@@ -27,6 +27,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
       try {
         cleanupRef.current();
         cleanupRef.current = null;
+        ablyInitialized.current = false;
       } catch (err) {
         console.error('Error during Ably cleanup:', err);
       }
@@ -86,7 +87,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
   // Initialize Ably when component mounts and clean up when unmounts
   useEffect(() => {
     // Return early if not enabled, missing workspaceId, or no access token
-    if (!enabled || !workspaceId || !accessToken) {
+    if (!enabled || !workspaceId) {
       onStatusChange(ConnectionStatus.DISCONNECTED);
       logger.info('Realtime disabled: missing required parameters', 'ConnectionManager');
       return;
@@ -125,7 +126,6 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
         // Store the cleanup function
         cleanupRef.current = () => {
           cleanupAbly();
-          ablyInitialized.current = false;
         };
       } catch (err) {
         logger.error('Failed to initialize real-time communication', 'ConnectionManager', err);
@@ -181,19 +181,20 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
 
     initRealtime();
 
-    // Clean up when component unmounts
+    // Only clean up when component is fully unmounted, not on each re-render
     return () => {
-      performCleanup();
+      // We don't perform cleanup here to maintain the connection across view changes
+      // Only set up the cleanup reference for external cleanup calls
     };
-  }, [enabled, workspaceId, onStatusChange, accessToken]);
+  }, [enabled, workspaceId, onStatusChange]); // Removed accessToken dependency
 
-  // Handle changes to the enabled state or workspaceId
+  // Handle changes to the enabled state
   useEffect(() => {
     if (!enabled && ablyInitialized.current) {
       performCleanup();
       onStatusChange(ConnectionStatus.DISCONNECTED);
     }
-  }, [enabled, workspaceId, onStatusChange]);
+  }, [enabled, onStatusChange]);
 
   return null;
 };

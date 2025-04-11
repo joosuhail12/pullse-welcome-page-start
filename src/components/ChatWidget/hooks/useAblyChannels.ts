@@ -136,19 +136,21 @@ export function useAblyChannels(config: AblyChannelConfig) {
     return () => {
       // Clean up event listener on unmount
       client.connection.off(handleConnectionStateChange);
-      unsubscribeAllChannels();
+      
+      // Don't unsubscribe channels here to prevent disconnecting
+      // We'll let the Ably client manager handle this
     };
   }, [config.sessionChannels, config.conversationChannel, sessionId]);
 
   // Re-subscribe when config changes
   useEffect(() => {
     if (isConnected) {
+      // Unsubscribe first to avoid duplicates
+      unsubscribeAllChannels();
       subscribeToChannels();
     }
     
-    return () => {
-      unsubscribeAllChannels();
-    };
+    // Don't unsubscribe on unmount
   }, [config.sessionChannels, config.conversationChannel, sessionId, isConnected]);
 
   return { isConnected, channels: channels.current };

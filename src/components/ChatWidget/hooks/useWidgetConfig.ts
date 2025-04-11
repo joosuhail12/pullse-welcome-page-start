@@ -9,6 +9,7 @@ import { setChatSessionId } from '../utils/storage';
 // Create a global config cache to prevent multiple fetch calls
 let globalConfigCache: ChatWidgetConfig | null = null;
 let configFetchInProgress = false;
+let lastFetchedWorkspaceId: string | null = null;
 
 export function useWidgetConfig() {
   const [config, setConfig] = useState<ChatWidgetConfig>(globalConfigCache || defaultConfig);
@@ -21,8 +22,8 @@ export function useWidgetConfig() {
 
   useEffect(() => {
     async function loadConfig() {
-      // If we already have a global cache, use it and skip API call
-      if (globalConfigCache) {
+      // If we already have a global cache for this workspace, use it and skip API call
+      if (globalConfigCache && lastFetchedWorkspaceId === workspaceId) {
         logger.info('Using cached config, skipping API call', 'useWidgetConfig');
         setConfig(globalConfigCache);
         setLoading(false);
@@ -45,15 +46,15 @@ export function useWidgetConfig() {
         return;
       }
 
-      // Skip fetching if we've already loaded the config once
-      if (configFetchedRef.current) {
-        logger.info('Config already fetched, skipping API call', 'useWidgetConfig');
+      // Skip fetching if we've already loaded the config once and it's for the same workspace
+      if (configFetchedRef.current && lastFetchedWorkspaceId === workspaceId) {
+        logger.info('Config already fetched for this workspace, skipping API call', 'useWidgetConfig');
         setLoading(false);
         return;
       }
 
-      // Skip if another fetch is already in progress
-      if (configFetchInProgress) {
+      // Skip if another fetch is already in progress for this workspace
+      if (configFetchInProgress && lastFetchedWorkspaceId === workspaceId) {
         logger.info('Config fetch already in progress, waiting for result', 'useWidgetConfig');
         return;
       }
@@ -61,6 +62,7 @@ export function useWidgetConfig() {
       try {
         setLoading(true);
         configFetchInProgress = true;
+        lastFetchedWorkspaceId = workspaceId;
 
         const apiKey = "85c7756b-f333-4ec9-a440-c4d1850482c3";
 

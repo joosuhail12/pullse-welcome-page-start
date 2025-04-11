@@ -1,4 +1,3 @@
-
 import Ably from 'ably';
 import { 
   getAblyClient, isInFallbackMode, 
@@ -7,6 +6,9 @@ import {
 } from './config';
 import { dispatchValidatedEvent } from '../../embed/enhancedEvents';
 import { ChatEventType } from '../../config';
+
+// Keep track of active channel subscriptions to avoid duplicates
+const activeChannelSubscriptions = new Map<string, Map<string, boolean>>();
 
 /**
  * Subscribe to a channel and event
@@ -43,6 +45,18 @@ export const subscribeToChannel = (
     return undefined;
   }
   
+  // Check if we're already subscribed to avoid duplicate subscriptions
+  if (!activeChannelSubscriptions.has(channelName)) {
+    activeChannelSubscriptions.set(channelName, new Map());
+  }
+  
+  const channelSubs = activeChannelSubscriptions.get(channelName);
+  if (channelSubs?.has(eventName)) {
+    console.log(`Already subscribed to ${channelName} (${eventName}), skipping duplicate subscription`);
+    // Return the existing channel so the caller can still unsubscribe if needed
+    return client.channels.get(channelName);
+  }
+  
   try {
     const channel = client.channels.get(channelName);
     
@@ -50,6 +64,9 @@ export const subscribeToChannel = (
     addActiveSubscription(channelName, eventName);
     
     channel.subscribe(eventName, callback);
+    
+    // Mark as subscribed to avoid duplicates
+    channelSubs?.set(eventName, true);
     
     // Log successful subscription for debugging
     console.log(`Successfully subscribed to ${channelName} (${eventName})`);
@@ -155,12 +172,47 @@ export const unsubscribeFromChannel = (
     if (eventName) {
       channel.unsubscribe(eventName);
       removeActiveSubscription(channel.name, eventName);
+      
+      // Remove from our active subscriptions tracking
+      const channelSubs = activeChannelSubscriptions.get(channel.name);
+      if (channelSubs) {
+        channelSubs.delete(eventName);
+        if (channelSubs.size === 0) {
+          activeChannelSubscriptions.delete(channel.name);
+        }
+      }
     } else {
       channel.unsubscribe();
       removeActiveSubscription(channel.name, '*');
+      
+      // Remove all subscriptions for this channel
+      activeChannelSubscriptions.delete(channel.name);
     }
     console.log(`Unsubscribed from ${channel.name} channel`);
   } catch (error) {
     console.error(`Error unsubscribing from channel:`, error);
+  }
+};
+
+/**
+ * Clear all channel subscriptions
+ * This can be used when switching between views to clean up unused subscriptions
+ */
+export const clearAllChannelSubscriptions = (): void => {
+  const client = getAblyClient();
+  if (!client) return;
+  
+  try {
+    // For each active channel, detach but don't fully close the connection
+    client.channels.forEach((channel) => {
+      if (channel.state === 'attached') {
+        channel.detach();
+      }
+    });
+    
+    // Clear our tracking maps
+    activeChannelSubscriptions.clear();
+  } catch (error) {
+    console.error('Error clearing channel subscriptions:', error);
   }
 };
