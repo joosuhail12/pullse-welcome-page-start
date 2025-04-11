@@ -71,10 +71,10 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
   }, [contactData, userFormData, setUserFormData]);
 
   const widgetStyle = useMemo(() => ({
-    ...(config.colors?.primaryColor && {
+    ...(config?.colors?.primaryColor && {
       '--vivid-purple': config.colors.primaryColor,
     } as React.CSSProperties)
-  }), [config.colors?.primaryColor]);
+  }), [config?.colors?.primaryColor]);
 
   const toggleChat = useCallback(() => {
     const newIsOpen = !isOpen;
@@ -100,7 +100,18 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [toggleChat]);
 
-  if ((loading || isLoadingTicket) && isOpen) {
+  // Don't render anything while loading
+  if (loading) {
+    return null;
+  }
+
+  // Don't render if there's no config
+  if (!config) {
+    return null;
+  }
+
+  // Only show loading indicator when data is loading and widget is open
+  if (isLoadingTicket && isOpen) {
     return <EnhancedLoadingIndicator positionStyles={getWidgetContainerPositionStyles} config={config} />;
   }
 
