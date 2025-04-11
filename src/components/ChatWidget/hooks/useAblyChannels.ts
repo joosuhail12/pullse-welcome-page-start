@@ -4,12 +4,10 @@ import { subscribeToChannel, unsubscribeFromChannel } from '../utils/ably/messag
 import { getAblyClient } from '../utils/ably/config';
 import { getChatSessionId } from '../utils/storage';
 import Ably from 'ably';
-import { getSessionChannels, isNewConversation } from '../utils/conversationUtils';
 
 interface AblyChannelConfig {
   sessionChannels: boolean;
-  conversationChannel?: string | null;
-  isNewConversation?: boolean;
+  conversationChannel?: string;
 }
 
 interface AblyChannels {
@@ -38,46 +36,37 @@ export function useAblyChannels(config: AblyChannelConfig) {
     if (config.sessionChannels && sessionId) {
       console.log(`Subscribing to session channels for ${sessionId}`);
       
-      // Get session channels with proper widget: prefix
-      const sessionChannelList = getSessionChannels(sessionId);
+      // Subscribe to session channels with widget: prefix
+      channels.current.events = subscribeToChannel(
+        `widget:events:${sessionId}`,
+        'message',
+        (message) => {
+          console.log('Received event message:', message);
+        }
+      );
       
-      // Subscribe to session channels
-      if (sessionChannelList.length > 0) {
-        // Subscribe to events channel
-        channels.current.events = subscribeToChannel(
-          sessionChannelList[0], // widget:events:sessionId
-          'message',
-          (message) => {
-            console.log('Received event message:', message);
-          }
-        );
-        
-        // Subscribe to notifications channel
-        channels.current.notifications = subscribeToChannel(
-          sessionChannelList[1], // widget:notifications:sessionId
-          'message',
-          (message) => {
-            console.log('Received notification message:', message);
-          }
-        );
-        
-        // Subscribe to contact event channel
-        channels.current.contactEvent = subscribeToChannel(
-          sessionChannelList[2], // widget:contactevent:sessionId
-          'message',
-          (message) => {
-            console.log('Received contact event message:', message);
-          }
-        );
-      }
+      channels.current.notifications = subscribeToChannel(
+        `widget:notifications:${sessionId}`,
+        'message',
+        (message) => {
+          console.log('Received notification message:', message);
+        }
+      );
+      
+      channels.current.contactEvent = subscribeToChannel(
+        `widget:contactevent:${sessionId}`,
+        'message',
+        (message) => {
+          console.log('Received contact event message:', message);
+        }
+      );
     }
     
-    // Subscribe to conversation channel if provided
-    // And only if this is not a new conversation (has ticket ID)
-    if (config.conversationChannel && !config.isNewConversation) {
-      console.log(`Subscribing to conversation channel: ${config.conversationChannel}`);
+    // Subscribe to conversation channel if provided, with widget: prefix
+    if (config.conversationChannel) {
+      console.log(`Subscribing to conversation channel: widget:conversation:${config.conversationChannel}`);
       channels.current.conversation = subscribeToChannel(
-        config.conversationChannel,
+        `widget:conversation:${config.conversationChannel}`,
         'message',
         (message) => {
           console.log('Received conversation message:', message);
@@ -136,7 +125,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
       client.connection.off(handleConnectionStateChange);
       unsubscribeAllChannels();
     };
-  }, [config.sessionChannels, config.conversationChannel, config.isNewConversation, sessionId]);
+  }, [config.sessionChannels, config.conversationChannel, sessionId]);
   
   return { isConnected, channels: channels.current };
 }

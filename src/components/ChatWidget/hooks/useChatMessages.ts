@@ -7,8 +7,6 @@ import { useMessageActions } from './useMessageActions';
 import { useRealTime } from './useRealTime';
 import { createSystemMessage } from '../utils/messageHandlers';
 import { markConversationAsRead } from '../utils/storage';
-import { publishToChannel } from '../utils/ably/messaging';
-import { getConversationChannelName, isNewConversation } from '../utils/conversationUtils';
 
 export function useChatMessages(
   conversation: Conversation,
@@ -16,29 +14,20 @@ export function useChatMessages(
   onUpdateConversation?: (updatedConversation: Conversation) => void,
   playMessageSound?: () => void
 ) {
-  // Initialize with conversation messages or a welcome message from config
-  const [messages, setMessages] = useState<Message[]>(() => {
-    if (conversation.messages && conversation.messages.length > 0) {
-      return conversation.messages;
-    } else {
-      // Use welcome message from config or fallback
-      const welcomeMessage = config?.welcomeMessage || 'Hello! How can I help you today?';
-      return [createSystemMessage(welcomeMessage)];
-    }
-  });
-  
+  // Initialize with conversation messages or a welcome message
+  const [messages, setMessages] = useState<Message[]>(
+    conversation.messages || [
+      createSystemMessage('Hello! How can I help you today?')
+    ]
+  );
   const [isTyping, setIsTyping] = useState(false);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const [page, setPage] = useState(1);
 
   // Get session ID
   const sessionId = getChatSessionId();
-  
-  // Create channel name based on conversation using the utility function
-  const chatChannelName = getConversationChannelName(conversation);
-  
-  // Flag to determine if this is a new conversation without a ticket
-  const isNewConv = isNewConversation(conversation);
+  // Create channel name based on conversation
+  const chatChannelName = `conversation:${conversation.id}`;
 
   // Mark the conversation as read when opened
   useEffect(() => {
@@ -63,33 +52,13 @@ export function useChatMessages(
     playMessageSound
   );
 
-  // Wrap the original handleSendMessage to handle new conversation messages
-  const sendMessageToContactEventChannel = useCallback((message: Message) => {
-    if (isNewConv && sessionId) {
-      // For new conversations, also send the message to contactevent channel
-      const contactEventChannel = `widget:contactevent:${sessionId}`;
-      
-      publishToChannel(contactEventChannel, 'message', {
-        id: message.id,
-        text: message.text,
-        sender: message.sender,
-        timestamp: message.createdAt,
-        type: message.type,
-        status: message.status,
-        conversationId: conversation.id
-      });
-      
-      console.log(`Message sent to contact event channel ${contactEventChannel}:`, message.text);
-    }
-  }, [isNewConv, sessionId, conversation.id]);
-
   // Use the message actions hook
   const {
     messageText,
     setMessageText,
-    handleSendMessage: originalHandleSendMessage,
+    handleSendMessage,
     handleUserTyping: baseHandleUserTyping,
-    handleFileUpload: originalHandleFileUpload,
+    handleFileUpload,
     handleEndChat
   } = useMessageActions(
     messages,
@@ -100,34 +69,6 @@ export function useChatMessages(
     setHasUserSentMessage,
     setIsTyping
   );
-
-  // Wrap the original handleSendMessage
-  const handleSendMessage = useCallback(() => {
-    const result = originalHandleSendMessage();
-    
-    if (result && result.message) {
-      // Send to contact event channel for new conversations
-      sendMessageToContactEventChannel(result.message);
-    }
-    
-    return result;
-  }, [originalHandleSendMessage, sendMessageToContactEventChannel]);
-  
-  // Wrap the file upload function to handle the event and extract the file
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const result = originalHandleFileUpload(file);
-      
-      if (result && result.message) {
-        // Send to contact event channel for new conversations
-        sendMessageToContactEventChannel(result.message);
-      }
-      
-      return result;
-    }
-    return { success: false };
-  }, [originalHandleFileUpload, sendMessageToContactEventChannel]);
 
   // Update conversation in parent component when messages change
   useEffect(() => {

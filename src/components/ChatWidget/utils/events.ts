@@ -23,42 +23,38 @@ export function dispatchChatEvent(
   config?: ChatWidgetConfig,
   priority?: EventPriority
 ): void {
-  try {
-    // Create event payload
-    const payload: ChatEventPayload = {
-      type: eventType as ChatEventType,
-      timestamp: new Date(),
-      data
-    };
-    
-    // Debug log in development only
-    logger.debug(`Dispatching event: ${eventType}`, 'events', {
-      data: import.meta.env.DEV ? data : undefined
-    });
-    
-    // Dispatch window CustomEvent
-    window.dispatchEvent(
-      new CustomEvent('pullse:' + eventType, {
-        detail: payload,
-        bubbles: true,
-        cancelable: true
-      })
-    );
-    
-    // Call global event handlers if provided
-    if (config?.eventHandlers) {
-      // Call event-specific handler if provided
-      const specificHandler = config.eventHandlers[eventType as keyof typeof config.eventHandlers];
-      if (typeof specificHandler === 'function') {
-        try {
-          specificHandler(payload);
-        } catch (error) {
-          logger.error(`Error in chat widget ${eventType} event handler`, 'events', error);
-        }
+  // Create event payload
+  const payload: ChatEventPayload = {
+    type: eventType as ChatEventType,
+    timestamp: new Date(),
+    data
+  };
+  
+  // Debug log in development only
+  logger.debug(`Dispatching event: ${eventType}`, 'events', {
+    data: import.meta.env.DEV ? data : undefined
+  });
+  
+  // Dispatch window CustomEvent
+  window.dispatchEvent(
+    new CustomEvent('pullse:' + eventType, {
+      detail: payload,
+      bubbles: true,
+      cancelable: true
+    })
+  );
+  
+  // Call global event handlers if provided
+  if (config?.eventHandlers) {
+    // Call event-specific handler if provided
+    const specificHandler = config.eventHandlers[eventType as keyof typeof config.eventHandlers];
+    if (typeof specificHandler === 'function') {
+      try {
+        specificHandler(payload);
+      } catch (error) {
+        logger.error(`Error in chat widget ${eventType} event handler`, 'events', error);
       }
     }
-  } catch (error) {
-    logger.error(`Failed to dispatch event ${eventType}:`, 'events', error);
   }
 }
 

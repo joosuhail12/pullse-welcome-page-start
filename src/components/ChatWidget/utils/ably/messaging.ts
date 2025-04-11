@@ -1,4 +1,3 @@
-
 import Ably from 'ably';
 import { 
   getAblyClient, isInFallbackMode, 
@@ -29,9 +28,7 @@ export const subscribeToChannel = (
   if (!channelName || 
       channelName.includes('null') || 
       channelName.includes('undefined') || 
-      channelName === 'widget:session:null' ||
-      channelName === 'session:null' ||
-      channelName === 'widget:conversation:null') {
+      channelName === 'session:null') {
     console.warn(`Invalid channel name: ${channelName}, skipping subscription`);
     return;
   }
@@ -53,11 +50,9 @@ export const subscribeToChannel = (
       setTimeout(() => {
         try {
           // Make sure the client is still connected and channel still exists
-          if (client && client.connection.state === 'connected') {
-            if (channel.state !== 'attached') {
-              console.log(`Reattaching to channel ${channelName}`);
-              channel.attach();
-            }
+          if (client && client.connection.state === 'connected' && channel.state !== 'attached') {
+            console.log(`Reattaching to channel ${channelName}`);
+            channel.attach();
           }
         } catch (err) {
           console.error(`Failed to reattach to channel ${channelName}:`, err);
@@ -99,17 +94,6 @@ export const publishToChannel = (
   data: any
 ): void => {
   const client = getAblyClient();
-  
-  // Enhanced validation for channel names
-  if (!channelName || 
-      channelName.includes('null') || 
-      channelName.includes('undefined') || 
-      channelName === 'widget:session:null' ||
-      channelName === 'session:null' ||
-      channelName === 'widget:conversation:null') {
-    console.warn(`Invalid channel name: ${channelName}, skipping publish`);
-    return;
-  }
   
   // Queue message if in fallback mode or client not available
   if (isInFallbackMode() || !client || client.connection.state !== 'connected') {

@@ -1,156 +1,268 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { Message, MessageReadStatus } from '../types';
-import { publishToChannel } from './ably/messaging';
-import { ChatWidgetConfig } from '../config';
+import { Message, TicketMessage } from '../types';
+import { publishToChannel } from './ably';
 import { dispatchChatEvent } from './events';
+import { ChatWidgetConfig } from '../config';
 
 /**
- * Create a system message
+ * Handles sending a read receipt for a message
  */
-export function createSystemMessage(text: string, type: 'text' | 'status' = 'text'): Message {
+export const sendReadReceipt = (
+  chatChannelName: string,
+  messageId: string,
+  sessionId: string
+): void => {
+  publishToChannel(chatChannelName, 'read', {
+    messageId,
+    userId: sessionId,
+    timestamp: new Date()
+  });
+};
+
+/**
+ * Handles sending a delivery receipt for a message
+ */
+export const sendDeliveryReceipt = (
+  chatChannelName: string,
+  messageId: string,
+  sessionId: string
+): void => {
+  publishToChannel(chatChannelName, 'delivered', {
+    messageId,
+    userId: sessionId,
+    timestamp: new Date()
+  });
+};
+
+/**
+ * Creates a system response message
+ */
+export const createSystemMessage = (text: string): Message => {
   return {
-    id: `sys-${uuidv4()}`,
+    id: `msg-${Date.now()}-system`,
     text,
     sender: 'system',
     createdAt: new Date(),
-    type,
+    type: 'text',
     status: 'sent'
   };
-}
+};
 
 /**
- * Create a user message
+ * Creates a user message
  */
-export function createUserMessage(text: string, type: 'text' | 'file' = 'text'): Message {
+export const createUserMessage = (text: string, type: 'text' | 'file' = 'text', fileData?: {
+  fileName: string;
+  fileUrl: string;
+}): Message => {
   return {
-    id: `usr-${uuidv4()}`,
+    id: `msg-${Date.now()}-user${type === 'file' ? '-file' : ''}`,
     text,
     sender: 'user',
     createdAt: new Date(),
     type,
-    status: 'sending'
+    status: 'sent',
+    ...(fileData && {
+      fileName: fileData.fileName,
+      fileUrl: fileData.fileUrl
+    })
   };
-}
+};
 
 /**
- * Create an agent message
+ * Create an agent message from ticket format
  */
-export function createAgentMessage(text: string, type: 'text' | 'file' = 'text'): Message {
+export const createAgentMessageFromTicket = (ticketMessage: TicketMessage): Message => {
   return {
-    id: `agt-${uuidv4()}`,
-    text,
+    id: ticketMessage.id,
+    text: ticketMessage.message,
     sender: 'agent',
-    createdAt: new Date(),
-    type,
+    createdAt: new Date(ticketMessage.createdAt),
+    type: 'text',
     status: 'sent'
   };
-}
+};
 
 /**
- * Process incoming system message
- * - Play sound
- * - Dispatch events
- * - Send read receipt
+ * Create a user message from ticket format
  */
-export function processSystemMessage(
+export const createUserMessageFromTicket = (ticketMessage: TicketMessage): Message => {
+  return {
+    id: ticketMessage.id,
+    text: ticketMessage.message,
+    sender: 'user',
+    createdAt: new Date(ticketMessage.createdAt),
+    type: 'text',
+    status: 'sent'
+  };
+};
+
+/**
+ * Convert ticket messages to chat messages
+ */
+export const convertTicketMessagesToMessages = (ticketMessages: TicketMessage[]): Message[] => {
+  return ticketMessages.map(msg => {
+    if (msg.userType === 'customer') {
+      return createUserMessageFromTicket(msg);
+    } else {
+      return createAgentMessageFromTicket(msg);
+    }
+  });
+};
+
+/**
+ * Get a random response message for non-realtime mode
+ */
+export const getRandomResponse = (): string => {
+  const responses = [
+    "Thank you for your message. Is there anything else I can help with?",
+    "I appreciate your inquiry. Let me know if you need further assistance.",
+    "I've made a note of your request. Is there any other information you'd like to provide?",
+    "Thanks for sharing that information. Do you have any other questions?"
+  ];
+  
+  return responses[Math.floor(Math.random() * responses.length)];
+};
+
+/**
+ * Process system message and handle side effects
+ */
+export const processSystemMessage = (
   message: Message,
-  channelName: string | null,
+  chatChannelName: string,
   sessionId: string,
   config?: ChatWidgetConfig,
   playMessageSound?: () => void
-): void {
-  // Play sound for new messages if enabled
-  if (playMessageSound) {
+): void => {
+  // Play sound notification if provided and chat is not visible
+  if (playMessageSound && document.visibilityState !== 'visible') {
     playMessageSound();
   }
+  
+  // Dispatch message received event
+  dispatchChatEvent('chat:messageReceived', { message });
+  
+  // Update message status to delivered
+  if (config?.features?.readReceipts) {
+    // Send delivered receipt immediately
+    sendDeliveryReceipt(chatChannelName, message.id, sessionId);
+    
+    // Send read receipt after a short delay
+    setTimeout(() => {
+      sendReadReceipt(chatChannelName, message.id, sessionId);
+    }, 2000);
+  }
+};
 
-  // Dispatch event for new messages
-  dispatchChatEvent('message:received', {
-    messageId: message.id,
-    text: message.text,
-    timestamp: message.createdAt
+/**
+ * Send typing indicator
+ */
+export const sendTypingIndicator = (
+  chatChannelName: string,
+  sessionId: string,
+  status: 'start' | 'stop'
+): void => {
+  publishToChannel(chatChannelName, 'typing', {
+    status,
+    userId: sessionId
   });
-
-  // Only send read receipt if enabled and channel exists
-  if (config?.features?.readReceipts && channelName && sessionId) {
-    sendReadReceipt(channelName, message.id, sessionId);
-  }
-}
+};
 
 /**
- * Process a status change for a message
+ * Send message reaction
  */
-export function processMessageStatusChange(
+export const sendMessageReaction = (
+  chatChannelName: string,
   messageId: string,
-  status: 'sent' | 'sending' | 'delivered' | 'read',
-  messages: Message[],
-  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
-): void {
-  // Update message status
-  setMessages(
-    messages.map(msg =>
-      msg.id === messageId
-        ? { ...msg, status }
-        : msg
-    )
-  );
-
-  // Dispatch event for status change
-  if (status === 'read') {
-    dispatchChatEvent('message:read', { messageId });
-  } else if (status === 'delivered') {
-    dispatchChatEvent('message:delivered', { messageId });
-  }
-}
-
-/**
- * Send a read receipt for a message
- */
-export function sendReadReceipt(
-  channelName: string,
-  messageId: string,
-  sessionId: string
-): void {
-  // Skip if any required parameter is missing
-  if (!channelName || !messageId || !sessionId) {
-    return;
-  }
-
-  // Send read receipt to the channel
-  publishToChannel(channelName, 'read', {
+  sessionId: string,
+  reaction: 'thumbsUp' | 'thumbsDown' | null
+): void => {
+  publishToChannel(chatChannelName, 'reaction', {
     messageId,
+    reaction,
     userId: sessionId,
     timestamp: new Date()
   });
-}
+};
 
 /**
- * Send a delivery receipt for a message
+ * Generate mock conversations when loading fails
  */
-export function sendDeliveryReceipt(
-  channelName: string,
-  messageId: string,
-  sessionId: string
-): void {
-  // Skip if any required parameter is missing
-  if (!channelName || !messageId || !sessionId) {
-    return;
-  }
-
-  // Send delivery receipt to the channel
-  publishToChannel(channelName, 'delivered', {
-    messageId,
-    userId: sessionId,
-    timestamp: new Date()
-  });
-}
-
-/**
- * Format a message for display
- */
-export function formatMessageText(text: string): string {
-  // Replace URLs with clickable links
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-  return text.replace(urlRegex, url => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
-}
+export const getMockConversations = (): any[] => {
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const twoDaysAgo = new Date(now);
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+  
+  return [
+    {
+      id: 'mock-conv-1',
+      title: 'Technical Support',
+      timestamp: now,
+      lastMessage: 'We\'ll look into your issue right away.',
+      status: 'active',
+      agentInfo: {
+        name: 'Support Agent',
+        avatar: '',
+        status: 'online'
+      },
+      metadata: {
+        ticketProgress: 75
+      },
+      messages: [
+        {
+          id: 'msg-mock-1',
+          text: 'Hello! How can I help you today?',
+          sender: 'system',
+          timestamp: now,
+          status: 'read'
+        },
+        {
+          id: 'msg-mock-2',
+          text: 'I\'m having trouble with my account.',
+          sender: 'user',
+          timestamp: new Date(now.getTime() + 60000),
+          status: 'read'
+        },
+        {
+          id: 'msg-mock-3',
+          text: 'We\'ll look into your issue right away.',
+          sender: 'system',
+          timestamp: new Date(now.getTime() + 120000),
+          status: 'delivered'
+        }
+      ]
+    },
+    {
+      id: 'mock-conv-2',
+      title: 'Billing Support',
+      timestamp: yesterday,
+      lastMessage: 'Your invoice has been updated.',
+      status: 'active',
+      agentInfo: {
+        name: 'Billing Specialist',
+        avatar: '',
+        status: 'away'
+      },
+      metadata: {
+        ticketProgress: 35
+      }
+    },
+    {
+      id: 'mock-conv-3',
+      title: 'Product Inquiry',
+      timestamp: twoDaysAgo,
+      lastMessage: 'Thank you for your interest in our product.',
+      status: 'ended',
+      agentInfo: {
+        name: 'Sales Agent',
+        avatar: '',
+        status: 'offline'
+      },
+      metadata: {
+        ticketProgress: 100
+      }
+    }
+  ];
+};
