@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChatWidgetConfig, defaultConfig } from './config';
@@ -7,7 +8,7 @@ import ChatView from './views/ChatView';
 import { fetchChatWidgetConfig } from './services/api';
 import { getWorkspaceIdAndApiKey } from './utils/storage';
 import { dispatchChatEvent } from './utils/events';
-import { useSound } from 'use-sound';
+import useSound from 'use-sound';
 import notificationSound from '@/assets/sounds/notification.mp3';
 import { useAblyConnection } from './hooks/useAblyConnection';
 
