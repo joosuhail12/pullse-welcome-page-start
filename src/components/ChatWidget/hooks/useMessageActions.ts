@@ -19,8 +19,15 @@ export function useMessageActions(
   const [messageText, setMessageText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
+  // The issue is that this effect is being re-triggered on each re-render because chatChannelName
+  // is likely changing. Let's add a ref to track whether we've already set up the listener.
+  const [hasSetupListener, setHasSetupListener] = useState(false);
+
   // Move the event subscription into a useEffect to prevent infinite loop
   useEffect(() => {
+    // Only set up the listener once
+    if (hasSetupListener) return;
+    
     console.log('Setting up chat:new_ticket event listener');
 
     // Create subscription to chat:new_ticket event
@@ -39,12 +46,15 @@ export function useMessageActions(
       }
     });
 
+    // Mark that we've set up the listener
+    setHasSetupListener(true);
+
     // Return cleanup function to remove the event listener when component unmounts
     return () => {
       console.log('Cleaning up chat:new_ticket event listener');
       unsubscribe();
     };
-  }, [sessionId, config]); // Only re-subscribe if these dependencies change
+  }, [sessionId, config, hasSetupListener]); // Only depend on these values, not chatChannelName
 
   // Handle sending messages
   const handleSendMessage = useCallback(async (text?: string, type: 'text' | 'file' | 'card' = 'text', metadata?: Record<string, any>) => {

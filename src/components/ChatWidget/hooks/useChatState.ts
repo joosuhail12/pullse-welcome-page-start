@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Conversation, Ticket } from '../types';
 import { ChatWidgetConfig } from '../config';
@@ -32,7 +33,6 @@ export function useChatState() {
               title: conversationData.title || 'New Conversation',
               status: 'open',
               unread: false,
-              timestamp: new Date(),
               lastMessage: conversationData.lastMessage || '',
               messages: conversationData.messages || [],
               assignedAgent: conversationData.assignedAgent || null,
@@ -66,7 +66,6 @@ export function useChatState() {
       title: 'New Conversation',
       status: 'open',
       unread: false,
-      timestamp: new Date(),
       lastMessage: '',
       messages: [],
       assignedAgent: null,
@@ -90,10 +89,9 @@ export function useChatState() {
   const handleSelectTicket = useCallback((ticket: Ticket) => {
     setActiveConversation({
       id: ticket.id,
-      title: ticket.subject || 'Conversation',
-      status: ticket.status,
+      title: ticket.description || 'Conversation',
+      status: ticket.status as 'open' | 'active' | 'ended',
       unread: false,
-      timestamp: new Date(ticket.createdAt),
       lastMessage: ticket.description || '',
       messages: [],
       assignedAgent: null,
