@@ -1,19 +1,10 @@
 
 import { useState, useCallback } from 'react';
 import { Message } from '../types';
+import { createUserMessage, createSystemMessage, sendTypingIndicator } from '../utils/messageHandlers';
 import { publishToChannel } from '../utils/ably';
 import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig } from '../config';
-import { getChatSessionId } from '../utils/cookies';
-import { 
-  createUserMessage, 
-  createSystemMessage, 
-  sendTypingIndicator, 
-  processSystemMessage 
-} from '../utils/messageHandlers';
-import { validateMessage, validateFile, sanitizeFileName } from '../utils/validation';
-import { isRateLimited } from '../utils/security';
-import { toast } from '@/components/ui/use-toast';
 
 export function useMessageActions(
   messages: Message[],
@@ -25,197 +16,127 @@ export function useMessageActions(
   setIsTyping?: React.Dispatch<React.SetStateAction<boolean>>
 ) {
   const [messageText, setMessageText] = useState('');
-  const [fileError, setFileError] = useState<string | null>(null);
-  
-  const handleSendMessage = useCallback(() => {
-    // Validate and sanitize input
-    const sanitizedText = validateMessage(messageText);
-    if (!sanitizedText.trim()) return;
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Handle sending messages
+  const handleSendMessage = useCallback(async (text?: string, type: 'text' | 'file' | 'card' = 'text', metadata?: Record<string, any>) => {
+    const messageContent = text || messageText;
+    if (!messageContent?.trim() && type === 'text') return;
+
+    // Create a new user message
+    const userMessage = createUserMessage(messageContent, type, metadata);
     
-    // Rate limiting check
-    if (isRateLimited()) {
-      toast({
-        title: "Rate limit exceeded",
-        description: "Please wait before sending more messages",
-        variant: "destructive"
-      });
-      return;
+    // Add message to state
+    setMessages(prevMessages => [...prevMessages, userMessage]);
+    
+    // Clear input field if this is a text message
+    if (type === 'text') {
+      setMessageText('');
     }
     
-    const userMessage = createUserMessage(sanitizedText);
-    
-    setMessages([...messages, userMessage]);
-    setMessageText('');
-    
-    // Dispatch message sent event
-    dispatchChatEvent('chat:messageSent', { message: userMessage }, config);
-    
+    // Mark that user has sent at least one message
     if (setHasUserSentMessage) {
       setHasUserSentMessage(true);
     }
     
-    // If realtime is enabled, publish the message
-    if (config?.realtime && config.realtime === true) {
+    // Stop typing indicator if active
+    if (setIsTyping) {
+      setIsTyping(false);
+      sendTypingIndicator(chatChannelName, sessionId, 'stop');
+    }
+    
+    // Check if this is a new conversation (contactevent channel) or existing conversation
+    const isNewConversation = chatChannelName.includes('contactevent');
+    
+    // Publish message to the appropriate channel
+    if (config?.realtime) {
       publishToChannel(chatChannelName, 'message', {
         id: userMessage.id,
         text: userMessage.text,
         sender: userMessage.sender,
+        sessionId: sessionId, // Include sessionId for contact events
         timestamp: userMessage.createdAt,
-        type: userMessage.type
+        type: userMessage.type,
+        ...(metadata && { metadata })
       });
       
-      sendTypingIndicator(chatChannelName, sessionId, 'stop');
-      dispatchChatEvent('chat:typingStopped', { userId: sessionId }, config);
-    } else {
-      // Fallback to the original behavior
-      if (setIsTyping) {
-        setIsTyping(true);
-        
-        // Dispatch typing started event for agent
-        dispatchChatEvent('chat:typingStarted', { userId: 'agent' }, config);
-        
-        setTimeout(() => {
-          setIsTyping(false);
-          
-          // Dispatch typing stopped event for agent
-          dispatchChatEvent('chat:typingStopped', { userId: 'agent' }, config);
-          
-          const systemMessage = createSystemMessage(
-            'Thank you for your message. How else can I assist you today?'
-          );
-          
-          setMessages(prev => [...prev, systemMessage]);
-          
-          // Dispatch message received event
-          dispatchChatEvent('chat:messageReceived', { message: systemMessage }, config);
-          
-          // Process the system message (notification, event dispatch, etc)
-          processSystemMessage(systemMessage, chatChannelName, sessionId, config);
-        }, Math.floor(Math.random() * 400) + 200);
-      }
-    }
-  }, [messageText, messages, setMessages, chatChannelName, sessionId, config, setHasUserSentMessage, setIsTyping]);
-
-  const handleUserTyping = useCallback(() => {
-    // If realtime is enabled, send typing indicator
-    if (config?.realtime && config.realtime === true) {
-      sendTypingIndicator(chatChannelName, sessionId, 'start');
+      // Dispatch event for the message
+      dispatchChatEvent('chat:messageSent', { message: userMessage }, config);
     }
     
-    // Dispatch typing started event
-    dispatchChatEvent('chat:typingStarted', { userId: sessionId }, config);
-  }, [chatChannelName, config, sessionId]);
-
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setFileError(null);
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-    
-    // Rate limiting check
-    if (isRateLimited()) {
-      toast({
-        title: "Rate limit exceeded",
-        description: "Please wait before uploading more files",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    const file = files[0];
-    
-    // Validate file
-    if (!validateFile(file)) {
-      setFileError("Invalid file. Please upload images, PDFs, or documents under 5MB.");
-      return;
-    }
-    
-    // Sanitize the file name
-    const sanitizedFileName = sanitizeFileName(file.name);
-    
-    const fileMessage = createUserMessage(
-      `Uploaded: ${sanitizedFileName}`, 
-      'file',
-      { 
-        fileName: sanitizedFileName, 
-        fileUrl: URL.createObjectURL(file) 
-      }
-    );
-    
-    setMessages([...messages, fileMessage]);
-    
-    // Dispatch file uploaded event
-    dispatchChatEvent('message:fileUploaded', { 
-      message: fileMessage,
-      fileName: sanitizedFileName,
-      fileSize: file.size,
-      fileType: file.type
-    }, config);
-    
-    if (setHasUserSentMessage) {
-      setHasUserSentMessage(true);
-    }
-    
-    e.target.value = '';
-    
-    // If realtime is enabled, publish the file message to the channel
-    if (config?.realtime && config.realtime === true) {
-      publishToChannel(chatChannelName, 'message', {
-        id: fileMessage.id,
-        text: fileMessage.text,
-        sender: fileMessage.sender,
-        timestamp: fileMessage.createdAt,
-        type: fileMessage.type,
-        fileName: fileMessage.fileName
-      });
-    } else {
-      // Fallback to the original behavior
+    // If this channel is for contact events, show a response message
+    if (isNewConversation) {
       setTimeout(() => {
-        const systemMessage = createSystemMessage(
-          `I've received your file ${sanitizedFileName}. Is there anything specific you'd like me to help with regarding this file?`
+        const autoResponseMessage = createSystemMessage(
+          'Thanks for your message! Our team will get back to you shortly.',
+          'text'
         );
         
-        setMessages(prev => [...prev, systemMessage]);
-        
-        // Dispatch message received event
-        dispatchChatEvent('chat:messageReceived', { message: systemMessage }, config);
-        
-        // Process the system message (notification, event dispatch, etc)
-        processSystemMessage(systemMessage, chatChannelName, sessionId, config);
+        setMessages(prevMessages => [...prevMessages, autoResponseMessage]);
       }, 1000);
     }
-  }, [messages, setMessages, config, setHasUserSentMessage, chatChannelName, sessionId]);
+  }, [messageText, setMessages, chatChannelName, sessionId, config, setHasUserSentMessage, setIsTyping]);
 
+  // Handle user typing
+  const handleUserTyping = useCallback(() => {
+    if (setIsTyping) {
+      setIsTyping(true);
+      sendTypingIndicator(chatChannelName, sessionId, 'start');
+    }
+  }, [chatChannelName, sessionId, setIsTyping]);
+
+  // Handle file uploads
+  const handleFileUpload = useCallback(async (file: File) => {
+    if (!file) return;
+    
+    setIsUploading(true);
+    
+    try {
+      // Create a simple file message for now
+      // In a real implementation, this would upload the file to a server
+      const fileMessage = `Uploaded file: ${file.name} (${Math.round(file.size / 1024)}KB)`;
+      
+      // Send the file message
+      await handleSendMessage(fileMessage, 'file', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      
+      // Add error message to chat
+      setMessages(prevMessages => [
+        ...prevMessages,
+        createSystemMessage('Failed to upload file. Please try again later.')
+      ]);
+    } finally {
+      setIsUploading(false);
+    }
+  }, [handleSendMessage, setMessages]);
+
+  // Handle ending chat
   const handleEndChat = useCallback(() => {
-    const statusMessage: Message = {
-      id: `msg-${Date.now()}-status`,
-      text: 'Chat ended',
-      sender: 'status',
-      timestamp: new Date(),
-      type: 'status',
-      createdAt: new Date() // Adding createdAt to fix TypeScript error
-    };
+    // Add end chat message
+    const endChatMessage = createSystemMessage('Chat ended', 'text');
+    setMessages(prevMessages => [...prevMessages, endChatMessage]);
     
-    setMessages(prev => [...prev, statusMessage]);
-    
-    // Dispatch chat ended event
-    dispatchChatEvent('chat:ended', { endedByUser: true }, config);
-    
-    // Also dispatch chat close event for backward compatibility
-    dispatchChatEvent('chat:close', { endedByUser: true }, config);
-    
-    // If realtime is enabled, publish the end chat event
-    if (config?.realtime && config.realtime === true) {
-      publishToChannel(chatChannelName, 'end', {
-        timestamp: new Date(),
-        userId: sessionId
+    // Publish end chat event to channel
+    if (config?.realtime) {
+      publishToChannel(chatChannelName, 'endChat', {
+        sessionId,
+        timestamp: new Date()
       });
     }
-  }, [chatChannelName, config, sessionId, setMessages]);
+    
+    // Dispatch end chat event
+    dispatchChatEvent('chat:ended', { timestamp: new Date() }, config);
+  }, [chatChannelName, sessionId, config, setMessages]);
 
   return {
     messageText,
     setMessageText,
-    fileError,
+    isUploading,
     handleSendMessage,
     handleUserTyping,
     handleFileUpload,
