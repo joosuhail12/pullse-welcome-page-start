@@ -64,7 +64,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
     
     // Subscribe to conversation channel if provided
     if (config.conversationChannel) {
-      console.log(`Subscribing to conversation channel: ${config.conversationChannel}`);
+      console.log(`Subscribing to conversation channel: widget:conversation:${config.conversationChannel}`);
       channels.current.conversation = subscribeToChannel(
         `widget:conversation:${config.conversationChannel}`,
         'message',

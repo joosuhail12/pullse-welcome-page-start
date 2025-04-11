@@ -48,7 +48,7 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
   const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
   
-  // Subscribe to Ably channels
+  // Subscribe to Ably channels based on session ID and active conversation
   useAblyChannels({
     sessionChannels: true,
     conversationChannel: activeConversation?.id

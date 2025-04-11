@@ -44,24 +44,16 @@ export function dispatchChatEvent(
     })
   );
   
-  // Call the onEvent callback if provided
-  if (config?.eventHandlers?.onEvent) {
-    try {
-      config.eventHandlers.onEvent(payload);
-    } catch (error) {
-      logger.error('Error in chat widget onEvent callback', 'events', error);
-    }
-  }
-  
-  // Call specific event handler if provided
-  if (config?.eventHandlers?.[eventType as keyof typeof config.eventHandlers]) {
-    try {
-      const handler = config.eventHandlers[eventType as keyof typeof config.eventHandlers];
-      if (typeof handler === 'function') {
-        handler(payload);
+  // Call global event handlers if provided
+  if (config?.eventHandlers) {
+    // Call event-specific handler if provided
+    const specificHandler = config.eventHandlers[eventType as keyof typeof config.eventHandlers];
+    if (typeof specificHandler === 'function') {
+      try {
+        specificHandler(payload);
+      } catch (error) {
+        logger.error(`Error in chat widget ${eventType} event handler`, 'events', error);
       }
-    } catch (error) {
-      logger.error(`Error in chat widget ${eventType} event handler`, 'events', error);
     }
   }
 }

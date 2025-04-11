@@ -24,6 +24,12 @@ export const subscribeToChannel = (
     return;
   }
   
+  // Don't try to subscribe to null or empty channel names
+  if (!channelName || channelName.includes('null') || channelName.includes('undefined')) {
+    console.warn(`Invalid channel name: ${channelName}, skipping subscription`);
+    return;
+  }
+  
   try {
     const channel = client.channels.get(channelName);
     
@@ -34,7 +40,8 @@ export const subscribeToChannel = (
       console.warn(`Channel ${channelName} detached, attempting to reattach`);
       setTimeout(() => {
         try {
-          if (channel.state !== 'attached') {
+          // Make sure the client is still connected and channel still exists
+          if (client && client.connection.state === 'connected' && channel.state !== 'attached') {
             channel.attach();
           }
         } catch (err) {
@@ -47,7 +54,10 @@ export const subscribeToChannel = (
       console.warn(`Channel ${channelName} failed, attempting to reattach`);
       setTimeout(() => {
         try {
-          channel.attach();
+          // Make sure the client is still connected
+          if (client && client.connection.state === 'connected') {
+            channel.attach();
+          }
         } catch (err) {
           console.error(`Failed to reattach to failed channel ${channelName}:`, err);
         }

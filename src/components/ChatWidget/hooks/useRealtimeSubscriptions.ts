@@ -26,7 +26,7 @@ export function useRealtimeSubscriptions(
   // Realtime communication effect
   useEffect(() => {
     // If realtime is enabled, subscribe to the conversation channel
-    if (config?.realtime?.enabled && chatChannelName) {
+    if (config?.realtime && chatChannelName) {
       let messageChannel: any;
       let typingChannel: any;
       let readChannel: any;
@@ -41,7 +41,7 @@ export function useRealtimeSubscriptions(
             id: message.data.id || `msg-${Date.now()}-system`,
             text: message.data.text,
             sender: 'system',
-            timestamp: new Date(message.data.timestamp || Date.now()),
+            createdAt: new Date(message.data.timestamp || Date.now()),
             type: message.data.type || 'text',
             status: 'sent'
           };
@@ -207,7 +207,7 @@ export function useRealtimeSubscriptions(
     
     // No cleanup needed when realtime is disabled
     return () => {};
-  }, [config?.realtime?.enabled, chatChannelName, sessionId, playMessageSound, sessionChannelName, setMessages]);
+  }, [config?.realtime, chatChannelName, sessionId, playMessageSound, sessionChannelName, setMessages]);
 
   return {
     remoteIsTyping,
