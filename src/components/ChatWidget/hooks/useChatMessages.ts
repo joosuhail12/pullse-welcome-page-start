@@ -2,11 +2,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Message, Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
-import { getChatSessionId } from '../utils/storage';
 import { useMessageActions } from './useMessageActions';
-import { useRealTime } from './useRealTime';
-import { createSystemMessage } from '../utils/messageHandlers';
-import { markConversationAsRead } from '../utils/storage';
+import { useRealtimeSubscriptions } from './useRealtimeSubscriptions';
+import { useLoadMoreMessages } from './useLoadMoreMessages';
 
 export function useChatMessages(
   conversation: Conversation,
@@ -14,131 +12,99 @@ export function useChatMessages(
   onUpdateConversation?: (updatedConversation: Conversation) => void,
   playMessageSound?: () => void
 ) {
-  // Initialize with conversation messages or a welcome message from config
-  const getInitialMessages = (): Message[] => {
-    if (conversation.messages?.length) {
-      return conversation.messages;
-    }
-    
-    // Use welcomeMessage from config if available, otherwise use default
-    const welcomeMessage = config?.labels?.welcomeMessage || 
-                          config?.welcomeMessage || 
-                          'Hello! How can I help you today?';
-    
-    return [createSystemMessage(welcomeMessage)];
-  };
-
-  // Initialize with conversation messages or a welcome message
-  const [messages, setMessages] = useState<Message[]>(getInitialMessages());
-  const [isTyping, setIsTyping] = useState(false);
+  // Local state
+  const [messages, setMessages] = useState<Message[]>(conversation.messages || []);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
-  const [page, setPage] = useState(1);
+  const [isTyping, setIsTyping] = useState(false);
 
-  // Get session ID
-  const sessionId = getChatSessionId();
-  
-  // Determine if this is a new conversation (no ticket ID)
-  const isNewConversation = !conversation.id.includes('ticket-');
-  
-  // Create channel name based on conversation
-  // For new conversations, use contactevent channel for the session
-  // For existing conversations, use the conversation ID
-  const chatChannelName = isNewConversation 
-    ? `widget:contactevent:${sessionId}` 
-    : `widget:conversation:${conversation.id}`;
+  // Determine channel names based on conversation ID
+  const ticketId = conversation.ticketId || '';
+  const channelName = conversation.id.includes('ticket-')
+    ? `widget:conversation:${conversation.id}`
+    : `widget:contactevent:${conversation.sessionId || ''}`;
 
-  // Mark the conversation as read when opened
-  useEffect(() => {
-    if (conversation.id && conversation.unread) {
-      markConversationAsRead(conversation.id)
-        .catch(err => console.error('Failed to mark conversation as read:', err));
+  // Set up callback for when a ticket is created
+  const handleTicketCreated = useCallback((newTicketId: string) => {
+    if (onUpdateConversation && conversation) {
+      onUpdateConversation({
+        ...conversation,
+        ticketId: newTicketId,
+        id: `ticket-${newTicketId}`
+      });
     }
-  }, [conversation.id, conversation.unread]);
+  }, [conversation, onUpdateConversation]);
 
-  // Use the real-time hook
-  const {
-    remoteIsTyping,
-    readReceipts,
-    handleTypingTimeout
-  } = useRealTime(
-    messages,
-    setMessages,
-    conversation,
-    hasUserSentMessage,
-    setIsTyping,
-    config,
-    playMessageSound
-  );
-
-  // Use the message actions hook
+  // Use message actions hook
   const {
     messageText,
     setMessageText,
+    isUploading,
+    isCreatingTicket,
+    setIsCreatingTicket,
     handleSendMessage,
-    handleUserTyping: baseHandleUserTyping,
+    handleUserTyping,
     handleFileUpload,
     handleEndChat
   } = useMessageActions(
     messages,
     setMessages,
-    chatChannelName,
-    sessionId,
+    channelName,
+    conversation.sessionId || '',
     config,
     setHasUserSentMessage,
     setIsTyping
   );
 
-  // Update conversation in parent component when messages change
+  // Use real-time subscriptions
+  const {
+    remoteIsTyping,
+    readReceipts,
+    deliveredReceipts
+  } = useRealtimeSubscriptions(
+    conversation.id,
+    conversation.sessionId || '',
+    setMessages,
+    config,
+    playMessageSound,
+    setIsCreatingTicket,
+    handleTicketCreated
+  );
+
+  // Use load more messages hook
+  const {
+    loadPreviousMessages,
+    isLoading: isLoadingMoreMessages
+  } = useLoadMoreMessages(
+    conversation.id,
+    messages,
+    setMessages
+  );
+
+  // Update parent component when messages change
   useEffect(() => {
-    if (messages.length > 0 && onUpdateConversation) {
-      const updatedConversation = {
+    if (onUpdateConversation && messages !== conversation.messages) {
+      onUpdateConversation({
         ...conversation,
-        messages: messages,
-        lastMessage: messages[messages.length - 1].text,
-        timestamp: messages[messages.length - 1].createdAt,
-        sessionId: sessionId,
-        unread: false // Mark as read when we update the conversation
-      };
-      onUpdateConversation(updatedConversation);
+        messages,
+        lastMessage: messages[messages.length - 1]?.text || ''
+      });
     }
-  }, [messages, conversation, onUpdateConversation, sessionId]);
-
-  // Wrap the handleUserTyping function to also handle typing timeout
-  const handleUserTyping = () => {
-    baseHandleUserTyping();
-    if (config?.interfaceSettings?.showAgentPresence) {
-      handleTypingTimeout();
-    }
-  };
-
-  // Function to load previous messages (for infinite scroll)
-  const loadPreviousMessages = useCallback(async () => {
-    // Simulate loading previous messages with a delay
-    // In a real implementation, this would make an API call with pagination
-    return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        setPage(prevPage => prevPage + 1);
-        // In a real implementation, you would fetch more messages here
-        // and prepend them to the messages array
-
-        // For now, we'll just resolve the Promise
-        resolve();
-      }, 1000);
-    });
-  }, [page]);
+  }, [messages, conversation, onUpdateConversation]);
 
   return {
     messages,
     messageText,
     setMessageText,
     isTyping,
-    remoteIsTyping,
     hasUserSentMessage,
     handleSendMessage,
     handleUserTyping,
     handleFileUpload,
     handleEndChat,
+    remoteIsTyping,
     readReceipts,
-    loadPreviousMessages
+    isCreatingTicket,
+    loadPreviousMessages: ticketId ? loadPreviousMessages : undefined,
+    isLoadingMoreMessages
   };
 }

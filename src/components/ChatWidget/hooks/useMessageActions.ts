@@ -17,6 +17,7 @@ export function useMessageActions(
 ) {
   const [messageText, setMessageText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isCreatingTicket, setIsCreatingTicket] = useState(false);
 
   // Handle sending messages
   const handleSendMessage = useCallback(async (text?: string, type: 'text' | 'file' | 'card' = 'text', metadata?: Record<string, any>) => {
@@ -50,22 +51,35 @@ export function useMessageActions(
     
     // Publish message to the appropriate channel
     if (config?.realtime) {
-      publishToChannel(chatChannelName, 'message', {
-        id: userMessage.id,
-        text: userMessage.text,
-        sender: userMessage.sender,
-        sessionId: sessionId, // Include sessionId for contact events
-        timestamp: userMessage.createdAt,
-        type: userMessage.type,
-        ...(metadata && { metadata })
-      });
+      if (isNewConversation) {
+        setIsCreatingTicket(true);
+        publishToChannel(chatChannelName, 'new_ticket', {
+          id: userMessage.id,
+          text: userMessage.text,
+          sender: userMessage.sender,
+          sessionId: sessionId,
+          timestamp: userMessage.createdAt,
+          type: userMessage.type,
+          ...(metadata && { metadata })
+        });
+      } else {
+        publishToChannel(chatChannelName, 'message', {
+          id: userMessage.id,
+          text: userMessage.text,
+          sender: userMessage.sender,
+          sessionId: sessionId,
+          timestamp: userMessage.createdAt,
+          type: userMessage.type,
+          ...(metadata && { metadata })
+        });
+      }
       
       // Dispatch event for the message
       dispatchChatEvent('chat:messageSent', { message: userMessage }, config);
     }
     
     // If this channel is for contact events, show a response message
-    if (isNewConversation) {
+    if (isNewConversation && !isCreatingTicket) {
       setTimeout(() => {
         const autoResponseMessage = createSystemMessage(
           'Thanks for your message! Our team will get back to you shortly.',
@@ -75,7 +89,7 @@ export function useMessageActions(
         setMessages(prevMessages => [...prevMessages, autoResponseMessage]);
       }, 1000);
     }
-  }, [messageText, setMessages, chatChannelName, sessionId, config, setHasUserSentMessage, setIsTyping]);
+  }, [messageText, setMessages, chatChannelName, sessionId, config, setHasUserSentMessage, setIsTyping, isCreatingTicket]);
 
   // Handle user typing
   const handleUserTyping = useCallback(() => {
@@ -93,7 +107,6 @@ export function useMessageActions(
     
     try {
       // Create a simple file message for now
-      // In a real implementation, this would upload the file to a server
       const fileMessage = `Uploaded file: ${file.name} (${Math.round(file.size / 1024)}KB)`;
       
       // Send the file message
@@ -137,6 +150,8 @@ export function useMessageActions(
     messageText,
     setMessageText,
     isUploading,
+    isCreatingTicket,
+    setIsCreatingTicket,
     handleSendMessage,
     handleUserTyping,
     handleFileUpload,

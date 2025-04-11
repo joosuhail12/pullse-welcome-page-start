@@ -1,6 +1,7 @@
 
 import { WidgetOptions } from './types';
 import { safelyDispatchEvent } from './utils';
+import { dispatchChatEvent } from '../utils/events';
 
 // Enhanced typing status tracking
 const typingStatus: Record<string, boolean> = {};
