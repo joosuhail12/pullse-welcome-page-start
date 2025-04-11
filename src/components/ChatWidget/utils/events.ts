@@ -18,14 +18,14 @@ export enum EventPriority {
  * @param priority Optional priority level for the event
  */
 export function dispatchChatEvent(
-  eventType: ChatEventType, 
+  eventType: string, 
   data?: any, 
   config?: ChatWidgetConfig,
   priority?: EventPriority
 ): void {
   // Create event payload
   const payload: ChatEventPayload = {
-    type: eventType,
+    type: eventType as ChatEventType,
     timestamp: new Date(),
     data
   };
@@ -45,18 +45,21 @@ export function dispatchChatEvent(
   );
   
   // Call the onEvent callback if provided
-  if (config?.onEvent) {
+  if (config?.eventHandlers?.onEvent) {
     try {
-      config.onEvent(payload);
+      config.eventHandlers.onEvent(payload);
     } catch (error) {
       logger.error('Error in chat widget onEvent callback', 'events', error);
     }
   }
   
   // Call specific event handler if provided
-  if (config?.eventHandlers?.[eventType]) {
+  if (config?.eventHandlers?.[eventType as keyof typeof config.eventHandlers]) {
     try {
-      config.eventHandlers[eventType]!(payload);
+      const handler = config.eventHandlers[eventType as keyof typeof config.eventHandlers];
+      if (typeof handler === 'function') {
+        handler(payload);
+      }
     } catch (error) {
       logger.error(`Error in chat widget ${eventType} event handler`, 'events', error);
     }
@@ -68,7 +71,7 @@ export function dispatchChatEvent(
  * with priority handling and additional validation
  */
 export function dispatchValidatedEvent(
-  eventType: ChatEventType,
+  eventType: string,
   data?: any,
   priority: EventPriority = EventPriority.MEDIUM
 ): void {
@@ -91,7 +94,7 @@ export function dispatchValidatedEvent(
  * @returns Cleanup function to remove the event listener
  */
 export function subscribeToChatEvent(
-  eventType: ChatEventType | 'all',
+  eventType: string | 'all',
   callback: (payload: ChatEventPayload) => void
 ): () => void {
   const handleEvent = (event: Event) => {

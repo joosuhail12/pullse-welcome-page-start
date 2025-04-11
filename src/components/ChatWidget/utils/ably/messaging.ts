@@ -19,8 +19,8 @@ export const subscribeToChannel = (
   callback: (message: Ably.Types.Message) => void
 ): Ably.Types.RealtimeChannelCallbacks | undefined => {
   const client = getAblyClient();
-  if (!client) {
-    console.warn('Ably client not initialized, subscription will be deferred');
+  if (!client || client.connection.state !== 'connected') {
+    console.warn(`Ably client not initialized or not connected, subscription to ${channelName} will be deferred`);
     return;
   }
   
@@ -97,5 +97,27 @@ export const publishToChannel = (
     // Also dispatch local event for fallback
     const localEventType = `local:${channelName}:${eventName}` as ChatEventType;
     dispatchValidatedEvent(localEventType, data);
+  }
+};
+
+/**
+ * Unsubscribe from a channel
+ * @param channel The channel to unsubscribe from
+ * @param eventName Optional event name to unsubscribe from
+ */
+export const unsubscribeFromChannel = (
+  channel: Ably.Types.RealtimeChannelCallbacks | undefined,
+  eventName?: string
+): void => {
+  if (!channel) return;
+  
+  try {
+    if (eventName) {
+      channel.unsubscribe(eventName);
+    } else {
+      channel.unsubscribe();
+    }
+  } catch (error) {
+    console.error(`Error unsubscribing from channel:`, error);
   }
 };

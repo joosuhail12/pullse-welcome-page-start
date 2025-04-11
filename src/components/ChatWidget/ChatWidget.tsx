@@ -15,6 +15,7 @@ import { ConnectionStatus } from './utils/reconnectionManager';
 import ChatKeyboardHandler from './components/ChatKeyboardHandler';
 import { setWorkspaceIdAndApiKey } from './utils/storage';
 import { dispatchChatEvent } from './utils/events';
+import { useAblyChannels } from './hooks/useAblyChannels';
 
 export interface ChatWidgetProps {
   workspaceId: string;
@@ -46,6 +47,12 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
   const isMobile = useIsMobile();
   const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
+  
+  // Subscribe to Ably channels
+  useAblyChannels({
+    sessionChannels: true,
+    conversationChannel: activeConversation?.id
+  });
 
   // Dispatch loading event once
   useEffect(() => {
@@ -145,6 +152,7 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
         handleStartChat={handleStartChat}
         setUserFormData={setUserFormData}
         playMessageSound={playMessageSound}
+        connectionStatus={connectionStatus}
       />
 
       <LauncherButton

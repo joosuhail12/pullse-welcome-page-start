@@ -5,6 +5,7 @@ import Ably from 'ably';
 let ablyClient: Ably.Realtime | null = null;
 let localFallbackMode = false;
 let pendingMessages: Array<{channelName: string, eventName: string, data: any}> = [];
+let activeSubscriptions: Array<{channelName: string, eventName: string}> = [];
 
 // Export state getters/setters
 export const getAblyClient = (): Ably.Realtime | null => {
@@ -37,6 +38,32 @@ export const addPendingMessage = (channelName: string, eventName: string, data: 
 
 export const clearPendingMessages = (): void => {
   pendingMessages = [];
+};
+
+// Track active subscriptions
+export const getActiveSubscriptions = (): Array<{channelName: string, eventName: string}> => {
+  return activeSubscriptions;
+};
+
+export const addActiveSubscription = (channelName: string, eventName: string): void => {
+  // Check if subscription already exists
+  const exists = activeSubscriptions.some(
+    sub => sub.channelName === channelName && sub.eventName === eventName
+  );
+  
+  if (!exists) {
+    activeSubscriptions.push({ channelName, eventName });
+  }
+};
+
+export const removeActiveSubscription = (channelName: string, eventName: string): void => {
+  activeSubscriptions = activeSubscriptions.filter(
+    sub => !(sub.channelName === channelName && sub.eventName === eventName)
+  );
+};
+
+export const clearActiveSubscriptions = (): void => {
+  activeSubscriptions = [];
 };
 
 // Process queued messages that couldn't be sent while disconnected

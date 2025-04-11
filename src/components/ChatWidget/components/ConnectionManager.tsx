@@ -6,6 +6,7 @@ import { ConnectionStatus, getReconnectionManager } from '../utils/reconnectionM
 import { toasts } from '@/lib/toast-utils';
 import { logger } from '@/lib/logger';
 import { getAccessToken } from '../utils/storage';
+import { getAblyClient } from '../utils/ably/config';
 
 interface ConnectionManagerProps {
   workspaceId: string;
@@ -33,6 +34,39 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
       clearInterval(tokenCheckInterval);
     };
   }, [accessToken]);
+
+  // Update connection status based on Ably client state
+  useEffect(() => {
+    const checkConnectionStatus = () => {
+      const client = getAblyClient();
+      if (!client) {
+        onStatusChange(ConnectionStatus.DISCONNECTED);
+        return;
+      }
+      
+      switch (client.connection.state) {
+        case 'connected':
+          onStatusChange(ConnectionStatus.CONNECTED);
+          break;
+        case 'connecting':
+          onStatusChange(ConnectionStatus.CONNECTING);
+          break;
+        case 'disconnected':
+        case 'suspended':
+          onStatusChange(ConnectionStatus.DISCONNECTED);
+          break;
+        case 'failed':
+          onStatusChange(ConnectionStatus.FAILED);
+          break;
+        default:
+          onStatusChange(ConnectionStatus.DISCONNECTED);
+      }
+    };
+    
+    // Check connection status periodically
+    const statusInterval = setInterval(checkConnectionStatus, 1000);
+    return () => clearInterval(statusInterval);
+  }, [onStatusChange]);
 
   useEffect(() => {
     let ablyCleanup: (() => void) | null = null;

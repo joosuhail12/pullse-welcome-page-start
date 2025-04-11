@@ -1,3 +1,4 @@
+
 export interface Message {
   id: string;
   text: string;
@@ -140,3 +141,17 @@ export type ChatPosition =
     offsetX: number;
     offsetY: number;
   };
+
+// Added for MessageSearchResult
+export interface MessageSearchResult {
+  messageId: string;
+  text: string;
+  conversationId: string;
+  score: number;
+}
+
+// Form data structure for consistency
+export type FormDataStructure = Record<string, string>;
+
+// Connection event for Ably
+export type ConnectionEvent = 'initialized' | 'connecting' | 'connected' | 'disconnected' | 'suspended' | 'closed' | 'failed' | 'update';
