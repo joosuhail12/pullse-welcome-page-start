@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { subscribeToChannel } from '../utils/ably';
-import { getChatSessionId } from '../utils/cookies';
+import { getChatSessionId } from '../utils/storage';
 
 // Key for storing unread count in localStorage
 const UNREAD_COUNT_KEY = 'chat_widget_unread_count';
@@ -61,19 +61,29 @@ export function useUnreadMessages() {
       return;
     }
     
-    // Subscribe to the general messages channel for this session
-    const channel = subscribeToChannel(
-      channelName,
-      'message',
-      () => {
-        // Increment unread count when new message is received
-        setUnreadCount((prev) => prev + 1);
-      }
-    );
+    let channel;
+    // Try-catch to prevent errors if Ably is not initialized yet
+    try {
+      // Subscribe to the general messages channel for this session
+      channel = subscribeToChannel(
+        channelName,
+        'message',
+        () => {
+          // Increment unread count when new message is received
+          setUnreadCount((prev) => prev + 1);
+        }
+      );
+    } catch (error) {
+      console.error('Error subscribing to message channel:', error);
+    }
 
     return () => {
       if (channel) {
-        channel.unsubscribe();
+        try {
+          channel.unsubscribe();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
       }
     };
   }, [sessionId]);

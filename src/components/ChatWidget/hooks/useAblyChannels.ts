@@ -49,28 +49,40 @@ export function useAblyChannels(config: AblyChannelConfig) {
       const eventsChannel = `widget:events:${sessionId}`;
       if (isValidChannelName(eventsChannel) && !subscribedChannels.current.has(eventsChannel)) {
         console.log(`Subscribing to events channel: ${eventsChannel}`);
-        channels.current.events = subscribeToChannel(
-          eventsChannel,
-          'message',
-          (message) => {
-            console.log('Received event message:', message);
+        try {
+          channels.current.events = subscribeToChannel(
+            eventsChannel,
+            'message',
+            (message) => {
+              console.log('Received event message:', message);
+            }
+          );
+          if (channels.current.events) {
+            subscribedChannels.current.add(eventsChannel);
           }
-        );
-        subscribedChannels.current.add(eventsChannel);
+        } catch (error) {
+          console.error(`Error subscribing to ${eventsChannel}:`, error);
+        }
       }
       
       // Subscribe to contact event channel for the session
       const contactChannel = `widget:contactevent:${sessionId}`;
       if (isValidChannelName(contactChannel) && !subscribedChannels.current.has(contactChannel)) {
         console.log(`Subscribing to contact event channel: ${contactChannel}`);
-        channels.current.contactEvent = subscribeToChannel(
-          contactChannel,
-          'message',
-          (message) => {
-            console.log('Received contact event message:', message);
+        try {
+          channels.current.contactEvent = subscribeToChannel(
+            contactChannel,
+            'message',
+            (message) => {
+              console.log('Received contact event message:', message);
+            }
+          );
+          if (channels.current.contactEvent) {
+            subscribedChannels.current.add(contactChannel);
           }
-        );
-        subscribedChannels.current.add(contactChannel);
+        } catch (error) {
+          console.error(`Error subscribing to ${contactChannel}:`, error);
+        }
       }
     }
     
@@ -80,14 +92,20 @@ export function useAblyChannels(config: AblyChannelConfig) {
         !subscribedChannels.current.has(`widget:conversation:${config.conversationChannel}`)) {
       const conversationChannel = `widget:conversation:${config.conversationChannel}`;
       console.log(`Subscribing to conversation channel: ${conversationChannel}`);
-      channels.current.conversation = subscribeToChannel(
-        conversationChannel,
-        'message',
-        (message) => {
-          console.log('Received conversation message:', message);
+      try {
+        channels.current.conversation = subscribeToChannel(
+          conversationChannel,
+          'message',
+          (message) => {
+            console.log('Received conversation message:', message);
+          }
+        );
+        if (channels.current.conversation) {
+          subscribedChannels.current.add(conversationChannel);
         }
-      );
-      subscribedChannels.current.add(conversationChannel);
+      } catch (error) {
+        console.error(`Error subscribing to ${conversationChannel}:`, error);
+      }
     }
   };
 
@@ -95,7 +113,11 @@ export function useAblyChannels(config: AblyChannelConfig) {
     Object.entries(channels.current).forEach(([key, channel]) => {
       if (channel) {
         console.log(`Unsubscribing from ${key} channel`);
-        unsubscribeFromChannel(channel);
+        try {
+          unsubscribeFromChannel(channel);
+        } catch (error) {
+          console.error(`Error unsubscribing from ${key} channel:`, error);
+        }
       }
     });
     channels.current = {};
@@ -142,15 +164,15 @@ export function useAblyChannels(config: AblyChannelConfig) {
     };
   }, [config.sessionChannels, config.conversationChannel, sessionId]);
 
-  // Re-subscribe when config changes
+  // Re-subscribe when config changes but only if we weren't already subscribed
   useEffect(() => {
     if (isConnected) {
-      // Unsubscribe first to avoid duplicates
-      unsubscribeAllChannels();
+      // Don't unnecessarily unsubscribe and resubscribe to prevent connection issues
+      // Only subscribe to new channels
       subscribeToChannels();
     }
     
-    // Don't unsubscribe on unmount
+    // Don't unsubscribe on unmount to preserve connection across view changes
   }, [config.sessionChannels, config.conversationChannel, sessionId, isConnected]);
 
   return { isConnected, channels: channels.current };

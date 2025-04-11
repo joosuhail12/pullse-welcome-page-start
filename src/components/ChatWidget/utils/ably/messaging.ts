@@ -1,3 +1,4 @@
+
 import Ably from 'ably';
 import { 
   getAblyClient, isInFallbackMode, 
@@ -204,7 +205,7 @@ export const clearAllChannelSubscriptions = (): void => {
   
   try {
     // For each active channel, detach but don't fully close the connection
-    client.channels.forEach((channel) => {
+    client.channels.each((channel) => {
       if (channel.state === 'attached') {
         channel.detach();
       }

@@ -58,8 +58,8 @@ export const initializeAbly = async (authUrl: string): Promise<boolean> => {
       autoConnect: true,
       echoMessages: false,
       closeOnUnload: true,
-      log: { level: 2 },
-      transports: ['websocket'],
+      logLevel: 2,
+      transports: ['web_socket'],
     };
     
     logger.info('Initializing Ably with token', 'ably');
@@ -198,22 +198,20 @@ export const reconnectAbly = async (authUrl: string): Promise<boolean> => {
 const resubscribeToActiveChannels = () => {
   const activeSubscriptions = getActiveSubscriptions();
   
-  if (Object.keys(activeSubscriptions).length === 0) {
+  if (activeSubscriptions.length === 0) {
     return;
   }
   
-  logger.info(`Resubscribing to ${Object.keys(activeSubscriptions).length} active channels`, 'ably');
+  logger.info(`Resubscribing to ${activeSubscriptions.length} active channels`, 'ably');
   
   // For each channel and its events, resubscribe
-  Object.entries(activeSubscriptions).forEach(([channelName, events]) => {
-    events.forEach((event) => {
-      // We don't have the original callback, so we use a placeholder
-      // The real components should resubscribe with their own callbacks
-      subscribeToChannel(channelName, event, () => {
-        logger.debug(`Received message from resubscribed channel ${channelName} (${event})`, 'ably');
-      });
+  for (const sub of activeSubscriptions) {
+    // We don't have the original callback, so we use a placeholder
+    // The real components should resubscribe with their own callbacks
+    subscribeToChannel(sub.channelName, sub.eventName, () => {
+      logger.debug(`Received message from resubscribed channel ${sub.channelName} (${sub.eventName})`, 'ably');
     });
-  });
+  }
 };
 
 /**
@@ -250,7 +248,7 @@ export const cleanupAbly = (): void => {
   
   // Just detach channels without closing the connection to allow reuse
   try {
-    client.channels.forEach((channel) => {
+    client.channels.each((channel) => {
       if (channel.state === 'attached') {
         channel.detach();
       }
