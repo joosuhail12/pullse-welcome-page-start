@@ -5,7 +5,6 @@ import { createUserMessage, createSystemMessage, sendTypingIndicator } from '../
 import { publishToChannel } from '../utils/ably';
 import { dispatchChatEvent, subscribeToChatEvent } from '../utils/events';
 import { ChatEventPayload, ChatWidgetConfig } from '../config';
-import { fetchConversationByTicketId } from '../services/api';
 
 export function useMessageActions(
   messages: Message[],
@@ -19,42 +18,27 @@ export function useMessageActions(
   const [messageText, setMessageText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
-  // The issue is that this effect is being re-triggered on each re-render because chatChannelName
-  // is likely changing. Let's add a state to track whether we've already set up the listener.
-  const [hasSetupListener, setHasSetupListener] = useState(false);
 
   // Move the event subscription into a useEffect to prevent infinite loop
   useEffect(() => {
-    // Only set up the listener once
-    if (hasSetupListener) return;
-    
     console.log('Setting up chat:new_ticket event listener');
 
     // Create subscription to chat:new_ticket event
     const unsubscribe = subscribeToChatEvent('chat:new_ticket', (event: ChatEventPayload) => {
       console.log('New ticket event received with data:', event);
 
-      // Check if the event contains a ticketId
-      if (event.data && event.data.ticketId) {
-        console.log('Ticket ID received:', event.data.ticketId);
-        
-        // Dispatch event for handling in parent components
-        dispatchChatEvent('chat:ticketCreated', { 
-          ticketId: event.data.ticketId,
-          sessionId: sessionId
-        }, config);
-      }
-    });
+      // Try a different approach - directly set the view state to messages
+      console.log('Before navigation attempt - current view state may be overriding');
 
-    // Mark that we've set up the listener
-    setHasSetupListener(true);
+    });
 
     // Return cleanup function to remove the event listener when component unmounts
     return () => {
       console.log('Cleaning up chat:new_ticket event listener');
       unsubscribe();
     };
-  }, [sessionId, config, hasSetupListener]); // Only depend on these values, not chatChannelName
+  }, []); // Only re-subscribe if these functions change
+
 
   // Handle sending messages
   const handleSendMessage = useCallback(async (text?: string, type: 'text' | 'file' | 'card' = 'text', metadata?: Record<string, any>) => {
@@ -87,6 +71,7 @@ export function useMessageActions(
     const isNewConversation = chatChannelName.includes('contactevent');
 
     // Publish message to the appropriate channel
+
     publishToChannel(chatChannelName, 'new_ticket', {
       id: userMessage.id,
       text: userMessage.text,

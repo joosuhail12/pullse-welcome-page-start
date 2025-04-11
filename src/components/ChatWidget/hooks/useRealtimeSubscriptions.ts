@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from 'react';
 import { Message, MessageReadReceipt, MessageReadStatus } from '../types';
 import { subscribeToChannel, publishToChannel, unsubscribeFromChannel } from '../utils/ably';
@@ -17,6 +18,7 @@ export function useRealtimeSubscriptions(
   const [deliveredReceipts, setDeliveredReceipts] = useState<Record<string, MessageReadReceipt>>({});
   const [connectionState, setConnectionState] = useState<string>('connecting');
   
+  // Create proper channel names based on sessionId and ticketId
   const eventsChannelName = sessionId ? `widget:events:${sessionId}` : '';
   const notificationsChannelName = sessionId ? `widget:notifications:${sessionId}` : '';
   const contactEventChannelName = sessionId ? `widget:contactevent:${sessionId}` : '';
@@ -24,11 +26,13 @@ export function useRealtimeSubscriptions(
     ? `widget:conversation:${ticketId}` 
     : '';
   
+  // Track if local fallback has already been set up
   const fallbackSetupDone = useRef(false);
   const localEventHandlers = useRef<{[key: string]: any}>({});
   const activeChannels = useRef<{[key: string]: any}>({});
   const subscriptionAttempted = useRef<{[key: string]: boolean}>({});
 
+  // Validate channel name before subscribing
   const isValidChannelName = (channelName: string): boolean => {
     return Boolean(
       channelName && 
@@ -45,9 +49,11 @@ export function useRealtimeSubscriptions(
     );
   };
 
+  // Subscribe to session channels (events, notifications, contact events)
   const subscribeToSessionChannels = () => {
     if (!sessionId) return;
 
+    // Subscribe to events channel
     if (isValidChannelName(eventsChannelName) && !subscriptionAttempted.current[eventsChannelName]) {
       subscriptionAttempted.current[eventsChannelName] = true;
       activeChannels.current.eventsChannel = subscribeToChannel(
@@ -59,6 +65,7 @@ export function useRealtimeSubscriptions(
       );
     }
 
+    // Subscribe to notifications channel
     if (isValidChannelName(notificationsChannelName) && !subscriptionAttempted.current[notificationsChannelName]) {
       subscriptionAttempted.current[notificationsChannelName] = true;
       activeChannels.current.notificationsChannel = subscribeToChannel(
@@ -70,6 +77,7 @@ export function useRealtimeSubscriptions(
       );
     }
 
+    // Subscribe to contact event channel
     if (isValidChannelName(contactEventChannelName) && !subscriptionAttempted.current[contactEventChannelName]) {
       subscriptionAttempted.current[contactEventChannelName] = true;
       activeChannels.current.contactEventChannel = subscribeToChannel(
@@ -82,6 +90,7 @@ export function useRealtimeSubscriptions(
     }
   };
 
+  // Session channels effect - these should be subscribed at all times
   useEffect(() => {
     if (config?.realtime && sessionId) {
       subscribeToSessionChannels();
@@ -92,15 +101,18 @@ export function useRealtimeSubscriptions(
     };
   }, [config?.realtime, sessionId]);
 
+  // Conversation channel effect - this should be subscribed only when viewing a conversation
   useEffect(() => {
+    // If realtime is enabled and we have a valid conversation channel, subscribe to it
     if (config?.realtime && isValidChannelName(conversationChannelName)) {
+      // Skip if we've already attempted to subscribe to this channel
       if (subscriptionAttempted.current[conversationChannelName] === true) {
         return;
       }
       
-      console.log(`Subscribing to conversation channel after receiving ticketId: ${conversationChannelName}`);
       subscriptionAttempted.current[conversationChannelName] = true;
       
+      // Define handlers for conversation messages
       const messageHandler = (message: any) => {
         if (message.data && message.data.sender) {
           const newMessage: Message = {
@@ -113,23 +125,24 @@ export function useRealtimeSubscriptions(
           };
           
           setMessages(prev => {
+            // Check if message already exists to prevent duplicates
             if (prev.some(msg => msg.id === newMessage.id)) {
               return prev;
             }
             return [...prev, newMessage];
           });
           
+          // Process system message (sound, event)
           if (newMessage.sender === 'system') {
             processSystemMessage(newMessage, conversationChannelName, sessionId, config);
           }
           
+          // Play sound if provided
           if (playMessageSound) {
             playMessageSound();
           }
         }
       };
-      
-      activeChannels.current.messageChannel = subscribeToChannel(conversationChannelName, 'message', messageHandler);
       
       const typingHandler = (message: any) => {
         if (message.data && message.data.status && message.data.userId !== sessionId) {
@@ -147,6 +160,7 @@ export function useRealtimeSubscriptions(
             }
           }));
           
+          // Update message status
           setMessages(prev => 
             prev.map(msg => 
               msg.id === message.data.messageId 
@@ -167,6 +181,7 @@ export function useRealtimeSubscriptions(
             }
           }));
           
+          // Update message status if not already read
           setMessages(prev => 
             prev.map(msg => 
               msg.id === message.data.messageId && msg.status !== 'read' 
@@ -189,6 +204,7 @@ export function useRealtimeSubscriptions(
         }
       };
       
+      // Store handlers for local fallback mode
       localEventHandlers.current = {
         message: messageHandler,
         typing: typingHandler,
@@ -197,15 +213,19 @@ export function useRealtimeSubscriptions(
         reaction: reactionHandler
       };
       
+      // Setup subscriptions to conversation channel only if valid
       if (isValidChannelName(conversationChannelName)) {
         console.log(`Subscribing to conversation channel: ${conversationChannelName}`);
+        activeChannels.current.messageChannel = subscribeToChannel(conversationChannelName, 'message', messageHandler);
         activeChannels.current.typingChannel = subscribeToChannel(conversationChannelName, 'typing', typingHandler);
         activeChannels.current.readChannel = subscribeToChannel(conversationChannelName, 'read', readHandler);
         activeChannels.current.deliveredChannel = subscribeToChannel(conversationChannelName, 'delivered', deliveredHandler);
         activeChannels.current.reactionChannel = subscribeToChannel(conversationChannelName, 'reaction', reactionHandler);
       }
       
+      // Clean up conversation channel subscriptions on unmount or change
       return () => {
+        // Only unsubscribe from conversation channels
         Object.entries(activeChannels.current).forEach(([key, channel]) => {
           if (key.includes('messageChannel') || 
               key.includes('typingChannel') || 
@@ -220,12 +240,14 @@ export function useRealtimeSubscriptions(
           }
         });
 
+        // Reset subscription attempt for this conversation to allow resubscription
         if (conversationChannelName) {
           subscriptionAttempted.current[conversationChannelName] = false;
         }
       };
     }
     
+    // No cleanup needed when realtime is disabled
     return () => {};
   }, [config?.realtime, conversationChannelName, sessionId, playMessageSound, setMessages]);
 
