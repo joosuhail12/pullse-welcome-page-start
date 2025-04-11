@@ -35,23 +35,26 @@ export function useAblyChannels(config: AblyChannelConfig) {
     if (config.sessionChannels && sessionId) {
       console.log(`Subscribing to session channels for ${sessionId}`);
       
-      // Subscribe to events channel for the session
-      channels.current.events = subscribeToChannel(
-        `widget:events:${sessionId}`,
-        'message',
-        (message) => {
-          console.log('Received event message:', message);
-        }
-      );
-      
-      // Subscribe to contact event channel for the session
-      channels.current.contactEvent = subscribeToChannel(
-        `widget:contactevent:${sessionId}`,
-        'message',
-        (message) => {
-          console.log('Received contact event message:', message);
-        }
-      );
+      // Validate session ID to avoid invalid channel names
+      if (!sessionId.includes('null') && !sessionId.includes('undefined')) {
+        // Subscribe to events channel for the session
+        channels.current.events = subscribeToChannel(
+          `widget:events:${sessionId}`,
+          'message',
+          (message) => {
+            console.log('Received event message:', message);
+          }
+        );
+        
+        // Subscribe to contact event channel for the session
+        channels.current.contactEvent = subscribeToChannel(
+          `widget:contactevent:${sessionId}`,
+          'message',
+          (message) => {
+            console.log('Received contact event message:', message);
+          }
+        );
+      }
     }
     
     // Only subscribe to conversation channel if it has a ticket ID
@@ -97,7 +100,6 @@ export function useAblyChannels(config: AblyChannelConfig) {
         subscribeToChannels();
       } else if (['disconnected', 'suspended', 'closed', 'failed'].includes(state.current)) {
         setIsConnected(false);
-        unsubscribeAllChannels();
       }
     };
     
@@ -116,6 +118,17 @@ export function useAblyChannels(config: AblyChannelConfig) {
       unsubscribeAllChannels();
     };
   }, [config.sessionChannels, config.conversationChannel, sessionId]);
+
+  // Re-subscribe when config changes
+  useEffect(() => {
+    if (isConnected) {
+      subscribeToChannels();
+    }
+    
+    return () => {
+      unsubscribeAllChannels();
+    };
+  }, [config.sessionChannels, config.conversationChannel, sessionId, isConnected]);
 
   return { isConnected, channels: channels.current };
 }

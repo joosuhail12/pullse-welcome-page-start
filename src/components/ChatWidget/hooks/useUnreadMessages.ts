@@ -13,7 +13,7 @@ export function useUnreadMessages() {
     : 0;
 
   const [unreadCount, setUnreadCount] = useState<number>(initialCount);
-  const sessionId = getChatSessionId();
+  const [sessionId, setSessionId] = useState<string | null>(getChatSessionId());
   
   // Update localStorage when unread count changes
   useEffect(() => {
@@ -44,9 +44,22 @@ export function useUnreadMessages() {
   
   // Subscribe to new messages in all channels
   useEffect(() => {
+    // Only subscribe if we have a valid session ID
+    if (!sessionId) {
+      console.warn('Cannot subscribe to messages channel: No session ID available');
+      return;
+    }
+    
+    // Make sure to avoid invalid channel names
+    const channelName = `session:${sessionId}`;
+    if (!channelName || channelName === 'session:null' || channelName === 'session:undefined') {
+      console.warn(`Invalid session channel name: ${channelName}, not subscribing`);
+      return;
+    }
+    
     // Subscribe to the general messages channel for this session
     const channel = subscribeToChannel(
-      `session:${sessionId}`,
+      channelName,
       'message',
       () => {
         // Increment unread count when new message is received
@@ -58,6 +71,23 @@ export function useUnreadMessages() {
       if (channel) {
         channel.unsubscribe();
       }
+    };
+  }, [sessionId]);
+  
+  // Update session ID if it changes
+  useEffect(() => {
+    const checkSessionId = () => {
+      const currentSessionId = getChatSessionId();
+      if (currentSessionId !== sessionId) {
+        setSessionId(currentSessionId);
+      }
+    };
+    
+    // Check for session ID changes periodically
+    const intervalId = setInterval(checkSessionId, 2000);
+    
+    return () => {
+      clearInterval(intervalId);
     };
   }, [sessionId]);
 

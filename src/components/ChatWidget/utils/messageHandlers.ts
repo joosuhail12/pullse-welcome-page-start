@@ -1,6 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { Message, MessageStatus, ReadReceipt } from '../types';
+import { Message, MessageReadReceipt, MessageReadStatus } from '../types';
 import { publishToChannel } from './ably';
 import { dispatchChatEvent } from './events';
 import { ChatWidgetConfig } from '../config';
@@ -39,7 +39,7 @@ export function createUserMessage(
  */
 export function createSystemMessage(
   text: string,
-  type: 'text' | 'file' | 'card' | 'quick-reply' = 'text',
+  type: 'text' | 'file' | 'card' | 'quick_reply' = 'text',
   metadata?: Record<string, any>
 ): Message {
   const now = new Date();
@@ -87,7 +87,7 @@ export function processSystemMessage(
   config?: ChatWidgetConfig
 ): void {
   // Show toast notification for system messages if enabled
-  if (config?.features?.notifications) {
+  if (config?.features?.showNotifications) {
     toast({
       title: "New message",
       description: message.text,
@@ -118,8 +118,8 @@ export function processSystemMessage(
  */
 export function markMessageAsRead(
   messageId: string,
-  status: MessageStatus,
-  setReadReceipts: React.Dispatch<React.SetStateAction<Record<string, ReadReceipt>>>
+  status: MessageReadStatus,
+  setReadReceipts: React.Dispatch<React.SetStateAction<Record<string, MessageReadReceipt>>>
 ): void {
   setReadReceipts(prevReceipts => ({
     ...prevReceipts,
@@ -128,4 +128,13 @@ export function markMessageAsRead(
       timestamp: new Date()
     }
   }));
+}
+
+/**
+ * Send delivery receipt
+ * This is a stub function that will be implemented later
+ */
+export function sendDeliveryReceipt(): void {
+  // This function will be implemented later
+  console.log("Delivery receipt functionality not yet implemented");
 }

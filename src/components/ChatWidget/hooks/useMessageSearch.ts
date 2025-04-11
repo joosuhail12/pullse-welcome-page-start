@@ -15,7 +15,7 @@ export function useMessageSearch(messages: Message[]) {
   // Search messages for the search term
   const searchMessages = useCallback((term: string) => {
     setSearchTerm(term);
-    setIsSearching(true);
+    setIsSearching(Boolean(term.trim()));
   }, []);
 
   // Clear search
@@ -30,6 +30,7 @@ export function useMessageSearch(messages: Message[]) {
 
     return messages
       .filter(message => 
+        message.text && typeof message.text === 'string' && 
         message.text.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .map(message => message.id);
@@ -37,7 +38,7 @@ export function useMessageSearch(messages: Message[]) {
 
   // Highlight search term in text
   const highlightText = useCallback((text: string, term: string) => {
-    if (!term) return [{ text, highlighted: false }];
+    if (!term || !text || typeof text !== 'string') return [{ text: text || '', highlighted: false }];
     
     const parts: { text: string; highlighted: boolean }[] = [];
     const regex = new RegExp(`(${term})`, 'gi');

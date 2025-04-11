@@ -33,6 +33,15 @@ export const setPendingMessages = (messages: Array<{channelName: string, eventNa
 };
 
 export const addPendingMessage = (channelName: string, eventName: string, data: any): void => {
+  // Only add valid channel names to prevent issues
+  if (!channelName || 
+      channelName.includes('null') || 
+      channelName.includes('undefined') ||
+      channelName === 'session:null') {
+    console.warn(`Not queueing message for invalid channel: ${channelName}`);
+    return;
+  }
+  
   pendingMessages.push({ channelName, eventName, data });
 };
 
@@ -46,6 +55,15 @@ export const getActiveSubscriptions = (): Array<{channelName: string, eventName:
 };
 
 export const addActiveSubscription = (channelName: string, eventName: string): void => {
+  // Only add valid channel names to prevent issues
+  if (!channelName || 
+      channelName.includes('null') || 
+      channelName.includes('undefined') ||
+      channelName === 'session:null') {
+    console.warn(`Not tracking invalid channel subscription: ${channelName}`);
+    return;
+  }
+  
   // Check if subscription already exists
   const exists = activeSubscriptions.some(
     sub => sub.channelName === channelName && sub.eventName === eventName
@@ -82,6 +100,15 @@ export const processQueuedMessages = (): void => {
   
   messagesToProcess.forEach(({ channelName, eventName, data }) => {
     try {
+      // Skip invalid channel names
+      if (!channelName || 
+          channelName.includes('null') || 
+          channelName.includes('undefined') ||
+          channelName === 'session:null') {
+        console.warn(`Skipping queued message for invalid channel: ${channelName}`);
+        return;
+      }
+      
       const channel = client.channels.get(channelName);
       channel.publish(eventName, data);
     } catch (err) {
@@ -104,6 +131,15 @@ export const resubscribeToActiveChannels = (): void => {
   const channelSubscriptions: Record<string, string[]> = {};
   
   activeSubscriptions.forEach(({ channelName, eventName }) => {
+    // Skip invalid channel names
+    if (!channelName || 
+        channelName.includes('null') || 
+        channelName.includes('undefined') ||
+        channelName === 'session:null') {
+      console.warn(`Not resubscribing to invalid channel: ${channelName}`);
+      return;
+    }
+    
     if (!channelSubscriptions[channelName]) {
       channelSubscriptions[channelName] = [];
     }

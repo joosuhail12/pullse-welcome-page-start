@@ -17,6 +17,20 @@ interface ConnectionManagerProps {
 const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionManagerProps) => {
   const reconnectionAttempts = useRef(0);
   const [accessToken, setAccessToken] = useState<string | null>(getAccessToken());
+  const ablyInitialized = useRef(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  
+  // Clean up function that's safe to call multiple times
+  const performCleanup = () => {
+    if (cleanupRef.current) {
+      try {
+        cleanupRef.current();
+        cleanupRef.current = null;
+      } catch (err) {
+        console.error('Error during Ably cleanup:', err);
+      }
+    }
+  };
 
   // Monitor access token changes
   useEffect(() => {
@@ -68,10 +82,9 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
     return () => clearInterval(statusInterval);
   }, [onStatusChange]);
 
+  // Initialize Ably when component mounts and clean up when unmounts
   useEffect(() => {
-    let ablyCleanup: (() => void) | null = null;
-
-    // Check if the connection is enabled, workspaceId exists, and we have an access token
+    // Return early if not enabled, missing workspaceId, or no access token
     if (!enabled || !workspaceId || !accessToken) {
       onStatusChange(ConnectionStatus.DISCONNECTED);
       logger.info('Realtime disabled: missing required parameters', 'ConnectionManager');
@@ -87,15 +100,27 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
     });
 
     const initRealtime = async () => {
+      // Prevent multiple initializations
+      if (ablyInitialized.current) {
+        return;
+      }
+      
       try {
         logger.info('Initializing real-time with token', 'ConnectionManager');
         await initializeAbly(authUrl);
+        ablyInitialized.current = true;
         onStatusChange(ConnectionStatus.CONNECTED);
         logger.info('Real-time communication initialized', 'ConnectionManager');
-        ablyCleanup = cleanupAbly;
+        
+        // Store the cleanup function
+        cleanupRef.current = () => {
+          cleanupAbly();
+          ablyInitialized.current = false;
+        };
       } catch (err) {
         logger.error('Failed to initialize real-time communication', 'ConnectionManager', err);
         onStatusChange(ConnectionStatus.FAILED);
+        ablyInitialized.current = false;
         startReconnectionProcess(authUrl);
       }
     };
@@ -118,6 +143,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
         if (success) {
           onStatusChange(ConnectionStatus.CONNECTED);
           reconnectionAttempts.current = 0;
+          ablyInitialized.current = true;
 
           logger.info('Real-time connection restored', 'ConnectionManager');
 
@@ -145,10 +171,19 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
 
     initRealtime();
 
+    // Clean up when component unmounts
     return () => {
-      if (ablyCleanup) ablyCleanup();
+      performCleanup();
     };
   }, [enabled, workspaceId, onStatusChange, accessToken]);
+
+  // Handle changes to the enabled state or workspaceId
+  useEffect(() => {
+    if (!enabled && ablyInitialized.current) {
+      performCleanup();
+      onStatusChange(ConnectionStatus.DISCONNECTED);
+    }
+  }, [enabled, workspaceId, onStatusChange]);
 
   return null;
 };

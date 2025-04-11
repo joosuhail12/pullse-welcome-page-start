@@ -1,3 +1,4 @@
+
 import Ably from 'ably';
 import { 
   getAblyClient, isInFallbackMode, 
@@ -19,18 +20,27 @@ export const subscribeToChannel = (
   callback: (message: Ably.Types.Message) => void
 ): Ably.Types.RealtimeChannelCallbacks | undefined => {
   const client = getAblyClient();
-  if (!client || client.connection.state !== 'connected') {
-    console.warn(`Ably client not initialized or not connected, subscription to ${channelName} will be deferred`);
-    return;
-  }
   
-  // Enhanced validation for channel names
+  // Validate channel name before proceeding
   if (!channelName || 
       channelName.includes('null') || 
-      channelName.includes('undefined') || 
-      channelName === 'session:null') {
+      channelName.includes('undefined') ||
+      channelName === 'session:null' ||
+      channelName === 'widget:events:null' ||
+      channelName === 'widget:contactevent:null') {
     console.warn(`Invalid channel name: ${channelName}, skipping subscription`);
-    return;
+    return undefined;
+  }
+  
+  if (!client) {
+    console.warn(`Ably client not initialized, subscription to ${channelName} will be deferred`);
+    return undefined;
+  }
+  
+  if (client.connection.state !== 'connected') {
+    console.info(`Ably client not connected (current state: ${client.connection.state}), subscription to ${channelName} will be deferred`);
+    // We'll attempt to resubscribe on reconnection via the resubscribeToActiveChannels function
+    return undefined;
   }
   
   try {
@@ -93,6 +103,15 @@ export const publishToChannel = (
   eventName: string,
   data: any
 ): void => {
+  // Validate channel name before proceeding
+  if (!channelName || 
+      channelName.includes('null') || 
+      channelName.includes('undefined') || 
+      channelName === 'session:null') {
+    console.warn(`Invalid channel name for publishing: ${channelName}, message will not be sent`);
+    return;
+  }
+  
   const client = getAblyClient();
   
   // Queue message if in fallback mode or client not available

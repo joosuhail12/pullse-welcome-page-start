@@ -1,5 +1,5 @@
 
-import { ChatEventType, EventPayload, WidgetOptions } from './types';
+import { WidgetOptions } from './types';
 import { safelyDispatchEvent } from './utils';
 
 // Enhanced typing status tracking
@@ -28,15 +28,12 @@ export function dispatchTypingEvent(type: 'chat:typingStarted' | 'chat:typingSto
     // Update typing status
     typingStatus[userId] = type === 'chat:typingStarted';
     
-    // Create event payload
-    const payload: EventPayload = {
-      type: type as ChatEventType,
+    // Dispatch the event
+    safelyDispatchEvent(type, {
+      type,
       timestamp: new Date(),
       data: detail
-    };
-    
-    // Dispatch the event
-    safelyDispatchEvent(type, payload, options);
+    }, options);
   }
 }
 
@@ -46,9 +43,9 @@ export function dispatchTypingEvent(type: 'chat:typingStarted' | 'chat:typingSto
  * @param detail Event details 
  * @param options Widget options
  */
-export function dispatchWidgetEvent(type: ChatEventType, detail: any, options?: WidgetOptions): void {
+export function dispatchWidgetEvent(type: string, detail: any, options?: WidgetOptions): void {
   // Create event payload
-  const payload: EventPayload = {
+  const payload = {
     type,
     timestamp: new Date(),
     data: detail
@@ -64,14 +61,14 @@ export function dispatchWidgetEvent(type: ChatEventType, detail: any, options?: 
  * @param options Widget options
  */
 export function registerGlobalEventHandler(
-  callback: (event: EventPayload) => void,
+  callback: (event: any) => void,
   options?: WidgetOptions
 ): () => void {
   // Define the event listener function
   const eventListener = (event: Event) => {
     try {
       const customEvent = event as CustomEvent;
-      callback(customEvent.detail as EventPayload);
+      callback(customEvent.detail);
     } catch (error) {
       console.error('Error in chat widget event handler', error);
     }
