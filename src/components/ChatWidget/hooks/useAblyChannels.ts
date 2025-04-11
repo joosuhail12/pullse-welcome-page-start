@@ -31,6 +31,8 @@ export function useAblyChannels(config: AblyChannelConfig) {
       !channelName.includes('undefined') &&
       channelName !== 'widget:events:null' &&
       channelName !== 'widget:events:undefined' &&
+      channelName !== 'widget:notifications:null' &&
+      channelName !== 'widget:notifications:undefined' &&
       channelName !== 'widget:contactevent:null' &&
       channelName !== 'widget:contactevent:undefined'
     );
@@ -65,6 +67,26 @@ export function useAblyChannels(config: AblyChannelConfig) {
         }
       }
       
+      // Subscribe to notifications channel for the session
+      const notificationsChannel = `widget:notifications:${sessionId}`;
+      if (isValidChannelName(notificationsChannel) && !subscribedChannels.current.has(notificationsChannel)) {
+        console.log(`Subscribing to notifications channel: ${notificationsChannel}`);
+        try {
+          channels.current.notifications = subscribeToChannel(
+            notificationsChannel,
+            'message',
+            (message) => {
+              console.log('Received notification message:', message);
+            }
+          );
+          if (channels.current.notifications) {
+            subscribedChannels.current.add(notificationsChannel);
+          }
+        } catch (error) {
+          console.error(`Error subscribing to ${notificationsChannel}:`, error);
+        }
+      }
+      
       // Subscribe to contact event channel for the session
       const contactChannel = `widget:contactevent:${sessionId}`;
       if (isValidChannelName(contactChannel) && !subscribedChannels.current.has(contactChannel)) {
@@ -89,7 +111,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
     // Only subscribe to conversation channel if it has a ticket ID
     if (config.conversationChannel && 
         config.conversationChannel.includes('ticket-') &&
-        !subscribedChannels.current.has(`widget:conversation:${config.conversationChannel}`)) {
+        !subscribedChannels.current.has(config.conversationChannel)) {
       const conversationChannel = `widget:conversation:${config.conversationChannel}`;
       console.log(`Subscribing to conversation channel: ${conversationChannel}`);
       try {
@@ -172,7 +194,19 @@ export function useAblyChannels(config: AblyChannelConfig) {
       subscribeToChannels();
     }
     
-    // Don't unsubscribe on unmount to preserve connection across view changes
+    // Clean up when component unmounts
+    return () => {
+      // Explicitly unsubscribe from conversation channel when unmounting or when conversation changes
+      if (channels.current.conversation) {
+        const channelName = channels.current.conversation.name;
+        if (channelName.startsWith('widget:conversation:')) {
+          console.log(`Unsubscribing from conversation channel when unmounting: ${channelName}`);
+          unsubscribeFromChannel(channels.current.conversation);
+          channels.current.conversation = undefined;
+          subscribedChannels.current.delete(channelName);
+        }
+      }
+    };
   }, [config.sessionChannels, config.conversationChannel, sessionId, isConnected]);
 
   return { isConnected, channels: channels.current };

@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { subscribeToChannel } from '../utils/ably';
+import { subscribeToChannel, unsubscribeFromChannel } from '../utils/ably';
 import { getChatSessionId } from '../utils/storage';
 
 // Key for storing unread count in localStorage
@@ -14,6 +14,7 @@ export function useUnreadMessages() {
 
   const [unreadCount, setUnreadCount] = useState<number>(initialCount);
   const [sessionId, setSessionId] = useState<string | null>(getChatSessionId());
+  const [notificationChannel, setNotificationChannel] = useState<any>(null);
   
   // Update localStorage when unread count changes
   useEffect(() => {
@@ -42,30 +43,29 @@ export function useUnreadMessages() {
     };
   }, []);
   
-  // Subscribe to new messages in all channels
+  // Subscribe to new messages in notifications channel
   useEffect(() => {
     // Only subscribe if we have a valid session ID
     if (!sessionId) {
-      console.warn('Cannot subscribe to messages channel: No session ID available');
+      console.warn('Cannot subscribe to notifications channel: No session ID available');
       return;
     }
     
     // Make sure to avoid invalid channel names
-    const channelName = `session:${sessionId}`;
+    const channelName = `widget:notifications:${sessionId}`;
     if (!channelName || 
         channelName.includes('null') || 
         channelName.includes('undefined') ||
-        channelName === 'session:null' ||
-        channelName === 'session:undefined') {
-      console.warn(`Invalid session channel name: ${channelName}, not subscribing`);
+        channelName === 'widget:notifications:null' ||
+        channelName === 'widget:notifications:undefined') {
+      console.warn(`Invalid notifications channel name: ${channelName}, not subscribing`);
       return;
     }
     
-    let channel;
     // Try-catch to prevent errors if Ably is not initialized yet
     try {
-      // Subscribe to the general messages channel for this session
-      channel = subscribeToChannel(
+      // Subscribe to the notifications channel for this session
+      const channel = subscribeToChannel(
         channelName,
         'message',
         () => {
@@ -73,20 +73,26 @@ export function useUnreadMessages() {
           setUnreadCount((prev) => prev + 1);
         }
       );
+      
+      if (channel) {
+        setNotificationChannel(channel);
+      }
     } catch (error) {
-      console.error('Error subscribing to message channel:', error);
+      console.error('Error subscribing to notifications channel:', error);
     }
 
     return () => {
-      if (channel) {
+      if (notificationChannel) {
         try {
-          channel.unsubscribe();
+          unsubscribeFromChannel(notificationChannel);
+          setNotificationChannel(null);
         } catch (e) {
           // Ignore errors during cleanup
+          console.error('Error unsubscribing from notifications channel:', e);
         }
       }
     };
-  }, [sessionId]);
+  }, [sessionId, notificationChannel]);
   
   // Update session ID if it changes
   useEffect(() => {

@@ -1,13 +1,13 @@
+
 import { useEffect, useState, useRef } from 'react';
 import { Message, MessageReadReceipt, MessageReadStatus } from '../types';
-import { subscribeToChannel, publishToChannel, isInFallbackMode } from '../utils/ably';
+import { subscribeToChannel, publishToChannel, unsubscribeFromChannel } from '../utils/ably';
 import { ChatWidgetConfig, ChatEventType } from '../config';
 import { processSystemMessage } from '../utils/messageHandlers';
 import { dispatchValidatedEvent } from '../embed/enhancedEvents';
 
 export function useRealtimeSubscriptions(
-  chatChannelName: string,
-  sessionChannelName: string,
+  ticketId: string,
   sessionId: string,
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
   config?: ChatWidgetConfig,
@@ -17,6 +17,12 @@ export function useRealtimeSubscriptions(
   const [readReceipts, setReadReceipts] = useState<Record<string, MessageReadReceipt>>({});
   const [deliveredReceipts, setDeliveredReceipts] = useState<Record<string, MessageReadReceipt>>({});
   const [connectionState, setConnectionState] = useState<string>('connecting');
+  
+  // Create channel names based on sessionId and ticketId
+  const sessionChannelName = sessionId ? `widget:events:${sessionId}` : '';
+  const notificationsChannelName = sessionId ? `widget:notifications:${sessionId}` : '';
+  const contactEventChannelName = sessionId ? `widget:contactevent:${sessionId}` : '';
+  const conversationChannelName = ticketId && ticketId.includes('ticket-') ? `widget:conversation:${ticketId}` : '';
   
   // Track if local fallback has already been set up
   const fallbackSetupDone = useRef(false);
@@ -30,8 +36,12 @@ export function useRealtimeSubscriptions(
       channelName && 
       !channelName.includes('null') && 
       !channelName.includes('undefined') &&
+      channelName !== 'widget:events:null' &&
+      channelName !== 'widget:events:undefined' &&
       channelName !== 'widget:contactevent:null' &&
       channelName !== 'widget:contactevent:undefined' &&
+      channelName !== 'widget:notifications:null' &&
+      channelName !== 'widget:notifications:undefined' &&
       channelName !== 'widget:conversation:null' &&
       channelName !== 'widget:conversation:undefined'
     );
@@ -39,22 +49,22 @@ export function useRealtimeSubscriptions(
 
   // Realtime communication effect
   useEffect(() => {
-    // If realtime is enabled, subscribe to the conversation channel
-    if (config?.realtime && chatChannelName && isValidChannelName(chatChannelName)) {
+    // If realtime is enabled and we have a valid conversation channel, subscribe to it
+    if (config?.realtime && isValidChannelName(conversationChannelName)) {
       // Skip if we've already attempted to subscribe to this channel
-      if (subscriptionAttempted.current[chatChannelName] === true) {
+      if (subscriptionAttempted.current[conversationChannelName] === true) {
         return;
       }
       
-      subscriptionAttempted.current[chatChannelName] = true;
+      subscriptionAttempted.current[conversationChannelName] = true;
       
       // Define handlers that work with both Ably and local fallback
       const messageHandler = (message: any) => {
-        if (message.data && message.data.sender === 'system') {
+        if (message.data && message.data.sender) {
           const newMessage: Message = {
-            id: message.data.id || `msg-${Date.now()}-system`,
+            id: message.data.id || `msg-${Date.now()}-${message.data.sender}`,
             text: message.data.text,
-            sender: 'system',
+            sender: message.data.sender,
             createdAt: new Date(message.data.timestamp || Date.now()),
             type: message.data.type || 'text',
             status: 'sent'
@@ -69,7 +79,9 @@ export function useRealtimeSubscriptions(
           });
           
           // Process system message (sound, event)
-          processSystemMessage(newMessage, chatChannelName, sessionId, config);
+          if (newMessage.sender === 'system') {
+            processSystemMessage(newMessage, conversationChannelName, sessionId, config);
+          }
           
           // Play sound if provided
           if (playMessageSound) {
@@ -155,13 +167,14 @@ export function useRealtimeSubscriptions(
         reaction: reactionHandler
       };
       
-      // Setup subscriptions to chat channel only if valid
-      if (isValidChannelName(chatChannelName)) {
-        activeChannels.current.messageChannel = subscribeToChannel(chatChannelName, 'message', messageHandler);
-        activeChannels.current.typingChannel = subscribeToChannel(chatChannelName, 'typing', typingHandler);
-        activeChannels.current.readChannel = subscribeToChannel(chatChannelName, 'read', readHandler);
-        activeChannels.current.deliveredChannel = subscribeToChannel(chatChannelName, 'delivered', deliveredHandler);
-        activeChannels.current.reactionChannel = subscribeToChannel(chatChannelName, 'reaction', reactionHandler);
+      // Setup subscriptions to conversation channel only if valid
+      if (isValidChannelName(conversationChannelName)) {
+        console.log(`Subscribing to conversation channel: ${conversationChannelName}`);
+        activeChannels.current.messageChannel = subscribeToChannel(conversationChannelName, 'message', messageHandler);
+        activeChannels.current.typingChannel = subscribeToChannel(conversationChannelName, 'typing', typingHandler);
+        activeChannels.current.readChannel = subscribeToChannel(conversationChannelName, 'read', readHandler);
+        activeChannels.current.deliveredChannel = subscribeToChannel(conversationChannelName, 'delivered', deliveredHandler);
+        activeChannels.current.reactionChannel = subscribeToChannel(conversationChannelName, 'reaction', reactionHandler);
       }
       
       // Subscribe to connection state changes
@@ -169,7 +182,7 @@ export function useRealtimeSubscriptions(
         (event: any) => connectionHandler(event.detail));
       
       // Set up fallback mode listeners if needed
-      if (isInFallbackMode() && !fallbackSetupDone.current) {
+      if (fallbackSetupDone.current === false) {
         setupLocalFallback();
       }
       
@@ -178,20 +191,20 @@ export function useRealtimeSubscriptions(
         fallbackSetupDone.current = true;
         
         // Create event listeners for local fallback events
-        if (isValidChannelName(chatChannelName)) {
-          document.addEventListener(`pullse:local:${chatChannelName}:message`, 
+        if (isValidChannelName(conversationChannelName)) {
+          document.addEventListener(`pullse:local:${conversationChannelName}:message`, 
             (event: any) => messageHandler(event.detail));
           
-          document.addEventListener(`pullse:local:${chatChannelName}:typing`, 
+          document.addEventListener(`pullse:local:${conversationChannelName}:typing`, 
             (event: any) => typingHandler(event.detail));
           
-          document.addEventListener(`pullse:local:${chatChannelName}:read`, 
+          document.addEventListener(`pullse:local:${conversationChannelName}:read`, 
             (event: any) => readHandler(event.detail));
           
-          document.addEventListener(`pullse:local:${chatChannelName}:delivered`, 
+          document.addEventListener(`pullse:local:${conversationChannelName}:delivered`, 
             (event: any) => deliveredHandler(event.detail));
           
-          document.addEventListener(`pullse:local:${chatChannelName}:reaction`, 
+          document.addEventListener(`pullse:local:${conversationChannelName}:reaction`, 
             (event: any) => reactionHandler(event.detail));
         }
       }
@@ -200,7 +213,10 @@ export function useRealtimeSubscriptions(
       return () => {
         // Clean up Ably channels
         Object.values(activeChannels.current).forEach(channel => {
-          if (channel) channel.unsubscribe();
+          if (channel) {
+            console.log(`Unsubscribing from channel: ${channel.name}`);
+            unsubscribeFromChannel(channel);
+          }
         });
         activeChannels.current = {};
         
@@ -209,20 +225,20 @@ export function useRealtimeSubscriptions(
           (event: any) => connectionHandler(event.detail));
         
         // Clean up local fallback listeners
-        if (fallbackSetupDone.current && isValidChannelName(chatChannelName)) {
-          document.removeEventListener(`pullse:local:${chatChannelName}:message`, 
+        if (fallbackSetupDone.current && isValidChannelName(conversationChannelName)) {
+          document.removeEventListener(`pullse:local:${conversationChannelName}:message`, 
             (event: any) => messageHandler(event.detail));
           
-          document.removeEventListener(`pullse:local:${chatChannelName}:typing`, 
+          document.removeEventListener(`pullse:local:${conversationChannelName}:typing`, 
             (event: any) => typingHandler(event.detail));
           
-          document.removeEventListener(`pullse:local:${chatChannelName}:read`, 
+          document.removeEventListener(`pullse:local:${conversationChannelName}:read`, 
             (event: any) => readHandler(event.detail));
           
-          document.removeEventListener(`pullse:local:${chatChannelName}:delivered`, 
+          document.removeEventListener(`pullse:local:${conversationChannelName}:delivered`, 
             (event: any) => deliveredHandler(event.detail));
           
-          document.removeEventListener(`pullse:local:${chatChannelName}:reaction`, 
+          document.removeEventListener(`pullse:local:${conversationChannelName}:reaction`, 
             (event: any) => reactionHandler(event.detail));
         }
       };
@@ -230,7 +246,7 @@ export function useRealtimeSubscriptions(
     
     // No cleanup needed when realtime is disabled
     return () => {};
-  }, [config?.realtime, chatChannelName, sessionId, playMessageSound, sessionChannelName, setMessages]);
+  }, [config?.realtime, conversationChannelName, sessionId, playMessageSound, setMessages]);
 
   return {
     remoteIsTyping,

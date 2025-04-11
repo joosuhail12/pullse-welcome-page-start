@@ -30,6 +30,7 @@ export const subscribeToChannel = (
       channelName.includes('undefined') ||
       channelName === 'session:null' ||
       channelName === 'widget:events:null' ||
+      channelName === 'widget:notifications:null' ||
       channelName === 'widget:contactevent:null') {
     console.warn(`Invalid channel name: ${channelName}, skipping subscription`);
     return undefined;
@@ -205,7 +206,11 @@ export const clearAllChannelSubscriptions = (): void => {
   
   try {
     // For each active channel, detach but don't fully close the connection
-    client.channels.each((channel) => {
+    const channels = client.channels;
+    
+    // Use a different approach to iterate through channels
+    Object.keys(channels.all).forEach((channelName) => {
+      const channel = channels.get(channelName);
       if (channel.state === 'attached') {
         channel.detach();
       }

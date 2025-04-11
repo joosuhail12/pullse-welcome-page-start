@@ -1,3 +1,4 @@
+
 import Ably from 'ably';
 import { logger } from '@/lib/logger';
 import {
@@ -68,7 +69,7 @@ export const initializeAbly = async (authUrl: string): Promise<boolean> => {
       echoMessages: false,
       closeOnUnload: true,
       logLevel: 2,
-      transports: ['web_socket'],
+      transports: ['web_socket', 'xhr_polling', 'xhr_streaming'],
     };
 
     logger.info('Initializing Ably with token', 'ably');
@@ -257,7 +258,11 @@ export const cleanupAbly = (): void => {
 
   // Just detach channels without closing the connection to allow reuse
   try {
-    client.channels.each((channel) => {
+    const channels = client.channels;
+    
+    // Use forEach instead of each
+    Object.keys(channels.all).forEach((channelName) => {
+      const channel = channels.get(channelName);
       if (channel.state === 'attached') {
         channel.detach();
       }

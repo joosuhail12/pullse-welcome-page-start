@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Message, Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
-import { getChatSessionId } from '../utils/cookies';
+import { getChatSessionId } from '../utils/storage';
 import { useMessageActions } from './useMessageActions';
 import { useRealTime } from './useRealTime';
 import { createSystemMessage } from '../utils/messageHandlers';
