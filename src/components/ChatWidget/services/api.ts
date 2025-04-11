@@ -260,6 +260,7 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
           realtime: true, // Add realtime flag for existing code
           workspaceId: sanitizedWorkspaceId,
           contact: config.data.contact || null,
+          sessionId: config.data.sessionId
         };
 
         return configWithRealtime;

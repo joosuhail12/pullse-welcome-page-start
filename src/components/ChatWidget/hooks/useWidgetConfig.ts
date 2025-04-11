@@ -37,12 +37,12 @@ export function useWidgetConfig() {
 
         if (fetchedConfig.contact) {
           setContactData(fetchedConfig.contact);
-          
+
           const formData = {
             email: fetchedConfig.contact.email,
             name: `${fetchedConfig.contact.firstname} ${fetchedConfig.contact.lastname}`.trim()
           };
-          
+
           setUserFormDataInLocalStorage(formData);
         } else {
           const storedUserData = getUserFormDataFromLocalStorage();
@@ -50,7 +50,7 @@ export function useWidgetConfig() {
             setContactData(storedUserData);
           }
         }
-
+        console.log(fetchedConfig);
         // Store the session ID if it exists in the response
         if (fetchedConfig.sessionId) {
           setChatSessionId(fetchedConfig.sessionId);
