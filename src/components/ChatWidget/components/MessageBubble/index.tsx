@@ -24,7 +24,7 @@ interface MessageBubbleProps {
     text: string;
     type?: MessageType;
     sender: UserType;
-    timestamp: Date;
+    createdAt: Date;
     metadata?: Record<string, any>;
     reactions?: string[];
     fileName?: string;
@@ -90,7 +90,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
 
   const getStatusBasedClasses = () => {
     if (!isBotMessage || !agentStatus) return '';
-    
+
     switch (agentStatus) {
       case 'online':
         return 'border-l-4 border-l-green-500';
@@ -107,27 +107,27 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
 
   const getConsecutiveClasses = () => {
     if (!isConsecutive) return '';
-    
+
     if (isUserMessage) {
       return 'rounded-t-md rounded-bl-md rounded-br-sm mt-1';
     } else if (isBotMessage) {
       return 'rounded-t-md rounded-br-md rounded-bl-sm mt-1';
     }
-    
+
     return '';
   };
 
   const messageTypeClass = isUserMessage
     ? `chat-message-user text-white ${isConsecutive ? 'rounded-t-md rounded-bl-md rounded-br-sm mt-1' : 'rounded-t-2xl rounded-bl-2xl rounded-br-sm'}`
     : isBotMessage
-    ? `chat-message-system text-system-bubble-text ${isConsecutive ? 'rounded-t-md rounded-br-md rounded-bl-sm mt-1' : 'rounded-t-2xl rounded-br-2xl rounded-bl-sm'} border border-gray-100 ${getStatusBasedClasses()}`
-    : 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200';
+      ? `chat-message-system text-system-bubble-text ${isConsecutive ? 'rounded-t-md rounded-br-md rounded-bl-sm mt-1' : 'rounded-t-2xl rounded-br-2xl rounded-bl-sm'} border border-gray-100 ${getStatusBasedClasses()}`
+      : 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200';
 
   const messageContainerClass = isUserMessage
     ? 'ml-auto flex-row-reverse'
     : isBotMessage
-    ? 'mr-auto'
-    : 'mx-auto max-w-[85%] text-center';
+      ? 'mr-auto'
+      : 'mx-auto max-w-[85%] text-center';
 
   const handleLongPress = (e: React.MouseEvent) => {
     if (onReaction) {
@@ -144,9 +144,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       const parts = text.split(regex);
       return (
         <>
-          {parts.map((part, i) => 
-            regex.test(part) 
-              ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark> 
+          {parts.map((part, i) =>
+            regex.test(part)
+              ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark>
               : <React.Fragment key={i}>{part}</React.Fragment>
           )}
         </>
@@ -170,8 +170,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       case 'file':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata ? 
-              <FileMessage metadata={message.metadata} /> : 
+            {message.metadata ?
+              <FileMessage metadata={message.metadata} /> :
               <div className="flex flex-col">
                 {renderText(sanitizedText)}
                 <div className="mt-2 p-2 bg-gray-100 rounded-md flex items-center">
@@ -197,8 +197,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
                 {message.quickReplies && message.quickReplies.length > 0 && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {message.quickReplies.map((reply, i) => (
-                      <button 
-                        key={i} 
+                      <button
+                        key={i}
                         className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs py-1.5 px-3 rounded-full"
                         onClick={() => onReply && onReply(sanitizeInput(reply.text))}
                       >
@@ -289,18 +289,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
         onClick={onToggleHighlight}
       >
         {renderMessageContent()}
-        
-        {!isConsecutive && <MessageStatus timestamp={message.timestamp} />}
-        
+
+        {!isConsecutive && <MessageStatus timestamp={message.createdAt} />}
+
         {isUserMessage && !isConsecutive && (
           <div className="absolute -bottom-4 right-1">
-            <MessageReadReceipt 
-              status={readStatus} 
-              timestamp={readTimestamp} 
+            <MessageReadReceipt
+              status={readStatus}
+              timestamp={readTimestamp}
             />
           </div>
         )}
-        
+
         {renderReactionButtons()}
       </div>
 
