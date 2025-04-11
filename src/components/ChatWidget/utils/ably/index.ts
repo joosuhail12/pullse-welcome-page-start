@@ -1,4 +1,13 @@
 
+// Export connection functionality
+export {
+  initializeAbly,
+  cleanupAbly,
+  reconnectAbly,
+  closeAblyConnection,
+  initializeAblyClient
+} from './connection';
+
 // Export everything from config
 export {
   getAblyClient,
@@ -13,6 +22,5 @@ export {
 } from './config';
 
 // Export everything from other modules
-export * from './connection';
 export * from './messaging';
 export * from './presence';

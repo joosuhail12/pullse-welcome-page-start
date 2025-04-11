@@ -1,11 +1,71 @@
 
 import Ably from 'ably';
 import { getAblyClient, setAblyClient, setFallbackMode, processQueuedMessages, resubscribeToActiveChannels } from './config';
-import { dispatchValidatedEvent } from '../../embed/enhancedEvents';
+import { dispatchChatEvent } from '../events';
 
 // A simple backoff algorithm for reconnection attempts
 let reconnectAttempts = 0;
 const getReconnectDelay = () => Math.min(1000 * Math.pow(1.5, reconnectAttempts), 30000);
+
+/**
+ * Initialize Ably with authentication URL
+ * @param authUrl Authentication URL for Ably
+ */
+export const initializeAbly = async (authUrl: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const client = initializeAblyClient(undefined, authUrl);
+      
+      if (!client) {
+        reject(new Error('Failed to initialize Ably client'));
+        return;
+      }
+      
+      // Wait for connection to be established
+      client.connection.once('connected', () => {
+        console.log('Ably connected successfully');
+        resolve();
+      });
+      
+      // Handle connection failure
+      client.connection.once('failed', (err) => {
+        console.error('Ably connection failed', err);
+        reject(err);
+      });
+      
+    } catch (error) {
+      console.error('Error initializing Ably:', error);
+      reject(error);
+    }
+  });
+};
+
+/**
+ * Reconnect Ably with authentication URL
+ * @param authUrl Authentication URL for Ably
+ */
+export const reconnectAbly = async (authUrl: string): Promise<boolean> => {
+  try {
+    await closeAblyConnection();
+    await initializeAbly(authUrl);
+    return true;
+  } catch (error) {
+    console.error('Error reconnecting to Ably:', error);
+    return false;
+  }
+};
+
+/**
+ * Clean up Ably connection and resources
+ */
+export const cleanupAbly = async (): Promise<void> => {
+  try {
+    await closeAblyConnection();
+    console.log('Ably connection cleaned up');
+  } catch (error) {
+    console.error('Error cleaning up Ably connection:', error);
+  }
+};
 
 // Initialize Ably client with options
 export const initializeAblyClient = (
@@ -63,7 +123,7 @@ export const initializeAblyClient = (
       console.log(`Ably: Connection state: ${stateChange.current}${stateChange.reason ? `; reason: ${stateChange.reason}` : ''}`);
       
       // Dispatch connection state change event for UI updates
-      dispatchValidatedEvent('chat:connectionChange', {
+      dispatchChatEvent('chat:connectionChange', {
         state: stateChange.current,
         previous: stateChange.previous,
         reason: stateChange.reason

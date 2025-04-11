@@ -1,6 +1,5 @@
 
-import { WidgetEventType } from './types';
-import { dispatchEvent } from './utils';
+import { dispatchEvent } from '../utils/events';
 
 // Enhanced typing status tracking
 const typingStatus: Record<string, boolean> = {};
