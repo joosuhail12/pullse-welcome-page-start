@@ -47,14 +47,14 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
     
     // If client already exists and is connected, just return
     if (client && client.connection.state === 'connected') {
-      logger.info('Ably already connected, skipping initialization', 'ably:connection');
+      console.log('Ably already connected, skipping initialization');
       return;
     }
     
     // Verify that we have an access token before proceeding
     const accessToken = getAccessToken();
     if (!accessToken) {
-      logger.warn('Access token not found, Ably initialization aborted', 'ably:connection');
+      console.warn('Access token not found, Ably initialization aborted');
       enableLocalFallback();
       throw new Error('Access token not available');
     }
@@ -62,16 +62,16 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
     const { workspaceId, apiKey } = getWorkspaceIdAndApiKey();
     
     if (!workspaceId) {
-      logger.warn('Workspace ID not found, Ably initialization aborted', 'ably:connection');
+      console.warn('Workspace ID not found, Ably initialization aborted');
       enableLocalFallback();
       throw new Error('Workspace ID not available');
     }
     
-    logger.info(`Initializing Ably with token for workspace ${workspaceId}`, 'ably:connection');
+    console.log(`Initializing Ably with token for workspace ${workspaceId}`);
     
     // Close existing client if it's in a bad state
     if (client && ['failed', 'closed', 'suspended'].includes(client.connection.state)) {
-      logger.info('Closing existing client in bad state before creating new one', 'ably:connection');
+      console.log('Closing existing client in bad state before creating new one');
       client.close();
       setAblyClient(null);
     }
@@ -114,7 +114,7 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
 
       // Set a timeout for the connection attempt
       const connectionTimeout = setTimeout(() => {
-        logger.warn('Ably connection timed out, enabling fallback', 'ably:connection');
+        console.warn('Ably connection timed out, enabling fallback');
         enableLocalFallback();
         reject(new Error('Connection timeout'));
       }, timeoutMs);
@@ -123,21 +123,21 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
       switch (currentClient.connection.state) {
         case 'connected':
           clearTimeout(connectionTimeout);
-          logger.info('Ably already connected', 'ably:connection');
+          console.log('Ably already connected');
           resolve();
           break;
           
         case 'connecting':
           currentClient.connection.once('connected', () => {
             clearTimeout(connectionTimeout);
-            logger.info('Ably connected successfully', 'ably:connection');
+            console.log('Ably connected successfully');
             processQueuedMessages();
             resolve();
           });
 
           currentClient.connection.once('failed', (err) => {
             clearTimeout(connectionTimeout);
-            logger.error('Ably connection failed', 'ably:connection', err);
+            console.error('Ably connection failed:', err);
             enableLocalFallback();
             reject(err);
           });
@@ -148,21 +148,21 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
 
           currentClient.connection.once('connected', () => {
             clearTimeout(connectionTimeout);
-            logger.info('Ably connected successfully', 'ably:connection');
+            console.log('Ably connected successfully');
             processQueuedMessages();
             resolve();
           });
 
           currentClient.connection.once('failed', (err) => {
             clearTimeout(connectionTimeout);
-            logger.error('Ably connection failed', 'ably:connection', err);
+            console.error('Ably connection failed:', err);
             enableLocalFallback();
             reject(err);
           });
       }
     });
   } catch (error) {
-    logger.error('Error initializing Ably', 'ably:connection', error);
+    console.error('Error initializing Ably:', error);
     enableLocalFallback();
     throw error;
   }
@@ -180,26 +180,20 @@ function setupConnectionStateListeners() {
 
   // Connection state change handler
   client.connection.on('connected', () => {
-    logger.info('Ably connection established', 'ably:connection');
+    console.log('Ably connection established');
     setFallbackMode(false);
-    dispatchValidatedEvent(ChatEventType.ConnectionChange, { status: 'connected' });
+    dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'connected' }, EventPriority.HIGH);
     processQueuedMessages();
-    
-    // Dispatch a connection event for other components to resubscribe
-    const event = new CustomEvent('pullse:ably:connected', {
-      detail: { timestamp: new Date() }
-    });
-    document.dispatchEvent(event);
   });
 
   client.connection.on('disconnected', () => {
-    logger.warn('Ably connection disconnected, attempting to reconnect', 'ably:connection');
-    dispatchValidatedEvent(ChatEventType.ConnectionChange, { status: 'disconnected' });
+    console.warn('Ably connection disconnected, attempting to reconnect');
+    dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'disconnected' }, EventPriority.HIGH);
   });
 
   client.connection.on('suspended', () => {
-    logger.warn('Ably connection suspended (multiple reconnection attempts failed)', 'ably:connection');
-    dispatchValidatedEvent(ChatEventType.ConnectionChange, { status: 'suspended' });
+    console.warn('Ably connection suspended (multiple reconnection attempts failed)');
+    dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'suspended' }, EventPriority.HIGH);
 
     // After being suspended for 30 seconds, enable fallback mode
     setTimeout(() => {
@@ -211,17 +205,17 @@ function setupConnectionStateListeners() {
   });
 
   client.connection.on('failed', (err: any) => {
-    logger.error('Ably connection failed permanently', 'ably:connection', err?.reason);
-    dispatchValidatedEvent(ChatEventType.ConnectionChange, {
+    console.error('Ably connection failed permanently:', err?.reason);
+    dispatchValidatedEvent('chat:connectionChange' as ChatEventType, {
       status: 'failed',
       error: err?.reason || 'Connection failed'
-    });
+    }, EventPriority.HIGH);
     enableLocalFallback();
   });
 
   client.connection.on('closed', () => {
-    logger.info('Ably connection closed', 'ably:connection');
-    dispatchValidatedEvent(ChatEventType.ConnectionChange, { status: 'closed' });
+    console.log('Ably connection closed');
+    dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'closed' }, EventPriority.HIGH);
   });
 }
 

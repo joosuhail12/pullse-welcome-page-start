@@ -1,111 +1,215 @@
-import { CSSProperties } from 'react';
-
-export interface BrandAssets {
-  primaryColor: string;
-  secondaryColor: string;
-  logoUrl: string;
-  fontFamily?: string;
-}
-
-export interface Contact {
-  firstname: string;
-  lastname: string;
-  email: string;
-  phone: string;
-}
-
 export interface ChatEventPayload {
   type: ChatEventType;
   timestamp: Date;
   data?: any;
 }
 
-export interface QuickReply {
-  id: string;
-  text: string;
-  payload: string;
+export type ChatBranding = 'light' | 'dark' | 'hidden';
+
+export type ChatPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+
+export interface ChatLayout {
+  placement: 'left' | 'right';
+  offsetX: number;
+  offsetY: number;
+  isCompact?: boolean;
 }
 
-export interface ThemeConfig {
-  light: CSSProperties;
-  dark: CSSProperties;
+export interface ChatColors {
+  primaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+  userMessageBackgroundColor: string;
+  agentMessageBackgroundColor: string;
 }
 
-export enum ChatEventType {
-  // Chat Widget status
-  Open = "chat:open",
-  Close = "chat:close",
-  
-  // Message events
-  MessageSent = "chat:messageSent",
-  MessageReceived = "chat:messageReceived",
-  MessageReacted = "message:reacted",
-  FileUploaded = "message:fileUploaded",
-  
-  // Contact events
-  InitiatedChat = "contact:initiated",
-  FormCompleted = "contact:formCompleted",
-  
-  // Typing events
-  TypingStarted = "chat:typingStarted",
-  TypingStopped = "chat:typingStopped",
-  
-  // Connection events
-  ConnectionChange = "chat:connectionChange",
-  
-  // Error events
-  Error = "chat:error"
+export interface ChatLabels {
+  welcomeTitle: string;
+  welcomeMessage: string;
+  welcomeSubtitle: string;
+  askQuestionButtonText: string;
+}
+
+export interface BrandAssets {
+  headerLogo?: string;
+  avatarUrl?: string;
+  launcherIcon?: string;
+}
+
+export interface WidgetSettings {
+  allowedDomains: string[];
+}
+
+export interface InterfaceSettings {
+  showBrandingBar: boolean;
+  showOfficeHours: boolean;
+  showAgentPresence: boolean;
+  showAgentChatStatus: boolean;
+  showTicketStatusBar: boolean;
+  enableMessageReaction: boolean;
+  allowVisitorsToEndChat: boolean;
+  enableConversationRating: boolean;
+  enableDeliveryReadReceipts: boolean;
+}
+
+export interface Features {
+  fileUploads?: boolean;
+  webhooks?: boolean;
+  customForms?: boolean;
+  searchMessages?: boolean;
+  messageReactions?: boolean;
+  richContent?: boolean;
+  attachments?: boolean;
+  qrSupport?: boolean;
+  cardMessages?: boolean;
+}
+
+// Types for form fields
+export interface PreChatFormField {
+  entityname: string;
+  columnname: string;
+  label: string;
+  type: string;
+  placeholder?: string;
+  required: boolean;
+  options?: string[];
+}
+
+export interface WidgetField {
+  contactFields: PreChatFormField[];
+  companyFields: PreChatFormField[];
+  customDataFields: PreChatFormField[];
+  customObjectFields?: any[];
 }
 
 export interface ChatWidgetConfig {
   workspaceId: string;
-  baseUrl?: string;
+  welcomeMessage: string;
+  colors?: ChatColors;
+  labels?: ChatLabels;
+  layout?: ChatLayout;
   brandAssets?: BrandAssets;
-  contact?: Contact;
-  greeting?: string;
-  farewell?: string;
-  offlineMessage?: string;
-  theme?: ThemeConfig;
-  position?: 'left' | 'right';
-  customCss?: string;
-  display poweredBy?: boolean;
-  quickReplies?: QuickReply[];
-  preChatFormEnabled?: boolean;
-  realtime?: {
+  widgetSettings?: WidgetSettings;
+  interfaceSettings?: InterfaceSettings;
+  features?: Features;
+  officeHours?: {
     enabled: boolean;
-    readReceipts?: boolean;
+    timezone: string;
+    message: string;
+    schedule: Record<string, { open: string; close: string }>;
   };
-  onEvent?: (event: ChatEventPayload) => void;
   eventHandlers?: {
-    [key in ChatEventType]?: (event: ChatEventPayload) => void;
+    [key in ChatEventType]?: (payload: ChatEventPayload) => void;
   };
+  lazyLoadScroll?: boolean;
+  scrollThreshold?: number;
+  contact?: any;
+  widgetfield?: WidgetField;
   sessionId?: string;
+  realtime?: boolean; // Add realtime flag for backward compatibility
 }
+
+export type ChatEventType =
+  | 'chat:loaded'
+  | 'chat:opened'
+  | 'chat:closed'
+  | 'chat:minimized'
+  | 'chat:maximized'
+  | 'chat:error'
+  | 'chat:ready'
+  | 'message:sent'
+  | 'message:received'
+  | 'message:read'
+  | 'message:delivered'
+  | 'message:reaction'
+  | 'file:upload'
+  | 'contact:formCompleted'
+  | 'chat:ended'
+  | 'agent:typing'
+  | 'agent:status'
+  | 'web:pageView'
+  | 'rating:submitted';
 
 export const defaultConfig: ChatWidgetConfig = {
   workspaceId: '',
-  baseUrl: 'http://localhost:3000',
+  welcomeMessage: 'Hello! How can we help you today?',
+  colors: {
+    primaryColor: '#8B5CF6',
+    backgroundColor: '#FFFFFF',
+    textColor: '#374151',
+    userMessageBackgroundColor: '#ECFDF5',
+    agentMessageBackgroundColor: '#F9FAFB'
+  },
+  labels: {
+    welcomeTitle: 'Welcome to Support',
+    welcomeMessage: 'Hello! How can we help you today?',
+    welcomeSubtitle: 'We typically reply within a few minutes',
+    askQuestionButtonText: 'Ask a question'
+  },
+  layout: {
+    placement: 'right',
+    offsetX: 20,
+    offsetY: 20,
+    isCompact: false
+  },
   brandAssets: {
-    primaryColor: '#007BFF',
-    secondaryColor: '#6C757D',
-    logoUrl: '',
+    headerLogo: '',
+    avatarUrl: '',
+    launcherIcon: ''
   },
-  greeting: 'Hello! How can I help you today?',
-  farewell: 'Thank you for chatting with us!',
-  offlineMessage: 'We are currently offline. Please leave a message, and we\'ll get back to you as soon as possible.',
-  theme: {
-    light: {
-      '--widget-background-color': '#f9f9f9',
-      '--widget-text-color': '#333',
-      '--widget-primary-color': '#007BFF',
-    },
-    dark: {
-      '--widget-background-color': '#333',
-      '--widget-text-color': '#f9f9f9',
-      '--widget-primary-color': '#007BFF',
-    },
+  widgetSettings: {
+    allowedDomains: ['*']
   },
-  position: 'right',
-  displayPoweredBy: true,
-  preChatFormEnabled: true,
+  interfaceSettings: {
+    showBrandingBar: true,
+    showOfficeHours: false,
+    showAgentPresence: true,
+    showAgentChatStatus: true,
+    showTicketStatusBar: false,
+    enableMessageReaction: true,
+    allowVisitorsToEndChat: true,
+    enableConversationRating: true,
+    enableDeliveryReadReceipts: true
+  },
+  features: {
+    fileUploads: true,
+    webhooks: true,
+    customForms: false,
+    searchMessages: true,
+    messageReactions: true,
+    richContent: true,
+    attachments: true,
+    qrSupport: true,
+    cardMessages: true
+  },
+  officeHours: {
+    enabled: false,
+    timezone: 'America/New_York',
+    message: 'We are currently outside of our office hours. We will get back to you as soon as possible.',
+    schedule: {
+      monday: { open: '09:00', close: '17:00' },
+      tuesday: { open: '09:00', close: '17:00' },
+      wednesday: { open: '09:00', close: '17:00' },
+      thursday: { open: '09:00', close: '17:00' },
+      friday: { open: '09:00', close: '17:00' },
+      saturday: { open: '', close: '' },
+      sunday: { open: '', close: '' }
+    }
+  },
+  realtime: true, // Add realtime flag for existing code
+  widgetfield: {
+    contactFields: [
+      {
+        entityname: 'contact',
+        columnname: 'email',
+        label: 'Email',
+        type: 'email',
+        placeholder: 'Enter your email',
+        required: true,
+        options: []
+      }
+    ],
+    companyFields: [],
+    customDataFields: []
+  }
 };
