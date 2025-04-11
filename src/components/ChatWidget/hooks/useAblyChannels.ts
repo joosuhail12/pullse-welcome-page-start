@@ -21,6 +21,20 @@ export function useAblyChannels(config: AblyChannelConfig) {
   const [isConnected, setIsConnected] = useState(false);
   const channels = useRef<AblyChannels>({});
   const [sessionId, setSessionId] = useState<string | null>(getChatSessionId());
+  const subscribedChannels = useRef<Set<string>>(new Set());
+  
+  // Validate channel name to ensure it's safe to subscribe
+  const isValidChannelName = (channelName: string): boolean => {
+    return Boolean(
+      channelName && 
+      !channelName.includes('null') && 
+      !channelName.includes('undefined') &&
+      channelName !== 'widget:events:null' &&
+      channelName !== 'widget:events:undefined' &&
+      channelName !== 'widget:contactevent:null' &&
+      channelName !== 'widget:contactevent:undefined'
+    );
+  };
   
   const subscribeToChannels = () => {
     const client = getAblyClient();
@@ -29,45 +43,51 @@ export function useAblyChannels(config: AblyChannelConfig) {
       return;
     }
     
-    unsubscribeAllChannels();
-    
     // Only subscribe to session channels if enabled and have a valid session ID
     if (config.sessionChannels && sessionId) {
-      console.log(`Subscribing to session channels for ${sessionId}`);
-      
-      // Validate session ID to avoid invalid channel names
-      if (!sessionId.includes('null') && !sessionId.includes('undefined')) {
-        // Subscribe to events channel for the session
+      // Subscribe to events channel for the session
+      const eventsChannel = `widget:events:${sessionId}`;
+      if (isValidChannelName(eventsChannel) && !subscribedChannels.current.has(eventsChannel)) {
+        console.log(`Subscribing to events channel: ${eventsChannel}`);
         channels.current.events = subscribeToChannel(
-          `widget:events:${sessionId}`,
+          eventsChannel,
           'message',
           (message) => {
             console.log('Received event message:', message);
           }
         );
-        
-        // Subscribe to contact event channel for the session
+        subscribedChannels.current.add(eventsChannel);
+      }
+      
+      // Subscribe to contact event channel for the session
+      const contactChannel = `widget:contactevent:${sessionId}`;
+      if (isValidChannelName(contactChannel) && !subscribedChannels.current.has(contactChannel)) {
+        console.log(`Subscribing to contact event channel: ${contactChannel}`);
         channels.current.contactEvent = subscribeToChannel(
-          `widget:contactevent:${sessionId}`,
+          contactChannel,
           'message',
           (message) => {
             console.log('Received contact event message:', message);
           }
         );
+        subscribedChannels.current.add(contactChannel);
       }
     }
     
     // Only subscribe to conversation channel if it has a ticket ID
     if (config.conversationChannel && 
-        config.conversationChannel.includes('ticket-')) {
-      console.log(`Subscribing to conversation channel: widget:conversation:${config.conversationChannel}`);
+        config.conversationChannel.includes('ticket-') &&
+        !subscribedChannels.current.has(`widget:conversation:${config.conversationChannel}`)) {
+      const conversationChannel = `widget:conversation:${config.conversationChannel}`;
+      console.log(`Subscribing to conversation channel: ${conversationChannel}`);
       channels.current.conversation = subscribeToChannel(
-        `widget:conversation:${config.conversationChannel}`,
+        conversationChannel,
         'message',
         (message) => {
           console.log('Received conversation message:', message);
         }
       );
+      subscribedChannels.current.add(conversationChannel);
     }
   };
 
@@ -79,6 +99,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
       }
     });
     channels.current = {};
+    subscribedChannels.current.clear();
   };
 
   useEffect(() => {

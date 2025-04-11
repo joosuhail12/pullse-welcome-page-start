@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchChatWidgetConfig } from '../services/api';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import { logger } from '@/lib/logger';
@@ -11,6 +11,7 @@ export function useWidgetConfig() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [contactData, setContactData] = useState<any>(null);
+  const configFetchedRef = useRef<boolean>(false);
 
   const { workspaceId } = getWorkspaceIdAndApiKey();
 
@@ -18,6 +19,13 @@ export function useWidgetConfig() {
     async function loadConfig() {
       if (!workspaceId) {
         setConfig(defaultConfig);
+        setLoading(false);
+        return;
+      }
+
+      // Skip fetching if we've already loaded the config once
+      if (configFetchedRef.current) {
+        logger.info('Config already fetched, skipping API call', 'useWidgetConfig');
         setLoading(false);
         return;
       }
@@ -35,6 +43,9 @@ export function useWidgetConfig() {
           hasBranding: !!fetchedConfig.brandAssets
         });
 
+        // Mark that we've fetched the config
+        configFetchedRef.current = true;
+
         if (fetchedConfig.contact) {
           setContactData(fetchedConfig.contact);
 
@@ -50,7 +61,7 @@ export function useWidgetConfig() {
             setContactData(storedUserData);
           }
         }
-        console.log(fetchedConfig);
+        
         // Store the session ID if it exists in the response
         if (fetchedConfig.sessionId) {
           setChatSessionId(fetchedConfig.sessionId);

@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { Message, MessageReadReceipt, MessageReadStatus } from '../types';
 import { subscribeToChannel, publishToChannel, isInFallbackMode } from '../utils/ably';
@@ -23,6 +22,7 @@ export function useRealtimeSubscriptions(
   const fallbackSetupDone = useRef(false);
   const localEventHandlers = useRef<{[key: string]: any}>({});
   const activeChannels = useRef<{[key: string]: any}>({});
+  const subscriptionAttempted = useRef<{[key: string]: boolean}>({});
 
   // Validate channel name before subscribing
   const isValidChannelName = (channelName: string): boolean => {
@@ -41,6 +41,13 @@ export function useRealtimeSubscriptions(
   useEffect(() => {
     // If realtime is enabled, subscribe to the conversation channel
     if (config?.realtime && chatChannelName && isValidChannelName(chatChannelName)) {
+      // Skip if we've already attempted to subscribe to this channel
+      if (subscriptionAttempted.current[chatChannelName] === true) {
+        return;
+      }
+      
+      subscriptionAttempted.current[chatChannelName] = true;
+      
       // Define handlers that work with both Ably and local fallback
       const messageHandler = (message: any) => {
         if (message.data && message.data.sender === 'system') {

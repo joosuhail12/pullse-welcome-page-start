@@ -7,6 +7,9 @@ let localFallbackMode = false;
 let pendingMessages: Array<{channelName: string, eventName: string, data: any}> = [];
 let activeSubscriptions: Array<{channelName: string, eventName: string}> = [];
 
+// Track attempts to subscribe to prevent duplicates
+const subscriptionAttempts = new Set<string>();
+
 // Export state getters/setters
 export const getAblyClient = (): Ably.Realtime | null => {
   return ablyClient;
@@ -47,6 +50,21 @@ export const addPendingMessage = (channelName: string, eventName: string, data: 
 
 export const clearPendingMessages = (): void => {
   pendingMessages = [];
+};
+
+// Check if a subscription has been attempted
+export const hasAttemptedSubscription = (channelName: string, eventName: string): boolean => {
+  return subscriptionAttempts.has(`${channelName}:${eventName}`);
+};
+
+// Mark a subscription as attempted
+export const markSubscriptionAttempted = (channelName: string, eventName: string): void => {
+  subscriptionAttempts.add(`${channelName}:${eventName}`);
+};
+
+// Clear subscription attempts
+export const clearSubscriptionAttempts = (): void => {
+  subscriptionAttempts.clear();
 };
 
 // Track active subscriptions

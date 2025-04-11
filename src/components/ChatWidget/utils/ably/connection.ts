@@ -115,6 +115,13 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
  * Create and connect a new Ably client
  */
 const createAndConnectClient = async (authUrl: string, accessToken: string, workspaceId: string, apiKey?: string) => {
+  // Check if we already have a connected client
+  const existingClient = getAblyClient();
+  if (existingClient && existingClient.connection.state === 'connected') {
+    console.log('Using existing connected client');
+    return;
+  }
+
   const newClient = new Ably.Realtime({
     authUrl: authUrl,
     authHeaders: {

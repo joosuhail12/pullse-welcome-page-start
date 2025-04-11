@@ -52,7 +52,11 @@ export function useUnreadMessages() {
     
     // Make sure to avoid invalid channel names
     const channelName = `session:${sessionId}`;
-    if (!channelName || channelName === 'session:null' || channelName === 'session:undefined') {
+    if (!channelName || 
+        channelName.includes('null') || 
+        channelName.includes('undefined') ||
+        channelName === 'session:null' ||
+        channelName === 'session:undefined') {
       console.warn(`Invalid session channel name: ${channelName}, not subscribing`);
       return;
     }

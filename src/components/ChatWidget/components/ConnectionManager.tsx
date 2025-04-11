@@ -19,6 +19,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
   const [accessToken, setAccessToken] = useState<string | null>(getAccessToken());
   const ablyInitialized = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
+  const lastWorkspaceId = useRef<string | null>(null);
   
   // Clean up function that's safe to call multiple times
   const performCleanup = () => {
@@ -90,6 +91,15 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
       logger.info('Realtime disabled: missing required parameters', 'ConnectionManager');
       return;
     }
+    
+    // Skip initialization if we're already connected to the same workspace
+    if (ablyInitialized.current && lastWorkspaceId.current === workspaceId) {
+      logger.info('Already connected to this workspace, skipping initialization', 'ConnectionManager');
+      return;
+    }
+
+    // Update the tracked workspace ID
+    lastWorkspaceId.current = workspaceId;
 
     const authUrl = getAblyAuthUrl(workspaceId);
     const reconnectionManager = getReconnectionManager({
