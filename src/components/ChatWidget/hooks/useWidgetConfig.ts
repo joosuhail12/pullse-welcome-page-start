@@ -50,7 +50,7 @@ export function useWidgetConfig() {
             setContactData(storedUserData);
           }
         }
-        console.log(fetchedConfig);
+        
         // Store the session ID if it exists in the response
         if (fetchedConfig.sessionId) {
           setChatSessionId(fetchedConfig.sessionId);

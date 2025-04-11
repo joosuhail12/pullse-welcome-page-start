@@ -27,7 +27,12 @@ export const subscribeToChannel = (
   try {
     const channel = client.channels.get(channelName);
     
-    channel.subscribe(eventName, callback);
+    // If eventName is '*', subscribe to all events
+    if (eventName === '*') {
+      channel.subscribe(callback);
+    } else {
+      channel.subscribe(eventName, callback);
+    }
     
     // Set up recovery on channel failure
     channel.on('detached', () => {

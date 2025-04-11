@@ -1,278 +1,141 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Conversation } from '../../types';
-import { ChatWidgetConfig, defaultConfig } from '../../config';
-import { useChatMessages } from '../../hooks/useChatMessages';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { ChatViewPresentation } from './ChatViewPresentation';
+import { type Conversation, type Message } from '../../types';
 import { useMessageReactions } from '../../hooks/useMessageReactions';
+import { useMessageActions } from '../../hooks/useMessageActions';
 import { useMessageSearch } from '../../hooks/useMessageSearch';
-import { useInlineForm } from '../../hooks/useInlineForm';
-import { dispatchChatEvent } from '../../utils/events';
-import ChatViewPresentation from './ChatViewPresentation';
-import { MessageReadStatus } from '../../components/MessageReadReceipt';
+import { useRealTime } from '../../hooks/useRealTime';
+import { useAblyChannels } from '../../hooks/useAblyChannels';
+import { ChatWidgetConfig } from '../../config';
 
 interface ChatViewContainerProps {
   conversation: Conversation;
-  onBack: () => void;
-  onUpdateConversation: (updatedConversation: Conversation) => void;
-  config?: ChatWidgetConfig;
+  onBackClick: () => void;
+  onUpdateConversation: (conversation: Conversation) => void;
+  config: ChatWidgetConfig;
   playMessageSound?: () => void;
+  setUserFormData: (formData: Record<string, string>) => void;
   userFormData?: Record<string, string>;
-  setUserFormData?: (data: Record<string, string>) => void;
 }
 
-/**
- * Container component that handles all the state management and hooks
- * for the chat view. This component doesn't render any UI directly,
- * but passes all necessary props to the presentation component.
- */
-const ChatViewContainer = ({
+export const ChatViewContainer: React.FC<ChatViewContainerProps> = ({
   conversation,
-  onBack,
+  onBackClick,
   onUpdateConversation,
-  config = defaultConfig,
+  config,
   playMessageSound,
-  userFormData,
-  setUserFormData
-}: ChatViewContainerProps) => {
-  const [showSearch, setShowSearch] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [ticketProgress, setTicketProgress] = useState(
-    conversation.metadata?.ticketProgress || Math.floor(Math.random() * 100)
-  );
-  const [showInlineForm, setShowInlineForm] = useState(false);
+  setUserFormData,
+  userFormData
+}) => {
+  const [messages, setMessages] = useState<Message[]>(conversation.messages || []);
+  const [isTyping, setIsTyping] = useState(false);
+  const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
 
-  // Use the new inline form hook
-  const {
-    showInlineForm: inlineFormVisible,
-    handleFormComplete: inlineFormComplete
-  } = useInlineForm(
-    conversation,
-    config,
-    userFormData,
-    setUserFormData,
-    onUpdateConversation
-  );
+  // Subscribe to conversation-specific Ably channel using ticketId
+  useAblyChannels(conversation.ticketId);
 
+  // Check if the user has sent any messages in this conversation
   useEffect(() => {
-    setShowInlineForm(inlineFormVisible);
-  }, [inlineFormVisible]);
+    const userMessages = messages.filter(msg => msg.sender === 'user');
+    setHasUserSentMessage(userMessages.length > 0);
+  }, [messages]);
 
-  const {
+  // Update the parent component's copy of the conversation when messages change
+  useEffect(() => {
+    const updatedConversation = {
+      ...conversation,
+      messages: messages,
+      // Update lastMessage if there are messages
+      lastMessage: messages.length > 0 ? messages[messages.length - 1].text : conversation.lastMessage
+    };
+    onUpdateConversation(updatedConversation);
+  }, [messages, conversation, onUpdateConversation]);
+
+  const { 
+    remoteIsTyping, 
+    chatChannelName, 
+    handleTypingTimeout
+  } = useRealTime(
     messages,
-    messageText,
-    setMessageText,
-    isTyping,
+    setMessages,
+    conversation,
     hasUserSentMessage,
-    handleSendMessage,
-    handleUserTyping,
-    handleFileUpload,
-    handleEndChat,
-    remoteIsTyping,
-    readReceipts,
-    loadPreviousMessages
-  } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
+    setIsTyping,
+    config,
+    playMessageSound
+  );
 
-  const {
-    handleMessageReaction
-  } = useMessageReactions(
+  // Combine local and remote typing indicators
+  const isAnyoneTyping = isTyping || remoteIsTyping;
+
+  // Use message actions hook for sending and handling messages
+  const { 
+    sendMessage, 
+    sendTypingStatus, 
+    uploadFile, 
+    endConversation,
+    reactToMessage,
+    messagesContainerRef
+  } = useMessageActions(
     messages,
-    message => setMessages(message),
-    `conversation:${conversation.id}`,
-    conversation.sessionId || '',
+    setMessages,
+    conversation,
+    chatChannelName,
+    config,
+    handleTypingTimeout,
+    playMessageSound
+  );
+
+  // Use message reactions hook
+  const { 
+    handleReaction, 
+    reactionsEnabled 
+  } = useMessageReactions(
+    messages, 
+    setMessages, 
+    chatChannelName, 
+    reactToMessage, 
     config
   );
 
-  const {
-    searchTerm,
-    setSearchTerm,
-    searchMessages,
-    clearSearch,
-    highlightText: originalHighlightText,
-    messageIds,
-    isSearching
-  } = useMessageSearch(messages);
-
-  const setMessages = useCallback((updatedMessages: React.SetStateAction<typeof messages>) => {
-    if (typeof updatedMessages === 'function') {
-      const newMessages = updatedMessages(messages);
-      onUpdateConversation({
-        ...conversation,
-        messages: newMessages
-      });
-    } else {
-      onUpdateConversation({
-        ...conversation,
-        messages: updatedMessages
-      });
-    }
-  }, [messages, conversation, onUpdateConversation]);
-
-  const toggleSearch = useCallback(() => {
-    setShowSearch(prev => !prev);
-    if (showSearch) {
-      clearSearch();
-    }
-  }, [showSearch, clearSearch]);
-
-  const handleLoadMoreMessages = useCallback(async () => {
-    if (!loadPreviousMessages) return;
-
-    setIsLoadingMore(true);
-    try {
-      await loadPreviousMessages();
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [loadPreviousMessages]);
-
-  const handleFormComplete = useCallback((formData: Record<string, string>) => {
-    setShowInlineForm(false);
-
-    if (setUserFormData) {
-      setUserFormData(formData);
-    }
-
-    onUpdateConversation({
-      ...conversation,
-      contactIdentified: true
-    });
-
-    dispatchChatEvent('contact:formCompleted', { formData }, config);
-  }, [setUserFormData, onUpdateConversation, conversation, config]);
-
-  // Handler for toggling message importance
-  const handleToggleMessageImportance = useCallback((messageId: string) => {
-    setMessages(currentMessages => {
-      return currentMessages.map(msg =>
-        msg.id === messageId
-          ? { ...msg, important: !msg.important }
-          : msg
-      );
-    });
-
-    // When a message is marked important, update ticket progress as well
-    setTicketProgress(prevProgress => {
-      // Randomly increment progress between 5-15% when message is marked important
-      const increment = Math.floor(Math.random() * 10) + 5;
-      return Math.min(prevProgress + increment, 100);
-    });
-  }, [setMessages]);
-
-  const agentAvatar = useMemo(() =>
-    conversation.agentInfo?.avatar || config?.brandAssets?.avatarUrl,
-    [conversation.agentInfo?.avatar, config?.brandAssets?.avatarUrl]
-  );
-
-  const userAvatar = undefined;
-  const hasMoreMessages = messages.length >= 20;
-
-  // Styling based on branding config
-  const chatViewStyle = useMemo(() => {
-    return {
-      ...(config?.colors?.primaryColor && {
-        '--chat-header-bg': config.colors.primaryColor,
-        '--chat-header-text': '#ffffff',
-        '--user-bubble-bg': config.colors.primaryColor,
-        '--user-bubble-text': '#ffffff',
-        '--system-bubble-bg': '#F5F3FF',
-        '--system-bubble-text': '#1f2937',
-        '--chat-bg': 'linear-gradient(to bottom, #F5F3FF, #E5DEFF)',
-      } as React.CSSProperties)
-    };
-  }, [config?.colors?.primaryColor]);
-
-  // Create proper highlightText function with the correct signature
-  const highlightText = useCallback((text: string, term: string) => {
-    if (!term) return [{ text, highlighted: false }];
-
-    // Simple highlight function implementation
-    const parts: { text: string; highlighted: boolean }[] = [];
-    const lowerText = text.toLowerCase();
-    const lowerTerm = term.toLowerCase();
-    let lastIndex = 0;
-
-    let index = lowerText.indexOf(lowerTerm);
-    while (index !== -1) {
-      // Add non-matching part
-      if (index > lastIndex) {
-        parts.push({
-          text: text.substring(lastIndex, index),
-          highlighted: false
-        });
-      }
-
-      // Add matching part
-      parts.push({
-        text: text.substring(index, index + term.length),
-        highlighted: true
-      });
-
-      lastIndex = index + term.length;
-      index = lowerText.indexOf(lowerTerm, lastIndex);
-    }
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push({
-        text: text.substring(lastIndex),
-        highlighted: false
-      });
-    }
-
-    return parts;
-  }, []);
-
-  // Convert readReceipts to the format expected by ChatViewPresentation
-  const formattedReadReceipts = useMemo(() => {
-    if (!readReceipts) return {};
-
-    const result: Record<string, { status: MessageReadStatus; timestamp?: Date }> = {};
-    Object.entries(readReceipts).forEach(([id, receipt]) => {
-      result[id] = {
-        status: (receipt?.status as MessageReadStatus) || 'sent',
-        timestamp: receipt?.timestamp
-      };
-    });
-    return result;
-  }, [readReceipts]);
+  // Use message search hook
+  const { 
+    searchTerm, 
+    setSearchTerm, 
+    searchResults, 
+    currentMatchIndex, 
+    totalMatches, 
+    jumpToNextMatch, 
+    jumpToPrevMatch,
+    clearSearch
+  } = useMessageSearch(messages, messagesContainerRef);
 
   return (
     <ChatViewPresentation
-      conversation={conversation}
-      chatViewStyle={chatViewStyle}
       messages={messages}
-      messageText={messageText}
-      setMessageText={setMessageText}
-      isTyping={isTyping}
-      remoteIsTyping={remoteIsTyping}
-      handleSendMessage={handleSendMessage}
-      handleUserTyping={handleUserTyping}
-      handleFileUpload={handleFileUpload}
-      handleEndChat={handleEndChat}
-      readReceipts={formattedReadReceipts}
-      onBack={onBack}
-      showSearch={showSearch}
-      toggleSearch={toggleSearch}
-      searchMessages={searchMessages}
-      clearSearch={clearSearch}
-      searchResultCount={messageIds.length}
-      isSearching={isSearching}
-      showSearchFeature={!!config?.features?.searchMessages}
-      highlightText={highlightText}
-      messageIds={messageIds}
-      searchTerm={searchTerm}
-      agentAvatar={agentAvatar}
-      userAvatar={userAvatar}
-      onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
-      handleLoadMoreMessages={handleLoadMoreMessages}
-      hasMoreMessages={hasMoreMessages}
-      isLoadingMore={isLoadingMore}
-      showInlineForm={showInlineForm}
-      handleFormComplete={handleFormComplete}
+      isTyping={isAnyoneTyping}
+      onSendMessage={sendMessage}
+      onTypingChange={sendTypingStatus}
+      onBackClick={onBackClick}
+      onUploadFile={uploadFile}
+      onEndConversation={endConversation}
+      onReactToMessage={handleReaction}
+      messagesContainerRef={messagesContainerRef}
+      conversation={conversation}
       config={config}
-      onToggleMessageImportance={handleToggleMessageImportance}
-      ticketProgress={ticketProgress}
+      searchTerm={searchTerm}
+      setSearchTerm={setSearchTerm}
+      searchResults={searchResults}
+      currentMatchIndex={currentMatchIndex}
+      totalMatches={totalMatches}
+      jumpToNextMatch={jumpToNextMatch}
+      jumpToPrevMatch={jumpToPrevMatch}
+      clearSearch={clearSearch}
+      reactionsEnabled={reactionsEnabled}
+      hasUserSentMessage={hasUserSentMessage}
+      setUserFormData={setUserFormData}
+      userFormData={userFormData}
     />
   );
 };
-
-export default ChatViewContainer;
