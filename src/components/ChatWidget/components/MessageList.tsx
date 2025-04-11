@@ -146,11 +146,9 @@ const MessageList: React.FC<MessageListProps> = ({
 
     let lastDate: Date | null = null;
     let lastSender: string | null = null;
-    let lastMessageTime: number | null = null;
 
     messages.forEach((message, index) => {
       const messageDate = new Date(message.createdAt);
-      const currentTime = messageDate.getTime();
 
       // Add date separator if it's a different day
       if (!lastDate || !isSameDay(messageDate, lastDate)) {
@@ -162,25 +160,13 @@ const MessageList: React.FC<MessageListProps> = ({
         });
         lastDate = messageDate;
         lastSender = null; // Reset sender after date change
-        lastMessageTime = null;
       }
 
-      // Check if this is a consecutive message from the same sender within 2 minutes
-      const isWithinTimeThreshold = lastMessageTime && (currentTime - lastMessageTime < 2 * 60 * 1000);
-      const isConsecutiveMessage = message.sender === lastSender && 
-                                 message.sender !== 'system' && 
-                                 isWithinTimeThreshold;
+      // Check if this is a consecutive message from the same sender
+      const isConsecutiveMessage = message.sender === lastSender && message.sender !== 'system';
 
-      // Show avatar for the first message of a group, for all system messages, and every 4th message in a row
-      const consecutiveCount = result.filter(item => 
-        item.type === 'message' && 
-        item.message?.sender === message.sender && 
-        item.isConsecutive
-      ).length;
-      
-      const showAvatar = !isConsecutiveMessage || 
-                        message.sender === 'system' || 
-                        (consecutiveCount > 0 && consecutiveCount % 4 === 0);
+      // Always show avatar for the first message of a group and for system messages
+      const showAvatar = !isConsecutiveMessage || message.sender === 'system';
 
       result.push({
         type: 'message',
@@ -190,7 +176,6 @@ const MessageList: React.FC<MessageListProps> = ({
       });
 
       lastSender = message.sender;
-      lastMessageTime = currentTime;
     });
 
     return result;
@@ -218,51 +203,49 @@ const MessageList: React.FC<MessageListProps> = ({
           </div>
         )}
 
-        <div className="space-y-1">
-          {processedMessages.map((item, index) => {
-            if (item.type === 'date') {
-              return (
-                <DateSeparator
-                  key={`date-${index}`}
-                  date={item.date!}
-                />
-              );
-            }
-
-            const message = item.message!;
-            const isLastMessage = index === processedMessages.length - 1;
-            const isHighlighted = searchResults.includes(message.id);
-            const readReceipt = getReadReceipt(message.id);
-
+        {processedMessages.map((item, index) => {
+          if (item.type === 'date') {
             return (
-              <div
-                key={message.id}
-                ref={isLastMessage ? lastMessageRef : undefined}
-                id={`message-${message.id}`}
-                className={item.isConsecutive ? '' : 'pt-1'} // Give a bit more space between message groups
-              >
-                <MessageBubble
-                  message={message}
-                  searchTerm={searchTerm}
-                  isHighlighted={isHighlighted}
-                  userAvatar={userAvatar}
-                  agentAvatar={agentAvatar}
-                  onReply={setMessageText}
-                  onReaction={onMessageReaction}
-                  agentStatus={message.sender === 'agent' ? agentStatus : undefined}
-                  readStatus={readReceipt.status}
-                  readTimestamp={readReceipt.timestamp}
-                  onToggleHighlight={onToggleHighlight ? () => onToggleHighlight(message.id) : undefined}
-                  showAvatar={item.showAvatar}
-                  isConsecutive={item.isConsecutive}
-                />
-              </div>
+              <DateSeparator
+                key={`date-${index}`}
+                date={item.date!}
+              />
             );
-          })}
-        </div>
+          }
+
+          const message = item.message!;
+          const isLastMessage = index === processedMessages.length - 1;
+          const isHighlighted = searchResults.includes(message.id);
+          const readReceipt = getReadReceipt(message.id);
+
+          return (
+            <div
+              key={message.id}
+              ref={isLastMessage ? lastMessageRef : undefined}
+              id={`message-${message.id}`}
+              className={item.isConsecutive ? 'mt-1' : 'mt-4'} // Less margin for consecutive messages
+            >
+              <MessageBubble
+                message={message}
+                searchTerm={searchTerm}
+                isHighlighted={isHighlighted}
+                userAvatar={userAvatar}
+                agentAvatar={agentAvatar}
+                onReply={setMessageText}
+                onReaction={onMessageReaction}
+                agentStatus={message.sender === 'agent' ? agentStatus : undefined}
+                readStatus={readReceipt.status}
+                readTimestamp={readReceipt.timestamp}
+                onToggleHighlight={onToggleHighlight ? () => onToggleHighlight(message.id) : undefined}
+                showAvatar={item.showAvatar}
+                isConsecutive={item.isConsecutive}
+              />
+            </div>
+          );
+        })}
 
         {isTyping && (
-          <div className="flex items-end mb-4 mt-2">
+          <div className="flex items-end mb-4">
             <MessageAvatar
               isUserMessage={false}
               userAvatar={userAvatar}

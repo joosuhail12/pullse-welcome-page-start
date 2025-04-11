@@ -1,16 +1,12 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Message, Conversation, AgentStatus } from '../types';
+import { Message, MessageStatus, ReadReceipt, Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
-import { subscribeToAgentPresence, subscribeToTypingIndicator, subscribeToConversationUpdates } from '../utils/ably';
-import { subscribeToReconnectionEvents } from '../utils/reconnectionManager';
-import { markConversationAsRead } from '../utils/storage';
+import { getChatSessionId } from '../utils/cookies';
+import { simulateAgentTyping } from '../utils/simulateAgentTyping';
+import { markMessageAsRead } from '../utils/messageHandlers';
 
-interface ReadReceipt {
-  status: 'sent' | 'delivered' | 'read';
-  timestamp?: Date;
-}
-
+// Real-time message and status handling for chat
 export function useRealTime(
   messages: Message[],
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
@@ -22,138 +18,137 @@ export function useRealTime(
 ) {
   const [remoteIsTyping, setRemoteIsTyping] = useState(false);
   const [readReceipts, setReadReceipts] = useState<Record<string, ReadReceipt>>({});
-  const [agentStatus, setAgentStatus] = useState<AgentStatus>(conversation.agentInfo?.status || 'offline');
-  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastMessageIdRef = useRef<string | null>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const latestMessageRef = useRef<string | null>(null);
+  const sessionId = getChatSessionId();
+  const isTicketConversation = conversation.id.includes('ticket-');
 
-  // Function to handle when remote is typing
-  const handleRemoteTyping = useCallback(() => {
-    setRemoteIsTyping(true);
+  // Handle agent typing events
+  useEffect(() => {
+    if (!hasUserSentMessage) return;
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+    // Only simulate agent typing for non-ticket conversations in non-realtime mode
+    if (!isTicketConversation && (!config?.realtime || config.realtime === false)) {
+      // Only trigger typing if there are no messages or the last message is from the user
+      const lastMessage = messages[messages.length - 1];
+      const shouldSimulateTyping = !lastMessage || lastMessage.sender === 'user';
+
+      if (shouldSimulateTyping) {
+        simulateAgentTyping(setIsTyping, setMessages, messages, config);
+      }
     }
 
-    typingTimeoutRef.current = setTimeout(() => {
-      setRemoteIsTyping(false);
-    }, 3000); // Hide typing indicator after 3 seconds of no typing updates
-  }, []);
+    // Clean up any typing timeout
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [hasUserSentMessage, messages, setIsTyping, setMessages, config, isTicketConversation]);
 
-  // Function to handle typing timeout
+  // Listen for realtime typing events
+  useEffect(() => {
+    if (!config?.realtime || config.realtime === false) return;
+
+    // Subscribe to typing events here
+    // This would be implemented in an actual real-time system
+
+    return () => {
+      // Unsubscribe from typing events
+    };
+  }, [config, conversation.id]);
+
+  // Listen for realtime message status events
+  useEffect(() => {
+    if (!config?.realtime || config.realtime === false) return;
+
+    // Subscribe to message status events here
+    // This would be implemented in an actual real-time system
+
+    return () => {
+      // Unsubscribe from message status events
+    };
+  }, [config, conversation.id]);
+
+  // Listen for realtime message events
+  useEffect(() => {
+    if (!config?.realtime || config.realtime === false) return;
+
+    // If there are messages and the last message is new, play sound
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage && latestMessageRef.current !== lastMessage.id && lastMessage.sender === 'system') {
+      if (playMessageSound) {
+        playMessageSound();
+      }
+      latestMessageRef.current = lastMessage.id;
+    }
+
+    // Subscribe to message events here
+    // This would be implemented in an actual real-time system
+
+    return () => {
+      // Unsubscribe from message events
+    };
+  }, [messages, config, conversation.id, playMessageSound]);
+
+  // Handle read receipts for user messages in real-time mode
+  useEffect(() => {
+    if (!config?.realtime || config.realtime === false) return;
+
+    // Process only user messages without read receipts
+    const userMessages = messages.filter(msg => 
+      msg.sender === 'user' && (!readReceipts[msg.id] || readReceipts[msg.id].status !== 'read')
+    );
+
+    if (userMessages.length > 0 && isTicketConversation) {
+      // Simulate read receipts after a delay in realtime mode
+      setTimeout(() => {
+        const updatedReceipts = { ...readReceipts };
+        
+        userMessages.forEach(msg => {
+          updatedReceipts[msg.id] = {
+            status: 'delivered',
+            timestamp: new Date()
+          };
+        });
+        
+        setReadReceipts(updatedReceipts);
+        
+        // Then mark as read after another delay
+        setTimeout(() => {
+          const finalReceipts = { ...updatedReceipts };
+          
+          userMessages.forEach(msg => {
+            finalReceipts[msg.id] = {
+              status: 'read',
+              timestamp: new Date()
+            };
+          });
+          
+          setReadReceipts(finalReceipts);
+        }, 1000 + Math.random() * 2000);
+      }, 500 + Math.random() * 1000);
+    }
+  }, [messages, readReceipts, setReadReceipts, config, isTicketConversation]);
+
+  // Handler for resetting typing timeout
   const handleTypingTimeout = useCallback(() => {
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-
+    
+    setRemoteIsTyping(true);
+    
     typingTimeoutRef.current = setTimeout(() => {
       setRemoteIsTyping(false);
     }, 3000);
   }, []);
 
-  // Handle connection status changes
-  useEffect(() => {
-    const unsubscribeReconnection = subscribeToReconnectionEvents((status) => {
-      // When reconnected, fetch the latest conversation state
-      if (status === 'connected' && conversation.id) {
-        // You could implement a fetch here to get the latest conversation state
-      }
-    });
-
-    return () => {
-      unsubscribeReconnection();
-    };
-  }, [conversation.id]);
-
-  // Subscribe to agent presence
-  useEffect(() => {
-    if (!conversation.id || !config?.features?.agentPresence) return;
-
-    const unsubscribe = subscribeToAgentPresence(conversation.id, (status) => {
-      setAgentStatus(status || 'offline');
-
-      // Update the conversation's agent info
-      if (status) {
-        conversation.agentInfo = {
-          ...conversation.agentInfo,
-          status
-        };
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [conversation, config?.features?.agentPresence]);
-
-  // Subscribe to typing indicator
-  useEffect(() => {
-    if (!conversation.id) return;
-
-    const unsubscribe = subscribeToTypingIndicator(conversation.id, () => {
-      handleRemoteTyping();
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, [conversation.id, handleRemoteTyping]);
-
-  // Subscribe to conversation updates
-  useEffect(() => {
-    if (!conversation.id || !hasUserSentMessage) return;
-
-    const unsubscribe = subscribeToConversationUpdates(
-      conversation.id,
-      (message) => {
-        if (message.sender !== 'user') {
-          setMessages(prev => [...prev, message]);
-          if (playMessageSound) {
-            playMessageSound();
-          }
-          lastMessageIdRef.current = message.id;
-        }
-      },
-      (status, messageId) => {
-        if (messageId) {
-          setReadReceipts(prev => ({
-            ...prev,
-            [messageId]: {
-              status,
-              timestamp: status === 'read' ? new Date() : undefined
-            }
-          }));
-        }
-      }
-    );
-
-    return () => {
-      unsubscribe();
-    };
-  }, [conversation.id, hasUserSentMessage, setMessages, playMessageSound]);
-
-  // Find the last user message and update its status based on read receipts
-  useEffect(() => {
-    const userMessages = messages.filter(m => m.sender === 'user');
-    if (userMessages.length > 0) {
-      const lastUserMessage = userMessages[userMessages.length - 1];
-      const receipt = readReceipts[lastUserMessage.id];
-      
-      if (receipt) {
-        setMessages(prev => 
-          prev.map(m => 
-            m.id === lastUserMessage.id 
-              ? { ...m, status: receipt.status } 
-              : m
-          )
-        );
-      }
-    }
-  }, [messages, readReceipts, setMessages]);
-
   return {
     remoteIsTyping,
     readReceipts,
     handleTypingTimeout,
-    agentStatus
+    markMessageAsRead: (messageId: string, status: MessageStatus) => 
+      markMessageAsRead(messageId, status, setReadReceipts)
   };
 }

@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { Message, MessageReadReceipt, MessageReadStatus } from '../types';
 import { publishToChannel } from './ably';
@@ -5,7 +6,6 @@ import { dispatchChatEvent } from './events';
 import { ChatWidgetConfig } from '../config';
 import { toast } from '@/components/ui/use-toast';
 import DOMPurify from 'dompurify';
-import { crypto } from 'crypto';
 
 /**
  * Create a user message
@@ -37,16 +37,23 @@ export function createUserMessage(
  * @param type Message type (text, file, etc.)
  * @param metadata Optional metadata for the message
  */
-export const createSystemMessage = (text: string): Message => {
+export function createSystemMessage(
+  text: string,
+  type: 'text' | 'file' | 'card' | 'quick_reply' = 'text',
+  metadata?: Record<string, any>
+): Message {
+  const now = new Date();
   return {
-    id: crypto.randomUUID(),
-    text,
-    sender: 'system', 
-    type: 'text',
-    createdAt: new Date(),
-    status: 'delivered'
+    id: `msg-${now.getTime()}-system-${uuidv4().slice(0, 8)}`,
+    text: DOMPurify.sanitize(text),
+    sender: 'system',
+    createdAt: now,
+    timestamp: now,
+    type,
+    status: 'sent',
+    ...(metadata && { metadata })
   };
-};
+}
 
 /**
  * Send typing indicator to a channel
