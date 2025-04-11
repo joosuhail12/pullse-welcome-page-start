@@ -148,10 +148,10 @@ const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
       </div>
 
       {/* Enhanced Ticket Progress Bar */}
-      <TicketProgressBar
+      {/* <TicketProgressBar
         status={getTicketStatus()}
         className="bg-gradient-to-r from-black/10 to-black/20"
-      />
+      /> */}
     </div>
   );
 };

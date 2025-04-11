@@ -55,6 +55,22 @@ export function createSystemMessage(
   };
 }
 
+/*Create agent message */
+export function createAgentMessage(
+  text: string,
+  type: 'text' | 'file' | 'card' | 'quick_reply' = 'text',
+  metadata?: Record<string, any>
+): Message {
+  const now = new Date();
+  return {
+    id: `msg-${now.getTime()}-agent-${uuidv4().slice(0, 8)}`,
+    text: DOMPurify.sanitize(text),
+    sender: 'agent',
+    createdAt: now,
+    timestamp: now,
+  };
+}
+
 /**
  * Send typing indicator to a channel
  * @param channelName Channel name
@@ -94,10 +110,10 @@ export function processSystemMessage(
       duration: 4000
     });
   }
-  
+
   // Dispatch event for the message
   dispatchChatEvent('chat:messageReceived', { message }, config);
-  
+
   // Publish to real-time channel if provided
   if (channelName && sessionId && config?.realtime) {
     publishToChannel(channelName, 'message', {

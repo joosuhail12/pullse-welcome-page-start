@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { Message } from '../types';
-import { createUserMessage, createSystemMessage, sendTypingIndicator } from '../utils/messageHandlers';
+import { Message, Ticket } from '../types';
+import { createUserMessage, createSystemMessage, sendTypingIndicator, createAgentMessage } from '../utils/messageHandlers';
 import { publishToChannel } from '../utils/ably';
 import { dispatchChatEvent, subscribeToChatEvent } from '../utils/events';
 import { ChatEventPayload, ChatWidgetConfig } from '../config';
@@ -10,6 +10,7 @@ export function useMessageActions(
   messages: Message[],
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
   chatChannelName: string,
+  handleSelectTicket: (ticket: Ticket) => void,
   sessionId: string,
   config?: ChatWidgetConfig,
   setHasUserSentMessage?: React.Dispatch<React.SetStateAction<boolean>>,
@@ -18,26 +19,52 @@ export function useMessageActions(
   const [messageText, setMessageText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
-
   // Move the event subscription into a useEffect to prevent infinite loop
-  useEffect(() => {
-    console.log('Setting up chat:new_ticket event listener');
+  if (chatChannelName.includes('contactevent')) {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      console.log('Setting up chat:new_ticket event listener');
 
-    // Create subscription to chat:new_ticket event
-    const unsubscribe = subscribeToChatEvent('chat:new_ticket', (event: ChatEventPayload) => {
-      console.log('New ticket event received with data:', event);
+      // Create subscription to chat:new_ticket event
+      const unsubscribe = subscribeToChatEvent('chat:new_ticket', (event: ChatEventPayload) => {
+        console.log('New ticket event received with data:', event);
 
-      // Try a different approach - directly set the view state to messages
-      console.log('Before navigation attempt - current view state may be overriding');
+        const ticketId = event.data.message;
+        handleSelectTicket({
+          id: ticketId,
+          title: '',
+          createdAt: '',
+          updatedAt: ''
+        });
+        console.log('Before navigation attempt - current view state may be overriding');
 
-    });
+      });
 
-    // Return cleanup function to remove the event listener when component unmounts
-    return () => {
-      console.log('Cleaning up chat:new_ticket event listener');
-      unsubscribe();
-    };
-  }, []); // Only re-subscribe if these functions change
+      // Return cleanup function to remove the event listener when component unmounts
+      return () => {
+        console.log('Cleaning up chat:new_ticket event listener');
+        unsubscribe();
+      };
+    }, []); // Only re-subscribe if these functions change
+  } else {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useEffect(() => {
+      console.log('Setting up chat:ticket_message event listener');
+
+      // Create subscription to chat:new_ticket event
+      const unsubscribe = subscribeToChatEvent('chat:ticket_message', (event: ChatEventPayload) => {
+        console.log('New ticket message received with data:', event);
+        const userMessage = createAgentMessage(event.data.message, 'text', {});
+        setMessages(prevMessages => [...prevMessages, userMessage]);
+      });
+
+      // Return cleanup function to remove the event listener when component unmounts
+      return () => {
+        console.log('Cleaning up chat:ticket_message event listener');
+        unsubscribe();
+      };
+    }, []); // Only re-subscribe if these functions change
+  }
 
 
   // Handle sending messages
@@ -71,31 +98,34 @@ export function useMessageActions(
     const isNewConversation = chatChannelName.includes('contactevent');
 
     // Publish message to the appropriate channel
-
-    publishToChannel(chatChannelName, 'new_ticket', {
-      id: userMessage.id,
-      text: userMessage.text,
-      sender: userMessage.sender,
-      sessionId: sessionId, // Include sessionId for contact events
-      timestamp: userMessage.createdAt,
-      type: userMessage.type,
-      ...(metadata && { metadata })
-    });
+    if (isNewConversation) {
+      publishToChannel(chatChannelName, 'new_ticket', {
+        id: userMessage.id,
+        text: userMessage.text,
+        sender: userMessage.sender,
+      });
+    } else {
+      publishToChannel(chatChannelName, 'message', {
+        text: userMessage.text,
+        sessionId,
+        ticketId: chatChannelName.split("ticket-")[1]
+      });
+    }
 
     // Dispatch event for the message
     dispatchChatEvent('chat:messageSent', { message: userMessage }, config);
 
     // If this channel is for contact events, show a response message
-    if (isNewConversation) {
-      setTimeout(() => {
-        const autoResponseMessage = createSystemMessage(
-          'Thanks for your message! Our team will get back to you shortly.',
-          'text'
-        );
+    // if (isNewConversation) {
+    //   setTimeout(() => {
+    //     const autoResponseMessage = createSystemMessage(
+    //       'Thanks for your message! Our team will get back to you shortly.',
+    //       'text'
+    //     );
 
-        setMessages(prevMessages => [...prevMessages, autoResponseMessage]);
-      }, 1000);
-    }
+    //     setMessages(prevMessages => [...prevMessages, autoResponseMessage]);
+    //   }, 1000);
+    // }
   }, [messageText, setMessages, chatChannelName, sessionId, config, setHasUserSentMessage, setIsTyping]);
 
   // Handle user typing

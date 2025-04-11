@@ -65,12 +65,12 @@ export function useChatState() {
           },
           body: JSON.stringify(formData)
         });
-        
+
         const data = await response.json();
         if (data.status === "success") {
           setUserFormData(formData);
           setUserFormDataInLocalStorage(formData);
-          
+
           // If there's contact data in the response, update it
           if (data.data) {
             // Update any active conversation to mark it as identified
@@ -117,7 +117,7 @@ export function useChatState() {
     try {
       // Fetch conversation messages for this ticket
       const response = await fetchConversationByTicketId(ticket.id);
-      
+
       if (response && response.status === "success" && response.data) {
         // Convert API response to Message objects
         const messages = response.data.map((msg: TicketMessage) => {
@@ -174,6 +174,7 @@ export function useChatState() {
     } catch (error) {
       console.error('Error fetching ticket conversation:', error);
       toast.error('Failed to load ticket conversation');
+      setViewState('messages');
     } finally {
       setIsLoadingTicket(false);
     }

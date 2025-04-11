@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { Message, Conversation } from '../types';
+import { Message, Conversation, Ticket } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { getChatSessionId } from '../utils/storage';
 import { useMessageActions } from './useMessageActions';
@@ -12,19 +12,20 @@ export function useChatMessages(
   conversation: Conversation,
   config?: ChatWidgetConfig,
   onUpdateConversation?: (updatedConversation: Conversation) => void,
-  playMessageSound?: () => void
+  playMessageSound?: () => void,
+  handleSelectTicket?: (ticket: Ticket) => void
 ) {
   // Initialize with conversation messages or a welcome message from config
   const getInitialMessages = (): Message[] => {
     if (conversation.messages?.length) {
       return conversation.messages;
     }
-    
+
     // Use welcomeMessage from config if available, otherwise use default
-    const welcomeMessage = config?.labels?.welcomeMessage || 
-                          config?.welcomeMessage || 
-                          'Hello! How can I help you today?';
-    
+    const welcomeMessage = config?.labels?.welcomeMessage ||
+      config?.welcomeMessage ||
+      'Hello! How can I help you today?';
+
     return [createSystemMessage(welcomeMessage)];
   };
 
@@ -36,15 +37,14 @@ export function useChatMessages(
 
   // Get session ID
   const sessionId = getChatSessionId();
-  
   // Determine if this is a new conversation (no ticket ID)
   const isNewConversation = !conversation.id.includes('ticket-');
-  
+
   // Create channel name based on conversation
   // For new conversations, use contactevent channel for the session
   // For existing conversations, use the conversation ID
-  const chatChannelName = isNewConversation 
-    ? `widget:contactevent:${sessionId}` 
+  const chatChannelName = isNewConversation
+    ? `widget:contactevent:${sessionId}`
     : `widget:conversation:${conversation.id}`;
 
   // Mark the conversation as read when opened
@@ -82,6 +82,7 @@ export function useChatMessages(
     messages,
     setMessages,
     chatChannelName,
+    handleSelectTicket,
     sessionId,
     config,
     setHasUserSentMessage,

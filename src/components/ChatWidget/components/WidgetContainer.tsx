@@ -70,6 +70,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
   // Memoize view components to prevent unnecessary re-renders
   const currentView = useMemo(() => {
     if (viewState === 'chat') {
+
       return (
         <div className="flex flex-col h-full">
           <ChatView
@@ -77,6 +78,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
             onBack={handleBackToMessages}
             onUpdateConversation={handleUpdateConversation}
             config={config}
+            handleSelectTicket={handleSelectTicket}
             playMessageSound={playMessageSound}
             userFormData={userFormData}
             setUserFormData={setUserFormData}
@@ -96,9 +98,9 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
             />
           )}
           {viewState === 'messages' && (
-            <MessagesView 
-              onSelectConversation={handleSelectConversation} 
-              onSelectTicket={handleSelectTicket || (() => {})}
+            <MessagesView
+              onSelectConversation={handleSelectConversation}
+              onSelectTicket={handleSelectTicket || (() => { })}
               onStartChat={() => handleStartChat()}
             />
           )}
@@ -108,19 +110,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
       </div>
     );
   }, [
-    viewState,
-    activeConversation,
-    handleBackToMessages,
-    handleUpdateConversation,
-    config,
-    playMessageSound,
-    userFormData,
-    setUserFormData,
-    handleStartChat,
-    handleSelectConversation,
-    handleSelectTicket,
-    handleChangeView,
-    connectionStatus
+    viewState
   ]);
 
   // Memoize the branding bar to prevent unnecessary re-renders

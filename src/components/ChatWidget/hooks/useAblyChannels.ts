@@ -4,6 +4,7 @@ import { subscribeToChannel, unsubscribeFromChannel } from '../utils/ably/messag
 import { getAblyClient } from '../utils/ably/config';
 import { getChatSessionId } from '../utils/storage';
 import Ably from 'ably';
+import { dispatchChatEvent } from '../utils/events';
 
 interface AblyChannelConfig {
   sessionChannels: boolean;
@@ -94,9 +95,11 @@ export function useAblyChannels(config: AblyChannelConfig) {
         try {
           channels.current.contactEvent = subscribeToChannel(
             contactChannel,
-            'new_ticket',
+            'new_ticket_reply',
             (message) => {
               console.log('Received contact event message:', message);
+              // Send a event for other components to handle
+              dispatchChatEvent('chat:new_ticket', { message: message.data["ticketId"] });
             }
           );
           if (channels.current.contactEvent) {
@@ -117,9 +120,11 @@ export function useAblyChannels(config: AblyChannelConfig) {
       try {
         channels.current.conversation = subscribeToChannel(
           conversationChannel,
-          'message',
+          'message_reply',
           (message) => {
             console.log('Received conversation message:', message);
+
+            dispatchChatEvent('chat:ticket_message', { message: message.data.message });
           }
         );
         if (channels.current.conversation) {

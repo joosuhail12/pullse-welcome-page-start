@@ -292,14 +292,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
 
         {!isConsecutive && <MessageStatus timestamp={message.createdAt} />}
 
-        {isUserMessage && !isConsecutive && (
+        {/* {isUserMessage && !isConsecutive && (
           <div className="absolute -bottom-4 right-1">
             <MessageReadReceipt
               status={readStatus}
               timestamp={readTimestamp}
             />
           </div>
-        )}
+        )} */}
 
         {renderReactionButtons()}
       </div>

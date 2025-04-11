@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Conversation } from '../types';
+import { Conversation, Ticket } from '../types';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
@@ -19,6 +19,7 @@ interface ChatViewProps {
   onUpdateConversation: (updatedConversation: Conversation) => void;
   config?: ChatWidgetConfig;
   playMessageSound?: () => void;
+  handleSelectTicket?: (ticket: Ticket) => void;
   userFormData?: Record<string, string>;
   setUserFormData?: (data: Record<string, string>) => void;
   connectionStatus?: ConnectionStatus;
@@ -30,6 +31,7 @@ const ChatView = React.memo(({
   onUpdateConversation,
   config = defaultConfig,
   playMessageSound,
+  handleSelectTicket,
   userFormData,
   setUserFormData,
   connectionStatus
@@ -60,8 +62,8 @@ const ChatView = React.memo(({
     handleEndChat,
     remoteIsTyping,
     readReceipts,
-    loadPreviousMessages
-  } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound);
+    loadPreviousMessages,
+  } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound, handleSelectTicket);
 
   const {
     handleMessageReaction
