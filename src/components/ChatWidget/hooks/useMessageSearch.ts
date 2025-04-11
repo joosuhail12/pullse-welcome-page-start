@@ -1,97 +1,139 @@
 
-import { useState, useCallback } from 'react';
-import { Message, MessageSearchResult } from '../types';
+import { useState, useCallback, useMemo } from 'react';
+import { Message } from '../types';
+
+export interface MessageSearchResult {
+  id: string;
+  index: number;
+  text: string;
+}
+
+interface HighlightedPart {
+  text: string;
+  isHighlighted: boolean;
+}
 
 export function useMessageSearch(messages: Message[]) {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [searchResults, setSearchResults] = useState<MessageSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [currentResult, setCurrentResult] = useState<number>(-1);
+  const [currentResultIndex, setCurrentResultIndex] = useState<number>(-1);
 
+  // Memoize message IDs from search results for highlighting
+  const messageIds = useMemo(() => {
+    return searchResults.map(result => result.id);
+  }, [searchResults]);
+
+  // Function to highlight search term in text
+  const highlightText = useCallback((text: string, term: string): HighlightedPart[] => {
+    if (!term || !text) {
+      return [{ text, isHighlighted: false }];
+    }
+
+    try {
+      const regex = new RegExp(`(${term})`, 'gi');
+      const parts = text.split(regex);
+
+      return parts.map((part, i) => ({
+        text: part,
+        isHighlighted: part.toLowerCase() === term.toLowerCase()
+      }));
+    } catch (error) {
+      console.error('Search regex error:', error);
+      return [{ text, isHighlighted: false }];
+    }
+  }, []);
+
+  // Function to search messages
   const searchMessages = useCallback((term: string) => {
+    setSearchTerm(term);
+    setIsSearching(true);
+
     if (!term.trim()) {
       setSearchResults([]);
-      setCurrentResult(-1);
+      setCurrentResultIndex(-1);
+      setIsSearching(false);
       return;
     }
 
-    setIsSearching(true);
-    
-    // Simple search implementation - can be expanded with more sophisticated search
-    const results: MessageSearchResult[] = [];
-    
-    messages.forEach(message => {
-      if (message.text && message.text.toLowerCase().includes(term.toLowerCase())) {
-        results.push({
-          messageId: message.id,
-          matchText: message.text,
-          timestamp: message.timestamp
-        });
-      }
-    });
-    
-    setSearchResults(results);
-    setCurrentResult(results.length > 0 ? 0 : -1);
-    setIsSearching(false);
+    try {
+      const results: MessageSearchResult[] = [];
+
+      messages.forEach((message, index) => {
+        // Skip non-text messages
+        if (message.type !== 'text') return;
+
+        const messageText = message.text.toLowerCase();
+        const searchTermLower = term.toLowerCase();
+
+        if (messageText.includes(searchTermLower)) {
+          results.push({
+            id: message.id,
+            index,
+            text: message.text
+          });
+        }
+      });
+
+      setSearchResults(results);
+      setCurrentResultIndex(results.length > 0 ? 0 : -1);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults([]);
+      setCurrentResultIndex(-1);
+    } finally {
+      setIsSearching(false);
+    }
   }, [messages]);
 
+  // Function to go to the next search result
+  const nextSearchResult = useCallback(() => {
+    if (searchResults.length === 0) return;
+
+    setCurrentResultIndex(prevIndex => {
+      const nextIndex = prevIndex + 1 >= searchResults.length ? 0 : prevIndex + 1;
+      return nextIndex;
+    });
+  }, [searchResults.length]);
+
+  // Function to go to the previous search result
+  const prevSearchResult = useCallback(() => {
+    if (searchResults.length === 0) return;
+
+    setCurrentResultIndex(prevIndex => {
+      const prevIdx = prevIndex - 1 < 0 ? searchResults.length - 1 : prevIndex - 1;
+      return prevIdx;
+    });
+  }, [searchResults.length]);
+
+  // Function to clear search
   const clearSearch = useCallback(() => {
     setSearchTerm('');
     setSearchResults([]);
-    setCurrentResult(-1);
+    setCurrentResultIndex(-1);
+    setIsSearching(false);
   }, []);
 
-  const scrollToNextResult = useCallback(() => {
-    if (searchResults.length === 0) return;
-    
-    const nextIdx = (currentResult + 1) % searchResults.length;
-    setCurrentResult(nextIdx);
-    
-    // Scroll to the message element
-    const messageElement = document.getElementById(searchResults[nextIdx].messageId);
-    if (messageElement) {
-      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Get the current result
+  const currentResult = useMemo(() => {
+    if (currentResultIndex >= 0 && searchResults.length > 0) {
+      return searchResults[currentResultIndex];
     }
-  }, [searchResults, currentResult]);
-
-  const scrollToPrevResult = useCallback(() => {
-    if (searchResults.length === 0) return;
-    
-    const prevIdx = (currentResult - 1 + searchResults.length) % searchResults.length;
-    setCurrentResult(prevIdx);
-    
-    // Scroll to the message element
-    const messageElement = document.getElementById(searchResults[prevIdx].messageId);
-    if (messageElement) {
-      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [searchResults, currentResult]);
-
-  // Helper function to highlight text based on search term
-  // Returns an array of parts with highlighted status instead of JSX
-  const highlightText = useCallback((text: string, term: string): { text: string; highlighted: boolean }[] => {
-    if (!term.trim() || !text) return [{ text, highlighted: false }];
-    
-    const regex = new RegExp(`(${term})`, 'gi');
-    const parts = text.split(regex);
-    
-    return parts.map((part) => ({
-      text: part,
-      highlighted: regex.test(part)
-    }));
-  }, []);
+    return null;
+  }, [currentResultIndex, searchResults]);
 
   return {
     searchTerm,
     setSearchTerm,
-    searchResults,
     searchMessages,
     clearSearch,
-    isSearching,
+    searchResults,
+    messageIds,
     currentResult,
-    scrollToNextResult,
-    scrollToPrevResult,
+    nextSearchResult,
+    prevSearchResult,
     highlightText,
-    messageIds: searchResults.map(r => r.messageId)
+    isSearching,
+    resultCount: searchResults.length
   };
 }

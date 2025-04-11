@@ -1,3 +1,4 @@
+
 export interface ChatEventPayload {
   type: ChatEventType;
   timestamp: Date;
@@ -62,6 +63,7 @@ export interface Features {
   attachments?: boolean;
   qrSupport?: boolean;
   cardMessages?: boolean;
+  readReceipts?: boolean;  // Added read receipts feature
 }
 
 // Types for form fields
@@ -109,6 +111,7 @@ export interface ChatWidgetConfig {
   realtime?: boolean; // Add realtime flag for backward compatibility
 }
 
+// Define the event types the chat widget can dispatch
 export type ChatEventType =
   | 'chat:loaded'
   | 'chat:opened'
@@ -180,7 +183,8 @@ export const defaultConfig: ChatWidgetConfig = {
     richContent: true,
     attachments: true,
     qrSupport: true,
-    cardMessages: true
+    cardMessages: true,
+    readReceipts: true  // Default to enabled
   },
   officeHours: {
     enabled: false,

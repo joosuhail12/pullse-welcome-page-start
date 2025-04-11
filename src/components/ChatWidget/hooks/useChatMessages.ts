@@ -7,6 +7,7 @@ import { useMessageActions } from './useMessageActions';
 import { useRealTime } from './useRealTime';
 import { createSystemMessage } from '../utils/messageHandlers';
 import { markConversationAsRead } from '../utils/storage';
+import { publishToChannel } from '../utils/ably/messaging';
 
 export function useChatMessages(
   conversation: Conversation,
@@ -14,12 +15,17 @@ export function useChatMessages(
   onUpdateConversation?: (updatedConversation: Conversation) => void,
   playMessageSound?: () => void
 ) {
-  // Initialize with conversation messages or a welcome message
-  const [messages, setMessages] = useState<Message[]>(
-    conversation.messages || [
-      createSystemMessage('Hello! How can I help you today?')
-    ]
-  );
+  // Initialize with conversation messages or a welcome message from config
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (conversation.messages && conversation.messages.length > 0) {
+      return conversation.messages;
+    } else {
+      // Use welcome message from config or fallback
+      const welcomeMessage = config?.welcomeMessage || 'Hello! How can I help you today?';
+      return [createSystemMessage(welcomeMessage)];
+    }
+  });
+  
   const [isTyping, setIsTyping] = useState(false);
   const [hasUserSentMessage, setHasUserSentMessage] = useState(false);
   const [page, setPage] = useState(1);
@@ -27,7 +33,12 @@ export function useChatMessages(
   // Get session ID
   const sessionId = getChatSessionId();
   // Create channel name based on conversation
-  const chatChannelName = `conversation:${conversation.id}`;
+  const chatChannelName = conversation.ticketId ? 
+    `widget:conversation:${conversation.ticketId}` : 
+    '';
+
+  // Flag to determine if this is a new conversation without a ticket
+  const isNewConversation = !conversation.ticketId;
 
   // Mark the conversation as read when opened
   useEffect(() => {
@@ -52,11 +63,31 @@ export function useChatMessages(
     playMessageSound
   );
 
+  // Wrap the original handleSendMessage to handle new conversation messages
+  const sendMessageToContactEventChannel = useCallback((message: Message) => {
+    if (isNewConversation && sessionId) {
+      // For new conversations, also send the message to contactevent channel
+      const contactEventChannel = `widget:contactevent:${sessionId}`;
+      
+      publishToChannel(contactEventChannel, 'message', {
+        id: message.id,
+        text: message.text,
+        sender: message.sender,
+        timestamp: message.createdAt,
+        type: message.type,
+        status: message.status,
+        conversationId: conversation.id
+      });
+      
+      console.log(`Message sent to contact event channel ${contactEventChannel}:`, message.text);
+    }
+  }, [isNewConversation, sessionId, conversation.id]);
+
   // Use the message actions hook
   const {
     messageText,
     setMessageText,
-    handleSendMessage,
+    handleSendMessage: originalHandleSendMessage,
     handleUserTyping: baseHandleUserTyping,
     handleFileUpload,
     handleEndChat
@@ -69,6 +100,18 @@ export function useChatMessages(
     setHasUserSentMessage,
     setIsTyping
   );
+
+  // Wrap the original handleSendMessage
+  const handleSendMessage = useCallback(() => {
+    const result = originalHandleSendMessage();
+    
+    if (result && result.message) {
+      // Send to contact event channel for new conversations
+      sendMessageToContactEventChannel(result.message);
+    }
+    
+    return result;
+  }, [originalHandleSendMessage, sendMessageToContactEventChannel]);
 
   // Update conversation in parent component when messages change
   useEffect(() => {

@@ -1,60 +1,66 @@
 
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { Message } from '../types';
-import { publishToChannel } from '../utils/ably';
+import { publishToChannel } from '../utils/ably/messaging';
 import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig } from '../config';
+
+// Possible reaction types
+export type ReactionType = 'like' | 'dislike' | 'heart' | 'laugh' | 'confused' | 'none';
 
 export function useMessageReactions(
   messages: Message[],
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
-  chatChannelName: string,
+  channelName: string,
   sessionId: string,
   config?: ChatWidgetConfig
 ) {
-  const [reactionsMap, setReactionsMap] = useState<Record<string, 'thumbsUp' | 'thumbsDown'>>({});
+  /**
+   * Handle message reaction
+   * @param messageId The ID of the message to react to
+   * @param reaction The reaction type
+   */
+  const handleMessageReaction = useCallback(
+    (messageId: string, reaction: ReactionType) => {
+      // Find the message to update
+      const messageIndex = messages.findIndex((msg) => msg.id === messageId);
+      if (messageIndex === -1) return;
 
-  const handleMessageReaction = useCallback((messageId: string, reaction: 'thumbsUp' | 'thumbsDown') => {
-    // Update local state with the reaction
-    setMessages(prevMessages => 
-      prevMessages.map(message => 
-        message.id === messageId 
-          ? { ...message, reaction: message.reaction === reaction ? null : reaction } 
-          : message
-      )
-    );
+      try {
+        // Update the message in state
+        const updatedMessages = [...messages];
+        updatedMessages[messageIndex] = {
+          ...updatedMessages[messageIndex],
+          reaction
+        };
 
-    // Track reaction in the map
-    setReactionsMap(prev => {
-      const newMap = { ...prev };
-      if (prev[messageId] === reaction) {
-        delete newMap[messageId]; // Toggle off if same reaction
-      } else {
-        newMap[messageId] = reaction;
+        // Update messages state
+        setMessages(updatedMessages);
+
+        // Publish reaction to channel if realtime is enabled
+        if (channelName && config?.realtime) {
+          publishToChannel(channelName, 'reaction', {
+            messageId,
+            userId: sessionId,
+            reaction,
+            timestamp: new Date()
+          });
+        }
+
+        // Dispatch event
+        dispatchChatEvent('message:reaction', {
+          messageId,
+          reaction,
+          timestamp: new Date()
+        });
+      } catch (error) {
+        console.error('Error handling message reaction:', error);
       }
-      return newMap;
-    });
-
-    // If realtime is enabled, publish reaction to the channel
-    if (config?.realtime?.enabled) {
-      publishToChannel(chatChannelName, 'reaction', {
-        messageId,
-        reaction,
-        userId: sessionId,
-        timestamp: new Date()
-      });
-    }
-
-    // Dispatch reaction event
-    dispatchChatEvent('message:reacted', { 
-      messageId, 
-      reaction,
-      timestamp: new Date() 
-    }, config);
-  }, [messages, setMessages, chatChannelName, sessionId, config]);
+    },
+    [messages, setMessages, channelName, sessionId, config?.realtime]
+  );
 
   return {
-    reactionsMap,
     handleMessageReaction
   };
 }

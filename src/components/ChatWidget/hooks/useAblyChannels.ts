@@ -8,6 +8,7 @@ import Ably from 'ably';
 interface AblyChannelConfig {
   sessionChannels: boolean;
   conversationChannel?: string;
+  isNewConversation?: boolean;
 }
 
 interface AblyChannels {
@@ -63,10 +64,11 @@ export function useAblyChannels(config: AblyChannelConfig) {
     }
     
     // Subscribe to conversation channel if provided, with widget: prefix
-    if (config.conversationChannel) {
-      console.log(`Subscribing to conversation channel: widget:conversation:${config.conversationChannel}`);
+    // And only if this is not a new conversation (has ticket ID)
+    if (config.conversationChannel && !config.isNewConversation) {
+      console.log(`Subscribing to conversation channel: ${config.conversationChannel}`);
       channels.current.conversation = subscribeToChannel(
-        `widget:conversation:${config.conversationChannel}`,
+        config.conversationChannel,
         'message',
         (message) => {
           console.log('Received conversation message:', message);
@@ -125,7 +127,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
       client.connection.off(handleConnectionStateChange);
       unsubscribeAllChannels();
     };
-  }, [config.sessionChannels, config.conversationChannel, sessionId]);
+  }, [config.sessionChannels, config.conversationChannel, config.isNewConversation, sessionId]);
   
   return { isConnected, channels: channels.current };
 }

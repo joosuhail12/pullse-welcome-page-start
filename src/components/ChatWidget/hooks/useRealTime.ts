@@ -7,7 +7,6 @@ import { getChatSessionId } from '../utils/cookies';
 import { useRealtimeSubscriptions } from './useRealtimeSubscriptions';
 import { useTypingIndicator } from './useTypingIndicator';
 import { simulateAgentTyping } from '../utils/simulateAgentTyping';
-import { getReconnectionManager, ConnectionStatus } from '../utils/reconnectionManager';
 
 export function useRealTime(
   messages: Message[],
@@ -46,12 +45,12 @@ export function useRealTime(
   const { handleTypingTimeout, clearTypingTimeout } = useTypingIndicator(
     chatChannelName, 
     sessionId, 
-    !!config?.realtime?.enabled
+    !!config?.realtime
   );
 
   // Memoize the function to send read receipts - prevents unnecessary re-renders
   const sendReadReceipts = useCallback(() => {
-    if (!config?.realtime?.enabled || messages.length === 0) return;
+    if (!config?.realtime || messages.length === 0) return;
     
     // Use Set to track already processed message IDs
     const processedIds = new Set<string>();
@@ -71,30 +70,17 @@ export function useRealTime(
         });
       }
     });
-  }, [chatChannelName, config?.realtime?.enabled, messages, sessionId]);
+  }, [chatChannelName, config?.realtime, messages, sessionId]);
 
   // Connection status monitoring effect
   useEffect(() => {
     // Skip if realtime is disabled
-    if (!config?.realtime?.enabled) return;
-    
-    // Get the reconnection manager
-    const reconnectionManager = getReconnectionManager();
-    
-    // Listen for connection status changes
-    const unsubscribe = reconnectionManager.onStatusChange((status) => {
-      // Update UI based on connection status
-      if (status === ConnectionStatus.CONNECTING) {
-        setReconnectionInProgress(true);
-      } else {
-        setReconnectionInProgress(false);
-      }
-    });
+    if (!config?.realtime) return;
     
     return () => {
-      unsubscribe();
+      // No cleanup needed
     };
-  }, [config?.realtime?.enabled]);
+  }, [config?.realtime]);
 
   // Track page visibility to detect when user returns to the page
   useEffect(() => {
@@ -121,7 +107,7 @@ export function useRealTime(
   // Effect for connection fallback mode
   useEffect(() => {
     // Skip if realtime is disabled
-    if (!config?.realtime?.enabled) return;
+    if (!config?.realtime) return;
     
     // Check if we're in fallback mode or have a poor connection
     if (isInFallbackMode() || connectionState === 'fallback') {
@@ -131,7 +117,7 @@ export function useRealTime(
       // such as message delivery warnings or connection status indicators
     }
     
-  }, [config?.realtime?.enabled, connectionState]);
+  }, [config?.realtime, connectionState]);
 
   // Effect for cleanup and initialization
   useEffect(() => {
@@ -162,7 +148,7 @@ export function useRealTime(
 
   // For non-realtime mode, simulate agent typing - with proper cleanup
   useEffect(() => {
-    if (!config?.realtime?.enabled && hasUserSentMessage) {
+    if (!config?.realtime && hasUserSentMessage) {
       // Clear any existing timers first
       if (typingTimerRef.current) {
         clearTimeout(typingTimerRef.current);
@@ -202,7 +188,7 @@ export function useRealTime(
     
     // No additional cleanup needed
     return undefined;
-  }, [config?.realtime?.enabled, hasUserSentMessage, playMessageSound, setIsTyping, setMessages]);
+  }, [config?.realtime, hasUserSentMessage, playMessageSound, setIsTyping, setMessages]);
 
   return {
     remoteIsTyping,
