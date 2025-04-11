@@ -3,8 +3,7 @@ import { useState, useEffect } from 'react';
 import { fetchChatWidgetConfig } from '../services/api';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import { logger } from '@/lib/logger';
-import { getWorkspaceIdAndApiKey, getUserFormDataFromLocalStorage, setUserFormDataInLocalStorage } from '../utils/storage';
-import { setChatSessionId } from '../utils/storage';
+import { getWorkspaceIdAndApiKey, getUserFormDataFromLocalStorage, setUserFormDataInLocalStorage, setChatSessionId } from '../utils/storage';
 
 export function useWidgetConfig() {
   const [config, setConfig] = useState<ChatWidgetConfig>(defaultConfig);
@@ -50,9 +49,10 @@ export function useWidgetConfig() {
             setContactData(storedUserData);
           }
         }
-        console.log(fetchedConfig);
+        
         // Store the session ID if it exists in the response
         if (fetchedConfig.sessionId) {
+          logger.info(`Setting chat session ID: ${fetchedConfig.sessionId}`, 'useWidgetConfig');
           setChatSessionId(fetchedConfig.sessionId);
         }
 
