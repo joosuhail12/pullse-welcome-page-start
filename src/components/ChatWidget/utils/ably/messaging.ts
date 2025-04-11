@@ -1,8 +1,8 @@
-
 import Ably from 'ably';
 import { 
   getAblyClient, isInFallbackMode, 
-  getPendingMessages, setPendingMessages, addPendingMessage 
+  getPendingMessages, setPendingMessages, addPendingMessage,
+  addActiveSubscription, removeActiveSubscription 
 } from './config';
 import { dispatchValidatedEvent } from '../../embed/enhancedEvents';
 import { ChatEventType } from '../../config';
@@ -24,8 +24,11 @@ export const subscribeToChannel = (
     return;
   }
   
-  // Don't try to subscribe to null or empty channel names
-  if (!channelName || channelName.includes('null') || channelName.includes('undefined')) {
+  // Enhanced validation for channel names
+  if (!channelName || 
+      channelName.includes('null') || 
+      channelName.includes('undefined') || 
+      channelName === 'session:null') {
     console.warn(`Invalid channel name: ${channelName}, skipping subscription`);
     return;
   }
@@ -33,7 +36,13 @@ export const subscribeToChannel = (
   try {
     const channel = client.channels.get(channelName);
     
+    // Keep track of active subscriptions for reconnection
+    addActiveSubscription(channelName, eventName);
+    
     channel.subscribe(eventName, callback);
+    
+    // Log successful subscription for debugging
+    console.log(`Successfully subscribed to ${channelName} (${eventName})`);
     
     // Set up recovery on channel failure
     channel.on('detached', () => {
@@ -42,6 +51,7 @@ export const subscribeToChannel = (
         try {
           // Make sure the client is still connected and channel still exists
           if (client && client.connection.state === 'connected' && channel.state !== 'attached') {
+            console.log(`Reattaching to channel ${channelName}`);
             channel.attach();
           }
         } catch (err) {
@@ -56,6 +66,7 @@ export const subscribeToChannel = (
         try {
           // Make sure the client is still connected
           if (client && client.connection.state === 'connected') {
+            console.log(`Reattaching to failed channel ${channelName}`);
             channel.attach();
           }
         } catch (err) {
@@ -124,9 +135,12 @@ export const unsubscribeFromChannel = (
   try {
     if (eventName) {
       channel.unsubscribe(eventName);
+      removeActiveSubscription(channel.name, eventName);
     } else {
       channel.unsubscribe();
+      removeActiveSubscription(channel.name, '*');
     }
+    console.log(`Unsubscribed from ${channel.name} channel`);
   } catch (error) {
     console.error(`Error unsubscribing from channel:`, error);
   }

@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getChatSessionId } from '../cookies';
 import {
   getAblyClient, setAblyClient, isInFallbackMode, setFallbackMode,
-  getPendingMessages, setPendingMessages, processQueuedMessages
+  getPendingMessages, setPendingMessages, processQueuedMessages, resubscribeToActiveChannels
 } from './config';
 import { getAblyAuthUrl } from '../../services/ablyAuth';
 import { ChatEventType } from '../../config';
@@ -99,7 +99,7 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
     setFallbackMode(false);
 
     // Set up connection state listeners
-    setupConnectionStateListeners();
+    setupConnectionStateListeners(newClient);
 
     // Wait for connection to be established
     return new Promise((resolve, reject) => {
@@ -124,6 +124,8 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
         case 'connected':
           clearTimeout(connectionTimeout);
           console.log('Ably already connected');
+          processQueuedMessages();
+          resubscribeToActiveChannels();
           resolve();
           break;
           
@@ -132,6 +134,7 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
             clearTimeout(connectionTimeout);
             console.log('Ably connected successfully');
             processQueuedMessages();
+            resubscribeToActiveChannels();
             resolve();
           });
 
@@ -150,6 +153,7 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
             clearTimeout(connectionTimeout);
             console.log('Ably connected successfully');
             processQueuedMessages();
+            resubscribeToActiveChannels();
             resolve();
           });
 
@@ -171,8 +175,7 @@ export const initializeAbly = async (authUrl: string): Promise<void> => {
 /**
  * Set up listeners for Ably connection state changes
  */
-function setupConnectionStateListeners() {
-  const client = getAblyClient();
+function setupConnectionStateListeners(client: Ably.Realtime) {
   if (!client) return;
 
   // Remove any existing listeners to avoid duplicates
@@ -184,6 +187,7 @@ function setupConnectionStateListeners() {
     setFallbackMode(false);
     dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'connected' }, EventPriority.HIGH);
     processQueuedMessages();
+    resubscribeToActiveChannels();
   });
 
   client.connection.on('disconnected', () => {
@@ -365,6 +369,7 @@ export const handleConnectionStateChange = (
       setFallbackMode(false);
       dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'connected' }, EventPriority.HIGH);
       processQueuedMessages();
+      resubscribeToActiveChannels();
       break;
     case 'disconnected':
       console.warn('Ably connection disconnected, attempting to reconnect');
@@ -396,8 +401,3 @@ export const handleConnectionStateChange = (
       break;
   }
 };
-
-// Remove unused function to avoid TypeScript errors
-// function getWorkspaceId(): string {
-//   throw new Error('Function not implemented.');
-// }

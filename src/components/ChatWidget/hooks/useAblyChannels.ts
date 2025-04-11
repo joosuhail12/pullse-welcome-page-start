@@ -36,7 +36,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
     if (config.sessionChannels && sessionId) {
       console.log(`Subscribing to session channels for ${sessionId}`);
       
-      // Subscribe to session channels
+      // Subscribe to session channels with widget: prefix
       channels.current.events = subscribeToChannel(
         `widget:events:${sessionId}`,
         'message',
@@ -62,7 +62,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
       );
     }
     
-    // Subscribe to conversation channel if provided
+    // Subscribe to conversation channel if provided, with widget: prefix
     if (config.conversationChannel) {
       console.log(`Subscribing to conversation channel: widget:conversation:${config.conversationChannel}`);
       channels.current.conversation = subscribeToChannel(
@@ -112,9 +112,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
     };
     
     // Subscribe to connection state changes
-    client.connection.on((stateChange: Ably.Types.ConnectionStateChange) => {
-      handleConnectionStateChange(stateChange);
-    });
+    client.connection.on(handleConnectionStateChange);
     
     // Check initial connection state
     if (client.connection.state === 'connected') {
@@ -124,7 +122,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
     
     return () => {
       // Clean up event listener on unmount
-      client.connection.off();
+      client.connection.off(handleConnectionStateChange);
       unsubscribeAllChannels();
     };
   }, [config.sessionChannels, config.conversationChannel, sessionId]);

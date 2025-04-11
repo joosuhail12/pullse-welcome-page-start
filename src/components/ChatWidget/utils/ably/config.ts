@@ -89,3 +89,36 @@ export const processQueuedMessages = (): void => {
     }
   });
 };
+
+// Resubscribe to all active channels after reconnection
+export const resubscribeToActiveChannels = (): void => {
+  const client = getAblyClient();
+  
+  if (!client || client.connection.state !== 'connected' || activeSubscriptions.length === 0) {
+    return;
+  }
+  
+  console.log(`Resubscribing to ${activeSubscriptions.length} active channels`);
+  
+  // Group subscriptions by channel to avoid duplicate subscriptions
+  const channelSubscriptions: Record<string, string[]> = {};
+  
+  activeSubscriptions.forEach(({ channelName, eventName }) => {
+    if (!channelSubscriptions[channelName]) {
+      channelSubscriptions[channelName] = [];
+    }
+    if (eventName !== '*') {
+      channelSubscriptions[channelName].push(eventName);
+    }
+  });
+  
+  // Resubscribe to each channel
+  Object.entries(channelSubscriptions).forEach(([channelName, events]) => {
+    try {
+      const channel = client.channels.get(channelName);
+      channel.attach();
+    } catch (err) {
+      console.error(`Failed to resubscribe to channel ${channelName}:`, err);
+    }
+  });
+};
