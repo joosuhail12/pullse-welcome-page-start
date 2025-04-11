@@ -8,7 +8,6 @@ import ChatView from '../views/ChatView';
 import TabBar from './TabBar';
 import PoweredByBar from './PoweredByBar';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { ConnectionStatus } from '../utils/reconnectionManager';
 
 interface WidgetContainerProps {
   isOpen: boolean;
@@ -26,7 +25,6 @@ interface WidgetContainerProps {
   handleStartChat: (formData?: Record<string, string>) => void;
   setUserFormData: (data: Record<string, string>) => void;
   playMessageSound: () => void;
-  connectionStatus?: ConnectionStatus;
 }
 
 const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
@@ -44,8 +42,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
   handleBackToMessages,
   handleStartChat,
   setUserFormData,
-  playMessageSound,
-  connectionStatus
+  playMessageSound
 }) => {
 
   if (!isOpen) return null;
@@ -80,7 +77,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
             playMessageSound={playMessageSound}
             userFormData={userFormData}
             setUserFormData={setUserFormData}
-            connectionStatus={connectionStatus}
           />
         </div>
       );
@@ -119,8 +115,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
     handleStartChat,
     handleSelectConversation,
     handleSelectTicket,
-    handleChangeView,
-    connectionStatus
+    handleChangeView
   ]);
 
   // Memoize the branding bar to prevent unnecessary re-renders

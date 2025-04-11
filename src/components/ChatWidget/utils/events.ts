@@ -101,17 +101,7 @@ export function subscribeToChatEvent(
 
   if (eventType === 'all') {
     // Subscribe to all events
-    const allEvents = [
-      'pullse:chat:open',
-      'pullse:chat:close',
-      'pullse:chat:messageSent',
-      'pullse:chat:messageReceived',
-      'pullse:contact:initiatedChat',
-      'pullse:contact:formCompleted',
-      'pullse:message:reacted',
-      'pullse:chat:connectionChange',
-      'pullse:chat:error'
-    ];
+    const allEvents = Object.values(ChatEventType).map(event => `pullse:${event}`);
     
     logger.debug('Subscribing to all events', 'events');
     allEvents.forEach(event => {

@@ -1,170 +1,187 @@
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import { subscribeToChannel, getAblyClient } from '../utils/ably';
 import { getChatSessionId } from '../utils/storage';
-import { 
-  subscribeToChannel, 
-  getAblyClient, 
-  isInFallbackMode 
-} from '../utils/ably';
 import { logger } from '@/lib/logger';
 
 /**
- * Hook to manage Ably channel subscriptions with connection state awareness
- * Subscribes to standard widget channels and handles reconnection
+ * Hook for managing Ably channel subscriptions
+ * @param ticketId Optional ticket ID for conversation-specific channel
+ * @returns Object containing subscription status
  */
-export function useAblyChannels(
-  conversationId?: string | null,
-  onMessage?: (channelName: string, eventName: string, message: any) => void
-) {
+export function useAblyChannels(ticketId?: string) {
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const channelRefs = useRef<any[]>([]);
-  const sessionId = getChatSessionId();
   
-  // Cleanup function for unsubscribing from channels
-  const cleanupSubscriptions = () => {
-    if (channelRefs.current.length > 0) {
-      logger.info(`Cleaning up ${channelRefs.current.length} channel subscriptions`, 'useAblyChannels');
-      
-      channelRefs.current.forEach(channel => {
-        if (channel) {
-          try {
-            channel.unsubscribe();
-          } catch (err) {
-            logger.error('Error unsubscribing from channel', 'useAblyChannels', err);
-          }
-        }
-      });
-      
-      channelRefs.current = [];
-      setIsSubscribed(false);
-    }
-  };
-
-  // Function to subscribe to all required channels
-  const subscribeToChannels = () => {
-    const client = getAblyClient();
+  // Setup session-based channels when Ably client is connected
+  useEffect(() => {
+    const sessionId = getChatSessionId();
+    const ablyClient = getAblyClient();
     
-    // Only subscribe if we have a client, it's connected, and we have a sessionId
-    if (!client || client.connection.state !== 'connected' || !sessionId) {
-      logger.warn('Cannot subscribe to channels - client not ready or no sessionId', 'useAblyChannels', { 
-        clientState: client?.connection.state,
-        hasSessionId: !!sessionId
-      });
+    if (!sessionId) {
+      logger.warn('No session ID found for Ably channel subscriptions', 'useAblyChannels');
       return;
     }
     
-    // Clean up any existing subscriptions
-    cleanupSubscriptions();
+    if (!ablyClient) {
+      logger.warn('Ably client not initialized, deferring channel subscriptions', 'useAblyChannels');
+      return;
+    }
     
-    logger.info('Subscribing to Ably channels', 'useAblyChannels', { sessionId });
+    // Only subscribe if Ably is connected
+    if (ablyClient.connection.state !== 'connected') {
+      logger.info('Waiting for Ably connection before subscribing to channels...', 'useAblyChannels');
+      
+      // Set up a one-time listener for connection
+      const onConnected = () => {
+        setupChannels();
+        // Remove the listener after connection
+        ablyClient.connection.off('connected', onConnected);
+      };
+      
+      ablyClient.connection.once('connected', onConnected);
+      return () => {
+        // Clean up listener if component unmounts before connection
+        ablyClient.connection.off('connected', onConnected);
+      };
+    }
     
-    try {
-      // Subscribe to the three main channels
+    // If already connected, set up channels immediately
+    const channelCleanup = setupChannels();
+    return channelCleanup;
+    
+    // Function to setup all session-based channels
+    function setupChannels() {
+      logger.info(`Setting up Ably channels for session ${sessionId}`, 'useAblyChannels');
+      
+      // Subscribe to the three main session-based channels
       const eventsChannel = subscribeToChannel(
         `widget:events:${sessionId}`,
         '*',
-        (message) => onMessage?.('events', message.name, message.data)
+        (message) => {
+          logger.debug('Event message received', 'useAblyChannels', { messageData: message.data });
+        }
       );
       
       const notificationsChannel = subscribeToChannel(
         `widget:notifications:${sessionId}`,
         '*',
-        (message) => onMessage?.('notifications', message.name, message.data)
+        (message) => {
+          logger.debug('Notification message received', 'useAblyChannels', { messageData: message.data });
+        }
       );
       
-      const contactEventChannel = subscribeToChannel(
+      const contactEventsChannel = subscribeToChannel(
         `widget:contactevent:${sessionId}`,
         '*',
-        (message) => onMessage?.('contactevent', message.name, message.data)
+        (message) => {
+          logger.debug('Contact event message received', 'useAblyChannels', { messageData: message.data });
+        }
       );
       
-      // Collect references to all channels
-      channelRefs.current = [eventsChannel, notificationsChannel, contactEventChannel].filter(Boolean);
+      // Mark as subscribed if all channels were created
+      setIsSubscribed(true);
       
-      // If a conversation is active, subscribe to its channel too
-      if (conversationId) {
-        const conversationChannel = subscribeToChannel(
-          `widget:conversation:${conversationId}`,
-          '*',
-          (message) => onMessage?.('conversation', message.name, message.data)
-        );
-        
-        if (conversationChannel) {
-          channelRefs.current.push(conversationChannel);
-        }
-      }
-      
-      setIsSubscribed(channelRefs.current.length > 0);
-      logger.info(`Successfully subscribed to ${channelRefs.current.length} channels`, 'useAblyChannels');
-    } catch (error) {
-      logger.error('Error subscribing to channels', 'useAblyChannels', error);
-    }
-  };
-
-  // Listen for connection state changes on the client
-  useEffect(() => {
-    const client = getAblyClient();
-    if (!client || !sessionId) return;
-    
-    const handleConnectionStateChange = (stateChange: any) => {
-      logger.info(`Ably connection state changed: ${stateChange.current}`, 'useAblyChannels');
-      
-      if (stateChange.current === 'connected') {
-        // Connection is now active, subscribe to channels
-        subscribeToChannels();
-      } else if (['disconnected', 'suspended', 'failed'].includes(stateChange.current)) {
-        // Mark as unsubscribed, will resubscribe when connection returns
+      // Clean up subscription when component unmounts or connection changes
+      return () => {
+        logger.info('Cleaning up Ably channel subscriptions', 'useAblyChannels');
+        if (eventsChannel) eventsChannel.unsubscribe();
+        if (notificationsChannel) notificationsChannel.unsubscribe();
+        if (contactEventsChannel) contactEventsChannel.unsubscribe();
         setIsSubscribed(false);
-      }
-    };
-    
-    // If already connected, subscribe immediately
-    if (client.connection.state === 'connected') {
-      subscribeToChannels();
+      };
     }
-    
-    // Set up connection state change listener
-    client.connection.on('statechange', handleConnectionStateChange);
-    
-    // Cleanup on unmount
-    return () => {
-      client.connection.off('statechange', handleConnectionStateChange);
-      cleanupSubscriptions();
-    };
-  }, [sessionId]);
+  }, []);
   
-  // Update subscriptions when conversationId changes
+  // Subscribe to conversation-specific channel if ticketId is provided
   useEffect(() => {
-    const client = getAblyClient();
+    if (!ticketId) return;
     
-    // If client is connected, we should update our subscriptions when conversationId changes
-    if (client && client.connection.state === 'connected' && sessionId) {
-      subscribeToChannels();
+    const sessionId = getChatSessionId();
+    const ablyClient = getAblyClient();
+    
+    if (!sessionId || !ablyClient) {
+      logger.warn('Missing sessionId or Ably client for conversation channel', 'useAblyChannels');
+      return;
     }
-  }, [conversationId, sessionId]);
-
-  // Setup global connection event listeners for fallback handling
-  useEffect(() => {
-    const handleConnectionEvent = (event: any) => {
-      const status = event.detail?.status;
+    
+    // Only subscribe if Ably is connected
+    if (ablyClient.connection.state !== 'connected') {
+      logger.info('Waiting for Ably connection before subscribing to conversation channel...', 'useAblyChannels');
       
-      if (status === 'connected') {
-        // Resubscribe on reconnection
-        subscribeToChannels();
+      // Set up a one-time listener for connection
+      const onConnected = () => {
+        setupConversationChannel();
+        // Remove the listener after connection
+        ablyClient.connection.off('connected', onConnected);
+      };
+      
+      ablyClient.connection.once('connected', onConnected);
+      return () => {
+        // Clean up listener if component unmounts before connection
+        ablyClient.connection.off('connected', onConnected);
+      };
+    }
+    
+    // If already connected, set up conversation channel immediately
+    const cleanupConversation = setupConversationChannel();
+    return cleanupConversation;
+    
+    function setupConversationChannel() {
+      logger.info(`Setting up conversation Ably channel for ticket ${ticketId}`, 'useAblyChannels');
+      
+      // Subscribe to conversation-specific channel
+      const conversationChannel = subscribeToChannel(
+        `widget:conversation:${ticketId}`,
+        '*',
+        (message) => {
+          logger.debug('Conversation message received', 'useAblyChannels', { 
+            ticketId,
+            messageData: message.data 
+          });
+        }
+      );
+      
+      // Clean up subscription when component unmounts or ticketId changes
+      return () => {
+        logger.info(`Cleaning up conversation Ably channel for ticket ${ticketId}`, 'useAblyChannels');
+        if (conversationChannel) conversationChannel.unsubscribe();
+      };
+    }
+  }, [ticketId]);
+  
+  // Add connection state change listener to resubscribe on reconnection
+  useEffect(() => {
+    const ablyClient = getAblyClient();
+    
+    if (!ablyClient) return;
+    
+    // Handle reconnection by setting up a state listener
+    const handleConnectionStateChange = (stateChange: any) => {
+      // When reconnected after being disconnected, suspended, etc.
+      if (stateChange.current === 'connected' && 
+          ['disconnected', 'suspended', 'failed', 'initialized'].includes(stateChange.previous)) {
+        logger.info('Ably reconnected, resubscribing to channels', 'useAblyChannels');
+        
+        // Force a re-render to trigger resubscription of channels
+        setIsSubscribed(false);
+        
+        // Small delay to ensure connection is fully established
+        setTimeout(() => {
+          setIsSubscribed(true);
+        }, 100);
       }
     };
     
-    // Listen for connection change events
-    document.addEventListener('pullse:chat:connectionChange', handleConnectionEvent);
+    // Add connection state change listener
+    ablyClient.connection.on(handleConnectionStateChange);
     
+    // Clean up listener on component unmount
     return () => {
-      document.removeEventListener('pullse:chat:connectionChange', handleConnectionEvent);
+      if (ablyClient) {
+        ablyClient.connection.off(handleConnectionStateChange);
+      }
     };
   }, []);
-
-  return {
-    isSubscribed,
-    subscribeToChannels,
-    cleanupSubscriptions
-  };
+  
+  return { isSubscribed };
 }

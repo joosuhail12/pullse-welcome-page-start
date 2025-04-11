@@ -6,8 +6,6 @@ import { ConnectionStatus, getReconnectionManager } from '../utils/reconnectionM
 import { toasts } from '@/lib/toast-utils';
 import { logger } from '@/lib/logger';
 import { getAccessToken } from '../utils/storage';
-import { dispatchValidatedEvent } from '../embed/enhancedEvents';
-import { ChatEventType } from '../config';
 
 interface ConnectionManagerProps {
   workspaceId: string;
@@ -43,7 +41,6 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
     if (!enabled || !workspaceId || !accessToken) {
       onStatusChange(ConnectionStatus.DISCONNECTED);
       logger.info('Realtime disabled: missing required parameters', 'ConnectionManager');
-      dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'disconnected' });
       return;
     }
 
@@ -58,19 +55,13 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
     const initRealtime = async () => {
       try {
         logger.info('Initializing real-time with token', 'ConnectionManager');
-        onStatusChange(ConnectionStatus.CONNECTING);
-        dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'connecting' });
-        
         await initializeAbly(authUrl);
         onStatusChange(ConnectionStatus.CONNECTED);
-        dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'connected' });
-        
         logger.info('Real-time communication initialized', 'ConnectionManager');
         ablyCleanup = cleanupAbly;
       } catch (err) {
         logger.error('Failed to initialize real-time communication', 'ConnectionManager', err);
         onStatusChange(ConnectionStatus.FAILED);
-        dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'failed', error: err });
         startReconnectionProcess(authUrl);
       }
     };
@@ -80,10 +71,6 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
         reconnectionAttempts.current += 1;
 
         logger.info(`Reconnection attempt ${reconnectionAttempts.current}`, 'ConnectionManager');
-        dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { 
-          status: 'reconnecting', 
-          attempt: reconnectionAttempts.current 
-        });
 
         if (reconnectionAttempts.current === 1) {
           toasts.warning({
@@ -96,7 +83,6 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
 
         if (success) {
           onStatusChange(ConnectionStatus.CONNECTED);
-          dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'connected' });
           reconnectionAttempts.current = 0;
 
           logger.info('Real-time connection restored', 'ConnectionManager');
@@ -120,20 +106,13 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
         });
 
         onStatusChange(ConnectionStatus.FAILED);
-        dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { 
-          status: 'failed', 
-          error: 'Reconnection failed after multiple attempts' 
-        });
       });
     };
 
     initRealtime();
 
     return () => {
-      if (ablyCleanup) {
-        ablyCleanup();
-        dispatchValidatedEvent('chat:connectionChange' as ChatEventType, { status: 'closed' });
-      }
+      if (ablyCleanup) ablyCleanup();
     };
   }, [enabled, workspaceId, onStatusChange, accessToken]);
 

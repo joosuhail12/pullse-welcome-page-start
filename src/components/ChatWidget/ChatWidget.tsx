@@ -13,9 +13,8 @@ import EnhancedLoadingIndicator from './components/EnhancedLoadingIndicator';
 import ChatWidgetErrorBoundary from './components/ChatWidgetErrorBoundary';
 import ConnectionManager from './components/ConnectionManager';
 import { ConnectionStatus } from './utils/reconnectionManager';
+import ChatKeyboardHandler from './components/ChatKeyboardHandler';
 import { setWorkspaceIdAndApiKey } from './utils/storage';
-import { dispatchChatEvent } from './utils/events';
-import { logger } from '@/lib/logger';
 
 export interface ChatWidgetProps {
   workspaceId: string;
@@ -48,33 +47,8 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
   const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
   
-  // Set up Ably channel subscriptions
-  const { isSubscribed } = useAblyChannels(
-    activeConversation?.id, 
-    (channelType, eventName, data) => {
-      // Handle incoming messages from subscription channels
-      logger.debug(`Received channel message: ${channelType} / ${eventName}`, 'ChatWidget', data);
-      
-      // Play sound for new messages if applicable
-      if (channelType === 'conversation' && eventName === 'message' && data?.sender !== 'user') {
-        playMessageSound();
-      }
-      
-      // Dispatch as chat event for other components to listen to
-      dispatchChatEvent(`${channelType}:${eventName}`, data);
-    }
-  );
-
-  // Dispatch loading event once
-  useEffect(() => {
-    if (config) {
-      dispatchChatEvent('widget:loaded', { config });
-    }
-
-    if (error) {
-      dispatchChatEvent('widget:error', { error });
-    }
-  }, [config, error]);
+  // Subscribe to session-based Ably channels
+  useAblyChannels();
 
   // If contactData is available from the API but userFormData is not set, initialize it
   useEffect(() => {
@@ -163,7 +137,6 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
         handleStartChat={handleStartChat}
         setUserFormData={setUserFormData}
         playMessageSound={playMessageSound}
-        connectionStatus={connectionStatus}
       />
 
       <LauncherButton
