@@ -111,7 +111,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
     // Only subscribe to conversation channel if it has a ticket ID
     if (config.conversationChannel && 
         config.conversationChannel.includes('ticket-') &&
-        !subscribedChannels.current.has(config.conversationChannel)) {
+        !subscribedChannels.current.has(`widget:conversation:${config.conversationChannel}`)) {
       const conversationChannel = `widget:conversation:${config.conversationChannel}`;
       console.log(`Subscribing to conversation channel: ${conversationChannel}`);
       try {

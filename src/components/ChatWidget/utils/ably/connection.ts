@@ -69,7 +69,8 @@ export const initializeAbly = async (authUrl: string): Promise<boolean> => {
       echoMessages: false,
       closeOnUnload: true,
       logLevel: 2,
-      transports: ['web_socket', 'xhr_polling', 'xhr_streaming'],
+      // Explicitly specify all available transports to fix "no requested transports available" error
+      transports: ['websocket', 'xhr_streaming', 'xhr_polling'],
     };
 
     logger.info('Initializing Ably with token', 'ably');
@@ -260,10 +261,10 @@ export const cleanupAbly = (): void => {
   try {
     const channels = client.channels;
     
-    // Use forEach instead of each
-    Object.keys(channels.all).forEach((channelName) => {
+    // Use a different approach to iterate through channels
+    Object.keys(channels).forEach((channelName) => {
       const channel = channels.get(channelName);
-      if (channel.state === 'attached') {
+      if (channel && channel.state === 'attached') {
         channel.detach();
       }
     });

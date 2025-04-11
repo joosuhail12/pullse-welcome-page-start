@@ -41,6 +41,8 @@ export function useChatMessages(
   const isNewConversation = !conversation.id.includes('ticket-');
   
   // Create channel name based on conversation
+  // For new conversations, use contactevent channel for the session
+  // For existing conversations, use the conversation ID
   const chatChannelName = isNewConversation 
     ? `widget:contactevent:${sessionId}` 
     : `widget:conversation:${conversation.id}`;
