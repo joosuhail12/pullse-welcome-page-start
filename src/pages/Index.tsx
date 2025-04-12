@@ -3,9 +3,6 @@ import React from 'react';
 import ChatWidget from '@/components/ChatWidget/ChatWidget';
 
 const Index = () => {
-  const workspaceId = "6c22b22f-7bdf-43db-b7c1-9c5884125c63";
-  const apiKey = "85c7756b-f333-4ec9-a440-c4d1850482c3";
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-soft-purple-50 text-center">
       <div className="max-w-2xl px-6">
@@ -25,7 +22,7 @@ const Index = () => {
         </div>
       </div>
 
-      <ChatWidget workspaceId={workspaceId} apiKey={apiKey} />
+      <ChatWidget />
     </div>
   );
 };
