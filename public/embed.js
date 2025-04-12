@@ -1,3 +1,4 @@
+
 /**
  * Pullse Chat Widget Embed Script
  * Version 1.0.0
@@ -278,7 +279,7 @@
     if (!document.getElementById('pullse-chat-widget-styles')) {
       var styleElement = document.createElement('style');
       styleElement.id = 'pullse-chat-widget-styles';
-      styleElement.textContent = '#pullse-chat-widget-container { position: fixed; z-index: 9999; ' + getPositionStyles(config.layout.placement, config.offsetX, config.offsetY) + ' }';
+      styleElement.textContent = '#pullse-chat-widget-container { position: fixed; z-index: 9999; ' + getPositionStyles(config.position, config.offsetX, config.offsetY) + ' }';
       document.head.appendChild(styleElement);
 
       // Add external stylesheet with SRI if applicable
@@ -363,18 +364,21 @@
 
     // Set default options with function references removed (for serialization)
     var config = {
+      workspaceId: options.workspaceId,
       position: {
         placement: position,
         offsetX: offsetX / 16, // Convert px to rem
         offsetY: offsetY / 16  // Convert px to rem
       },
-      workspaceId: options.workspaceId,
-      welcomeMessage: options.labels.welcomeTitle,
       branding: {
         primaryColor: options.primaryColor,
         logoUrl: options.logoUrl,
         avatarUrl: options.avatarUrl,
-        widgetTitle: options.widgetTitle,
+        widgetTitle: options.widgetTitle || 'Chat with us',
+        showBrandingBar: !options.hideBranding
+      },
+      interfaceSettings: {
+        welcomeMessage: options.welcomeMessage || 'How can we help you today?',
         showBrandingBar: !options.hideBranding
       },
       autoOpen: !!options.autoOpen,
