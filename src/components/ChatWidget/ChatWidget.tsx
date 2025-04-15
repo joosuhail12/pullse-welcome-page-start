@@ -13,19 +13,12 @@ import ChatWidgetErrorBoundary from './components/ChatWidgetErrorBoundary';
 import ConnectionManager from './components/ConnectionManager';
 import { ConnectionStatus } from './utils/reconnectionManager';
 import ChatKeyboardHandler from './components/ChatKeyboardHandler';
-import { setWorkspaceIdAndApiKey } from './utils/storage';
+import { getWorkspaceIdAndApiKey, setWorkspaceIdAndApiKey } from './utils/storage';
 import { dispatchChatEvent } from './utils/events';
 import { useAblyChannels } from './hooks/useAblyChannels';
 
-export interface ChatWidgetProps {
-  workspaceId: string;
-  apiKey: string;
-}
-
-const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
-  // Set workspace id and api key in localStorage
-  setWorkspaceIdAndApiKey(workspaceId, apiKey);
-
+const ChatWidget = () => {
+  const { apiKey, workspaceId } = getWorkspaceIdAndApiKey();
   const {
     viewState,
     activeConversation,
@@ -47,7 +40,8 @@ const ChatWidget = ({ workspaceId, apiKey }: ChatWidgetProps) => {
   const isMobile = useIsMobile();
   const { getLauncherPositionStyles, getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED);
-  
+
+
   // Subscribe to Ably channels based on session ID and active conversation
   useAblyChannels({
     sessionChannels: true,

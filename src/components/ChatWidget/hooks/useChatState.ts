@@ -57,7 +57,7 @@ export function useChatState() {
       const { apiKey } = getWorkspaceIdAndApiKey();
       const accessToken = getAccessToken();
       try {
-        const response = await fetch("https://dev-socket.pullseai.com/api/widgets/createContactDevice/85c7756b-f333-4ec9-a440-c4d1850482c3", {
+        const response = await fetch("https://dev-socket.pullseai.com/api/widgets/createContactDevice/" + apiKey, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

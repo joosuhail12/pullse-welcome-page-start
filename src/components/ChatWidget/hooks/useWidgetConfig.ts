@@ -18,7 +18,7 @@ export function useWidgetConfig() {
   const [contactData, setContactData] = useState<any>(null);
   const configFetchedRef = useRef<boolean>(!!globalConfigCache);
 
-  const { workspaceId } = getWorkspaceIdAndApiKey();
+  const { workspaceId, apiKey } = getWorkspaceIdAndApiKey();
 
   useEffect(() => {
     async function loadConfig() {
@@ -27,7 +27,7 @@ export function useWidgetConfig() {
         logger.info('Using cached config, skipping API call', 'useWidgetConfig');
         setConfig(globalConfigCache);
         setLoading(false);
-        
+
         // Set contact data from cache if available
         if (globalConfigCache.contact) {
           setContactData(globalConfigCache.contact);
@@ -64,8 +64,6 @@ export function useWidgetConfig() {
         configFetchInProgress = true;
         lastFetchedWorkspaceId = workspaceId;
 
-        const apiKey = "85c7756b-f333-4ec9-a440-c4d1850482c3";
-
         logger.info(`Fetching config for workspace ${workspaceId}`, 'useWidgetConfig');
         const fetchedConfig = await fetchChatWidgetConfig(workspaceId, apiKey);
 
@@ -76,7 +74,7 @@ export function useWidgetConfig() {
 
         // Mark that we've fetched the config
         configFetchedRef.current = true;
-        
+
         // Store in global cache
         globalConfigCache = fetchedConfig;
 
@@ -95,7 +93,7 @@ export function useWidgetConfig() {
             setContactData(storedUserData);
           }
         }
-        
+
         // Store the session ID if it exists in the response
         if (fetchedConfig.sessionId) {
           setChatSessionId(fetchedConfig.sessionId);
