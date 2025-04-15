@@ -181,6 +181,17 @@ export function setUserFormDataInLocalStorage(formData: Record<string, string>):
 }
 
 /**
+ * Clear user form data from localStorage
+ */
+export function clearUserFormDataFromLocalStorage(): void {
+  try {
+    localStorage.removeItem('pullse_user_form_data');
+  } catch (error) {
+    console.error('Error clearing user form data from localStorage:', error);
+  }
+}
+
+/**
  * Check if user is authenticated by checking if form data exists
  */
 export function isUserAuthenticated(): boolean {

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { fetchChatWidgetConfig } from '../services/api';
 import { ChatWidgetConfig, defaultConfig } from '../config';
 import { logger } from '@/lib/logger';
-import { getWorkspaceIdAndApiKey, getUserFormDataFromLocalStorage, setUserFormDataInLocalStorage } from '../utils/storage';
+import { getWorkspaceIdAndApiKey, getUserFormDataFromLocalStorage, setUserFormDataInLocalStorage, clearUserFormDataFromLocalStorage } from '../utils/storage';
 import { setChatSessionId } from '../utils/storage';
 
 // Create a global config cache to prevent multiple fetch calls
@@ -32,10 +32,9 @@ export function useWidgetConfig() {
         if (globalConfigCache.contact) {
           setContactData(globalConfigCache.contact);
         } else {
-          const storedUserData = getUserFormDataFromLocalStorage();
-          if (storedUserData) {
-            setContactData(storedUserData);
-          }
+          // If the cached config doesn't have contact data, we should clear local storage form data
+          clearUserFormDataFromLocalStorage();
+          setContactData(null);
         }
         return;
       }
@@ -78,6 +77,7 @@ export function useWidgetConfig() {
         // Store in global cache
         globalConfigCache = fetchedConfig;
 
+        // Check if API response contains contact data
         if (fetchedConfig.contact) {
           setContactData(fetchedConfig.contact);
 
@@ -88,10 +88,9 @@ export function useWidgetConfig() {
 
           setUserFormDataInLocalStorage(formData);
         } else {
-          const storedUserData = getUserFormDataFromLocalStorage();
-          if (storedUserData) {
-            setContactData(storedUserData);
-          }
+          // If the API response doesn't have contact data, clear local storage
+          clearUserFormDataFromLocalStorage();
+          setContactData(null);
         }
 
         // Store the session ID if it exists in the response
