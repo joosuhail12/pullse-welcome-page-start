@@ -124,7 +124,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
           (message) => {
             console.log('Received conversation message:', message);
 
-            dispatchChatEvent('chat:ticket_message', { message: message.data.message });
+            dispatchChatEvent('chat:ticket_message', { message: message.data.text });
           }
         );
         if (channels.current.conversation) {
