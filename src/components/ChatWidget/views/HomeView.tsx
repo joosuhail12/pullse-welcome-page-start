@@ -21,7 +21,7 @@ const HomeView = React.memo(({
   // Apply custom branding if available - use useMemo to prevent recalculation
   const buttonStyle = useMemo(() => {
     return config.colors?.primaryColor
-      ? { backgroundColor: config.colors.primaryColor, borderColor: config.colors.primaryColor }
+      ? { backgroundColor: config.colors.primaryColor, borderColor: config.colors.primaryColor, color: config.colors.textColor }
       : {};
   }, [config.colors?.primaryColor]);
 
