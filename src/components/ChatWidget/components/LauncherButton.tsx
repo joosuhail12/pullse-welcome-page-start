@@ -28,7 +28,6 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
   const isMobile = useIsMobile();
   const [showTooltip, setShowTooltip] = useState(false);
   const showPresence = config?.interfaceSettings?.showAgentPresence;
-
   // Adjust button size based on screen size
   const buttonSizeClass = isMobile
     ? "w-10 h-10"
@@ -83,7 +82,16 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
               onMouseLeave={() => setShowTooltip(false)}
               aria-label={isOpen ? "Close chat" : "Open chat"}
             >
-              <MessageSquare size={iconSize} className="text-white" />
+              {
+                config.brandAssets.launcherIcon && (
+                  <img src={config.brandAssets.launcherIcon} alt="Launcher icon" width={iconSize} height={iconSize} />
+                )
+              }
+              {
+                !config.brandAssets.launcherIcon && (
+                  <MessageSquare size={iconSize} className="text-white" />
+                )
+              }
               {!isOpen && unreadCount > 0 && (
                 <Badge
                   className="absolute -top-1 -right-1 bg-red-500 text-white border-white border-2 animate-pulse text-xs min-w-5 h-5 flex items-center justify-center"

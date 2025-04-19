@@ -29,6 +29,7 @@ interface MessageListProps {
   agentStatus?: AgentStatus;
   onToggleHighlight?: (messageId: string) => void;
   typingDuration?: number;
+  config: ChatWidgetConfig;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -48,7 +49,8 @@ const MessageList: React.FC<MessageListProps> = ({
   conversationId,
   agentStatus = 'online',
   onToggleHighlight,
-  typingDuration = 0
+  typingDuration = 0,
+  config
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -239,12 +241,13 @@ const MessageList: React.FC<MessageListProps> = ({
                 onToggleHighlight={onToggleHighlight ? () => onToggleHighlight(message.id) : undefined}
                 showAvatar={item.showAvatar}
                 isConsecutive={item.isConsecutive}
+                config={config}
               />
             </div>
           );
         })}
-
-        {isTyping && (
+        {/* TODO: Fix the typing indicator */}
+        {/* {isTyping && (
           <div className="flex items-end mb-4">
             <MessageAvatar
               isUserMessage={false}
@@ -254,7 +257,7 @@ const MessageList: React.FC<MessageListProps> = ({
             />
             <TypingIndicator typingDuration={typingDuration} />
           </div>
-        )}
+        )} */}
       </ScrollArea>
 
       {showScrollButton && (

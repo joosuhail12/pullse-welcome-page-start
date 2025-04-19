@@ -143,19 +143,22 @@ const ChatView = React.memo(({
       ...(config?.colors?.primaryColor && {
         '--chat-header-bg': config.colors.primaryColor,
         '--chat-header-text': '#ffffff',
-        '--user-bubble-bg': config.colors.primaryColor,
+        '--user-bubble-bg': config.colors.userMessageBackgroundColor,
         '--user-bubble-text': '#ffffff',
-        '--system-bubble-bg': '#F5F3FF',
+        '--system-bubble-bg': config.colors.agentMessageBackgroundColor,
         '--system-bubble-text': '#1f2937',
         '--chat-bg': 'linear-gradient(to bottom, #F5F3FF, #E5DEFF)',
       } as React.CSSProperties)
     };
-  }, [config?.colors?.primaryColor]);
+  }, [config?.colors?.primaryColor, config?.colors?.userMessageBackgroundColor, config?.colors?.agentMessageBackgroundColor]);
 
   return (
     <div
-      className="flex flex-col h-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100"
-      style={chatViewStyle}
+      style={{
+        backgroundColor: config.colors?.backgroundColor || 'transparent'
+      }}
+      className={`flex flex-col h-full
+              ${!config.colors?.backgroundColor && 'bg-gradient-to-br from-soft-purple-50 to-soft-purple-100'}`}
     >
       <ChatViewHeader
         conversation={conversation}
@@ -194,6 +197,7 @@ const ChatView = React.memo(({
             isLoadingMore={isLoadingMore}
             conversationId={conversation.id}
             agentStatus={conversation.agentInfo?.status}
+            config={config}
           />
         )}
       </div>

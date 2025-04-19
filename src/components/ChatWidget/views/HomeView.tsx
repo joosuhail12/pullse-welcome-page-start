@@ -42,7 +42,18 @@ const HomeView = React.memo(({
   const paddingSize = isMobile ? "p-3" : "p-4 sm:p-6";
 
   return (
-    <div className={`flex flex-col ${paddingSize} h-full animate-subtle-fade-in bg-gradient-to-br from-soft-purple-50 to-soft-purple-100`}>
+    <div
+      style={{
+        backgroundColor: config.colors?.backgroundColor || 'transparent'
+      }}
+      className={`
+        flex flex-col 
+        ${paddingSize} 
+        h-full 
+        animate-subtle-fade-in 
+        ${!config.colors?.backgroundColor && 'bg-gradient-to-br from-soft-purple-50 to-soft-purple-100'}
+      `}
+    >
       {/* Welcoming header with avatar */}
       <div className="flex flex-col items-center mb-3 sm:mb-7 transition-transform duration-300 hover:scale-[1.01]">
         <Avatar className={`${avatarSize} mb-2 sm:mb-5 shadow-md animate-subtle-scale border-2 border-white`}>

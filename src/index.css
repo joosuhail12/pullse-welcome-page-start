@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,8 +5,8 @@
 @layer components {
   .chat-message-user {
     @apply text-white;
-    background: linear-gradient(135deg, #9672f7 0%, #8b5cf6 100%);
-    box-shadow: 0 3px 12px rgba(139, 92, 246, 0.3);
+    /* background: linear-gradient(135deg, #9672f7 0%, #8b5cf6 100%); */
+    /* box-shadow: 0 3px 12px rgba(139, 92, 246, 0.3); */
     border-radius: 20px;
     border-bottom-right-radius: 4px;
     padding: 14px 16px;
@@ -21,18 +20,6 @@
 
   .chat-message-user:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4);
-  }
-
-  .chat-message-user:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: -8px;
-    width: 16px;
-    height: 16px;
-    background: linear-gradient(225deg, #8b5cf6 0%, #8b5cf6 100%);
-    border-bottom-left-radius: 16px;
-    z-index: -1;
+    /* box-shadow: 0 5px 15px rgba(139, 92, 246, 0.4); */
   }
 }

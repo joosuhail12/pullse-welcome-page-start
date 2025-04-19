@@ -9,6 +9,7 @@ import MessageReadReceipt, { MessageReadStatus } from '../MessageReadReceipt';
 import { cn } from '@/lib/utils';
 import { Paperclip, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { sanitizeInput } from '../../utils/validation';
+import { ChatWidgetConfig } from '../../config';
 
 const CardMessage = lazy(() => import('../MessageTypes/CardMessage'));
 const FileMessage = lazy(() => import('../MessageTypes/FileMessage'));
@@ -51,6 +52,7 @@ interface MessageBubbleProps {
   highlightSearchTerm?: (text: string, term: string) => { text: string; highlighted: boolean }[];
   showAvatar?: boolean;
   isConsecutive?: boolean;
+  config: ChatWidgetConfig;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
@@ -67,7 +69,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   searchTerm,
   onToggleHighlight,
   showAvatar = true,
-  isConsecutive = false
+  isConsecutive = false,
+  config
 }) => {
   const [showReactions, setShowReactions] = useState(false);
 
@@ -117,10 +120,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     return '';
   };
 
+
   const messageTypeClass = isUserMessage
-    ? `chat-message-user text-white ${isConsecutive ? 'rounded-t-md rounded-bl-md rounded-br-sm mt-1' : 'rounded-t-2xl rounded-bl-2xl rounded-br-sm'}`
+    ? `chat-message-user text-white rounded-t-2xl rounded-bl-2xl rounded-br-sm`
     : isBotMessage
-      ? `chat-message-system text-system-bubble-text ${isConsecutive ? 'rounded-t-md rounded-br-md rounded-bl-sm mt-1' : 'rounded-t-2xl rounded-br-2xl rounded-bl-sm'} border border-gray-100 ${getStatusBasedClasses()}`
+      ? `chat-message-system text-system-bubble-text rounded-t-2xl rounded-br-2xl rounded-bl-sm border border-gray-100 ${getStatusBasedClasses()}`
       : 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200';
 
   const messageContainerClass = isUserMessage
@@ -160,7 +164,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   const renderMessageContent = () => {
     switch (message.type) {
       case 'text':
-        return <p className="leading-relaxed">{renderText(sanitizedText)}</p>;
+        return <p style={
+          {
+            color: config.colors?.textColor
+          }
+        }
+          className="leading-relaxed">{renderText(sanitizedText)}</p>;
       case 'card':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
@@ -214,7 +223,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       case 'status':
         return <StatusMessage text={message.text} />;
       default:
-        return <p className="leading-relaxed">{renderText(sanitizedText)}</p>;
+        return <p style={
+          {
+            color: config.colors?.textColor
+          }
+        }
+          className="leading-relaxed">{renderText(sanitizedText)}</p>;
     }
   };
 
@@ -252,7 +266,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     );
   }
 
-  const avatarSpacing = showAvatar ? '' : isUserMessage ? 'mr-8' : 'ml-8';
+  const avatarSpacing = '' // showAvatar ? '' : isUserMessage ? `mr-${isConsecutive ? '4' : '8'}` : `ml-${isConsecutive ? '4' : '8'}`;
 
   return (
     <div
@@ -287,6 +301,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
           avatarSpacing
         )}
         onClick={onToggleHighlight}
+        style={
+          {
+            backgroundColor: isUserMessage ? config.colors?.userMessageBackgroundColor || 'transparent' : config.colors?.agentMessageBackgroundColor || 'transparent'
+          }
+        }
       >
         {renderMessageContent()}
 

@@ -15,11 +15,13 @@ import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchConversations } from '../services/api';
+import { ChatWidgetConfig } from '../config';
 
 interface MessagesViewProps {
   onSelectConversation: (conversation: Conversation) => void;
   onSelectTicket: (ticket: Ticket) => void;
   onStartChat: () => void;
+  config: ChatWidgetConfig;
 }
 
 type SortOrder = 'newest' | 'oldest';
@@ -64,7 +66,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [
   }
 ];
 
-const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat }: MessagesViewProps) => {
+const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, config }: MessagesViewProps) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -196,11 +198,11 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat }: Mes
     setIsSearching(true);
 
     const results = [
-      ...conversations.filter(conv => 
+      ...conversations.filter(conv =>
         conv.title.toLowerCase().includes(term.toLowerCase()) ||
         (conv.lastMessage && conv.lastMessage.toLowerCase().includes(term.toLowerCase()))
       ),
-      ...tickets.filter(ticket => 
+      ...tickets.filter(ticket =>
         ticket.title.toLowerCase().includes(term.toLowerCase()) ||
         (ticket.lastMessage && ticket.lastMessage.toLowerCase().includes(term.toLowerCase()))
       )
@@ -247,7 +249,7 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat }: Mes
     lastMonth.setMonth(lastMonth.getMonth() - 1);
 
     return items.reduce((groups: Record<string, (Conversation | Ticket)[]>, item) => {
-      const itemDate = new Date('createdAt' in item ? item.createdAt : item.createdAt);
+      const itemDate = new Date('createdAt' in item ? (item as Conversation).createdAt : (item as Ticket).createdAt);
       itemDate.setHours(0, 0, 0, 0);
 
       let groupName = 'Older';
@@ -285,9 +287,9 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat }: Mes
     }
 
     return filtered.sort((a, b) => {
-      const aDate = 'createdAt' in a ? dateToTimestamp(a.createdAt) : dateToTimestamp(a.createdAt);
-      const bDate = 'createdAt' in b ? dateToTimestamp(b.createdAt) : dateToTimestamp(b.createdAt);
-      
+      const aDate = 'createdAt' in a ? dateToTimestamp((a as Conversation).createdAt) : dateToTimestamp((a as Ticket).createdAt);
+      const bDate = 'createdAt' in b ? dateToTimestamp((b as Conversation).createdAt) : dateToTimestamp((b as Ticket).createdAt);
+
       return sortOrder === 'newest' ? bDate - aDate : aDate - bDate;
     });
   }, [conversations, tickets, sortOrder, statusFilter, searchTerm, searchResults]);
@@ -364,7 +366,7 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat }: Mes
 
   const handleItemSelect = useCallback((item: Conversation | Ticket) => {
     clearUnreadMessages();
-    
+
     if ('ticketId' in item) {
       onSelectConversation(item);
     } else {
@@ -444,13 +446,13 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat }: Mes
     const isTicket = !('ticketId' in item);
     const title = item.title;
     const status = isTicket ? (item as Ticket).status : (item as Conversation).status;
-    const createdDate = isTicket 
+    const createdDate = isTicket
       ? new Date((item as Ticket).createdAt)
       : (item as Conversation).createdAt;
-    const lastMessage = isTicket 
+    const lastMessage = isTicket
       ? (item as Ticket).lastMessage || 'No description available'
       : (item as Conversation).lastMessage || 'No messages yet';
-    const isUnread = isTicket 
+    const isUnread = isTicket
       ? Boolean((item as Ticket).unread)
       : (item as Conversation).unread;
 
@@ -530,7 +532,16 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat }: Mes
   };
 
   return (
-    <div className="flex flex-col p-2 h-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100">
+    <div
+      style={{
+        backgroundColor: config.colors?.backgroundColor || 'transparent'
+      }}
+      className={`
+      flex flex-col p-2 h-full
+      ${!config.colors?.backgroundColor && 'bg-gradient-to-br from-soft-purple-50 to-soft-purple-100'}
+    `}
+    >
+      {/* // <div className="flex flex-col p-2 h-full bg-gradient-to-br from-soft-purple-50 to-soft-purple-100"> */}
       <div className="mb-3 flex justify-between items-center px-2">
         <h2 className="font-semibold text-gray-700" id="messagesViewTitle">Recent Conversations</h2>
         <Tooltip>

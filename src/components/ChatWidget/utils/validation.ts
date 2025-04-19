@@ -15,9 +15,9 @@ import DOMPurify from 'dompurify';
 const MAX_MESSAGE_LENGTH = 2000;
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const ALLOWED_FILE_TYPES = [
-  'image/jpeg', 
-  'image/png', 
-  'image/gif', 
+  'image/jpeg',
+  'image/png',
+  'image/gif',
   'application/pdf',
   'text/plain',
   'application/msword',
@@ -44,12 +44,12 @@ const DOM_PURIFY_CONFIG = {
  * TODO: Consider adding domain-specific sanitization rules
  * TODO: Implement context-aware sanitization based on usage
  */
-export function sanitizeInput(input: string): string {
+export function sanitizeInput(input: string, trim: boolean = true): string {
   if (!input) return '';
-  
+
   // First trim the input
-  const trimmed = input.trim();
-  
+  const trimmed = trim ? input.trim() : input;
+
   // Use DOMPurify with strict configuration to sanitize HTML and prevent XSS
   return DOMPurify.sanitize(trimmed, DOM_PURIFY_CONFIG);
 }
@@ -66,7 +66,7 @@ export function sanitizeInput(input: string): string {
 export function contextSpecificSanitize(input: string, context: 'html' | 'url' | 'attribute' = 'html'): string {
   // First apply the basic sanitization
   const sanitized = sanitizeInput(input);
-  
+
   switch (context) {
     case 'url':
       // Additional URL-specific sanitization
@@ -75,11 +75,11 @@ export function contextSpecificSanitize(input: string, context: 'html' | 'url' |
         return encodeURI(sanitized);
       }
       return '';
-      
+
     case 'attribute':
       // Additional attribute-specific sanitization
       return sanitized.replace(/[^\w\s.,;:!?()-]/g, '');
-      
+
     case 'html':
     default:
       return sanitized;
@@ -96,14 +96,14 @@ export function contextSpecificSanitize(input: string, context: 'html' | 'url' |
  */
 export function validateMessage(text: string): string {
   if (!text || typeof text !== 'string') return '';
-  
-  const sanitized = sanitizeInput(text);
-  
+
+  const sanitized = sanitizeInput(text, false);
+
   // Check message length constraints
   if (sanitized.length > MAX_MESSAGE_LENGTH) {
     return sanitized.substring(0, MAX_MESSAGE_LENGTH); // Truncate overly long messages
   }
-  
+
   return sanitized;
 }
 
@@ -117,14 +117,14 @@ export function validateMessage(text: string): string {
  */
 export function validateFormData(formData: Record<string, string>): Record<string, string> {
   const sanitizedData: Record<string, string> = {};
-  
+
   for (const [key, value] of Object.entries(formData)) {
     // Sanitize the key as well to be extra safe
     const sanitizedKey = sanitizeInput(key);
-    
+
     // For extra security, apply context-specific sanitization based on field name
     let sanitizedValue = '';
-    
+
     if (key.toLowerCase().includes('email')) {
       // Email-specific validation
       sanitizedValue = sanitizeInput(value);
@@ -140,10 +140,10 @@ export function validateFormData(formData: Record<string, string>): Record<strin
       // General text validation
       sanitizedValue = sanitizeInput(value);
     }
-    
+
     sanitizedData[sanitizedKey] = sanitizedValue;
   }
-  
+
   return sanitizedData;
 }
 
@@ -183,7 +183,7 @@ export function validateFile(file: File): boolean {
   if (!isValidFileSize(file.size)) {
     return false;
   }
-  
+
   // Check file type
   return isAllowedFileType(file.type);
 }
@@ -198,14 +198,14 @@ export function validateFile(file: File): boolean {
  */
 export function sanitizeFileName(fileName: string): string {
   if (!fileName) return 'unnamed_file';
-  
+
   // Remove path traversal characters and normalize
   const sanitized = fileName
     .replace(/\.\.\//g, '') // Remove path traversal sequences
     .replace(/[/\\]/g, '_') // Replace slashes with underscores
     .replace(/;|&|`|\||>|<|$/g, '_') // Replace shell special chars
     .replace(/\s+/g, '_');  // Replace spaces with underscores
-    
+
   return sanitized;
 }
 
@@ -246,26 +246,26 @@ export function isValidPhoneNumber(phone: string): boolean {
  */
 export function validateField(name: string, value: string, isRequired: boolean): string | null {
   const sanitized = value.trim();
-  
+
   // Required field validation
   if (isRequired && !sanitized) {
     return "This field is required";
   }
-  
+
   // Email validation
   if (name.toLowerCase().includes('email') && sanitized) {
     if (!isValidEmail(sanitized)) {
       return "Please enter a valid email address";
     }
   }
-  
+
   // Phone validation
   if ((name.toLowerCase().includes('phone') || name.toLowerCase().includes('tel')) && sanitized) {
     if (!isValidPhoneNumber(sanitized)) {
       return "Please enter a valid phone number";
     }
   }
-  
+
   // URL validation
   if ((name.toLowerCase().includes('url') || name.toLowerCase().includes('website')) && sanitized) {
     try {
@@ -274,7 +274,7 @@ export function validateField(name: string, value: string, isRequired: boolean):
       return "Please enter a valid URL";
     }
   }
-  
+
   return null;
 }
 

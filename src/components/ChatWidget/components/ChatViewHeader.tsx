@@ -80,8 +80,7 @@ const ChatViewHeader: React.FC<ChatViewHeaderProps> = ({
                 <h3 className="font-semibold truncate text-md text-black">
                   {conversation.title}
                 </h3>
-
-                <Tooltip>
+                <Tooltip delayDuration={100}>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"

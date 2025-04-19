@@ -59,18 +59,6 @@ const ChatWidget = () => {
     }
   }, [config, error]);
 
-  // If contactData is available from the API but userFormData is not set, initialize it
-  useEffect(() => {
-    if (contactData && !userFormData) {
-      // Create form data from contact
-      const formData = {
-        email: contactData.email,
-        name: `${contactData.firstname} ${contactData.lastname}`.trim()
-      };
-      setUserFormData(formData);
-    }
-  }, [contactData, userFormData, setUserFormData]);
-
   const widgetStyle = useMemo(() => ({
     ...(config?.colors?.primaryColor && {
       '--vivid-purple': config.colors.primaryColor,

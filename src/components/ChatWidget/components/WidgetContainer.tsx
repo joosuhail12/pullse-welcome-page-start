@@ -102,6 +102,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
               onSelectConversation={handleSelectConversation}
               onSelectTicket={handleSelectTicket || (() => { })}
               onStartChat={() => handleStartChat()}
+              config={config}
             />
           )}
         </div>

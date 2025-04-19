@@ -7,6 +7,7 @@ import PoweredByBar from './PoweredByBar';
 import { MessageReadStatus } from './MessageReadReceipt';
 import StatusChangeNotification from './StatusChangeNotification';
 import EstimatedResponseTime from './EstimatedResponseTime';
+import { ChatWidgetConfig } from '../config';
 
 interface ChatBodyProps {
   messages: Message[];
@@ -35,6 +36,7 @@ interface ChatBodyProps {
   onToggleHighlight?: (messageId: string) => void;
   typingDuration?: number; // Added typingDuration prop
   previousAgentStatus?: AgentStatus; // Added to track status changes
+  config: ChatWidgetConfig;
 }
 
 const ChatBody: React.FC<ChatBodyProps> = ({
@@ -63,12 +65,13 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   agentStatus = 'online',
   onToggleHighlight,
   typingDuration = 0, // Default value for typingDuration
-  previousAgentStatus
+  previousAgentStatus,
+  config
 }) => {
   const [typingStartTime, setTypingStartTime] = useState<number | null>(null);
   const [calculatedTypingDuration, setCalculatedTypingDuration] = useState(typingDuration);
   const [lastStatusChange, setLastStatusChange] = useState<Date | null>(null);
-  
+
   // Track how long typing has been active
   useEffect(() => {
     if (remoteIsTyping && !typingStartTime) {
@@ -78,15 +81,15 @@ const ChatBody: React.FC<ChatBodyProps> = ({
       setCalculatedTypingDuration(0);
     }
   }, [remoteIsTyping, typingStartTime]);
-  
+
   // Update typing duration while typing is active
   useEffect(() => {
     if (!typingStartTime) return;
-    
+
     const intervalId = setInterval(() => {
       setCalculatedTypingDuration(Date.now() - typingStartTime);
     }, 1000);
-    
+
     return () => clearInterval(intervalId);
   }, [typingStartTime]);
 
@@ -100,7 +103,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
   return (
     <div className="flex flex-col flex-grow overflow-hidden">
       {inlineFormComponent}
-      
+
       {(!showInlineForm || conversationId) && (
         <div className="flex-grow flex flex-col">
           {/* Status indicators */}
@@ -115,14 +118,14 @@ const ChatBody: React.FC<ChatBodyProps> = ({
                 />
               </div>
             )}
-            
+
             {/* Estimated response time indicator */}
             <div className="flex justify-center mb-3">
               <EstimatedResponseTime agentStatus={agentStatus} />
             </div>
           </div>
-        
-          <MessageList 
+
+          <MessageList
             messages={messages}
             isTyping={isTyping || remoteIsTyping}
             setMessageText={setMessageText}
@@ -140,10 +143,11 @@ const ChatBody: React.FC<ChatBodyProps> = ({
             agentStatus={agentStatus}
             onToggleHighlight={onToggleHighlight}
             typingDuration={typingDuration || calculatedTypingDuration}
+            config={config}
           />
         </div>
       )}
-      
+
       <div className="flex-shrink-0">
         <MessageInput
           messageText={messageText}
@@ -155,7 +159,7 @@ const ChatBody: React.FC<ChatBodyProps> = ({
           onTyping={handleUserTyping}
           disabled={showInlineForm}
         />
-        
+
         <PoweredByBar />
       </div>
     </div>

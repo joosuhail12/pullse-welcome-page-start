@@ -187,6 +187,7 @@ const ChatViewPresentation = ({
           onToggleHighlight={onToggleMessageImportance}
           typingDuration={3000} // Add smart typing duration
           previousAgentStatus={previousAgentStatus} // Pass previous agent status
+          config={config}
         />
       </ChatKeyboardHandler>
 
