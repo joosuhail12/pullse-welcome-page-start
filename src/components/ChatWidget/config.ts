@@ -69,17 +69,15 @@ export interface PreChatFormField {
   entityname: string;
   columnname: string;
   label: string;
-  type: string;
+  type?: string;
   placeholder?: string;
   required: boolean;
-  options?: string[];
+  options?: string[] | null;
+  position: number;
 }
 
 export interface WidgetField {
-  contactFields: PreChatFormField[];
-  companyFields: PreChatFormField[];
-  customDataFields: PreChatFormField[];
-  customObjectFields?: any[];
+  fields: PreChatFormField[];
 }
 
 export interface ChatWidgetConfig {
@@ -198,7 +196,7 @@ export const defaultConfig: ChatWidgetConfig = {
   },
   realtime: true, // Add realtime flag for existing code
   widgetfield: {
-    contactFields: [
+    fields: [
       {
         entityname: 'contact',
         columnname: 'email',
@@ -206,10 +204,8 @@ export const defaultConfig: ChatWidgetConfig = {
         type: 'email',
         placeholder: 'Enter your email',
         required: true,
-        options: []
+        position: 1
       }
-    ],
-    companyFields: [],
-    customDataFields: []
+    ]
   }
 };

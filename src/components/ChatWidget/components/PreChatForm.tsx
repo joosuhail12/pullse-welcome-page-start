@@ -1,12 +1,27 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { validateField, validateFormData, sanitizeInput } from '../utils/validation';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { validateField } from '../utils/validation';
 import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig, PreChatFormField } from '../config';
 import { User, AtSign } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+
+interface PreChatFormProps {
+  config: ChatWidgetConfig;
+  onFormComplete: (formData: FormDataStructure) => void;
+}
+
+export interface FormDataStructure {
+  contact: FormField[];
+  company: FormField[];
+  customData: FormField[];
+  ticket: FormField[];
+  customobjectfield: FormField[];
+}
 
 interface FormField {
   entityname: string;
@@ -18,32 +33,23 @@ interface FormField {
   placeholder?: string;
 }
 
-interface FormDataStructure {
-  contact: FormField[];
-  company: FormField[];
-  customData: FormField[];
-}
-
-interface PreChatFormProps {
-  config: ChatWidgetConfig;
-  onFormComplete: (formData: FormDataStructure) => void;
-}
-
 const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
   const [formData, setFormData] = useState<Record<string, Record<string, string>>>({
     contact: {},
     company: {},
-    customData: {}
+    customData: {},
+    ticket: {},
+    customobjectfield: {}
   });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formValid, setFormValid] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const isMobile = useIsMobile();
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    field: PreChatFormField
-  ) => {
+  // Get all fields and sort by position
+  const sortedFields = (config.widgetfield?.fields || []).sort((a, b) => a.position - b.position);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } }, field: PreChatFormField) => {
     const { value } = e.target;
     const { entityname, columnname } = field;
 
@@ -59,13 +65,11 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
       [`${entityname}.${columnname}`]: error || ''
     }));
 
-    const sanitized = sanitizeInput(value);
-
     setFormData(prev => ({
       ...prev,
       [entityname]: {
         ...prev[entityname],
-        [columnname]: sanitized
+        [columnname]: value
       }
     }));
 
@@ -73,19 +77,13 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
       ...formData,
       [entityname]: {
         ...formData[entityname],
-        [columnname]: sanitized
+        [columnname]: value
       }
     });
   };
 
   const validateFormCompletion = (data: Record<string, any>) => {
-    const allFields = [
-      ...config.widgetfield.contactFields,
-      ...config.widgetfield.companyFields,
-      ...config.widgetfield.customDataFields
-    ];
-
-    const requiredFields = allFields.filter(field => field.required);
+    const requiredFields = sortedFields.filter(field => field.required);
 
     const allRequiredFilled = requiredFields.every(field => {
       const { entityname, columnname } = field;
@@ -104,18 +102,14 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
     const structuredData: FormDataStructure = {
       contact: [],
       company: [],
-      customData: []
+      customData: [],
+      ticket: [],
+      customobjectfield: []
     };
-
-    const allFields = [
-      ...config.widgetfield.contactFields,
-      ...config.widgetfield.companyFields,
-      ...config.widgetfield.customDataFields
-    ];
 
     Object.entries(formData).forEach(([entityName, columnData]) => {
       Object.entries(columnData).forEach(([columnName, value]) => {
-        const fieldConfig = allFields.find(
+        const fieldConfig = sortedFields.find(
           field => field.entityname === entityName && field.columnname === columnName
         );
 
@@ -124,19 +118,13 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
             entityname: fieldConfig.entityname,
             columnname: fieldConfig.columnname,
             value: value,
-            type: fieldConfig.type,
+            type: fieldConfig.type || 'text',
             label: fieldConfig.label,
             required: fieldConfig.required,
             placeholder: fieldConfig.placeholder
           };
 
-          if (entityName === 'contact') {
-            structuredData.contact.push(fieldData);
-          } else if (entityName === 'company') {
-            structuredData.company.push(fieldData);
-          } else {
-            structuredData.customData.push(fieldData);
-          }
+          structuredData[fieldConfig.entityname as keyof FormDataStructure].push(fieldData);
         }
       });
     });
@@ -145,31 +133,60 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
     onFormComplete(structuredData);
   };
 
-  const primaryColor = config.colors?.primaryColor || '#8B5CF6';
+  const renderField = (field: PreChatFormField) => {
+    if (field.type === 'select' && field.options) {
+      return (
+        <Select
+          onValueChange={(value) => handleInputChange({ target: { name: `${field.entityname}.${field.columnname}`, value } }, field)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={field.placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {field.options.map((option) => (
+              <SelectItem key={option} value={option}>
+                {option}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    }
 
-  const handleBlur = (field: string) => {
-    setTouched(prev => ({
-      ...prev,
-      [field]: true
-    }));
-  };
-
-  const getFieldIcon = (fieldName: string) => {
-    if (fieldName.includes('name') || fieldName.includes('first'))
-      return <User className="text-gray-400 w-4 h-4" />;
-    if (fieldName.includes('email'))
-      return <AtSign className="text-gray-400 w-4 h-4" />;
-    return null;
+    return (
+      <Input
+        id={`${field.entityname}.${field.columnname}`}
+        name={`${field.entityname}.${field.columnname}`}
+        type={field.type || 'text'}
+        required={field.required}
+        placeholder={field.placeholder}
+        value={formData[field.entityname]?.[field.columnname] || ''}
+        onChange={(e) => handleInputChange(e, field)}
+        onBlur={() => setTouched(prev => ({
+          ...prev,
+          [`${field.entityname}.${field.columnname}`]: true
+        }))}
+        className={`pl-10 h-9 sm:h-10 transition-all text-xs sm:text-sm ${
+          touched[`${field.entityname}.${field.columnname}`] &&
+          formErrors[`${field.entityname}.${field.columnname}`]
+            ? 'border-red-500 bg-red-50'
+            : touched[`${field.entityname}.${field.columnname}`] &&
+              !formErrors[`${field.entityname}.${field.columnname}`]
+              ? 'border-green-500 bg-green-50'
+              : 'border-gray-200'
+        }`}
+      />
+    );
   };
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-4 border border-gray-100 animate-fade-in w-full max-w-full sm:max-w-md mx-auto">
       <h3 className="text-center font-semibold mb-3 sm:mb-4 text-gray-700 text-sm sm:text-base">
-        {'Please provide your information to continue'}
+        Please provide your information to continue
       </h3>
 
       <div className="space-y-3 sm:space-y-4">
-        {config.widgetfield.contactFields.map((field, index) => (
+        {sortedFields.map((field) => (
           <div key={`${field.entityname}.${field.columnname}`} className="space-y-1">
             <Label
               htmlFor={`${field.entityname}.${field.columnname}`}
@@ -181,142 +198,19 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
 
             <div className="relative">
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                {getFieldIcon(field.columnname)}
+                {field.entityname === 'contact' && field.columnname === 'email' ? (
+                  <AtSign className="text-gray-400 w-4 h-4" />
+                ) : (
+                  <User className="text-gray-400 w-4 h-4" />
+                )}
               </div>
 
-              <Input
-                id={`${field.entityname}.${field.columnname}`}
-                name={`${field.entityname}.${field.columnname}`}
-                type={field.type}
-                required={field.required}
-                placeholder={field.placeholder}
-                value={formData[field.entityname]?.[field.columnname] || ''}
-                onChange={(e) => handleInputChange(e, field)}
-                onBlur={() => handleBlur(`${field.entityname}.${field.columnname}`)}
-                className={`pl-10 h-9 sm:h-10 transition-all text-xs sm:text-sm ${touched[`${field.entityname}.${field.columnname}`] &&
-                  formErrors[`${field.entityname}.${field.columnname}`]
-                  ? 'border-red-500 bg-red-50'
-                  : touched[`${field.entityname}.${field.columnname}`] &&
-                    !formErrors[`${field.entityname}.${field.columnname}`]
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-200'
-                  }`}
-                aria-describedby={
-                  formErrors[`${field.entityname}.${field.columnname}`]
-                    ? `${field.entityname}.${field.columnname}-error`
-                    : undefined
-                }
-              />
+              {renderField(field)}
             </div>
 
             {touched[`${field.entityname}.${field.columnname}`] &&
               formErrors[`${field.entityname}.${field.columnname}`] && (
                 <p
-                  id={`${field.entityname}.${field.columnname}-error`}
-                  className="text-2xs sm:text-xs text-red-500 mt-1 animate-fade-in"
-                >
-                  {formErrors[`${field.entityname}.${field.columnname}`]}
-                </p>
-              )}
-          </div>
-        ))}
-
-        {config.widgetfield.companyFields.map((field, index) => (
-          <div key={`${field.entityname}.${field.columnname}`} className="space-y-1">
-            <Label
-              htmlFor={`${field.entityname}.${field.columnname}`}
-              className="text-xs sm:text-sm font-medium flex items-center gap-1"
-            >
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </Label>
-
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                {getFieldIcon(field.columnname)}
-              </div>
-
-              <Input
-                id={`${field.entityname}.${field.columnname}`}
-                name={`${field.entityname}.${field.columnname}`}
-                type={field.type}
-                required={field.required}
-                placeholder={field.placeholder}
-                value={formData[field.entityname]?.[field.columnname] || ''}
-                onChange={(e) => handleInputChange(e, field)}
-                onBlur={() => handleBlur(`${field.entityname}.${field.columnname}`)}
-                className={`pl-10 h-9 sm:h-10 transition-all text-xs sm:text-sm ${touched[`${field.entityname}.${field.columnname}`] &&
-                  formErrors[`${field.entityname}.${field.columnname}`]
-                  ? 'border-red-500 bg-red-50'
-                  : touched[`${field.entityname}.${field.columnname}`] &&
-                    !formErrors[`${field.entityname}.${field.columnname}`]
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-200'
-                  }`}
-                aria-describedby={
-                  formErrors[`${field.entityname}.${field.columnname}`]
-                    ? `${field.entityname}.${field.columnname}-error`
-                    : undefined
-                }
-              />
-            </div>
-
-            {touched[`${field.entityname}.${field.columnname}`] &&
-              formErrors[`${field.entityname}.${field.columnname}`] && (
-                <p
-                  id={`${field.entityname}.${field.columnname}-error`}
-                  className="text-2xs sm:text-xs text-red-500 mt-1 animate-fade-in"
-                >
-                  {formErrors[`${field.entityname}.${field.columnname}`]}
-                </p>
-              )}
-          </div>
-        ))}
-
-        {config.widgetfield.customDataFields.map((field, index) => (
-          <div key={`${field.entityname}.${field.columnname}`} className="space-y-1">
-            <Label
-              htmlFor={`${field.entityname}.${field.columnname}`}
-              className="text-xs sm:text-sm font-medium flex items-center gap-1"
-            >
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </Label>
-
-            <div className="relative">
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                {getFieldIcon(field.columnname)}
-              </div>
-
-              <Input
-                id={`${field.entityname}.${field.columnname}`}
-                name={`${field.entityname}.${field.columnname}`}
-                type={field.type}
-                required={field.required}
-                placeholder={field.placeholder}
-                value={formData[field.entityname]?.[field.columnname] || ''}
-                onChange={(e) => handleInputChange(e, field)}
-                onBlur={() => handleBlur(`${field.entityname}.${field.columnname}`)}
-                className={`pl-10 h-9 sm:h-10 transition-all text-xs sm:text-sm ${touched[`${field.entityname}.${field.columnname}`] &&
-                  formErrors[`${field.entityname}.${field.columnname}`]
-                  ? 'border-red-500 bg-red-50'
-                  : touched[`${field.entityname}.${field.columnname}`] &&
-                    !formErrors[`${field.entityname}.${field.columnname}`]
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-200'
-                  }`}
-                aria-describedby={
-                  formErrors[`${field.entityname}.${field.columnname}`]
-                    ? `${field.entityname}.${field.columnname}-error`
-                    : undefined
-                }
-              />
-            </div>
-
-            {touched[`${field.entityname}.${field.columnname}`] &&
-              formErrors[`${field.entityname}.${field.columnname}`] && (
-                <p
-                  id={`${field.entityname}.${field.columnname}-error`}
                   className="text-2xs sm:text-xs text-red-500 mt-1 animate-fade-in"
                 >
                   {formErrors[`${field.entityname}.${field.columnname}`]}
@@ -332,7 +226,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
           disabled={!formValid}
           className="w-full h-9 sm:h-11 text-white transition-all text-xs sm:text-sm"
           style={{
-            backgroundColor: primaryColor,
+            backgroundColor: config.colors?.primaryColor || '#8B5CF6',
             opacity: formValid ? 1 : 0.7
           }}
         >
