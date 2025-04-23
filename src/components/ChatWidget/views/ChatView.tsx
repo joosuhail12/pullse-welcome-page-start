@@ -5,7 +5,7 @@ import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
 import ChatViewHeader from '../components/ChatViewHeader';
-import PreChatForm from '../components/PreChatForm';
+import PreChatForm, { FormDataStructure } from '../components/PreChatForm';
 import { useChatMessages } from '../hooks/useChatMessages';
 import { useMessageReactions } from '../hooks/useMessageReactions';
 import { useMessageSearch } from '../hooks/useMessageSearch';
@@ -133,7 +133,7 @@ const ChatView = React.memo(({
 
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
-      return <PreChatForm config={config} onFormComplete={handleFormComplete} />;
+      return <PreChatForm config={config} onFormComplete={handleFormComplete as (formData: FormDataStructure) => void} />;
     }
     return null;
   }, [showInlineForm, config, handleFormComplete]);

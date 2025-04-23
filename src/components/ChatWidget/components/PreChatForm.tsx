@@ -47,7 +47,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
   const isMobile = useIsMobile();
 
   // Get all fields and sort by position
-  const sortedFields = (config.widgetfield?.fields || []).sort((a, b) => a.position - b.position);
+  const sortedFields = (config.widgetfield || []).sort((a, b) => a.position - b.position);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } }, field: PreChatFormField) => {
     const { value } = e.target;
@@ -124,7 +124,13 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
             placeholder: fieldConfig.placeholder
           };
 
-          structuredData[fieldConfig.entityname as keyof FormDataStructure].push(fieldData);
+          if (entityName === 'customfield') {
+            structuredData.customData.push(fieldData);
+          } else if (entityName === 'customobjectfield') {
+            structuredData.customobjectfield.push(fieldData);
+          } else {
+            structuredData[entityName as keyof FormDataStructure].push(fieldData);
+          }
         }
       });
     });
@@ -139,7 +145,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
         <Select
           onValueChange={(value) => handleInputChange({ target: { name: `${field.entityname}.${field.columnname}`, value } }, field)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="pl-10">
             <SelectValue placeholder={field.placeholder} />
           </SelectTrigger>
           <SelectContent>
@@ -164,7 +170,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
         onChange={(e) => handleInputChange(e, field)}
         onBlur={() => setTouched(prev => ({
           ...prev,
-          [`${field.entityname}.${field.columnname}`]: true
+          [`${field.entityname}.${columnname}`]: true
         }))}
         className={`pl-10 h-9 sm:h-10 transition-all text-xs sm:text-sm ${
           touched[`${field.entityname}.${field.columnname}`] &&
