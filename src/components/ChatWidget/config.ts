@@ -1,4 +1,5 @@
 
+
 export interface ChatEventPayload {
   type: ChatEventType;
   timestamp: Date;
@@ -204,3 +205,4 @@ export const defaultConfig: ChatWidgetConfig = {
     }
   ]
 };
+

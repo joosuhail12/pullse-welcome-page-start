@@ -46,8 +46,11 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const isMobile = useIsMobile();
 
-  // Get all fields and sort by position
-  const sortedFields = (config.widgetfield || []).sort((a, b) => a.position - b.position);
+  // Get all fields and ensure widgetfield is an array before sorting
+  const fields = config.widgetfield || [];
+  const sortedFields = Array.isArray(fields) 
+    ? fields.sort((a, b) => a.position - b.position)
+    : [];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } }, field: PreChatFormField) => {
     const { value } = e.target;
@@ -170,7 +173,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
         onChange={(e) => handleInputChange(e, field)}
         onBlur={() => setTouched(prev => ({
           ...prev,
-          [`${field.entityname}.${columnname}`]: true
+          [`${field.entityname}.${field.columnname}`]: true
         }))}
         className={`pl-10 h-9 sm:h-10 transition-all text-xs sm:text-sm ${
           touched[`${field.entityname}.${field.columnname}`] &&
