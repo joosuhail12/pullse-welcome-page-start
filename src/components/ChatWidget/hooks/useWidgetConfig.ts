@@ -71,24 +71,6 @@ export function useWidgetConfig() {
           hasBranding: !!fetchedConfig.brandAssets
         });
 
-        // Ensure widgetfield is always an array
-        if (fetchedConfig.widgetfield && !Array.isArray(fetchedConfig.widgetfield)) {
-          // If it's not an array, log the issue
-          logger.warn('widgetfield is not an array, converting to expected format', 'useWidgetConfig');
-          
-          // Try to fix if we have an object with widgettheme-like structure (from previous versions)
-          if (fetchedConfig.widgetfield && typeof fetchedConfig.widgetfield === 'object') {
-            if ('fields' in fetchedConfig.widgetfield) {
-              fetchedConfig.widgetfield = fetchedConfig.widgetfield.fields;
-            } else {
-              // Default to an empty array if we can't convert
-              fetchedConfig.widgetfield = [];
-            }
-          } else {
-            fetchedConfig.widgetfield = [];
-          }
-        }
-
         // Mark that we've fetched the config
         configFetchedRef.current = true;
 

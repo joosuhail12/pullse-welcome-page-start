@@ -1,5 +1,3 @@
-
-
 export interface ChatEventPayload {
   type: ChatEventType;
   timestamp: Date;
@@ -71,11 +69,17 @@ export interface PreChatFormField {
   entityname: string;
   columnname: string;
   label: string;
-  type?: string;
+  type: string;
   placeholder?: string;
   required: boolean;
-  options?: string[] | null;
-  position: number;
+  options?: string[];
+}
+
+export interface WidgetField {
+  contactFields: PreChatFormField[];
+  companyFields: PreChatFormField[];
+  customDataFields: PreChatFormField[];
+  customObjectFields?: any[];
 }
 
 export interface ChatWidgetConfig {
@@ -100,7 +104,7 @@ export interface ChatWidgetConfig {
   lazyLoadScroll?: boolean;
   scrollThreshold?: number;
   contact?: any;
-  widgetfield?: PreChatFormField[];
+  widgetfield?: WidgetField;
   sessionId?: string;
   realtime?: boolean; // Add realtime flag for backward compatibility
 }
@@ -193,16 +197,19 @@ export const defaultConfig: ChatWidgetConfig = {
     }
   },
   realtime: true, // Add realtime flag for existing code
-  widgetfield: [
-    {
-      entityname: 'contact',
-      columnname: 'email',
-      label: 'Email',
-      type: 'email',
-      placeholder: 'Enter your email',
-      required: true,
-      position: 1
-    }
-  ]
+  widgetfield: {
+    contactFields: [
+      {
+        entityname: 'contact',
+        columnname: 'email',
+        label: 'Email',
+        type: 'email',
+        placeholder: 'Enter your email',
+        required: true,
+        options: []
+      }
+    ],
+    companyFields: [],
+    customDataFields: []
+  }
 };
-
