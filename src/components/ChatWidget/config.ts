@@ -75,12 +75,7 @@ export interface PreChatFormField {
   options?: string[];
 }
 
-export interface WidgetField {
-  contactFields: PreChatFormField[];
-  companyFields: PreChatFormField[];
-  customDataFields: PreChatFormField[];
-  customObjectFields?: any[];
-}
+export type WidgetField = PreChatFormField[];
 
 export interface ChatWidgetConfig {
   workspaceId: string;

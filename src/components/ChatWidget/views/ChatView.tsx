@@ -173,7 +173,9 @@ const ChatView = React.memo(({
         showSearchFeature={!!config?.features?.searchMessages}
       />
 
-      <div className="flex-grow overflow-hidden flex flex-col">
+      <div style={{
+        overflow: 'scroll'
+      }} className="flex-grow flex flex-col">
         {showInlineForm ? (
           <div className="flex-grow flex flex-col justify-center items-center p-4 bg-gradient-to-br from-[#f8f7ff] to-[#f5f3ff]">
             <div className="w-full max-w-md">
