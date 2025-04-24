@@ -178,7 +178,7 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
       async () => {
         // Check if we have a session ID
         const accessToken = getAccessToken();
-        const url = `http://localhost:4000/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(sanitizedWorkspaceId)}`;
+        const url = `https://dev-socket.pullseai.com/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(sanitizedWorkspaceId)}`;
 
         // Generate timestamp for request signing
         const timestamp = Date.now();
