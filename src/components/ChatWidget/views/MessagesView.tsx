@@ -179,7 +179,6 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
     const setDate = new Date(date);
     const diff = now.getTime() - setDate.getTime();
 
-    console.log(diff, date);
 
     if (diff < 1000 * 60 * 60) {
       return `${Math.floor(diff / (1000 * 60))}m ago`;
@@ -512,7 +511,7 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
           <span className="text-xs text-gray-500">{formatTime(item.createdAt)}</span>
         </div>
 
-        <p className={`text-sm ${isUnread ? 'text-gray-700' : 'text-gray-500'} mt-1.5 ml-6 line-clamp-1 font-normal`}>
+        <p className={`text-sm ${isUnread ? 'text-gray-700' : 'text-gray-500'} mt-1.5 ml-6 line-clamp-1 font-normal text-left`}>
           {lastMessage}
         </p>
 

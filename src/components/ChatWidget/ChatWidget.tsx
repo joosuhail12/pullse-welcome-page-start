@@ -89,6 +89,11 @@ const ChatWidget = () => {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [toggleChat]);
 
+  // Don't render if there's no apiKey or workspaceId
+  if (!apiKey || !workspaceId) {
+    return null;
+  }
+
   // Don't render anything while loading
   if (loading) {
     return null;
