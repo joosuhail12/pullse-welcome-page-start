@@ -1,3 +1,4 @@
+
 export interface ChatEventPayload {
   type: ChatEventType;
   timestamp: Date;
@@ -73,9 +74,14 @@ export interface PreChatFormField {
   placeholder?: string;
   required: boolean;
   options?: string[];
+  position?: number;
 }
 
-export type WidgetField = PreChatFormField[];
+export type WidgetField = PreChatFormField[] | { 
+  contactFields?: PreChatFormField[];
+  companyFields?: PreChatFormField[];
+  customDataFields?: PreChatFormField[];
+};
 
 export interface ChatWidgetConfig {
   workspaceId: string;

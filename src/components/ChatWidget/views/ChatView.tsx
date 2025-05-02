@@ -6,6 +6,7 @@ import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
 import ChatViewHeader from '../components/ChatViewHeader';
 import PreChatForm from '../components/PreChatForm';
+import ConversationRating from '../components/ConversationRating';
 import { useChatMessages } from '../hooks/useChatMessages';
 import { useMessageReactions } from '../hooks/useMessageReactions';
 import { useMessageSearch } from '../hooks/useMessageSearch';
@@ -38,6 +39,15 @@ const ChatView = React.memo(({
 }: ChatViewProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Check if conversation rating should be shown
+  const showRating = useMemo(() => {
+    return (
+      config?.interfaceSettings?.enableConversationRating === true &&
+      (conversation.status === 'ended' || conversation.status === 'closed') &&
+      !conversation.rating
+    );
+  }, [config?.interfaceSettings?.enableConversationRating, conversation.status, conversation.rating]);
 
   const {
     showInlineForm,
@@ -138,6 +148,18 @@ const ChatView = React.memo(({
     return null;
   }, [showInlineForm, config, handleFormComplete]);
 
+  const handleSubmitRating = (rating: number) => {
+    console.log('User submitted rating:', rating);
+    // For now, just logging the rating as per requirements
+    // In the future, this would call an API to save the rating
+    
+    // Update the conversation to include the rating so it doesn't show again
+    onUpdateConversation({
+      ...conversation,
+      rating
+    });
+  };
+
   const chatViewStyle = useMemo(() => {
     return {
       ...(config?.colors?.primaryColor && {
@@ -183,24 +205,33 @@ const ChatView = React.memo(({
             </div>
           </div>
         ) : (
-          <MessageList
-            messages={messages}
-            isTyping={isTyping || remoteIsTyping}
-            setMessageText={setMessageText}
-            readReceipts={readReceipts}
-            onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
-            searchResults={messageIds}
-            highlightMessage={highlightText}
-            searchTerm={searchTerm}
-            agentAvatar={agentAvatar}
-            userAvatar={userAvatar}
-            onScrollTop={handleLoadMoreMessages}
-            hasMoreMessages={hasMoreMessages}
-            isLoadingMore={isLoadingMore}
-            conversationId={conversation.id}
-            agentStatus={conversation.agentInfo?.status}
-            config={config}
-          />
+          <>
+            <MessageList
+              messages={messages}
+              isTyping={isTyping || remoteIsTyping}
+              setMessageText={setMessageText}
+              readReceipts={readReceipts}
+              onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
+              searchResults={messageIds}
+              highlightMessage={highlightText}
+              searchTerm={searchTerm}
+              agentAvatar={agentAvatar}
+              userAvatar={userAvatar}
+              onScrollTop={handleLoadMoreMessages}
+              hasMoreMessages={hasMoreMessages}
+              isLoadingMore={isLoadingMore}
+              conversationId={conversation.id}
+              agentStatus={conversation.agentInfo?.status}
+              config={config}
+            />
+            
+            {/* Rating component - shown only when conditions are met */}
+            {showRating && (
+              <div className="mx-4 my-2">
+                <ConversationRating onSubmitRating={handleSubmitRating} />
+              </div>
+            )}
+          </>
         )}
       </div>
 

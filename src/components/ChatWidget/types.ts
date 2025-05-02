@@ -1,4 +1,3 @@
-
 export interface Message {
   id: string;
   text: string;
@@ -28,21 +27,22 @@ export type AgentStatus = 'online' | 'offline' | 'away' | 'busy';
 export interface Conversation {
   id: string;
   title: string;
-  messages?: Message[];
   createdAt: Date;
+  status?: 'active' | 'ended' | 'closed' | 'open';
   lastMessage?: string;
-  status?: 'active' | 'ended' | 'open'; // Updated to include 'open'
+  messages?: Message[];
+  timestamp?: Date;
+  unread?: boolean;
+  ticketId?: string;
+  sessionId?: string;
   agentInfo?: {
+    id?: string;
     name?: string;
     avatar?: string;
     status?: AgentStatus;
+    email?: string;
   };
-  metadata?: any;
-  sessionId?: string;
-  contactIdentified?: boolean;
-  unread?: boolean; // New property to track unread status
-  isResolved?: boolean; // Property to track if conversation is resolved
-  ticketId?: string; // Added to link conversation to a ticket
+  rating?: number;  // Add rating field to the Conversation interface
 }
 
 export interface Agent {
