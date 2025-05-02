@@ -477,7 +477,7 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
           <div className="flex items-center">
             <div className="relative">
               <MessageSquare size={16} className="text-vivid-purple mr-2 flex-shrink-0" aria-hidden="true" />
-              {status && (
+              {/* {status && ( //TODO: Add Toggle for this
                 <div
                   className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-white"
                   style={{
@@ -485,7 +485,7 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
                   }}
                   aria-hidden="true"
                 />
-              )}
+              )} */}
             </div>
             <div>
               <div className="flex items-center gap-2">
