@@ -179,6 +179,8 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
     const setDate = new Date(date);
     const diff = now.getTime() - setDate.getTime();
 
+    console.log(diff, date);
+
     if (diff < 1000 * 60 * 60) {
       return `${Math.floor(diff / (1000 * 60))}m ago`;
     } else if (diff < 1000 * 60 * 60 * 24) {
@@ -507,7 +509,7 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
               </div>
             </div>
           </div>
-          <span className="text-xs text-gray-500">{formatTime(createdDate)}</span>
+          <span className="text-xs text-gray-500">{formatTime(item.createdAt)}</span>
         </div>
 
         <p className={`text-sm ${isUnread ? 'text-gray-700' : 'text-gray-500'} mt-1.5 ml-6 line-clamp-1 font-normal`}>
@@ -519,11 +521,11 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
             <TooltipTrigger asChild>
               <div className="flex items-center">
                 <Calendar size={12} className="mr-1" />
-                <span>Started {formatDateDisplay(createdDate)}</span>
+                <span>Started {formatDateDisplay(item.createdAt)}</span>
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <div>Created on {format(new Date(createdDate), 'MMMM d, yyyy')} at {format(new Date(createdDate), 'h:mm a')}</div>
+              <div>Created on {format(new Date(item.createdAt), 'MMMM d, yyyy')} at {format(new Date(item.createdAt), 'h:mm a')}</div>
             </TooltipContent>
           </Tooltip>
         </div>
