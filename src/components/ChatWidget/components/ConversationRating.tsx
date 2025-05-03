@@ -1,15 +1,15 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
+import { ChatWidgetConfig } from '../config';
 interface ConversationRatingProps {
   onSubmitRating: (rating: number) => void;
   className?: string;
+  config: ChatWidgetConfig;
 }
 
-const ConversationRating = ({ onSubmitRating, className }: ConversationRatingProps) => {
+const ConversationRating = ({ onSubmitRating, className, config }: ConversationRatingProps) => {
   const [rating, setRating] = useState<number>(0);
   const [hoveredRating, setHoveredRating] = useState<number>(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -32,8 +32,8 @@ const ConversationRating = ({ onSubmitRating, className }: ConversationRatingPro
               size={24}
               className={cn(
                 "transition-all duration-200",
-                index < rating 
-                  ? "fill-vivid-purple text-vivid-purple" 
+                index < rating
+                  ? "fill-vivid-purple text-vivid-purple"
                   : "fill-gray-200 text-gray-200"
               )}
             />
@@ -46,7 +46,6 @@ const ConversationRating = ({ onSubmitRating, className }: ConversationRatingPro
   return (
     <div className={cn("flex flex-col items-center p-4 bg-white/80 rounded-lg shadow-sm", className)}>
       <p className="text-sm text-gray-700 font-medium mb-2">How was your experience?</p>
-      
       <div className="flex mb-3">
         {Array.from({ length: 5 }).map((_, index) => (
           <Star
@@ -54,8 +53,8 @@ const ConversationRating = ({ onSubmitRating, className }: ConversationRatingPro
             size={24}
             className={cn(
               "cursor-pointer transition-all duration-200 transform hover:scale-110",
-              index < (hoveredRating || rating) 
-                ? "fill-vivid-purple text-vivid-purple" 
+              index < (hoveredRating || rating)
+                ? "fill-vivid-purple text-vivid-purple"
                 : "fill-gray-200 text-gray-200"
             )}
             onMouseEnter={() => setHoveredRating(index + 1)}
@@ -64,15 +63,15 @@ const ConversationRating = ({ onSubmitRating, className }: ConversationRatingPro
           />
         ))}
       </div>
-      
+
       <Button
         size="sm"
         disabled={rating === 0}
         onClick={handleSubmit}
         className={cn(
           "px-4 py-1",
-          rating === 0 
-            ? "bg-gray-200 text-gray-500 cursor-not-allowed" 
+          rating === 0
+            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
             : "bg-vivid-purple hover:bg-vivid-purple/90"
         )}
       >

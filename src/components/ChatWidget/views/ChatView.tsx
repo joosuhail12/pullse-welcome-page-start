@@ -152,7 +152,7 @@ const ChatView = React.memo(({
     console.log('User submitted rating:', rating);
     // For now, just logging the rating as per requirements
     // In the future, this would call an API to save the rating
-    
+
     // Update the conversation to include the rating so it doesn't show again
     onUpdateConversation({
       ...conversation,
@@ -224,11 +224,11 @@ const ChatView = React.memo(({
               agentStatus={conversation.agentInfo?.status}
               config={config}
             />
-            
+
             {/* Rating component - shown only when conditions are met */}
             {showRating && (
               <div className="mx-4 my-2">
-                <ConversationRating onSubmitRating={handleSubmitRating} />
+                <ConversationRating onSubmitRating={handleSubmitRating} config={config} />
               </div>
             )}
           </>
