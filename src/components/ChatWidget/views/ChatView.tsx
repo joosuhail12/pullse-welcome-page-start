@@ -13,6 +13,7 @@ import { useMessageSearch } from '../hooks/useMessageSearch';
 import { useInlineForm } from '../hooks/useInlineForm';
 import { dispatchChatEvent } from '../utils/events';
 import { ConnectionStatus } from '../utils/reconnectionManager';
+import { getAccessToken, getWorkspaceIdAndApiKey } from '../utils/storage';
 
 interface ChatViewProps {
   conversation: Conversation;
@@ -148,10 +149,34 @@ const ChatView = React.memo(({
     return null;
   }, [showInlineForm, config, handleFormComplete]);
 
-  const handleSubmitRating = (rating: number) => {
+  const handleSubmitRating = async (rating: number) => {
     console.log('User submitted rating:', rating);
     // For now, just logging the rating as per requirements
     // In the future, this would call an API to save the rating
+    const { apiKey } = getWorkspaceIdAndApiKey();
+    const accessToken = getAccessToken();
+    try {
+      const response = await fetch("https://dev-socket.pullseai.com/api/widgets/updateTicketRating/" + apiKey, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': accessToken ? `Bearer ${accessToken}` : ''
+        },
+        body: JSON.stringify({
+          rating: rating,
+          ticketId: conversation.ticketId
+        })
+      });
+
+      const data = await response.json();
+      if (data.status === "success") {
+        console.log('Rating updated successfully');
+      } else {
+        console.error('Failed to update rating');
+      }
+    } catch (error) {
+      console.error('Error updating rating:', error);
+    }
 
     // Update the conversation to include the rating so it doesn't show again
     onUpdateConversation({
@@ -243,7 +268,7 @@ const ChatView = React.memo(({
         handleEndChat={handleEndChat}
         hasUserSentMessage={hasUserSentMessage}
         onTyping={handleUserTyping}
-        disabled={showInlineForm}
+        disabled={showInlineForm || conversation.status === 'ended' || conversation.status === 'closed'}
       />
     </div>
   );

@@ -117,7 +117,8 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
       lastMessageAt: ticket.lastMessageAt,
       unread: ticket.unread,
       teamId: ticket.teamId,
-      deviceId: ticket.deviceId
+      deviceId: ticket.deviceId,
+      rating: ticket.rating
     }));
   }, []);
 
@@ -367,7 +368,6 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
 
   const handleItemSelect = useCallback((item: Conversation | Ticket) => {
     clearUnreadMessages();
-
     if ('ticketId' in item) {
       onSelectConversation(item);
     } else {

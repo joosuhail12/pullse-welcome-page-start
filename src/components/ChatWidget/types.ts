@@ -63,6 +63,7 @@ export interface Ticket {
   id: string;
   title: string;
   description?: string;
+  rating?: number;
   status?: string;
   priority?: number;
   createdAt: string;

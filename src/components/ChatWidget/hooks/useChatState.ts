@@ -144,7 +144,8 @@ export function useChatState() {
             name: 'Support Agent',
             status: 'online'
           },
-          unread: ticket.unread ? true : false
+          unread: ticket.unread ? true : false,
+          rating: ticket.rating
         };
 
         setActiveConversation(conversation);
@@ -165,7 +166,8 @@ export function useChatState() {
             name: 'Support Agent',
             status: 'online'
           },
-          unread: ticket.unread ? true : false
+          unread: ticket.unread ? true : false,
+          rating: ticket.rating
         };
 
         setActiveConversation(conversation);
