@@ -11,6 +11,7 @@ import { TooltipProvider } from '@radix-ui/react-tooltip';
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from './components/ui/error-boundary.tsx';
+import DemoChatWidget from './components/DemoChatWidget/index.tsx';
 
 // Check if this is being loaded as the chat widget bundle
 if (document.getElementById('pullse-chat-widget-container')) {
@@ -40,6 +41,21 @@ if (document.getElementById('pullse-chat-widget-container')) {
                     </TooltipProvider>
                 </QueryClientProvider>
             </ErrorBoundary >
+        );
+    } catch (error) {
+        errorHandler.handle(error instanceof Error ? error : new Error('Failed to initialize application'));
+    }
+} else if (document.getElementById('pullse-chat-widget-container-demo')) {
+    try {
+        const rootElement = document.getElementById('pullse-chat-widget-container-demo');
+        if (!rootElement) throw new Error('Failed to find the root element');
+
+
+
+        createRoot(rootElement).render(
+            <TooltipProvider delayDuration={0}>
+                <DemoChatWidget />
+            </TooltipProvider>
         );
     } catch (error) {
         errorHandler.handle(error instanceof Error ? error : new Error('Failed to initialize application'));

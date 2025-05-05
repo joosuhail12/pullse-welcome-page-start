@@ -5,7 +5,7 @@ import { ChatWidgetConfig } from '../config';
 import { getChatSessionId } from '../utils/storage';
 import { useMessageActions } from './useMessageActions';
 import { useRealTime } from './useRealTime';
-import { createSystemMessage } from '../utils/messageHandlers';
+import { createSystemMessage, createUserMessage } from '../utils/messageHandlers';
 import { markConversationAsRead } from '../utils/storage';
 
 export function useChatMessages(
@@ -13,7 +13,8 @@ export function useChatMessages(
   config?: ChatWidgetConfig,
   onUpdateConversation?: (updatedConversation: Conversation) => void,
   playMessageSound?: () => void,
-  handleSelectTicket?: (ticket: Ticket) => void
+  handleSelectTicket?: (ticket: Ticket) => void,
+  isDemo: boolean = false
 ) {
   // Initialize with conversation messages or a welcome message from config
   const getInitialMessages = (): Message[] => {
@@ -23,8 +24,12 @@ export function useChatMessages(
 
     // Use welcomeMessage from config if available, otherwise use default
     const welcomeMessage = config?.labels?.welcomeMessage ||
-      config?.welcomeMessage ||
+      config?.labels?.welcomeMessage ||
       'Hello! How can I help you today?';
+
+    if (isDemo) {
+      return [createSystemMessage(welcomeMessage), createUserMessage("Can you help me with my order?")];
+    }
 
     return [createSystemMessage(welcomeMessage)];
   };

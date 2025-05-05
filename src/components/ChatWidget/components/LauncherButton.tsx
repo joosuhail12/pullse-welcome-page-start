@@ -15,6 +15,7 @@ interface LauncherButtonProps {
   config: ChatWidgetConfig;
   positionStyles: React.CSSProperties;
   agentStatus?: AgentStatus;
+  isDemo?: boolean;
 }
 
 const LauncherButton: React.FC<LauncherButtonProps> = ({
@@ -23,7 +24,8 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
   onClick,
   config,
   positionStyles,
-  agentStatus = 'online'
+  agentStatus = 'online',
+  isDemo = false
 }) => {
   const isMobile = useIsMobile();
   const [showTooltip, setShowTooltip] = useState(false);
@@ -62,7 +64,7 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
   };
 
   return (
-    <div className="fixed flex flex-col items-end z-40" style={positionStyles}>
+    <div className={`flex flex-col z-40 ${!isDemo ? "fixed items-end" : "items-center"}`} style={positionStyles}>
       {/* Status indicator tooltip that shows on hover */}
       {!isOpen && showTooltip && showPresence && (
         <div className="mb-2 px-3 py-1.5 bg-white rounded-lg shadow-md text-xs flex items-center">

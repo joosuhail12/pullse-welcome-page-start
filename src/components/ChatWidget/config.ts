@@ -77,15 +77,18 @@ export interface PreChatFormField {
   position?: number;
 }
 
-export type WidgetField = PreChatFormField[] | { 
-  contactFields?: PreChatFormField[];
-  companyFields?: PreChatFormField[];
-  customDataFields?: PreChatFormField[];
+export type WidgetField = PreChatFormField[] | {
+  entityname: string;
+  columnname: string;
+  label: string;
+  placeholder?: string;
+  required: boolean;
+  position?: number;
+  type: string;
 };
 
 export interface ChatWidgetConfig {
   workspaceId: string;
-  welcomeMessage: string;
   colors?: ChatColors;
   labels?: ChatLabels;
   layout?: ChatLayout;
@@ -133,7 +136,6 @@ export type ChatEventType =
 
 export const defaultConfig: ChatWidgetConfig = {
   workspaceId: '',
-  welcomeMessage: 'Hello! How can we help you today?',
   colors: {
     primaryColor: '#8B5CF6',
     backgroundColor: '#FFFFFF',
@@ -198,19 +200,13 @@ export const defaultConfig: ChatWidgetConfig = {
     }
   },
   realtime: true, // Add realtime flag for existing code
-  widgetfield: {
-    contactFields: [
-      {
-        entityname: 'contact',
-        columnname: 'email',
-        label: 'Email',
-        type: 'email',
-        placeholder: 'Enter your email',
-        required: true,
-        options: []
-      }
-    ],
-    companyFields: [],
-    customDataFields: []
-  }
+  widgetfield: [
+    {
+      entityname: 'contact',
+      columnname: 'name',
+      label: 'Name',
+      type: 'text',
+      required: true
+    }
+  ]
 };

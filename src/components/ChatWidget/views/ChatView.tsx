@@ -25,6 +25,7 @@ interface ChatViewProps {
   userFormData?: Record<string, string>;
   setUserFormData?: (data: Record<string, string>) => void;
   connectionStatus?: ConnectionStatus;
+  isDemo?: boolean;
 }
 
 const ChatView = React.memo(({
@@ -36,7 +37,8 @@ const ChatView = React.memo(({
   handleSelectTicket,
   userFormData,
   setUserFormData,
-  connectionStatus
+  connectionStatus,
+  isDemo = false
 }: ChatViewProps) => {
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -73,8 +75,8 @@ const ChatView = React.memo(({
     handleEndChat,
     remoteIsTyping,
     readReceipts,
-    loadPreviousMessages,
-  } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound, handleSelectTicket);
+    loadPreviousMessages
+  } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound, handleSelectTicket, isDemo);
 
   const {
     handleMessageReaction
@@ -223,7 +225,7 @@ const ChatView = React.memo(({
       <div style={{
         overflow: 'scroll'
       }} className="flex-grow flex flex-col">
-        {showInlineForm ? (
+        {showInlineForm && !isDemo ? (
           <div className="flex-grow flex flex-col justify-center items-center p-4 bg-gradient-to-br from-[#f8f7ff] to-[#f5f3ff]">
             <div className="w-full max-w-md">
               {inlineFormComponent}

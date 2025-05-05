@@ -110,6 +110,7 @@ const ChatWidget = () => {
   }
 
   // Add contact data to config for component access
+
   const enhancedConfig = {
     ...config,
     contact: contactData

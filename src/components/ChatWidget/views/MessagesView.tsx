@@ -22,6 +22,7 @@ interface MessagesViewProps {
   onSelectTicket: (ticket: Ticket) => void;
   onStartChat: () => void;
   config: ChatWidgetConfig;
+  isDemo?: boolean;
 }
 
 type SortOrder = 'newest' | 'oldest';
@@ -66,7 +67,8 @@ const MOCK_CONVERSATIONS: Conversation[] = [
   }
 ];
 
-const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, config }: MessagesViewProps) => {
+
+const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, config, isDemo = false }: MessagesViewProps) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -123,6 +125,11 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
   }, []);
 
   const loadConversationsData = useCallback(async () => {
+    if (isDemo) {
+      setConversations([...MOCK_CONVERSATIONS]);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     setLoadingError(null);
 
