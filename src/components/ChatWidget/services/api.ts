@@ -285,12 +285,7 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
       : new Error('Failed to fetch config')
     );
 
-    // Always fall back to default config for reliability
-    return {
-      ...defaultConfig,
-      workspaceId: sanitizeInput(workspaceId),
-      realtime: true // Add realtime flag for existing code
-    };
+    throw error;
   }
 };
 

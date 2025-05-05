@@ -115,6 +115,10 @@ const ChatWidget = () => {
     contact: contactData
   };
 
+  if (error) {
+    return null;
+  }
+
   return (
     <ChatWidgetErrorBoundary workspaceId={workspaceId}>
       <ConnectionManager
