@@ -250,6 +250,7 @@ const ChatView = React.memo(({
               conversationId={conversation.id}
               agentStatus={conversation.agentInfo?.status}
               config={config}
+              isDemo={isDemo}
             />
 
             {/* Rating component - shown only when conditions are met */}

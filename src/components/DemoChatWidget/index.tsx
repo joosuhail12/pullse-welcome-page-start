@@ -5,6 +5,7 @@ import MessagesView from "../ChatWidget/views/MessagesView";
 import { ChatWidgetConfig } from "../ChatWidget/config";
 import ChatView from "../ChatWidget/views/ChatView";
 import { Conversation } from "../ChatWidget/types";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
 
 const DemoChatWidget = () => {
     const [currentView, setCurrentView] = useState<'home' | 'messages' | 'chat'>('home');
@@ -46,17 +47,36 @@ const DemoChatWidget = () => {
             setCurrentView(event.detail.value);
         }
 
+        const handleDestroyWidget = async (event: CustomEvent) => {
+            console.log("destroy-widget", event.detail.value)
+            window.removeEventListener('config-update', handleConfigUpdate);
+            window.removeEventListener('view-change', handleViewChange);
+            window.removeEventListener('destroy-widget', handleDestroyWidget);
+        }
+
         window.addEventListener('config-update', handleConfigUpdate);
         window.addEventListener('view-change', handleViewChange);
+        window.addEventListener('destroy-widget', handleDestroyWidget);
+
+        window.dispatchEvent(new CustomEvent('widget-loaded', {
+            detail: {
+                key: 'widgettheme',
+                value: {
+                }
+            }
+        }));
+
         return () => {
             window.removeEventListener('config-update', handleConfigUpdate);
             window.removeEventListener('view-change', handleViewChange);
+            window.removeEventListener('destroy-widget', handleDestroyWidget);
         }
     }, []);
 
     if (!config) {
         return <div>Loading...</div>;
     }
+
 
     return (
         <>
@@ -78,29 +98,33 @@ const DemoChatWidget = () => {
             }
             {
                 currentView === 'messages' && (
-                    <MessagesView
-                        onSelectConversation={() => { }} // TODO: add onSelectConversation
-                        onSelectTicket={() => { }}
-                        onStartChat={() => { }}
-                        config={config}
-                        isDemo={true}
-                    />
+                    <TooltipProvider delayDuration={0}>
+                        <MessagesView
+                            onSelectConversation={() => { }} // TODO: add onSelectConversation
+                            onSelectTicket={() => { }}
+                            onStartChat={() => { }}
+                            config={config}
+                            isDemo={true}
+                        />
+                    </TooltipProvider>
                 )
             }
             {
                 currentView === 'chat' && (
-                    <ChatView
-                        conversation={demoConversation}
-                        onBack={() => { }}
-                        onUpdateConversation={() => { }}
-                        config={config}
-                        handleSelectTicket={() => { }}
-                        playMessageSound={() => { }}
-                        userFormData={null}
-                        setUserFormData={() => { }}
-                        connectionStatus={null}
-                        isDemo={true}
-                    />
+                    <TooltipProvider delayDuration={0}>
+                        <ChatView
+                            conversation={demoConversation}
+                            onBack={() => { }}
+                            onUpdateConversation={() => { }}
+                            config={config}
+                            handleSelectTicket={() => { }}
+                            playMessageSound={() => { }}
+                            userFormData={null}
+                            setUserFormData={() => { }}
+                            connectionStatus={null}
+                            isDemo={true}
+                        />
+                    </TooltipProvider>
                 )
             }
         </>
