@@ -17,7 +17,6 @@ let demoWidgetRoot: ReturnType<typeof createRoot> | null = null;
 let widgetRoot: ReturnType<typeof createRoot> | null = null;
 
 const PullseNamespace = {
-    DemoChatWidget: DemoChatWidget,
     initDemoWidget: async () => {
         // return a promise that resolves when the widget is initialized
         return new Promise((resolve, reject) => {
@@ -53,7 +52,7 @@ const PullseNamespace = {
                                 <div className="w-10 h-10 border-4 border-vivid-purple border-t-transparent rounded-full animate-spin m-auto"></div>
                             </div>
                         }>
-                            <PullseNamespace.DemoChatWidget />
+                            <DemoChatWidget />
                         </React.Suspense>
                     );
                     console.log("Demo widget initialized");
