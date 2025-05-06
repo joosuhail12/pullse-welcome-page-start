@@ -98,6 +98,12 @@ const PullseNamespace = {
             } catch (e) {
                 console.error("Error setting local storage", e);
             }
+            // Check if the container already exists in the dom if yes then remove it
+            const containerDuplicateDiv = document.getElementById('pullse-chat-widget-container');
+            if (containerDuplicateDiv) {
+                containerDuplicateDiv.remove();
+            }
+            // Create a new container div
             const containerDiv = document.createElement('div');
             containerDiv.id = 'pullse-chat-widget-container';
             document.body.appendChild(containerDiv);
