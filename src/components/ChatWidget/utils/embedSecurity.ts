@@ -83,14 +83,14 @@ export function collectDomStyles(): string {
 // Function to get DOM styles from a ShadowRoot
 export function getDomStyles(shadowRoot: ShadowRoot): string {
   const styles: string[] = [];
-  
+
   // Convert ShadowRoot to an element-like object for document.querySelectorAll
   const styleElements = Array.from(shadowRoot.querySelectorAll('style'));
-  
+
   styleElements.forEach((styleEl) => {
     styles.push(styleEl.textContent || '');
   });
-  
+
   return styles.join('\n');
 }
 
@@ -129,13 +129,19 @@ export function initializeEmbedSecurity(containerId: string): { container: HTMLE
     return { container: null, shadowRoot: null };
   }
 
+  // Check if shadow root already exists
+  const existingShadowRoot = container.shadowRoot;
+  if (existingShadowRoot) {
+    return { container, shadowRoot: existingShadowRoot };
+  }
+
   // Create a shadow root for isolation
   const shadowRoot = container.attachShadow({ mode: 'open' });
-  
+
   // Create inner container for the chat widget
   const innerContainer = document.createElement('div');
   innerContainer.className = 'pullse-chat-widget-inner';
   shadowRoot.appendChild(innerContainer);
-  
+
   return { container, shadowRoot };
 }

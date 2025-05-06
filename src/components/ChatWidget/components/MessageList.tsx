@@ -10,6 +10,7 @@ import MessageAvatar from './MessageBubble/MessageAvatar';
 import { AgentStatus } from '../types';
 import DateSeparator from './DateSeparator';
 import { isSameDay } from 'date-fns';
+import { ChatWidgetConfig } from '../config';
 
 interface MessageListProps {
   messages: any[];
@@ -30,6 +31,7 @@ interface MessageListProps {
   onToggleHighlight?: (messageId: string) => void;
   typingDuration?: number;
   config: ChatWidgetConfig;
+  isDemo?: boolean;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -50,7 +52,8 @@ const MessageList: React.FC<MessageListProps> = ({
   agentStatus = 'online',
   onToggleHighlight,
   typingDuration = 0,
-  config
+  config,
+  isDemo = false
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -120,6 +123,10 @@ const MessageList: React.FC<MessageListProps> = ({
   }, [messages, hasInitiallyScrolled, onScrollTop, hasMoreMessages, isLoadingMore]);
 
   const scrollToBottom = () => {
+    if (isDemo) {
+      return;
+    }
+
     if (lastMessageRef.current) {
       isAutoScrollingRef.current = true;
       lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
