@@ -440,6 +440,9 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
 
 export const fetchConversations = async () => {
   const accessToken = getAccessToken();
+  if (!accessToken) {
+    return [];
+  }
   const response = await fetch(`https://dev-socket.pullseai.com/api/widgets/getContactDeviceTickets`, {
     headers: {
       'Content-Type': 'application/json',

@@ -64,7 +64,7 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
   };
 
   return (
-    <div className={`flex flex-col z-40 ${!isDemo ? "fixed items-end" : "items-center"}`} style={positionStyles}>
+    <div className={`flex flex-col z-40 items-end ${!isDemo ? "fixed" : ""}`} style={positionStyles}>
       {/* Status indicator tooltip that shows on hover */}
       {!isOpen && showTooltip && showPresence && (
         <div className="mb-2 px-3 py-1.5 bg-white rounded-lg shadow-md text-xs flex items-center">
