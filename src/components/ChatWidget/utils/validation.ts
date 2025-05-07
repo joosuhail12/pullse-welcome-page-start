@@ -48,10 +48,10 @@ export function sanitizeInput(input: string, trim: boolean = true): string {
   if (!input) return '';
 
   // First trim the input
-  const trimmed = trim ? input.trim() : input;
+  // const trimmed = trim ? input.trim() : input;
 
   // Use DOMPurify with strict configuration to sanitize HTML and prevent XSS
-  return DOMPurify.sanitize(trimmed, DOM_PURIFY_CONFIG);
+  return DOMPurify.sanitize(input, DOM_PURIFY_CONFIG);
 }
 
 /**
