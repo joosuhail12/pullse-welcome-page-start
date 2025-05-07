@@ -27,6 +27,7 @@ interface WidgetContainerProps {
   setUserFormData: (data: Record<string, string>) => void;
   playMessageSound: () => void;
   connectionStatus?: ConnectionStatus;
+  isDemo?: boolean;
 }
 
 const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
@@ -45,7 +46,8 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
   handleStartChat,
   setUserFormData,
   playMessageSound,
-  connectionStatus
+  connectionStatus,
+  isDemo = false
 }) => {
 
   if (!isOpen) return null;
@@ -83,6 +85,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
             userFormData={userFormData}
             setUserFormData={setUserFormData}
             connectionStatus={connectionStatus}
+            isDemo={isDemo}
           />
         </div>
       );
@@ -103,6 +106,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
               onSelectTicket={handleSelectTicket || (() => { })}
               onStartChat={() => handleStartChat()}
               config={config}
+              isDemo={isDemo}
             />
           )}
         </div>
@@ -121,7 +125,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
 
   return (
     <div
-      className={`fixed ${widgetClasses} z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden`}
+      className={`${widgetClasses} z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden ${!isDemo ? 'fixed' : ''}`}
       style={{ ...widgetStyle, ...containerStyles }}
     >
       <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden">

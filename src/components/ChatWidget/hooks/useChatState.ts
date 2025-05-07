@@ -56,6 +56,10 @@ export function useChatState() {
       // Create new contact in database
       const { apiKey } = getWorkspaceIdAndApiKey();
       const accessToken = getAccessToken();
+      if (!apiKey || !accessToken) {
+        console.error("No API key or access token found");
+        return;
+      };
       try {
         const response = await fetch("https://dev-socket.pullseai.com/api/widgets/createContactDevice/" + apiKey, {
           method: 'POST',

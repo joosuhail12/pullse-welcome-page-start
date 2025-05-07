@@ -6,6 +6,7 @@ import { ChatWidgetConfig } from "../ChatWidget/config";
 import ChatView from "../ChatWidget/views/ChatView";
 import { Conversation } from "../ChatWidget/types";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
+import WidgetContainer from "../ChatWidget/components/WidgetContainer";
 
 const DemoChatWidget = () => {
     const [currentView, setCurrentView] = useState<'home' | 'messages' | 'chat'>('home');
@@ -80,15 +81,27 @@ const DemoChatWidget = () => {
 
     return (
         <>
-            <LauncherButton
-                isOpen={true}
-                unreadCount={0}
-                onClick={() => { }}
-                config={config}
-                positionStyles={{}}
-                isDemo={true}
-            />
-            {
+            <TooltipProvider delayDuration={0}>
+                <WidgetContainer
+                    isOpen={true}
+                    viewState={currentView}
+                    config={config}
+                    activeConversation={demoConversation}
+                    widgetStyle={{}}
+                    containerStyles={{}}
+                    handleSelectConversation={() => setCurrentView('chat')}
+                    handleSelectTicket={() => setCurrentView('chat')}
+                    handleUpdateConversation={() => { }}
+                    handleChangeView={(view: 'home' | 'messages' | 'chat') => setCurrentView(view)}
+                    handleBackToMessages={() => setCurrentView('messages')}
+                    handleStartChat={() => { }}
+                    setUserFormData={() => { }}
+                    playMessageSound={() => { }}
+                    connectionStatus={null}
+                    isDemo={true}
+                />
+            </TooltipProvider>
+            {/* {
                 currentView === 'home' && (
                     <HomeView
                         onStartChat={() => { }}
@@ -126,7 +139,15 @@ const DemoChatWidget = () => {
                         />
                     </TooltipProvider>
                 )
-            }
+            } */}
+            <LauncherButton
+                isOpen={true}
+                unreadCount={0}
+                onClick={() => { }}
+                config={config}
+                positionStyles={{}}
+                isDemo={true}
+            />
         </>
     )
 
