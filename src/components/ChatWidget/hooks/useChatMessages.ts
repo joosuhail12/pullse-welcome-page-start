@@ -7,6 +7,8 @@ import { useMessageActions } from './useMessageActions';
 import { useRealTime } from './useRealTime';
 import { createSystemMessage, createUserMessage } from '../utils/messageHandlers';
 import { markConversationAsRead } from '../utils/storage';
+import { useAblyChannels } from './useAblyChannels';
+import { subscribeToChannel } from '../utils/ably/messaging';
 
 export function useChatMessages(
   conversation: Conversation,
@@ -16,6 +18,11 @@ export function useChatMessages(
   handleSelectTicket?: (ticket: Ticket) => void,
   isDemo: boolean = false
 ) {
+  const { checkChannelSubscription } = useAblyChannels({
+    sessionChannels: true,
+    conversationChannel: conversation.id
+  });
+
   // Initialize with conversation messages or a welcome message from config
   const getInitialMessages = (): Message[] => {
     if (conversation.messages?.length) {
@@ -57,6 +64,14 @@ export function useChatMessages(
     if (conversation.id && conversation.unread) {
       markConversationAsRead(conversation.id)
         .catch(err => console.error('Failed to mark conversation as read:', err));
+    }
+    if (isNewConversation) {
+      const isSubscribed = checkChannelSubscription(chatChannelName);
+      if (!isSubscribed) {
+        subscribeToChannel(chatChannelName, 'message', (message) => {
+          console.log('Received message:', message);
+        });
+      }
     }
   }, [conversation.id, conversation.unread]);
 

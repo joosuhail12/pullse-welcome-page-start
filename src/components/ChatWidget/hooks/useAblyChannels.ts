@@ -151,6 +151,16 @@ export function useAblyChannels(config: AblyChannelConfig) {
     subscribedChannels.current.clear();
   };
 
+  const checkChannelSubscription = (channelName: string) => {
+    if (subscribedChannels.current.has(channelName)) {
+      console.log(`Channel ${channelName} is already subscribed`);
+      return true;
+    } else {
+      console.log(`Channel ${channelName} is not subscribed`);
+      return false;
+    }
+  }
+
   useEffect(() => {
     const storedSessionId = getChatSessionId();
     if (storedSessionId !== sessionId) {
@@ -214,5 +224,5 @@ export function useAblyChannels(config: AblyChannelConfig) {
     };
   }, [config.sessionChannels, config.conversationChannel, sessionId, isConnected]);
 
-  return { isConnected, channels: channels.current };
+  return { isConnected, channels: channels.current, checkChannelSubscription };
 }
