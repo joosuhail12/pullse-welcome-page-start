@@ -223,7 +223,8 @@ const ChatView = React.memo(({
       />
 
       <div style={{
-        overflow: 'scroll'
+        overflowY: 'scroll',
+        overflowX: 'hidden'
       }} className="flex-grow flex flex-col">
         {showInlineForm && !isDemo ? (
           <div className="flex-grow flex flex-col justify-center items-center p-4 bg-gradient-to-br from-[#f8f7ff] to-[#f5f3ff]">

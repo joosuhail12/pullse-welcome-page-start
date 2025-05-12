@@ -124,7 +124,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
           (message) => {
             console.log('Received conversation message:', message);
 
-            dispatchChatEvent('chat:ticket_message', { message: message.data.text });
+            dispatchChatEvent('chat:ticket_message', { message: message.data.message });
           }
         );
         if (channels.current.conversation) {
@@ -150,6 +150,16 @@ export function useAblyChannels(config: AblyChannelConfig) {
     channels.current = {};
     subscribedChannels.current.clear();
   };
+
+  const checkChannelSubscription = (channelName: string) => {
+    if (subscribedChannels.current.has(channelName)) {
+      console.log(`Channel ${channelName} is already subscribed`);
+      return true;
+    } else {
+      console.log(`Channel ${channelName} is not subscribed`);
+      return false;
+    }
+  }
 
   useEffect(() => {
     const storedSessionId = getChatSessionId();
@@ -214,5 +224,5 @@ export function useAblyChannels(config: AblyChannelConfig) {
     };
   }, [config.sessionChannels, config.conversationChannel, sessionId, isConnected]);
 
-  return { isConnected, channels: channels.current };
+  return { isConnected, channels: channels.current, checkChannelSubscription };
 }
