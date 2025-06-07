@@ -128,7 +128,7 @@ export function useChatState() {
           return {
             id: msg.id,
             text: msg.message,
-            sender: msg.userType === 'customer' ? 'user' : 'agent',
+            sender: msg.userType === 'customer' ? 'user' : msg.userType === 'agent' ? 'agent' : 'system',
             createdAt: new Date(msg.createdAt),
             type: 'text',
             status: 'sent'

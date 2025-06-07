@@ -55,6 +55,23 @@ export function createSystemMessage(
   };
 }
 
+export function createMessage(
+  text: string,
+  sender: 'user' | 'agent' | 'system',
+  type: 'text' | 'file' | 'card' | 'quick_reply' = 'text',
+  metadata?: Record<string, any>
+): Message {
+  const now = new Date();
+  return {
+    id: `msg-${now.getTime()}-${uuidv4().slice(0, 8)}`,
+    text: DOMPurify.sanitize(text),
+    sender,
+    createdAt: now,
+    timestamp: now,
+    type,
+  }
+}
+
 /*Create agent message */
 export function createAgentMessage(
   text: string,

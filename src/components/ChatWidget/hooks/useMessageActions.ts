@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Message, Ticket } from '../types';
-import { createUserMessage, createSystemMessage, sendTypingIndicator, createAgentMessage } from '../utils/messageHandlers';
+import { createUserMessage, createSystemMessage, sendTypingIndicator, createMessage } from '../utils/messageHandlers';
 import { publishToChannel } from '../utils/ably';
 import { dispatchChatEvent, subscribeToChatEvent } from '../utils/events';
 import { ChatEventPayload, ChatWidgetConfig } from '../config';
@@ -54,8 +54,8 @@ export function useMessageActions(
       // Create subscription to chat:new_ticket event
       const unsubscribe = subscribeToChatEvent('chat:ticket_message', (event: ChatEventPayload) => {
         console.log('New ticket message received with data:', event);
-        const userMessage = createAgentMessage(event.data.message, 'text', {});
-        setMessages(prevMessages => [...prevMessages, userMessage]);
+        const message = createMessage(event.data.message, event.data.type, 'text', {});
+        setMessages(prevMessages => [...prevMessages, message]);
       });
 
       // Return cleanup function to remove the event listener when component unmounts

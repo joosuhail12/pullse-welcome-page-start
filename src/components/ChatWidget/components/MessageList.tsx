@@ -175,7 +175,9 @@ const MessageList: React.FC<MessageListProps> = ({
       const isConsecutiveMessage = message.sender === lastSender && message.sender !== 'system';
 
       // Always show avatar for the first message of a group and for system messages
-      const showAvatar = !isConsecutiveMessage || message.sender === 'system';
+      const showAvatar = !isConsecutiveMessage || message.sender === 'agent';
+
+      console.log('message', message);
 
       result.push({
         type: 'message',
