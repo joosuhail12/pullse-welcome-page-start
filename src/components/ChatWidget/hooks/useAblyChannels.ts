@@ -111,6 +111,48 @@ export function useAblyChannels(config: AblyChannelConfig) {
       }
     }
 
+    // {
+    //   "fields": [
+    //     {
+    //       "field": "firstname",
+    //       "label": "",
+    //       "table": "contact",
+    //       "required": false,
+    //       "customFieldId": "",
+    //       "customObjectId": "",
+    //       "customObjectFieldId": ""
+    //     },
+    //     {
+    //       "field": "lastname",
+    //       "label": "",
+    //       "table": "contact",
+    //       "required": false,
+    //       "customFieldId": "",
+    //       "customObjectId": "",
+    //       "customObjectFieldId": ""
+    //     },
+    //     {
+    //       "field": "f7e43a2c-bd47-4b46-9844-1bbae480f4d3",
+    //       "label": "",
+    //       "table": "company",
+    //       "required": false,
+    //       "customFieldId": "f7e43a2c-bd47-4b46-9844-1bbae480f4d3",
+    //       "customObjectId": "",
+    //       "customObjectFieldId": ""
+    //     },
+    //     {
+    //       "field": "56e6e11e-5f83-455c-84e6-30b4f424b057",
+    //       "label": "",
+    //       "table": "custom_object",
+    //       "required": false,
+    //       "customFieldId": "",
+    //       "customObjectId": "f07fc5c5-dba4-45e0-b611-96320f438ae7",
+    //       "customObjectFieldId": "56e6e11e-5f83-455c-84e6-30b4f424b057"
+    //     }
+    //   ],
+    //   "required": false
+    // }
+
     // Only subscribe to conversation channel if it has a ticket ID
     if (config.conversationChannel &&
       config.conversationChannel.includes('ticket-') &&
@@ -124,7 +166,7 @@ export function useAblyChannels(config: AblyChannelConfig) {
           (message) => {
             console.log('Received conversation message:', message);
 
-            dispatchChatEvent('chat:ticket_message', { message: message.data.message, type: message.data.type || 'agent' });
+            dispatchChatEvent('chat:ticket_message', { id: message.data.id || null, text: message.data.message, senderType: message.data.senderType || 'agent', messageType: message.data.messageType || 'text', messageConfig: message.data.messageConfig || {} });
           }
         );
         if (channels.current.conversation) {

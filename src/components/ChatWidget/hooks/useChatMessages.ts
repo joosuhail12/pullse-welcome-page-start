@@ -75,20 +75,19 @@ export function useChatMessages(
     }
   }, [conversation.id, conversation.unread]);
 
-  // Use the real-time hook
-  const {
-    remoteIsTyping,
-    readReceipts,
-    handleTypingTimeout
-  } = useRealTime(
-    messages,
-    setMessages,
-    conversation,
-    hasUserSentMessage,
-    setIsTyping,
-    config,
-    playMessageSound
-  );
+  // const {
+  //   remoteIsTyping,
+  //   readReceipts,
+  //   handleTypingTimeout
+  // } = useRealTime(
+  //   messages,
+  //   setMessages,
+  //   conversation,
+  //   hasUserSentMessage,
+  //   setIsTyping,
+  //   config,
+  //   playMessageSound
+  // );
 
   // Use the message actions hook
   const {
@@ -128,7 +127,7 @@ export function useChatMessages(
   const handleUserTyping = () => {
     baseHandleUserTyping();
     if (config?.interfaceSettings?.showAgentPresence) {
-      handleTypingTimeout();
+      // handleTypingTimeout();
     }
   };
 
@@ -153,13 +152,13 @@ export function useChatMessages(
     messageText,
     setMessageText,
     isTyping,
-    remoteIsTyping,
+    // remoteIsTyping,
     hasUserSentMessage,
     handleSendMessage,
     handleUserTyping,
     handleFileUpload,
     handleEndChat,
-    readReceipts,
+    // readReceipts,
     loadPreviousMessages
   };
 }
