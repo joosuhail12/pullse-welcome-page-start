@@ -23,6 +23,7 @@ interface MessageListProps {
   searchTerm?: string;
   agentAvatar?: string;
   userAvatar?: string;
+  handleSendMessage?: (message: string, messageId?: string) => void;
   onScrollTop?: () => Promise<void>;
   hasMoreMessages?: boolean;
   isLoadingMore?: boolean;
@@ -45,6 +46,7 @@ const MessageList: React.FC<MessageListProps> = ({
   searchTerm = '',
   agentAvatar,
   userAvatar,
+  handleSendMessage,
   onScrollTop,
   hasMoreMessages = false,
   isLoadingMore = false,
@@ -61,7 +63,6 @@ const MessageList: React.FC<MessageListProps> = ({
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [hasInitiallyScrolled, setHasInitiallyScrolled] = useState(false);
   const [isScrolledToSearchResult, setIsScrolledToSearchResult] = useState(false);
-
   const isAutoScrollingRef = useRef(false);
   const lastScrollTop = useRef(0);
 
@@ -151,6 +152,10 @@ const MessageList: React.FC<MessageListProps> = ({
       date?: Date;
       isConsecutive: boolean;
       showAvatar: boolean;
+      messageType?: 'text' | 'data_collection' | 'action_buttons' | 'csat' | 'mention' | 'note';
+      messageConfig?: Record<string, any>;
+      senderType?: 'user' | 'agent' | 'system';
+      sender?: 'user' | 'agent' | 'system';
     }> = [];
 
     let lastDate: Date | null = null;
@@ -165,23 +170,27 @@ const MessageList: React.FC<MessageListProps> = ({
           type: 'date',
           date: messageDate,
           isConsecutive: false,
-          showAvatar: true
+          showAvatar: true,
+          messageType: message.messageType,
+          messageConfig: message.messageConfig,
+          senderType: message.sender,
+          sender: message.userType
         });
         lastDate = messageDate;
         lastSender = null; // Reset sender after date change
       }
 
       // Check if this is a consecutive message from the same sender
-      const isConsecutiveMessage = message.sender === lastSender && message.sender !== 'system';
+      const isConsecutiveMessage = message.sender === lastSender;
 
       // Always show avatar for the first message of a group and for system messages
-      const showAvatar = !isConsecutiveMessage || message.sender === 'system';
+      const showAvatar = !isConsecutiveMessage || message.sender === 'agent';
 
       result.push({
         type: 'message',
         message,
         isConsecutive: isConsecutiveMessage,
-        showAvatar
+        showAvatar,
       });
 
       lastSender = message.sender;
@@ -240,7 +249,7 @@ const MessageList: React.FC<MessageListProps> = ({
                 isHighlighted={isHighlighted}
                 userAvatar={userAvatar}
                 agentAvatar={agentAvatar}
-                onReply={setMessageText}
+                onReply={handleSendMessage}
                 onReaction={onMessageReaction}
                 agentStatus={message.sender === 'agent' ? agentStatus : undefined}
                 readStatus={readReceipt.status}

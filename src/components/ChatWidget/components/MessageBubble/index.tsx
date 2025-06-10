@@ -25,6 +25,9 @@ interface MessageBubbleProps {
     text: string;
     type?: MessageType;
     sender: UserType;
+    senderType?: 'user' | 'agent' | 'system';
+    messageType?: 'text' | 'data_collection' | 'action_buttons' | 'csat' | 'mention' | 'note';
+    messageConfig?: string[];
     createdAt: Date;
     metadata?: Record<string, any>;
     reactions?: string[];
@@ -42,7 +45,7 @@ interface MessageBubbleProps {
   isHighlighted?: boolean;
   userAvatar?: string;
   agentAvatar?: string;
-  onReply?: (text: string) => void;
+  onReply?: (text: string, messageId?: string) => void;
   onReaction?: (messageId: string, emoji: string) => void;
   agentStatus?: AgentStatus;
   readStatus?: MessageReadStatus;
@@ -162,10 +165,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   };
 
   const renderMessageContent = () => {
-    switch (message.type) {
+    const type = message.messageType || message.type;
+    switch (type) {
       case 'text':
         return <p style={
           {
+            width: '70%',
+            textAlign: 'left',
+            paddingRight: '10px',
             color: config.colors?.textColor
           }
         }
@@ -193,30 +200,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
             }
           </Suspense>
         );
-      case 'quick_reply':
+      case 'action_buttons':
         return (
           <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata ?
+            {
               <QuickReplyMessage
-                metadata={message.metadata}
-                onReply={(text) => onReply && onReply(text)}
-              /> :
-              <div className="flex flex-col">
-                {renderText(sanitizedText)}
-                {message.quickReplies && message.quickReplies.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {message.quickReplies.map((reply, i) => (
-                      <button
-                        key={i}
-                        className="bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs py-1.5 px-3 rounded-full"
-                        onClick={() => onReply && onReply(sanitizeInput(reply.text))}
-                      >
-                        {sanitizeInput(reply.text)}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+                message={message}
+                quickReplies={message.messageConfig}
+                onReply={(text) => onReply && onReply(text, message.id)}
+              />
             }
           </Suspense>
         );
@@ -294,7 +286,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
 
       <div
         className={cn(
-          'relative max-w-[80%] sm:max-w-md px-4 py-3',
+          'relative max-w-[90%] sm:max-w-md px-4 py-3 flex flex-row justify-between',
           messageTypeClass,
           isHighlighted && 'bg-yellow-100 border-yellow-300',
           isSystemMessage && 'py-2 px-3',
@@ -309,7 +301,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
       >
         {renderMessageContent()}
 
-        {!isConsecutive && <MessageStatus timestamp={message.createdAt} />}
+        {<MessageStatus timestamp={message.createdAt} />}
 
         {/* {isUserMessage && !isConsecutive && (
           <div className="absolute -bottom-4 right-1">

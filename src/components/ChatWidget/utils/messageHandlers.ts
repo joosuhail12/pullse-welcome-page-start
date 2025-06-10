@@ -16,11 +16,12 @@ import DOMPurify from 'dompurify';
 export function createUserMessage(
   text: string,
   type: 'text' | 'file' | 'card' = 'text',
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
+  messageId: string | null = null
 ): Message {
   const now = new Date();
   return {
-    id: `msg-${now.getTime()}-${uuidv4().slice(0, 8)}`,
+    id: messageId,
     text: DOMPurify.sanitize(text),
     sender: 'user',
     createdAt: now,
@@ -53,6 +54,27 @@ export function createSystemMessage(
     status: 'sent',
     ...(metadata && { metadata })
   };
+}
+
+export function createMessage(
+  id: string,
+  text: string,
+  senderType: 'user' | 'agent' | 'system',
+  type: 'text' | 'file' | 'card' | 'quick_reply' = 'text',
+  messageConfig?: Record<string, any>,
+  messageType?: 'text' | 'data_collection' | 'action_buttons' | 'csat' | 'mention' | 'note'
+): Message {
+  const now = new Date();
+  return {
+    id: id,
+    text: DOMPurify.sanitize(text),
+    sender: senderType,
+    createdAt: now,
+    timestamp: now,
+    type,
+    messageType: messageType,
+    messageConfig: messageConfig
+  }
 }
 
 /*Create agent message */

@@ -1,7 +1,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Message, Ticket } from '../types';
-import { createUserMessage, createSystemMessage, sendTypingIndicator, createAgentMessage } from '../utils/messageHandlers';
+import { createUserMessage, createSystemMessage, sendTypingIndicator, createMessage } from '../utils/messageHandlers';
 import { publishToChannel } from '../utils/ably';
 import { dispatchChatEvent, subscribeToChatEvent } from '../utils/events';
 import { ChatEventPayload, ChatWidgetConfig } from '../config';
@@ -54,8 +54,8 @@ export function useMessageActions(
       // Create subscription to chat:new_ticket event
       const unsubscribe = subscribeToChatEvent('chat:ticket_message', (event: ChatEventPayload) => {
         console.log('New ticket message received with data:', event);
-        const userMessage = createAgentMessage(event.data.message, 'text', {});
-        setMessages(prevMessages => [...prevMessages, userMessage]);
+        const message = createMessage(event.data.id, event.data.text, event.data.senderType, event.data.messageType, event.data.messageConfig, event.data.messageType);
+        setMessages(prevMessages => [...prevMessages, message]);
       });
 
       // Return cleanup function to remove the event listener when component unmounts
@@ -68,20 +68,17 @@ export function useMessageActions(
 
 
   // Handle sending messages
-  const handleSendMessage = useCallback(async (text?: string, type: 'text' | 'file' | 'card' = 'text', metadata?: Record<string, any>) => {
+  const handleSendMessage = useCallback(async (text?: string, messageId: string | null = null) => {
+    console.log('handleSendMessage', text, messageId);
     const messageContent = text || messageText;
-    if (!messageContent?.trim() && type === 'text') return;
+    if (!messageContent?.trim()) return;
 
     // Create a new user message
-    const userMessage = createUserMessage(messageContent, type, metadata);
+    const userMessage = createUserMessage(messageContent, 'text', {}, messageId);
 
     // Add message to state
     setMessages(prevMessages => [...prevMessages, userMessage]);
-
-    // Clear input field if this is a text message
-    if (type === 'text') {
-      setMessageText('');
-    }
+    setMessageText('');
 
     // Mark that user has sent at least one message
     if (setHasUserSentMessage) {
@@ -100,13 +97,14 @@ export function useMessageActions(
     // Publish message to the appropriate channel
     if (isNewConversation) {
       publishToChannel(chatChannelName, 'new_ticket', {
-        id: userMessage.id,
+        id: messageId,
         text: userMessage.text,
         sender: userMessage.sender,
       });
     } else {
       publishToChannel(chatChannelName, 'message', {
         text: userMessage.text,
+        id: messageId,
         sessionId,
         ticketId: chatChannelName.split("ticket-")[1]
       });
@@ -148,11 +146,7 @@ export function useMessageActions(
       const fileMessage = `Uploaded file: ${file.name} (${Math.round(file.size / 1024)}KB)`;
 
       // Send the file message
-      await handleSendMessage(fileMessage, 'file', {
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type
-      });
+      await handleSendMessage(fileMessage);
     } catch (error) {
       console.error('Error uploading file:', error);
 

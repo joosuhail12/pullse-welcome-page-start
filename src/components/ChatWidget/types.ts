@@ -2,6 +2,8 @@ export interface Message {
   id: string;
   text: string;
   sender: UserType;
+  messageType?: 'text' | 'data_collection' | 'action_buttons' | 'csat' | 'mention' | 'note';
+  messageConfig?: Record<string, any>;
   createdAt: Date;
   type?: MessageType;
   fileUrl?: string;
@@ -84,6 +86,9 @@ export interface TicketMessage {
   updatedAt: string;
   ticketId: string;
   userType: 'customer' | 'agent';
+  messageType?: 'text' | 'data_collection' | 'action_buttons' | 'csat' | 'mention' | 'note';
+  senderType?: 'user' | 'agent' | 'system';
+  messageConfig?: Record<string, any>;
 }
 
 // Define MessageReadStatus type 

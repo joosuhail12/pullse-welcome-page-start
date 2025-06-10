@@ -73,8 +73,8 @@ const ChatView = React.memo(({
     handleUserTyping,
     handleFileUpload,
     handleEndChat,
-    remoteIsTyping,
-    readReceipts,
+    // remoteIsTyping,
+    // readReceipts,
     loadPreviousMessages
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound, handleSelectTicket, isDemo);
 
@@ -236,15 +236,15 @@ const ChatView = React.memo(({
           <>
             <MessageList
               messages={messages}
-              isTyping={isTyping || remoteIsTyping}
+              isTyping={isTyping}
               setMessageText={setMessageText}
-              readReceipts={readReceipts}
               onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
               searchResults={messageIds}
               highlightMessage={highlightText}
               searchTerm={searchTerm}
               agentAvatar={agentAvatar}
               userAvatar={userAvatar}
+              handleSendMessage={handleSendMessage}
               onScrollTop={handleLoadMoreMessages}
               hasMoreMessages={hasMoreMessages}
               isLoadingMore={isLoadingMore}
