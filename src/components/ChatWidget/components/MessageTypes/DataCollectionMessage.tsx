@@ -1,8 +1,10 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send } from 'lucide-react';
+import { Send, Sparkles } from 'lucide-react';
 import { FormFieldComponent, FormField } from './FormField';
 import { validateFormField } from './formValidation';
+
 interface DataCollectionMessageProps {
   title?: string;
   description?: string;
@@ -11,6 +13,7 @@ interface DataCollectionMessageProps {
   isSubmitted?: boolean;
   submittedData?: Record<string, string>;
 }
+
 const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
   title = "Please provide the following information",
   description,
@@ -23,6 +26,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [fileUploads, setFileUploads] = useState<Record<string, File>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleInputChange = (fieldId: string, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -35,6 +39,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
       }));
     }
   };
+
   const handleFileChange = (fieldId: string, file: File | null) => {
     if (file) {
       setFileUploads(prev => ({
@@ -57,11 +62,13 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
       }));
     }
   };
+
   const handleMultiSelectChange = (fieldId: string, value: string) => {
     const currentValues = formData[fieldId] ? formData[fieldId].split(',') : [];
     const newValues = currentValues.includes(value) ? currentValues.filter(v => v !== value) : [...currentValues, value];
     handleInputChange(fieldId, newValues.join(','));
   };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     fields.forEach(field => {
@@ -74,6 +81,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
@@ -86,36 +94,90 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
       }
     }
   };
+
   if (isSubmitted) {
-    return <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 max-w-md">
-        <div className="space-y-2">
-          {fields.map(field => <FormFieldComponent key={field.id} field={field} value={submittedData[field.id] || ''} isSubmitted={true} onInputChange={handleInputChange} onFileChange={handleFileChange} onMultiSelectChange={handleMultiSelectChange} />)}
-        </div>
-      </div>;
-  }
-  return <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 max-w-md">
-      {title && <div className="mb-3">
-          
-          {description}
-        </div>}
-      
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="space-y-3">
-          {fields.map(field => <FormFieldComponent key={field.id} field={field} value={formData[field.id] || ''} error={errors[field.id]} fileUploads={fileUploads} onInputChange={handleInputChange} onFileChange={handleFileChange} onMultiSelectChange={handleMultiSelectChange} />)}
+    return (
+      <div className="relative overflow-hidden bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200/60 shadow-lg p-4 max-w-sm backdrop-blur-sm">
+        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-green-200/20 to-emerald-300/20 rounded-full -translate-y-8 translate-x-8"></div>
+        
+        <div className="relative z-10 text-center mb-3">
+          <div className="flex items-center justify-center mb-2">
+            <div className="p-1.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-md">
+              <Sparkles size={14} className="text-white" />
+            </div>
+          </div>
+          <h3 className="text-base font-bold text-gray-900 mb-1">Information Submitted!</h3>
+          <p className="text-2xs text-gray-600">Thank you for providing the details</p>
         </div>
 
-        <div className="pt-2 border-t border-gray-100">
-          <Button type="submit" disabled={isSubmitting} className="w-full h-9 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
-            {isSubmitting ? <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+        <div className="relative z-10 space-y-2">
+          {fields.map(field => (
+            <FormFieldComponent
+              key={field.id}
+              field={field}
+              value={submittedData[field.id] || ''}
+              isSubmitted={true}
+              onInputChange={handleInputChange}
+              onFileChange={handleFileChange}
+              onMultiSelectChange={handleMultiSelectChange}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative overflow-hidden bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200/60 shadow-lg p-4 max-w-sm backdrop-blur-sm">
+      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-blue-200/20 to-indigo-300/20 rounded-full -translate-y-8 translate-x-8"></div>
+      
+      {title && (
+        <div className="relative z-10 text-center mb-3">
+          <h3 className="text-base font-bold text-gray-900 mb-1">{title}</h3>
+          {description && (
+            <p className="text-2xs text-gray-600 leading-relaxed">{description}</p>
+          )}
+        </div>
+      )}
+      
+      <form onSubmit={handleSubmit} className="relative z-10 space-y-3">
+        <div className="space-y-2">
+          {fields.map(field => (
+            <FormFieldComponent
+              key={field.id}
+              field={field}
+              value={formData[field.id] || ''}
+              error={errors[field.id]}
+              fileUploads={fileUploads}
+              onInputChange={handleInputChange}
+              onFileChange={handleFileChange}
+              onMultiSelectChange={handleMultiSelectChange}
+            />
+          ))}
+        </div>
+
+        <div className="pt-2">
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full h-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-2xs"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 <span>Submitting...</span>
-              </div> : <div className="flex items-center gap-2">
-                <Send className="w-3.5 h-3.5" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <Send className="w-3 h-3" />
                 <span>Submit</span>
-              </div>}
+              </div>
+            )}
           </Button>
         </div>
       </form>
-    </div>;
+    </div>
+  );
 };
+
 export default DataCollectionMessage;
