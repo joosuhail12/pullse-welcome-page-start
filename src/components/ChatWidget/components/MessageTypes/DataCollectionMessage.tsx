@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle2, Send, Upload, X, AlertCircle, Calendar, DollarSign, Mail, Phone, Link2, Hash, FileText, Plus } from 'lucide-react';
+import { CheckCircle2, Send, Upload, X, AlertCircle, Calendar, DollarSign, Mail, Phone, Link2, Hash, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FormField {
@@ -141,38 +141,17 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
   };
 
   const getFieldIcon = (type: string) => {
-    const iconProps = "w-4 h-4 text-gray-400";
     switch (type) {
-      case 'email': return <Mail className={iconProps} />;
-      case 'phone': return <Phone className={iconProps} />;
-      case 'url': return <Link2 className={iconProps} />;
-      case 'number': return <Hash className={iconProps} />;
-      case 'currency': return <DollarSign className={iconProps} />;
-      case 'date': return <Calendar className={iconProps} />;
+      case 'email': return <Mail className="w-4 h-4 text-muted-foreground" />;
+      case 'phone': return <Phone className="w-4 h-4 text-muted-foreground" />;
+      case 'url': return <Link2 className="w-4 h-4 text-muted-foreground" />;
+      case 'number': return <Hash className="w-4 h-4 text-muted-foreground" />;
+      case 'currency': return <DollarSign className="w-4 h-4 text-muted-foreground" />;
+      case 'date': return <Calendar className="w-4 h-4 text-muted-foreground" />;
       case 'textarea':
-      case 'rich_text': return <FileText className={iconProps} />;
-      case 'file_attachment': return <Upload className={iconProps} />;
-      case 'select':
-      case 'multi_select': return <Plus className={iconProps} />;
-      default: return <FileText className={iconProps} />;
-    }
-  };
-
-  const getFieldTypeLabel = (type: string) => {
-    switch (type) {
-      case 'email': return 'Email';
-      case 'phone': return 'Phone';
-      case 'url': return 'URL';
-      case 'number': return 'Number';
-      case 'currency': return 'Currency';
-      case 'date': return 'Date';
-      case 'textarea':
-      case 'rich_text': return 'Text';
-      case 'file_attachment': return 'File';
-      case 'select': return 'Select';
-      case 'multi_select': return 'Multi-select';
-      case 'boolean': return 'Checkbox';
-      default: return 'Text';
+      case 'rich_text': return <FileText className="w-4 h-4 text-muted-foreground" />;
+      case 'file_attachment': return <Upload className="w-4 h-4 text-muted-foreground" />;
+      default: return null;
     }
   };
 
@@ -182,195 +161,164 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
     if (isSubmitted) {
       return (
-        <div key={field.id} className="flex items-center justify-between py-3 px-4 rounded-lg bg-green-50/50 border border-green-200/50">
-          <div className="flex items-center gap-3">
-            <div className="p-1.5 rounded-md bg-green-100">
-              {getFieldIcon(field.type)}
-            </div>
-            <div>
-              <div className="text-sm font-medium text-gray-900">{field.label}</div>
-              <div className="text-xs text-gray-500">{getFieldTypeLabel(field.type)}</div>
-            </div>
+        <div key={field.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+          <div className="flex items-center gap-3 text-sm text-gray-600">
+            {getFieldIcon(field.type)}
+            <span className="font-medium">{field.label}</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-sm font-medium text-green-700">
             <CheckCircle2 className="w-4 h-4 text-green-600" />
-            <span className="text-sm font-medium text-green-700">
-              {field.type === 'boolean' ? (value === 'true' ? 'Yes' : 'No') : (value || 'Not provided')}
-            </span>
+            <span>{field.type === 'boolean' ? (value === 'true' ? 'Yes' : 'No') : (value || 'Not provided')}</span>
           </div>
         </div>
       );
     }
 
-    const fieldContainer = "group relative rounded-lg border border-gray-200 hover:border-gray-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500/20 transition-all duration-200 bg-white";
-    const fieldHeader = "flex items-center gap-3 px-4 py-3 border-b border-gray-100";
-    const fieldContent = "px-4 py-3";
+    const baseInputClasses = cn(
+      "h-9 text-sm border border-gray-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20",
+      "rounded-lg transition-all duration-200 placeholder:text-gray-400",
+      hasError && "border-red-300 focus:border-red-500 focus:ring-red-500/20"
+    );
 
     switch (field.type) {
       case 'select':
         return (
-          <div key={field.id} className={cn(fieldContainer, hasError && "border-red-300 focus-within:border-red-500 focus-within:ring-red-500/20")}>
-            <div className={fieldHeader}>
-              <div className="p-1.5 rounded-md bg-gray-100 group-focus-within:bg-blue-100">
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 {getFieldIcon(field.type)}
+                <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                  {field.label} {field.required && <span className="text-red-500">*</span>}
+                </Label>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium text-gray-900">{field.label}</Label>
-                  {field.required && <span className="text-red-500 text-sm">*</span>}
-                </div>
-                <div className="text-xs text-gray-500">{getFieldTypeLabel(field.type)}</div>
+              <div className="flex-1 max-w-48">
+                <Select value={value} onValueChange={(val) => handleInputChange(field.id, val)}>
+                  <SelectTrigger className={baseInputClasses}>
+                    <SelectValue placeholder={field.placeholder || "Select..."} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {field.options?.map((option, index) => (
+                      <SelectItem key={index} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <div className={fieldContent}>
-              <Select value={value} onValueChange={(val) => handleInputChange(field.id, val)}>
-                <SelectTrigger className="border-0 bg-transparent focus:ring-0 p-0 h-auto">
-                  <SelectValue placeholder={field.placeholder || "Choose an option"} />
-                </SelectTrigger>
-                <SelectContent className="z-50">
-                  {field.options?.map((option, index) => (
-                    <SelectItem key={index} value={option}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {hasError && (
-                <div className="flex items-center gap-2 text-xs text-red-600 mt-2">
-                  <AlertCircle className="w-3 h-3" />
-                  {hasError}
-                </div>
-              )}
-            </div>
+            {hasError && (
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
+                <AlertCircle className="w-3 h-3" />
+                {hasError}
+              </div>
+            )}
           </div>
         );
 
       case 'multi_select':
         const selectedValues = value ? value.split(',') : [];
         return (
-          <div key={field.id} className={cn(fieldContainer, hasError && "border-red-300")}>
-            <div className={fieldHeader}>
-              <div className="p-1.5 rounded-md bg-gray-100">
-                {getFieldIcon(field.type)}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-medium text-gray-900">{field.label}</Label>
-                  {field.required && <span className="text-red-500 text-sm">*</span>}
-                </div>
-                <div className="text-xs text-gray-500">{getFieldTypeLabel(field.type)}</div>
-              </div>
+          <div key={field.id} className="space-y-3">
+            <div className="flex items-center gap-3">
+              {getFieldIcon(field.type)}
+              <Label className="text-sm font-medium text-gray-700">
+                {field.label} {field.required && <span className="text-red-500">*</span>}
+              </Label>
             </div>
-            <div className={fieldContent}>
-              <div className="space-y-2">
-                {field.options?.map((option, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <Checkbox
-                      id={`${field.id}-${index}`}
-                      checked={selectedValues.includes(option)}
-                      onCheckedChange={() => handleMultiSelectChange(field.id, option)}
-                      className="w-4 h-4"
-                    />
-                    <Label htmlFor={`${field.id}-${index}`} className="text-sm text-gray-700 cursor-pointer">
-                      {option}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-              {hasError && (
-                <div className="flex items-center gap-2 text-xs text-red-600 mt-2">
-                  <AlertCircle className="w-3 h-3" />
-                  {hasError}
+            <div className="grid grid-cols-2 gap-3 ml-7 p-3 bg-gray-50 rounded-lg">
+              {field.options?.map((option, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`${field.id}-${index}`}
+                    checked={selectedValues.includes(option)}
+                    onCheckedChange={() => handleMultiSelectChange(field.id, option)}
+                    className="w-4 h-4"
+                  />
+                  <Label htmlFor={`${field.id}-${index}`} className="text-sm text-gray-700 cursor-pointer">
+                    {option}
+                  </Label>
                 </div>
-              )}
+              ))}
             </div>
+            {hasError && (
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
+                <AlertCircle className="w-3 h-3" />
+                {hasError}
+              </div>
+            )}
           </div>
         );
 
       case 'boolean':
         return (
-          <div key={field.id} className={cn(fieldContainer, hasError && "border-red-300")}>
-            <div className="px-4 py-4">
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
               <div className="flex items-center space-x-3">
                 <Checkbox
                   id={field.id}
                   checked={value === 'true'}
                   onCheckedChange={(checked) => handleInputChange(field.id, checked ? 'true' : 'false')}
-                  className="w-5 h-5"
+                  className="w-4 h-4"
                 />
-                <div className="flex-1">
-                  <Label htmlFor={field.id} className="text-sm font-medium cursor-pointer text-gray-900">
-                    {field.label} {field.required && <span className="text-red-500">*</span>}
-                  </Label>
-                  <div className="text-xs text-gray-500">{getFieldTypeLabel(field.type)}</div>
-                </div>
+                <Label htmlFor={field.id} className="text-sm font-medium cursor-pointer text-gray-700">
+                  {field.label} {field.required && <span className="text-red-500">*</span>}
+                </Label>
               </div>
-              {hasError && (
-                <div className="flex items-center gap-2 text-xs text-red-600 mt-2">
-                  <AlertCircle className="w-3 h-3" />
-                  {hasError}
-                </div>
-              )}
             </div>
+            {hasError && (
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
+                <AlertCircle className="w-3 h-3" />
+                {hasError}
+              </div>
+            )}
           </div>
         );
 
       case 'rich_text':
       case 'textarea':
         return (
-          <div key={field.id} className={cn(fieldContainer, hasError && "border-red-300 focus-within:border-red-500 focus-within:ring-red-500/20")}>
-            <div className={fieldHeader}>
-              <div className="p-1.5 rounded-md bg-gray-100 group-focus-within:bg-blue-100">
-                {getFieldIcon(field.type)}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor={field.id} className="text-sm font-medium text-gray-900">{field.label}</Label>
-                  {field.required && <span className="text-red-500 text-sm">*</span>}
-                </div>
-                <div className="text-xs text-gray-500">{getFieldTypeLabel(field.type)}</div>
-              </div>
+          <div key={field.id} className="space-y-3">
+            <div className="flex items-center gap-3">
+              {getFieldIcon(field.type)}
+              <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
+                {field.label} {field.required && <span className="text-red-500">*</span>}
+              </Label>
             </div>
-            <div className={fieldContent}>
-              <Textarea
-                id={field.id}
-                value={value}
-                onChange={(e) => handleInputChange(field.id, e.target.value)}
-                placeholder={field.placeholder || "Type your response..."}
-                className="min-h-[80px] resize-none border-0 bg-transparent focus:ring-0 p-0"
-              />
-              {hasError && (
-                <div className="flex items-center gap-2 text-xs text-red-600 mt-2">
-                  <AlertCircle className="w-3 h-3" />
-                  {hasError}
-                </div>
+            <Textarea
+              id={field.id}
+              value={value}
+              onChange={(e) => handleInputChange(field.id, e.target.value)}
+              placeholder={field.placeholder}
+              className={cn(
+                "min-h-[80px] resize-none text-sm border border-gray-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 rounded-lg ml-7",
+                hasError && "border-red-300 focus:border-red-500 focus:ring-red-500/20"
               )}
-            </div>
+            />
+            {hasError && (
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
+                <AlertCircle className="w-3 h-3" />
+                {hasError}
+              </div>
+            )}
           </div>
         );
 
       case 'file_attachment':
         return (
-          <div key={field.id} className={cn(fieldContainer, hasError && "border-red-300")}>
-            <div className={fieldHeader}>
-              <div className="p-1.5 rounded-md bg-gray-100">
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 {getFieldIcon(field.type)}
+                <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                  {field.label} {field.required && <span className="text-red-500">*</span>}
+                </Label>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor={field.id} className="text-sm font-medium text-gray-900">{field.label}</Label>
-                  {field.required && <span className="text-red-500 text-sm">*</span>}
-                </div>
-                <div className="text-xs text-gray-500">{getFieldTypeLabel(field.type)}</div>
-              </div>
-            </div>
-            <div className={fieldContent}>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 flex-1 max-w-48">
                 <Input
                   id={field.id}
                   type="file"
                   onChange={(e) => handleFileChange(field.id, e.target.files?.[0] || null)}
-                  className="flex-1 border-0 bg-transparent focus:ring-0 p-0 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 file:text-sm file:font-medium"
+                  className={cn(baseInputClasses, "file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 file:text-xs file:font-medium")}
                 />
                 {fileUploads[field.id] && (
                   <Button
@@ -378,98 +326,90 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={() => handleFileChange(field.id, null)}
-                    className="h-8 px-2"
+                    className="h-9 px-2"
                   >
                     <X className="w-3 h-3" />
                   </Button>
                 )}
               </div>
-              {fileUploads[field.id] && (
-                <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 p-3 rounded-md mt-3">
-                  <Upload className="w-4 h-4" />
-                  <span>{fileUploads[field.id].name}</span>
-                </div>
-              )}
-              {hasError && (
-                <div className="flex items-center gap-2 text-xs text-red-600 mt-2">
-                  <AlertCircle className="w-3 h-3" />
-                  {hasError}
-                </div>
-              )}
             </div>
+            {fileUploads[field.id] && (
+              <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 p-2 rounded-lg ml-7">
+                <Upload className="w-3 h-3" />
+                <span>{fileUploads[field.id].name}</span>
+              </div>
+            )}
+            {hasError && (
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
+                <AlertCircle className="w-3 h-3" />
+                {hasError}
+              </div>
+            )}
           </div>
         );
 
       case 'currency':
         return (
-          <div key={field.id} className={cn(fieldContainer, hasError && "border-red-300 focus-within:border-red-500 focus-within:ring-red-500/20")}>
-            <div className={fieldHeader}>
-              <div className="p-1.5 rounded-md bg-gray-100 group-focus-within:bg-blue-100">
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 {getFieldIcon(field.type)}
+                <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                  {field.label} {field.required && <span className="text-red-500">*</span>}
+                </Label>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor={field.id} className="text-sm font-medium text-gray-900">{field.label}</Label>
-                  {field.required && <span className="text-red-500 text-sm">*</span>}
-                </div>
-                <div className="text-xs text-gray-500">{getFieldTypeLabel(field.type)}</div>
-              </div>
-            </div>
-            <div className={fieldContent}>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 font-medium">{field.currency || '$'}</span>
+              <div className="relative flex-1 max-w-48">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
+                  {field.currency || '$'}
+                </span>
                 <Input
                   id={field.id}
                   type="number"
                   step="0.01"
                   value={value}
                   onChange={(e) => handleInputChange(field.id, e.target.value)}
-                  placeholder={field.placeholder || "0.00"}
-                  className="flex-1 border-0 bg-transparent focus:ring-0 p-0"
+                  placeholder={field.placeholder}
+                  className={cn(baseInputClasses, "pl-8")}
                 />
               </div>
-              {hasError && (
-                <div className="flex items-center gap-2 text-xs text-red-600 mt-2">
-                  <AlertCircle className="w-3 h-3" />
-                  {hasError}
-                </div>
-              )}
             </div>
+            {hasError && (
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
+                <AlertCircle className="w-3 h-3" />
+                {hasError}
+              </div>
+            )}
           </div>
         );
 
       default:
         return (
-          <div key={field.id} className={cn(fieldContainer, hasError && "border-red-300 focus-within:border-red-500 focus-within:ring-red-500/20")}>
-            <div className={fieldHeader}>
-              <div className="p-1.5 rounded-md bg-gray-100 group-focus-within:bg-blue-100">
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 {getFieldIcon(field.type)}
+                <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                  {field.label} {field.required && <span className="text-red-500">*</span>}
+                </Label>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor={field.id} className="text-sm font-medium text-gray-900">{field.label}</Label>
-                  {field.required && <span className="text-red-500 text-sm">*</span>}
-                </div>
-                <div className="text-xs text-gray-500">{getFieldTypeLabel(field.type)}</div>
+              <div className="flex-1 max-w-48">
+                <Input
+                  id={field.id}
+                  type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : field.type === 'phone' ? 'tel' : field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'}
+                  value={value}
+                  onChange={(e) => handleInputChange(field.id, e.target.value)}
+                  placeholder={field.placeholder}
+                  className={baseInputClasses}
+                  step={field.type === 'number' ? '0.01' : undefined}
+                />
               </div>
             </div>
-            <div className={fieldContent}>
-              <Input
-                id={field.id}
-                type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : field.type === 'phone' ? 'tel' : field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'}
-                value={value}
-                onChange={(e) => handleInputChange(field.id, e.target.value)}
-                placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
-                className="border-0 bg-transparent focus:ring-0 p-0"
-                step={field.type === 'number' ? '0.01' : undefined}
-              />
-              {hasError && (
-                <div className="flex items-center gap-2 text-xs text-red-600 mt-2">
-                  <AlertCircle className="w-3 h-3" />
-                  {hasError}
-                </div>
-              )}
-            </div>
+            {hasError && (
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
+                <AlertCircle className="w-3 h-3" />
+                {hasError}
+              </div>
+            )}
           </div>
         );
     }
@@ -477,8 +417,8 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
   if (isSubmitted) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-        <div className="space-y-3">
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+        <div className="space-y-1">
           {fields.map(field => renderField(field))}
         </div>
       </div>
@@ -486,26 +426,17 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-        {description && (
-          <p className="text-sm text-gray-600">{description}</p>
-        )}
-      </div>
-
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-4">
           {fields.map(field => renderField(field))}
         </div>
 
-        <div className="pt-4 border-t border-gray-100">
+        <div className="pt-2 border-t border-gray-100">
           <Button 
             type="submit" 
             disabled={isSubmitting}
-            className="w-full h-11 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors shadow-sm"
+            className="w-full h-10 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
             {isSubmitting ? (
               <div className="flex items-center gap-2">
@@ -515,7 +446,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
             ) : (
               <div className="flex items-center gap-2">
                 <Send className="w-4 h-4" />
-                <span>Submit Information</span>
+                <span>Submit</span>
               </div>
             )}
           </Button>
