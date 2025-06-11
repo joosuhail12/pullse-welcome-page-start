@@ -108,10 +108,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
   return <div className="relative overflow-hidden bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200/60 shadow-lg p-4 max-w-sm backdrop-blur-sm">
       <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-blue-200/20 to-indigo-300/20 rounded-full -translate-y-8 translate-x-8"></div>
       
-      {title && <div className="relative z-10 text-center mb-3">
-          
-          {description}
-        </div>}
+      {title}
       
       <form onSubmit={handleSubmit} className="relative z-10 space-y-3">
         <div className="space-y-2">
