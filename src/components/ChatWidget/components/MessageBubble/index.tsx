@@ -1,330 +1,239 @@
-import React, { useState, lazy, Suspense } from 'react';
-import { MessageType, UserType, AgentStatus } from '../../types';
-import TextMessage from '../MessageTypes/TextMessage';
-import StatusMessage from '../MessageTypes/StatusMessage';
-import MessageStatus from './MessageStatus';
+
+import React, { useState } from 'react';
+import { Message, AgentStatus } from '../../types';
+import { MessageReadStatus } from '../MessageReadReceipt';
 import MessageAvatar from './MessageAvatar';
+import MessageStatus from './MessageStatus';
 import MessageReactionButtons from './MessageReactionButtons';
-import MessageReadReceipt, { MessageReadStatus } from '../MessageReadReceipt';
-import { cn } from '@/lib/utils';
-import { Paperclip, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { sanitizeInput } from '../../utils/validation';
+import TextMessage from '../MessageTypes/TextMessage';
+import FileMessage from '../MessageTypes/FileMessage';
+import CardMessage from '../MessageTypes/CardMessage';
+import QuickReplyMessage from '../MessageTypes/QuickReplyMessage';
+import StatusMessage from '../MessageTypes/StatusMessage';
 import { ChatWidgetConfig } from '../../config';
-
-const CardMessage = lazy(() => import('../MessageTypes/CardMessage'));
-const FileMessage = lazy(() => import('../MessageTypes/FileMessage'));
-const QuickReplyMessage = lazy(() => import('../MessageTypes/QuickReplyMessage'));
-
-const LazyLoadFallback = () => (
-  <div className="w-full h-16 bg-gray-100 animate-pulse rounded-md"></div>
-);
+import { cn } from '@/lib/utils';
 
 interface MessageBubbleProps {
-  message: {
-    id: string;
-    text: string;
-    type?: MessageType;
-    sender: UserType;
-    senderType?: 'user' | 'agent' | 'system';
-    messageType?: 'text' | 'data_collection' | 'action_buttons' | 'csat' | 'mention' | 'note';
-    messageConfig?: string[];
-    createdAt: Date;
-    metadata?: Record<string, any>;
-    reactions?: string[];
-    fileName?: string;
-    cardData?: {
-      title: string;
-      description: string;
-      imageUrl?: string;
-      buttons?: Array<{ text: string; action: string }>;
-    };
-    quickReplies?: Array<{ text: string; action: string }>;
-    reaction?: 'thumbsUp' | 'thumbsDown' | null;
-  };
-  highlightText?: string;
-  isHighlighted?: boolean;
-  userAvatar?: string;
-  agentAvatar?: string;
-  onReply?: (text: string, messageId?: string) => void;
-  onReaction?: (messageId: string, emoji: string) => void;
-  agentStatus?: AgentStatus;
-  readStatus?: MessageReadStatus;
-  readTimestamp?: Date;
+  message: Message;
+  isTyping?: boolean;
+  setMessageText?: (text: string) => void;
+  readReceipt?: { status: MessageReadStatus; timestamp?: Date };
+  onMessageReaction?: (messageId: string, reaction: string) => void;
   searchTerm?: string;
-  onToggleHighlight?: () => void;
-  highlightSearchTerm?: (text: string, term: string) => { text: string; highlighted: boolean }[];
-  showAvatar?: boolean;
-  isConsecutive?: boolean;
+  highlightMessage?: (text: string) => string[];
+  agentAvatar?: string;
+  userAvatar?: string;
+  conversationId: string;
+  agentStatus?: AgentStatus;
+  onToggleHighlight?: (messageId: string) => void;
+  typingDuration?: number;
   config: ChatWidgetConfig;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
+const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
-  highlightText,
-  isHighlighted,
-  userAvatar,
-  agentAvatar,
-  onReply,
-  onReaction,
-  agentStatus,
-  readStatus = 'sent',
-  readTimestamp,
+  isTyping = false,
+  setMessageText,
+  readReceipt,
+  onMessageReaction,
   searchTerm,
+  highlightMessage,
+  agentAvatar,
+  userAvatar,
+  conversationId,
+  agentStatus,
   onToggleHighlight,
-  showAvatar = true,
-  isConsecutive = false,
+  typingDuration = 0,
   config
 }) => {
   const [showReactions, setShowReactions] = useState(false);
+  const isUser = message.sender === 'user' || message.senderType === 'user';
+  const isAgent = message.sender === 'agent' || message.senderType === 'agent';
+  const isSystem = message.sender === 'system' || message.senderType === 'system';
 
-  const toggleReactions = () => {
-    if (onReaction) {
-      setShowReactions(!showReactions);
-    }
-  };
-
-  const handleReaction = (emoji: string) => {
-    if (onReaction) {
-      onReaction(message.id, emoji);
-      setShowReactions(false);
-    }
-  };
-
-  const isUserMessage = message.sender === 'user';
-  const isBotMessage = message.sender === 'bot' || message.sender === 'agent';
-  const isSystemMessage = message.sender === 'system';
-
-  const getStatusBasedClasses = () => {
-    if (!isBotMessage || !agentStatus) return '';
-
-    switch (agentStatus) {
-      case 'online':
-        return 'border-l-4 border-l-green-500';
-      case 'busy':
-        return 'border-l-4 border-l-amber-500';
-      case 'away':
-        return 'border-l-4 border-l-yellow-400';
-      case 'offline':
-        return 'border-l-4 border-l-gray-400';
-      default:
-        return '';
-    }
-  };
-
-  const getConsecutiveClasses = () => {
-    if (!isConsecutive) return '';
-
-    if (isUserMessage) {
-      return 'rounded-t-md rounded-bl-md rounded-br-sm mt-1';
-    } else if (isBotMessage) {
-      return 'rounded-t-md rounded-br-md rounded-bl-sm mt-1';
-    }
-
-    return '';
-  };
-
-
-  const messageTypeClass = isUserMessage
-    ? `chat-message-user text-white rounded-t-2xl rounded-bl-2xl rounded-br-sm`
-    : isBotMessage
-      ? `chat-message-system text-system-bubble-text rounded-t-2xl rounded-br-2xl rounded-bl-sm border border-gray-100 ${getStatusBasedClasses()}`
-      : 'bg-gray-100 text-gray-600 rounded-xl border border-gray-200';
-
-  const messageContainerClass = isUserMessage
-    ? 'ml-auto flex-row-reverse'
-    : isBotMessage
-      ? 'mr-auto'
-      : 'mx-auto max-w-[85%] text-center';
-
-  const handleLongPress = (e: React.MouseEvent) => {
-    if (onReaction) {
-      e.preventDefault();
-      toggleReactions();
-    }
-  };
-
-  const sanitizedText = message.text ? sanitizeInput(message.text) : '';
-
-  const renderText = (text: string) => {
-    if (searchTerm && searchTerm.length > 0) {
-      const regex = new RegExp(`(${searchTerm})`, 'gi');
-      const parts = text.split(regex);
-      return (
-        <>
-          {parts.map((part, i) =>
-            regex.test(part)
-              ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark>
-              : <React.Fragment key={i}>{part}</React.Fragment>
-          )}
-        </>
-      );
-    } else if (highlightText) {
-      return <TextMessage text={text} highlightText={highlightText} />;
-    }
-    return text;
-  };
-
-  const renderMessageContent = () => {
-    const type = message.messageType || message.type;
-    switch (type) {
-      case 'text':
-        return <p style={
-          {
-            width: '70%',
-            textAlign: 'left',
-            paddingRight: '10px',
-            color: config.colors?.textColor
-          }
-        }
-          className="leading-relaxed">{renderText(sanitizedText)}</p>;
-      case 'card':
-        return (
-          <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata && <CardMessage metadata={message.metadata} />}
-          </Suspense>
-        );
-      case 'file':
-        return (
-          <Suspense fallback={<LazyLoadFallback />}>
-            {message.metadata ?
-              <FileMessage metadata={message.metadata} /> :
-              <div className="flex flex-col">
-                {renderText(sanitizedText)}
-                <div className="mt-2 p-2 bg-gray-100 rounded-md flex items-center">
-                  <Paperclip size={16} className="mr-2" />
-                  <span className="text-sm text-blue-600 underline">
-                    {message.fileName ? sanitizeInput(message.fileName) : 'File'}
-                  </span>
-                </div>
-              </div>
-            }
-          </Suspense>
-        );
-      case 'action_buttons':
-        return (
-          <Suspense fallback={<LazyLoadFallback />}>
-            {
-              <QuickReplyMessage
-                message={message}
-                quickReplies={message.messageConfig}
-                onReply={(text) => onReply && onReply(text, message.id)}
-              />
-            }
-          </Suspense>
-        );
-      case 'status':
-        return <StatusMessage text={message.text} />;
-      default:
-        return <p style={
-          {
-            color: config.colors?.textColor
-          }
-        }
-          className="leading-relaxed">{renderText(sanitizedText)}</p>;
-    }
-  };
-
-  const renderReactionButtons = () => {
-    if (message.sender === 'system' && onReaction) {
-      return (
-        <div className="flex gap-2 mt-1.5">
-          <button
-            className={`p-1 rounded ${message.reaction === 'thumbsUp' ? 'bg-green-100' : 'hover:bg-gray-100'}`}
-            onClick={() => handleReaction('thumbsUp')}
-            aria-label="Thumbs up"
-          >
-            <ThumbsUp size={14} className={message.reaction === 'thumbsUp' ? 'text-green-600' : 'text-gray-500'} />
-          </button>
-          <button
-            className={`p-1 rounded ${message.reaction === 'thumbsDown' ? 'bg-red-100' : 'hover:bg-gray-100'}`}
-            onClick={() => handleReaction('thumbsDown')}
-            aria-label="Thumbs down"
-          >
-            <ThumbsDown size={14} className={message.reaction === 'thumbsDown' ? 'text-red-600' : 'text-gray-500'} />
-          </button>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  if (message.sender === 'status') {
+  // Handle system/status messages separately
+  if (isSystem || message.type === 'system' || message.messageType === 'note') {
     return (
-      <div className="w-full flex justify-center my-2">
-        <div className="bg-gray-100 py-1.5 px-4 rounded-full text-xs text-gray-500 text-center shadow-sm">
-          {renderText(sanitizedText)}
-        </div>
+      <div className="flex justify-center my-2">
+        <StatusMessage 
+          text={message.text} 
+          type="info"
+          timestamp={message.createdAt}
+        />
       </div>
     );
   }
 
-  const avatarSpacing = '' // showAvatar ? '' : isUserMessage ? `mr-${isConsecutive ? '4' : '8'}` : `ml-${isConsecutive ? '4' : '8'}`;
+  const handleReaction = (emoji: string) => {
+    if (onMessageReaction) {
+      onMessageReaction(message.id, emoji);
+    }
+    setShowReactions(false);
+  };
+
+  const renderMessageContent = () => {
+    switch (message.type) {
+      case 'file':
+        return (
+          <FileMessage
+            text={message.text}
+            fileName={message.fileName}
+            fileUrl={message.metadata?.fileUrl}
+            renderText={(text) => highlightMessage ? highlightMessage(text).join('') : text}
+            uploading={message.metadata?.uploading}
+            metadata={message.metadata}
+          />
+        );
+      case 'card':
+        return (
+          <CardMessage 
+            cardData={message.cardData}
+            metadata={message.metadata}
+          />
+        );
+      case 'quick_reply':
+        return (
+          <QuickReplyMessage
+            message={message}
+            quickReplies={message.quickReplies}
+            renderText={(text) => highlightMessage ? highlightMessage(text).join('') : text}
+            setMessageText={setMessageText}
+            metadata={message.metadata}
+          />
+        );
+      default:
+        return (
+          <TextMessage
+            text={message.text}
+            renderText={(text) => highlightMessage ? highlightMessage(text).join('') : text}
+            highlightText={searchTerm}
+          />
+        );
+    }
+  };
 
   return (
-    <div
-      className={cn(
-        'group flex items-end relative animate-fade-in',
-        messageContainerClass,
-        isConsecutive ? 'mb-1' : 'mb-4'
-      )}
-      onContextMenu={handleLongPress}
-    >
-      {!isSystemMessage && showAvatar && (
-        <MessageAvatar
-          isUserMessage={isUserMessage}
-          userAvatar={userAvatar}
-          agentAvatar={agentAvatar}
-          agentStatus={agentStatus}
-          userName={message.metadata?.userName || ''}
-          agentName={message.metadata?.agentName || ''}
-        />
-      )}
-
-      {!isSystemMessage && !showAvatar && (
-        <div className="w-8 flex-shrink-0"></div>
+    <div className={cn(
+      "group relative flex gap-3 px-4 py-3 transition-all duration-200",
+      isUser ? "justify-end" : "justify-start",
+      "hover:bg-gray-50/30"
+    )}>
+      {/* Agent Avatar - Left side */}
+      {isAgent && (
+        <div className="flex-shrink-0">
+          <MessageAvatar
+            src={agentAvatar}
+            alt="Agent"
+            isAgent={true}
+            agentStatus={agentStatus}
+            size="sm"
+          />
+        </div>
       )}
 
-      <div
-        className={cn(
-          'relative max-w-[90%] sm:max-w-md px-4 py-3 flex flex-row justify-between',
-          messageTypeClass,
-          isHighlighted && 'bg-yellow-100 border-yellow-300',
-          isSystemMessage && 'py-2 px-3',
-          avatarSpacing
-        )}
-        onClick={onToggleHighlight}
-        style={
-          {
-            backgroundColor: isUserMessage ? config.colors?.userMessageBackgroundColor || 'transparent' : config.colors?.agentMessageBackgroundColor || 'transparent'
-          }
-        }
-      >
-        {renderMessageContent()}
-
-        {<MessageStatus timestamp={message.createdAt} />}
-
-        {/* {isUserMessage && !isConsecutive && (
-          <div className="absolute -bottom-4 right-1">
-            <MessageReadReceipt
-              status={readStatus}
-              timestamp={readTimestamp}
-            />
+      {/* Message Content */}
+      <div className={cn(
+        "relative max-w-[75%] sm:max-w-[65%]",
+        isUser ? "order-first" : ""
+      )}>
+        {/* Message Bubble */}
+        <div
+          className={cn(
+            "relative px-4 py-3 rounded-2xl shadow-sm transition-all duration-200",
+            "group-hover:shadow-md",
+            isUser ? [
+              "ml-auto rounded-br-md",
+              "bg-gradient-to-br from-blue-500 to-blue-600",
+              "text-white",
+              "shadow-blue-500/20"
+            ] : [
+              "mr-auto rounded-bl-md",
+              "bg-white border border-gray-200/60",
+              "text-gray-800",
+              "shadow-gray-500/10"
+            ]
+          )}
+          style={{
+            ...(isUser && config.colors?.userMessageBackgroundColor && {
+              background: `linear-gradient(135deg, ${config.colors.userMessageBackgroundColor}, ${config.colors.userMessageBackgroundColor}dd)`
+            }),
+            ...(isAgent && config.colors?.agentMessageBackgroundColor && {
+              backgroundColor: config.colors.agentMessageBackgroundColor
+            })
+          }}
+          onMouseEnter={() => setShowReactions(true)}
+          onMouseLeave={() => setShowReactions(false)}
+        >
+          {/* Message Content */}
+          <div className="relative z-10">
+            {renderMessageContent()}
           </div>
-        )} */}
 
-        {renderReactionButtons()}
+          {/* Reaction Button */}
+          {onMessageReaction && showReactions && (
+            <MessageReactionButtons
+              onReaction={handleReaction}
+              onClose={() => setShowReactions(false)}
+            />
+          )}
+
+          {/* Message Tail */}
+          <div className={cn(
+            "absolute w-3 h-3 rotate-45",
+            isUser ? [
+              "-right-1 bottom-2",
+              "bg-gradient-to-br from-blue-500 to-blue-600"
+            ] : [
+              "-left-1 bottom-2",
+              "bg-white border-l border-b border-gray-200/60"
+            ]
+          )} />
+        </div>
+
+        {/* Message Status */}
+        <div className={cn(
+          "mt-1 px-1",
+          isUser ? "text-right" : "text-left"
+        )}>
+          <MessageStatus
+            status={readReceipt?.status}
+            timestamp={message.createdAt}
+            isFileMessage={message.type === 'file'}
+            fileUploading={message.metadata?.uploading}
+          />
+        </div>
+
+        {/* Message Reactions Display */}
+        {message.reactions && message.reactions.length > 0 && (
+          <div className={cn(
+            "flex flex-wrap gap-1 mt-2",
+            isUser ? "justify-end" : "justify-start"
+          )}>
+            {message.reactions.map((reaction, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-xs hover:bg-gray-200 transition-colors cursor-pointer"
+              >
+                {reaction}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      {showReactions && onReaction && (
-        <MessageReactionButtons
-          onReaction={handleReaction}
-          onClose={() => setShowReactions(false)}
-        />
+      {/* User Avatar - Right side */}
+      {isUser && (
+        <div className="flex-shrink-0">
+          <MessageAvatar
+            src={userAvatar}
+            alt="You"
+            isAgent={false}
+            size="sm"
+          />
+        </div>
       )}
     </div>
   );
-});
-
-MessageBubble.displayName = 'MessageBubble';
+};
 
 export default MessageBubble;
