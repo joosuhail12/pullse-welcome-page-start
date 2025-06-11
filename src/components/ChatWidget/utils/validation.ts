@@ -17,6 +17,29 @@ export function sanitizeInput(input: string): string {
 }
 
 /**
+ * Validate and sanitize a chat message
+ */
+export function validateMessage(message: string): string {
+  if (!message || typeof message !== 'string') {
+    throw new Error('Invalid message: must be a non-empty string');
+  }
+  
+  // Check message length
+  if (message.length > 5000) {
+    throw new Error('Message too long: maximum 5000 characters allowed');
+  }
+  
+  // Sanitize the message
+  const sanitized = sanitizeInput(message.trim());
+  
+  if (!sanitized) {
+    throw new Error('Invalid message: message cannot be empty after sanitization');
+  }
+  
+  return sanitized;
+}
+
+/**
  * Validate email format
  */
 export function isValidEmail(email: string): boolean {
