@@ -1,4 +1,3 @@
-
 /**
  * Input Validation and Sanitization
  * 
@@ -9,7 +8,7 @@
  * of defense against many common security vulnerabilities.
  */
 
-import * as DOMPurify from 'dompurify';
+import DOMPurify from 'dompurify';
 
 // Constants for validation
 const MAX_MESSAGE_LENGTH = 2000;
