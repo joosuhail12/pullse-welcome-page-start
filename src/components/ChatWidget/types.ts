@@ -161,3 +161,20 @@ export type FormDataStructure = Record<string, string>;
 
 // Connection event for Ably
 export type ConnectionEvent = 'initialized' | 'connecting' | 'connected' | 'disconnected' | 'suspended' | 'closed' | 'failed' | 'update';
+
+// Add TeamAvailability interface
+export interface TeamAvailability {
+  dailySchedule?: Array<{
+    day: string;
+    startTime: string;
+    endTime: string;
+    isActive: boolean;
+  }>;
+  holidays?: Array<{
+    date: string;
+    name: string;
+    type: 'holiday' | 'break' | 'maintenance';
+  }>;
+  timezone?: string;
+  currentStatus?: 'online' | 'offline' | 'limited';
+}

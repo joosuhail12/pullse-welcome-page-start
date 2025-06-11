@@ -1,4 +1,3 @@
-
 export interface ChatEventPayload {
   type: ChatEventType;
   timestamp: Date;
@@ -111,6 +110,21 @@ export interface ChatWidgetConfig {
   widgetfield?: WidgetField;
   sessionId?: string;
   realtime?: boolean; // Add realtime flag for backward compatibility
+  teamAvailability?: {
+    dailySchedule?: Array<{
+      day: string;
+      startTime: string;
+      endTime: string;
+      isActive: boolean;
+    }>;
+    holidays?: Array<{
+      date: string;
+      name: string;
+      type: 'holiday' | 'break' | 'maintenance';
+    }>;
+    timezone?: string;
+    currentStatus?: 'online' | 'offline' | 'limited';
+  };
 }
 
 export type ChatEventType =

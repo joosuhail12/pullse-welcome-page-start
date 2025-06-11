@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { MessageSquare, MessageCircle, Clock } from 'lucide-react';
 import { defaultConfig, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
+import TeamAvailability from '../components/TeamAvailability';
 import { dispatchChatEvent } from '../utils/events';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -80,8 +81,15 @@ const HomeView = React.memo(({
       </div>
 
       {/* Team Availability Section */}
-      {
-        config.interfaceSettings?.showOfficeHours && (<div className="mb-3 sm:mb-6 animate-subtle-fade-in space-y-2 sm:space-y-4">
+      {config.teamAvailability && (
+        <div className="mb-3 sm:mb-6">
+          <TeamAvailability config={config} />
+        </div>
+      )}
+
+      {/* Legacy Office Hours Section - only show if team availability is not configured */}
+      {!config.teamAvailability && config.interfaceSettings?.showOfficeHours && (
+        <div className="mb-3 sm:mb-6 animate-subtle-fade-in space-y-2 sm:space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-3xs sm:text-xs uppercase tracking-wide font-semibold text-gray-500">Team Availability</h3>
             <div className="h-px flex-grow bg-gray-100"></div>
@@ -96,8 +104,8 @@ const HomeView = React.memo(({
             </div>
             <p className="text-3xs sm:text-xs text-gray-600 pl-6 sm:pl-9">Mon-Fri: 9 AM - 5 PM EST</p>
           </div>
-        </div>)
-      }
+        </div>
+      )}
 
       {/* Support status */}
       {
