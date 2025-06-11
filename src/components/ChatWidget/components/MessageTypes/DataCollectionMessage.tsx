@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { CheckCircle2, Send, Upload, X } from 'lucide-react';
+import { CheckCircle2, Send, Upload, X, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface FormField {
   id: string;
@@ -38,6 +39,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [fileUploads, setFileUploads] = useState<Record<string, File>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (fieldId: string, value: string) => {
     setFormData(prev => ({
@@ -125,11 +127,17 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
     return phoneRegex.test(phone);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validateForm()) {
-      onSubmit(formData);
+      setIsSubmitting(true);
+      try {
+        await new Promise(resolve => setTimeout(resolve, 800)); // Simulate submission delay
+        onSubmit(formData);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -139,25 +147,31 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
     if (isSubmitted) {
       return (
-        <div key={field.id} className="space-y-1">
-          <Label className="text-xs font-medium text-gray-600">{field.label}</Label>
-          <div className="p-2 bg-green-50 border border-green-200 rounded-md text-sm text-gray-800">
-            {field.type === 'boolean' ? (value === 'true' ? 'Yes' : 'No') : (value || 'Not provided')}
+        <div key={field.id} className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">{field.label}</Label>
+          <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-gray-800">
+            <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+            <span>{field.type === 'boolean' ? (value === 'true' ? 'Yes' : 'No') : (value || 'Not provided')}</span>
           </div>
         </div>
       );
     }
 
+    const fieldClasses = cn(
+      "transition-all duration-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500",
+      hasError ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''
+    );
+
     switch (field.type) {
       case 'select':
         return (
-          <div key={field.id} className="space-y-1">
-            <Label htmlFor={field.id} className="text-xs font-medium">
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
             <Select value={value} onValueChange={(val) => handleInputChange(field.id, val)}>
-              <SelectTrigger className={`h-9 text-sm ${hasError ? 'border-red-500' : ''}`}>
-                <SelectValue placeholder={field.placeholder} />
+              <SelectTrigger className={cn("h-11", fieldClasses)}>
+                <SelectValue placeholder={field.placeholder || `Select ${field.label.toLowerCase()}`} />
               </SelectTrigger>
               <SelectContent>
                 {field.options?.map((option, index) => (
@@ -165,55 +179,72 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
                 ))}
               </SelectContent>
             </Select>
-            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+            {hasError && (
+              <div className="flex items-center gap-1 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>{hasError}</span>
+              </div>
+            )}
           </div>
         );
 
       case 'multi_select':
         const selectedValues = value ? value.split(',') : [];
         return (
-          <div key={field.id} className="space-y-1">
-            <Label className="text-xs font-medium">
+          <div key={field.id} className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
-            <div className="space-y-2 p-3 border rounded-md">
+            <div className="space-y-3 p-4 border rounded-lg bg-gray-50/50">
               {field.options?.map((option, index) => (
-                <div key={index} className="flex items-center space-x-2">
+                <div key={index} className="flex items-center space-x-3">
                   <Checkbox
                     id={`${field.id}-${index}`}
                     checked={selectedValues.includes(option)}
                     onCheckedChange={() => handleMultiSelectChange(field.id, option)}
+                    className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
                   />
-                  <Label htmlFor={`${field.id}-${index}`} className="text-sm">{option}</Label>
+                  <Label htmlFor={`${field.id}-${index}`} className="text-sm font-medium cursor-pointer">{option}</Label>
                 </div>
               ))}
             </div>
-            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+            {hasError && (
+              <div className="flex items-center gap-1 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>{hasError}</span>
+              </div>
+            )}
           </div>
         );
 
       case 'boolean':
         return (
-          <div key={field.id} className="space-y-1">
-            <div className="flex items-center space-x-2">
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center space-x-3 p-4 border rounded-lg bg-gray-50/50 hover:bg-gray-100/50 transition-colors">
               <Checkbox
                 id={field.id}
                 checked={value === 'true'}
                 onCheckedChange={(checked) => handleInputChange(field.id, checked ? 'true' : 'false')}
+                className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
               />
-              <Label htmlFor={field.id} className="text-xs font-medium">
+              <Label htmlFor={field.id} className="text-sm font-medium cursor-pointer">
                 {field.label} {field.required && <span className="text-red-500">*</span>}
               </Label>
             </div>
-            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+            {hasError && (
+              <div className="flex items-center gap-1 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>{hasError}</span>
+              </div>
+            )}
           </div>
         );
 
       case 'rich_text':
       case 'textarea':
         return (
-          <div key={field.id} className="space-y-1">
-            <Label htmlFor={field.id} className="text-xs font-medium">
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
             <Textarea
@@ -221,48 +252,69 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
               value={value}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
               placeholder={field.placeholder}
-              className={`min-h-[80px] text-sm resize-none ${hasError ? 'border-red-500' : ''}`}
+              className={cn("min-h-[100px] resize-none", fieldClasses)}
             />
-            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+            {hasError && (
+              <div className="flex items-center gap-1 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>{hasError}</span>
+              </div>
+            )}
           </div>
         );
 
       case 'file_attachment':
         return (
-          <div key={field.id} className="space-y-1">
-            <Label htmlFor={field.id} className="text-xs font-medium">
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
-            <div className="flex items-center gap-2">
-              <Input
-                id={field.id}
-                type="file"
-                onChange={(e) => handleFileChange(field.id, e.target.files?.[0] || null)}
-                className={`h-9 text-sm ${hasError ? 'border-red-500' : ''}`}
-              />
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id={field.id}
+                    type="file"
+                    onChange={(e) => handleFileChange(field.id, e.target.files?.[0] || null)}
+                    className={cn("h-11 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100", fieldClasses)}
+                  />
+                </div>
+                {fileUploads[field.id] && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleFileChange(field.id, null)}
+                    className="h-11 px-3"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
               {fileUploads[field.id] && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleFileChange(field.id, null)}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+                <div className="flex items-center gap-2 text-sm text-gray-600 bg-blue-50 p-2 rounded-md">
+                  <Upload className="w-4 h-4" />
+                  <span>{fileUploads[field.id].name}</span>
+                </div>
               )}
             </div>
-            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+            {hasError && (
+              <div className="flex items-center gap-1 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>{hasError}</span>
+              </div>
+            )}
           </div>
         );
 
       case 'currency':
         return (
-          <div key={field.id} className="space-y-1">
-            <Label htmlFor={field.id} className="text-xs font-medium">
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
+              <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 font-medium">
                 {field.currency || '$'}
               </span>
               <Input
@@ -272,17 +324,22 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
                 value={value}
                 onChange={(e) => handleInputChange(field.id, e.target.value)}
                 placeholder={field.placeholder}
-                className={`pl-8 h-9 text-sm ${hasError ? 'border-red-500' : ''}`}
+                className={cn("pl-10 h-11", fieldClasses)}
               />
             </div>
-            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+            {hasError && (
+              <div className="flex items-center gap-1 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>{hasError}</span>
+              </div>
+            )}
           </div>
         );
 
       case 'date':
         return (
-          <div key={field.id} className="space-y-1">
-            <Label htmlFor={field.id} className="text-xs font-medium">
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
             <Input
@@ -290,16 +347,21 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
               type="date"
               value={value}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
-              className={`h-9 text-sm ${hasError ? 'border-red-500' : ''}`}
+              className={cn("h-11", fieldClasses)}
             />
-            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+            {hasError && (
+              <div className="flex items-center gap-1 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>{hasError}</span>
+              </div>
+            )}
           </div>
         );
 
       case 'number':
         return (
-          <div key={field.id} className="space-y-1">
-            <Label htmlFor={field.id} className="text-xs font-medium">
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
             <Input
@@ -308,16 +370,21 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
               value={value}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
               placeholder={field.placeholder}
-              className={`h-9 text-sm ${hasError ? 'border-red-500' : ''}`}
+              className={cn("h-11", fieldClasses)}
             />
-            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+            {hasError && (
+              <div className="flex items-center gap-1 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>{hasError}</span>
+              </div>
+            )}
           </div>
         );
 
       default:
         return (
-          <div key={field.id} className="space-y-1">
-            <Label htmlFor={field.id} className="text-xs font-medium">
+          <div key={field.id} className="space-y-2">
+            <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
             <Input
@@ -326,9 +393,14 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
               value={value}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
               placeholder={field.placeholder}
-              className={`h-9 text-sm ${hasError ? 'border-red-500' : ''}`}
+              className={cn("h-11", fieldClasses)}
             />
-            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+            {hasError && (
+              <div className="flex items-center gap-1 text-sm text-red-600">
+                <AlertCircle className="w-4 h-4" />
+                <span>{hasError}</span>
+              </div>
+            )}
           </div>
         );
     }
@@ -336,13 +408,18 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
   if (isSubmitted) {
     return (
-      <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
-        <div className="flex items-center gap-2 mb-3">
-          <CheckCircle2 className="w-5 h-5 text-green-600" />
-          <h3 className="font-semibold text-green-800">Information Submitted</h3>
+      <div className="p-6 bg-gradient-to-br from-green-50 via-emerald-50 to-green-50 border border-green-200 rounded-xl shadow-sm">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">
+            <CheckCircle2 className="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-green-800">Information Submitted Successfully</h3>
+            <p className="text-sm text-green-600">Thank you for providing the requested information.</p>
+          </div>
         </div>
         
-        <div className="space-y-3">
+        <div className="space-y-4">
           {fields.map(field => renderField(field))}
         </div>
       </div>
@@ -350,25 +427,34 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
   }
 
   return (
-    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-      <div className="mb-4">
-        <h3 className="font-semibold text-gray-800 text-sm mb-1">{title}</h3>
+    <div className="p-6 bg-white border border-gray-200 rounded-xl shadow-sm">
+      <div className="mb-6">
+        <h3 className="font-semibold text-gray-900 text-lg mb-2">{title}</h3>
         {description && (
-          <p className="text-xs text-gray-600">{description}</p>
+          <p className="text-sm text-gray-600 leading-relaxed">{description}</p>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-5">
         {fields.map(field => renderField(field))}
 
-        <div className="pt-2">
+        <div className="pt-4 border-t border-gray-100">
           <Button 
             type="submit" 
-            size="sm" 
-            className="w-full h-9 text-sm font-medium"
+            disabled={isSubmitting}
+            className="w-full h-12 text-sm font-medium bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/20 transition-all duration-200"
           >
-            <Send className="w-4 h-4 mr-2" />
-            Submit Information
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Submitting...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Send className="w-4 h-4" />
+                <span>Submit Information</span>
+              </div>
+            )}
           </Button>
         </div>
       </form>
