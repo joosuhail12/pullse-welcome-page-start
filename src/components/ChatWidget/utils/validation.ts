@@ -9,7 +9,7 @@
  * of defense against many common security vulnerabilities.
  */
 
-import DOMPurify from 'dompurify';
+import * as DOMPurify from 'dompurify';
 
 // Constants for validation
 const MAX_MESSAGE_LENGTH = 2000;

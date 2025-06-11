@@ -29,14 +29,32 @@ interface TeamAvailabilityProps {
   };
 }
 
+// Fallback mock data for testing
+const mockTeamAvailability = {
+  dailySchedule: [
+    { day: 'Monday', startTime: '09:00', endTime: '17:00', isActive: true },
+    { day: 'Tuesday', startTime: '09:00', endTime: '17:00', isActive: true },
+    { day: 'Wednesday', startTime: '09:00', endTime: '17:00', isActive: true },
+    { day: 'Thursday', startTime: '09:00', endTime: '17:00', isActive: true },
+    { day: 'Friday', startTime: '09:00', endTime: '17:00', isActive: true },
+    { day: 'Saturday', startTime: '', endTime: '', isActive: false },
+    { day: 'Sunday', startTime: '', endTime: '', isActive: false }
+  ],
+  holidays: [
+    { date: '2024-12-25', name: 'Christmas Day', type: 'holiday' as const },
+    { date: '2024-12-31', name: 'New Year\'s Eve', type: 'holiday' as const },
+    { date: '2025-01-01', name: 'New Year\'s Day', type: 'holiday' as const }
+  ],
+  timezone: 'EST',
+  currentStatus: 'online' as const
+};
+
 const TeamAvailability: React.FC<TeamAvailabilityProps> = ({ config }) => {
   const isMobile = useIsMobile();
-  const teamAvailability = config.teamAvailability;
   
-  if (!teamAvailability) {
-    return null;
-  }
-
+  // Use provided config or fallback to mock data
+  const teamAvailability = config.teamAvailability || mockTeamAvailability;
+  
   const { dailySchedule = [], holidays = [], timezone = 'EST', currentStatus = 'online' } = teamAvailability;
   
   // Get current day
