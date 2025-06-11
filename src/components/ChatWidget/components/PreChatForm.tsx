@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { validateField, validateFormData, sanitizeInput } from '../utils/validation';
+import { validateField, validateFormData } from '../utils/formUtils';
+import { sanitizeInput } from '../utils/validation';
 import { dispatchChatEvent } from '../utils/events';
 import { ChatWidgetConfig, PreChatFormField } from '../config';
 import { User, AtSign, Ticket } from 'lucide-react';
