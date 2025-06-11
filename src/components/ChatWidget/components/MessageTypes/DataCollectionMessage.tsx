@@ -142,15 +142,15 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
   const getFieldIcon = (type: string) => {
     switch (type) {
-      case 'email': return <Mail className="w-3.5 h-3.5 text-muted-foreground" />;
-      case 'phone': return <Phone className="w-3.5 h-3.5 text-muted-foreground" />;
-      case 'url': return <Link2 className="w-3.5 h-3.5 text-muted-foreground" />;
-      case 'number': return <Hash className="w-3.5 h-3.5 text-muted-foreground" />;
-      case 'currency': return <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />;
-      case 'date': return <Calendar className="w-3.5 h-3.5 text-muted-foreground" />;
+      case 'email': return <Mail className="w-4 h-4 text-muted-foreground" />;
+      case 'phone': return <Phone className="w-4 h-4 text-muted-foreground" />;
+      case 'url': return <Link2 className="w-4 h-4 text-muted-foreground" />;
+      case 'number': return <Hash className="w-4 h-4 text-muted-foreground" />;
+      case 'currency': return <DollarSign className="w-4 h-4 text-muted-foreground" />;
+      case 'date': return <Calendar className="w-4 h-4 text-muted-foreground" />;
       case 'textarea':
-      case 'rich_text': return <FileText className="w-3.5 h-3.5 text-muted-foreground" />;
-      case 'file_attachment': return <Upload className="w-3.5 h-3.5 text-muted-foreground" />;
+      case 'rich_text': return <FileText className="w-4 h-4 text-muted-foreground" />;
+      case 'file_attachment': return <Upload className="w-4 h-4 text-muted-foreground" />;
       default: return null;
     }
   };
@@ -161,10 +161,10 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
     if (isSubmitted) {
       return (
-        <div key={field.id} className="flex items-center justify-between py-1.5">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div key={field.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+          <div className="flex items-center gap-3 text-sm text-gray-600">
             {getFieldIcon(field.type)}
-            <span>{field.label}</span>
+            <span className="font-medium">{field.label}</span>
           </div>
           <div className="flex items-center gap-2 text-sm font-medium text-green-700">
             <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -175,26 +175,26 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
     }
 
     const baseInputClasses = cn(
-      "h-8 text-sm border-0 bg-gray-50/50 focus:bg-white focus:ring-1 focus:ring-primary/20",
-      "rounded-md transition-all duration-200 placeholder:text-muted-foreground/60",
-      hasError && "bg-red-50 focus:ring-red-500/20"
+      "h-9 text-sm border border-gray-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20",
+      "rounded-lg transition-all duration-200 placeholder:text-gray-400",
+      hasError && "border-red-300 focus:border-red-500 focus:ring-red-500/20"
     );
 
     switch (field.type) {
       case 'select':
         return (
-          <div key={field.id} className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 {getFieldIcon(field.type)}
-                <Label htmlFor={field.id} className="text-sm font-medium text-foreground whitespace-nowrap">
+                <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 whitespace-nowrap">
                   {field.label} {field.required && <span className="text-red-500">*</span>}
                 </Label>
               </div>
-              <div className="flex-1 max-w-xs">
+              <div className="flex-1 max-w-48">
                 <Select value={value} onValueChange={(val) => handleInputChange(field.id, val)}>
                   <SelectTrigger className={baseInputClasses}>
-                    <SelectValue placeholder={field.placeholder || `Choose...`} />
+                    <SelectValue placeholder={field.placeholder || "Select..."} />
                   </SelectTrigger>
                   <SelectContent>
                     {field.options?.map((option, index) => (
@@ -207,10 +207,10 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
               </div>
             </div>
             {hasError && (
-              <p className="text-xs text-red-600 flex items-center gap-1 ml-6">
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
                 <AlertCircle className="w-3 h-3" />
                 {hasError}
-              </p>
+              </div>
             )}
           </div>
         );
@@ -218,14 +218,14 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
       case 'multi_select':
         const selectedValues = value ? value.split(',') : [];
         return (
-          <div key={field.id} className="space-y-2">
-            <div className="flex items-center gap-2">
+          <div key={field.id} className="space-y-3">
+            <div className="flex items-center gap-3">
               {getFieldIcon(field.type)}
-              <Label className="text-sm font-medium text-foreground">
+              <Label className="text-sm font-medium text-gray-700">
                 {field.label} {field.required && <span className="text-red-500">*</span>}
               </Label>
             </div>
-            <div className="grid grid-cols-2 gap-2 ml-6">
+            <div className="grid grid-cols-2 gap-3 ml-7 p-3 bg-gray-50 rounded-lg">
               {field.options?.map((option, index) => (
                 <div key={index} className="flex items-center space-x-2">
                   <Checkbox
@@ -234,42 +234,42 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
                     onCheckedChange={() => handleMultiSelectChange(field.id, option)}
                     className="w-4 h-4"
                   />
-                  <Label htmlFor={`${field.id}-${index}`} className="text-xs text-foreground cursor-pointer">
+                  <Label htmlFor={`${field.id}-${index}`} className="text-sm text-gray-700 cursor-pointer">
                     {option}
                   </Label>
                 </div>
               ))}
             </div>
             {hasError && (
-              <p className="text-xs text-red-600 flex items-center gap-1 ml-6">
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
                 <AlertCircle className="w-3 h-3" />
                 {hasError}
-              </p>
+              </div>
             )}
           </div>
         );
 
       case 'boolean':
         return (
-          <div key={field.id} className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center space-x-2 flex-1">
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center space-x-3">
                 <Checkbox
                   id={field.id}
                   checked={value === 'true'}
                   onCheckedChange={(checked) => handleInputChange(field.id, checked ? 'true' : 'false')}
                   className="w-4 h-4"
                 />
-                <Label htmlFor={field.id} className="text-sm font-medium cursor-pointer text-foreground">
+                <Label htmlFor={field.id} className="text-sm font-medium cursor-pointer text-gray-700">
                   {field.label} {field.required && <span className="text-red-500">*</span>}
                 </Label>
               </div>
             </div>
             {hasError && (
-              <p className="text-xs text-red-600 flex items-center gap-1 ml-6">
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
                 <AlertCircle className="w-3 h-3" />
                 {hasError}
-              </p>
+              </div>
             )}
           </div>
         );
@@ -277,10 +277,10 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
       case 'rich_text':
       case 'textarea':
         return (
-          <div key={field.id} className="space-y-2">
-            <div className="flex items-center gap-2">
+          <div key={field.id} className="space-y-3">
+            <div className="flex items-center gap-3">
               {getFieldIcon(field.type)}
-              <Label htmlFor={field.id} className="text-sm font-medium text-foreground">
+              <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
                 {field.label} {field.required && <span className="text-red-500">*</span>}
               </Label>
             </div>
@@ -290,35 +290,35 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
               onChange={(e) => handleInputChange(field.id, e.target.value)}
               placeholder={field.placeholder}
               className={cn(
-                "min-h-[60px] resize-none text-sm border-0 bg-gray-50/50 focus:bg-white focus:ring-1 focus:ring-primary/20 rounded-md ml-6",
-                hasError && "bg-red-50 focus:ring-red-500/20"
+                "min-h-[80px] resize-none text-sm border border-gray-200 bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 rounded-lg ml-7",
+                hasError && "border-red-300 focus:border-red-500 focus:ring-red-500/20"
               )}
             />
             {hasError && (
-              <p className="text-xs text-red-600 flex items-center gap-1 ml-6">
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
                 <AlertCircle className="w-3 h-3" />
                 {hasError}
-              </p>
+              </div>
             )}
           </div>
         );
 
       case 'file_attachment':
         return (
-          <div key={field.id} className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 {getFieldIcon(field.type)}
-                <Label htmlFor={field.id} className="text-sm font-medium text-foreground whitespace-nowrap">
+                <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 whitespace-nowrap">
                   {field.label} {field.required && <span className="text-red-500">*</span>}
                 </Label>
               </div>
-              <div className="flex items-center gap-2 flex-1 max-w-xs">
+              <div className="flex items-center gap-2 flex-1 max-w-48">
                 <Input
                   id={field.id}
                   type="file"
                   onChange={(e) => handleFileChange(field.id, e.target.files?.[0] || null)}
-                  className={cn(baseInputClasses, "file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-primary/10 file:text-primary file:text-xs")}
+                  className={cn(baseInputClasses, "file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 file:text-xs file:font-medium")}
                 />
                 {fileUploads[field.id] && (
                   <Button
@@ -326,7 +326,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
                     variant="outline"
                     size="sm"
                     onClick={() => handleFileChange(field.id, null)}
-                    className="h-8 px-2"
+                    className="h-9 px-2"
                   >
                     <X className="w-3 h-3" />
                   </Button>
@@ -334,32 +334,32 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
               </div>
             </div>
             {fileUploads[field.id] && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-primary/5 p-2 rounded ml-6">
+              <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 p-2 rounded-lg ml-7">
                 <Upload className="w-3 h-3" />
                 <span>{fileUploads[field.id].name}</span>
               </div>
             )}
             {hasError && (
-              <p className="text-xs text-red-600 flex items-center gap-1 ml-6">
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
                 <AlertCircle className="w-3 h-3" />
                 {hasError}
-              </p>
+              </div>
             )}
           </div>
         );
 
       case 'currency':
         return (
-          <div key={field.id} className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 {getFieldIcon(field.type)}
-                <Label htmlFor={field.id} className="text-sm font-medium text-foreground whitespace-nowrap">
+                <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 whitespace-nowrap">
                   {field.label} {field.required && <span className="text-red-500">*</span>}
                 </Label>
               </div>
-              <div className="relative flex-1 max-w-xs">
-                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm">
+              <div className="relative flex-1 max-w-48">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">
                   {field.currency || '$'}
                 </span>
                 <Input
@@ -374,25 +374,25 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
               </div>
             </div>
             {hasError && (
-              <p className="text-xs text-red-600 flex items-center gap-1 ml-6">
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
                 <AlertCircle className="w-3 h-3" />
                 {hasError}
-              </p>
+              </div>
             )}
           </div>
         );
 
       default:
         return (
-          <div key={field.id} className="space-y-1">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div key={field.id} className="space-y-2">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 {getFieldIcon(field.type)}
-                <Label htmlFor={field.id} className="text-sm font-medium text-foreground whitespace-nowrap">
+                <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 whitespace-nowrap">
                   {field.label} {field.required && <span className="text-red-500">*</span>}
                 </Label>
               </div>
-              <div className="flex-1 max-w-xs">
+              <div className="flex-1 max-w-48">
                 <Input
                   id={field.id}
                   type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : field.type === 'phone' ? 'tel' : field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'}
@@ -405,10 +405,10 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
               </div>
             </div>
             {hasError && (
-              <p className="text-xs text-red-600 flex items-center gap-1 ml-6">
+              <div className="flex items-center gap-2 text-xs text-red-600 ml-7">
                 <AlertCircle className="w-3 h-3" />
                 {hasError}
-              </p>
+              </div>
             )}
           </div>
         );
@@ -417,36 +417,42 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
   if (isSubmitted) {
     return (
-      <div className="space-y-3">
-        {fields.map(field => renderField(field))}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4">
+        <div className="space-y-1">
+          {fields.map(field => renderField(field))}
+        </div>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-3">
-        {fields.map(field => renderField(field))}
-      </div>
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="space-y-4">
+          {fields.map(field => renderField(field))}
+        </div>
 
-      <Button 
-        type="submit" 
-        disabled={isSubmitting}
-        className="w-full h-9 text-sm mt-4"
-      >
-        {isSubmitting ? (
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 border border-white/30 border-t-white rounded-full animate-spin" />
-            <span>Submitting...</span>
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            <Send className="w-3.5 h-3.5" />
-            <span>Submit</span>
-          </div>
-        )}
-      </Button>
-    </form>
+        <div className="pt-2 border-t border-gray-100">
+          <Button 
+            type="submit" 
+            disabled={isSubmitting}
+            className="w-full h-10 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Submitting...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Send className="w-4 h-4" />
+                <span>Submit</span>
+              </div>
+            )}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };
 
