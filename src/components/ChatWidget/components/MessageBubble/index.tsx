@@ -132,7 +132,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   return (
     <div 
       className={cn(
-        "group relative flex gap-3 px-4 py-4 transition-all duration-300",
+        "group relative flex gap-2 px-1 py-3 transition-all duration-300",
         isUser ? "justify-end" : "justify-start",
         "hover:bg-gradient-to-r hover:from-transparent hover:via-gray-50/40 hover:to-transparent",
         "animate-subtle-fade-in"
@@ -157,8 +157,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div className={cn(
         "relative",
         isDataCollection 
-          ? "max-w-[95%] sm:max-w-[85%] lg:max-w-[80%]" 
-          : "max-w-[85%] sm:max-w-[75%] lg:max-w-[70%]",
+          ? "max-w-[98%] sm:max-w-[90%] lg:max-w-[85%]" 
+          : "max-w-[90%] sm:max-w-[80%] lg:max-w-[75%]",
         isUser ? "order-first" : ""
       )}>
         {/* Message Bubble */}
