@@ -5,15 +5,17 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle2, Send } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { CheckCircle2, Send, Upload, X } from 'lucide-react';
 
 interface FormField {
   id: string;
-  type: 'text' | 'email' | 'number' | 'select' | 'textarea';
+  type: 'text' | 'number' | 'date' | 'boolean' | 'select' | 'multi_select' | 'rich_text' | 'file_attachment' | 'currency' | 'url' | 'email' | 'phone' | 'textarea';
   label: string;
   placeholder?: string;
   required?: boolean;
   options?: string[];
+  currency?: string;
 }
 
 interface DataCollectionMessageProps {
@@ -35,6 +37,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 }) => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [fileUploads, setFileUploads] = useState<Record<string, File>>({});
 
   const handleInputChange = (fieldId: string, value: string) => {
     setFormData(prev => ({
@@ -51,6 +54,35 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
     }
   };
 
+  const handleFileChange = (fieldId: string, file: File | null) => {
+    if (file) {
+      setFileUploads(prev => ({
+        ...prev,
+        [fieldId]: file
+      }));
+      setFormData(prev => ({
+        ...prev,
+        [fieldId]: file.name
+      }));
+    } else {
+      const { [fieldId]: removed, ...rest } = fileUploads;
+      setFileUploads(rest);
+      setFormData(prev => ({
+        ...prev,
+        [fieldId]: ''
+      }));
+    }
+  };
+
+  const handleMultiSelectChange = (fieldId: string, value: string) => {
+    const currentValues = formData[fieldId] ? formData[fieldId].split(',') : [];
+    const newValues = currentValues.includes(value)
+      ? currentValues.filter(v => v !== value)
+      : [...currentValues, value];
+    
+    handleInputChange(fieldId, newValues.join(','));
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -61,6 +93,12 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
         newErrors[field.id] = `${field.label} is required`;
       } else if (field.type === 'email' && value && !isValidEmail(value)) {
         newErrors[field.id] = 'Please enter a valid email address';
+      } else if (field.type === 'url' && value && !isValidURL(value)) {
+        newErrors[field.id] = 'Please enter a valid URL';
+      } else if (field.type === 'phone' && value && !isValidPhone(value)) {
+        newErrors[field.id] = 'Please enter a valid phone number';
+      } else if (field.type === 'number' && value && isNaN(Number(value))) {
+        newErrors[field.id] = 'Please enter a valid number';
       }
     });
 
@@ -71,6 +109,20 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
   const isValidEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
+  };
+
+  const isValidURL = (url: string) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const isValidPhone = (phone: string) => {
+    const phoneRegex = /^[\+]?[\d\s\-\(\)]{10,}$/;
+    return phoneRegex.test(phone);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -90,7 +142,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
         <div key={field.id} className="space-y-1">
           <Label className="text-xs font-medium text-gray-600">{field.label}</Label>
           <div className="p-2 bg-green-50 border border-green-200 rounded-md text-sm text-gray-800">
-            {value || 'Not provided'}
+            {field.type === 'boolean' ? (value === 'true' ? 'Yes' : 'No') : (value || 'Not provided')}
           </div>
         </div>
       );
@@ -117,6 +169,47 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
           </div>
         );
 
+      case 'multi_select':
+        const selectedValues = value ? value.split(',') : [];
+        return (
+          <div key={field.id} className="space-y-1">
+            <Label className="text-xs font-medium">
+              {field.label} {field.required && <span className="text-red-500">*</span>}
+            </Label>
+            <div className="space-y-2 p-3 border rounded-md">
+              {field.options?.map((option, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`${field.id}-${index}`}
+                    checked={selectedValues.includes(option)}
+                    onCheckedChange={() => handleMultiSelectChange(field.id, option)}
+                  />
+                  <Label htmlFor={`${field.id}-${index}`} className="text-sm">{option}</Label>
+                </div>
+              ))}
+            </div>
+            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+          </div>
+        );
+
+      case 'boolean':
+        return (
+          <div key={field.id} className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id={field.id}
+                checked={value === 'true'}
+                onCheckedChange={(checked) => handleInputChange(field.id, checked ? 'true' : 'false')}
+              />
+              <Label htmlFor={field.id} className="text-xs font-medium">
+                {field.label} {field.required && <span className="text-red-500">*</span>}
+              </Label>
+            </div>
+            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+          </div>
+        );
+
+      case 'rich_text':
       case 'textarea':
         return (
           <div key={field.id} className="space-y-1">
@@ -134,6 +227,93 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
           </div>
         );
 
+      case 'file_attachment':
+        return (
+          <div key={field.id} className="space-y-1">
+            <Label htmlFor={field.id} className="text-xs font-medium">
+              {field.label} {field.required && <span className="text-red-500">*</span>}
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                id={field.id}
+                type="file"
+                onChange={(e) => handleFileChange(field.id, e.target.files?.[0] || null)}
+                className={`h-9 text-sm ${hasError ? 'border-red-500' : ''}`}
+              />
+              {fileUploads[field.id] && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleFileChange(field.id, null)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+          </div>
+        );
+
+      case 'currency':
+        return (
+          <div key={field.id} className="space-y-1">
+            <Label htmlFor={field.id} className="text-xs font-medium">
+              {field.label} {field.required && <span className="text-red-500">*</span>}
+            </Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
+                {field.currency || '$'}
+              </span>
+              <Input
+                id={field.id}
+                type="number"
+                step="0.01"
+                value={value}
+                onChange={(e) => handleInputChange(field.id, e.target.value)}
+                placeholder={field.placeholder}
+                className={`pl-8 h-9 text-sm ${hasError ? 'border-red-500' : ''}`}
+              />
+            </div>
+            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+          </div>
+        );
+
+      case 'date':
+        return (
+          <div key={field.id} className="space-y-1">
+            <Label htmlFor={field.id} className="text-xs font-medium">
+              {field.label} {field.required && <span className="text-red-500">*</span>}
+            </Label>
+            <Input
+              id={field.id}
+              type="date"
+              value={value}
+              onChange={(e) => handleInputChange(field.id, e.target.value)}
+              className={`h-9 text-sm ${hasError ? 'border-red-500' : ''}`}
+            />
+            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+          </div>
+        );
+
+      case 'number':
+        return (
+          <div key={field.id} className="space-y-1">
+            <Label htmlFor={field.id} className="text-xs font-medium">
+              {field.label} {field.required && <span className="text-red-500">*</span>}
+            </Label>
+            <Input
+              id={field.id}
+              type="number"
+              value={value}
+              onChange={(e) => handleInputChange(field.id, e.target.value)}
+              placeholder={field.placeholder}
+              className={`h-9 text-sm ${hasError ? 'border-red-500' : ''}`}
+            />
+            {hasError && <p className="text-xs text-red-500">{hasError}</p>}
+          </div>
+        );
+
       default:
         return (
           <div key={field.id} className="space-y-1">
@@ -142,7 +322,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
             </Label>
             <Input
               id={field.id}
-              type={field.type}
+              type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : field.type === 'phone' ? 'tel' : 'text'}
               value={value}
               onChange={(e) => handleInputChange(field.id, e.target.value)}
               placeholder={field.placeholder}

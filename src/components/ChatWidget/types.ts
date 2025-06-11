@@ -184,9 +184,10 @@ export interface TeamAvailability {
 // Add interface for data collection form fields
 export interface DataCollectionField {
   id: string;
-  type: 'text' | 'email' | 'number' | 'select' | 'textarea';
+  type: 'text' | 'number' | 'date' | 'boolean' | 'select' | 'multi_select' | 'rich_text' | 'file_attachment' | 'currency' | 'url' | 'email' | 'phone' | 'textarea';
   label: string;
   placeholder?: string;
   required?: boolean;
   options?: string[];
+  currency?: string;
 }
