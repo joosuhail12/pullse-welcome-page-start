@@ -10,7 +10,7 @@ import { TooltipProvider } from "@radix-ui/react-tooltip";
 import WidgetContainer from "../ChatWidget/components/WidgetContainer";
 
 const DemoChatWidget = () => {
-    const [currentView, setCurrentView] = useState<'home' | 'messages' | 'chat'>('home');
+    const [currentView, setCurrentView] = useState<'home' | 'messages' | 'chat'>('messages');
     const [config, setConfig] = useState<ChatWidgetConfig | null>(null);
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
 
