@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -141,15 +142,15 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
   const getFieldIcon = (type: string) => {
     switch (type) {
-      case 'email': return <Mail className="w-3.5 h-3.5 text-blue-500" />;
-      case 'phone': return <Phone className="w-3.5 h-3.5 text-green-500" />;
-      case 'url': return <Link2 className="w-3.5 h-3.5 text-purple-500" />;
-      case 'number': return <Hash className="w-3.5 h-3.5 text-orange-500" />;
-      case 'currency': return <DollarSign className="w-3.5 h-3.5 text-green-600" />;
-      case 'date': return <Calendar className="w-3.5 h-3.5 text-blue-600" />;
+      case 'email': return <Mail className="w-4 h-4 text-blue-500" />;
+      case 'phone': return <Phone className="w-4 h-4 text-green-500" />;
+      case 'url': return <Link2 className="w-4 h-4 text-purple-500" />;
+      case 'number': return <Hash className="w-4 h-4 text-orange-500" />;
+      case 'currency': return <DollarSign className="w-4 h-4 text-green-600" />;
+      case 'date': return <Calendar className="w-4 h-4 text-blue-600" />;
       case 'textarea':
-      case 'rich_text': return <FileText className="w-3.5 h-3.5 text-gray-500" />;
-      case 'file_attachment': return <Upload className="w-3.5 h-3.5 text-indigo-500" />;
+      case 'rich_text': return <FileText className="w-4 h-4 text-gray-500" />;
+      case 'file_attachment': return <Upload className="w-4 h-4 text-indigo-500" />;
       default: return null;
     }
   };
@@ -160,10 +161,10 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
     if (isSubmitted) {
       return (
-        <div key={field.id} className="flex items-center justify-between py-2.5 px-3 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center gap-2.5">
+        <div key={field.id} className="flex items-center justify-between py-2 px-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2">
             <div className="p-1 rounded bg-green-100">
-              <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+              <CheckCircle2 className="w-4 h-4 text-green-600" />
             </div>
             <span className="text-sm font-medium text-gray-800">{field.label}</span>
           </div>
@@ -175,7 +176,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
     }
 
     const fieldClasses = cn(
-      "group flex items-center gap-3 py-2.5 px-3 rounded-lg border transition-colors",
+      "flex items-center gap-3 py-2 px-3 rounded-lg border transition-colors",
       "hover:border-gray-300 focus-within:border-blue-400 focus-within:bg-blue-50/30",
       hasError ? "border-red-300 bg-red-50/30" : "border-gray-200 bg-white"
     );
@@ -185,13 +186,13 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
         return (
           <div key={field.id} className="space-y-1">
             <div className={fieldClasses}>
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 {getFieldIcon(field.type)}
                 <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 truncate">
                   {field.label} {field.required && <span className="text-red-500">*</span>}
                 </Label>
               </div>
-              <div className="flex-1 max-w-[180px]">
+              <div className="flex-1 max-w-[160px]">
                 <Select value={value} onValueChange={(val) => handleInputChange(field.id, val)}>
                   <SelectTrigger className="h-7 border-0 bg-transparent focus:ring-0 text-sm">
                     <SelectValue placeholder={field.placeholder || "Select..."} />
@@ -219,13 +220,13 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
         const selectedValues = value ? value.split(',') : [];
         return (
           <div key={field.id} className="space-y-2">
-            <div className="flex items-center gap-2.5 px-3">
+            <div className="flex items-center gap-2 px-3">
               {getFieldIcon(field.type)}
               <Label className="text-sm font-medium text-gray-700">
                 {field.label} {field.required && <span className="text-red-500">*</span>}
               </Label>
             </div>
-            <div className="grid grid-cols-2 gap-2 px-3">
+            <div className="grid grid-cols-2 gap-1 px-3">
               {field.options?.map((option, index) => (
                 <div key={index} className="flex items-center space-x-2 py-1">
                   <Checkbox
@@ -252,7 +253,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
       case 'boolean':
         return (
           <div key={field.id} className="space-y-1">
-            <div className={cn("flex items-center gap-3 py-2.5 px-3 rounded-lg border", hasError ? "border-red-300 bg-red-50/30" : "border-gray-200 bg-white")}>
+            <div className={cn("flex items-center gap-3 py-2 px-3 rounded-lg border", hasError ? "border-red-300 bg-red-50/30" : "border-gray-200 bg-white")}>
               <Checkbox
                 id={field.id}
                 checked={value === 'true'}
@@ -276,7 +277,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
       case 'textarea':
         return (
           <div key={field.id} className="space-y-2">
-            <div className="flex items-center gap-2.5 px-3">
+            <div className="flex items-center gap-2 px-3">
               {getFieldIcon(field.type)}
               <Label htmlFor={field.id} className="text-sm font-medium text-gray-700">
                 {field.label} {field.required && <span className="text-red-500">*</span>}
@@ -289,7 +290,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
                 onChange={(e) => handleInputChange(field.id, e.target.value)}
                 placeholder={field.placeholder}
                 className={cn(
-                  "min-h-[70px] resize-none text-sm border-gray-200 focus:border-blue-400",
+                  "min-h-[60px] resize-none text-sm border-gray-200 focus:border-blue-400",
                   hasError && "border-red-300 focus:border-red-400"
                 )}
               />
@@ -307,7 +308,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
         return (
           <div key={field.id} className="space-y-2">
             <div className={fieldClasses}>
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 {getFieldIcon(field.type)}
                 <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 truncate">
                   {field.label} {field.required && <span className="text-red-500">*</span>}
@@ -318,7 +319,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
                   id={field.id}
                   type="file"
                   onChange={(e) => handleFileChange(field.id, e.target.files?.[0] || null)}
-                  className="w-24 h-7 text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 file:text-xs"
+                  className="w-20 h-7 text-xs file:mr-1 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-50 file:text-blue-700 file:text-xs"
                 />
                 {fileUploads[field.id] && (
                   <Button
@@ -352,13 +353,13 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
         return (
           <div key={field.id} className="space-y-1">
             <div className={fieldClasses}>
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 {getFieldIcon(field.type)}
                 <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 truncate">
                   {field.label} {field.required && <span className="text-red-500">*</span>}
                 </Label>
               </div>
-              <div className="flex items-center gap-1 flex-1 max-w-[120px]">
+              <div className="flex items-center gap-1 flex-1 max-w-[100px]">
                 <span className="text-sm text-gray-500">{field.currency || '$'}</span>
                 <Input
                   id={field.id}
@@ -384,13 +385,13 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
         return (
           <div key={field.id} className="space-y-1">
             <div className={fieldClasses}>
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 {getFieldIcon(field.type)}
                 <Label htmlFor={field.id} className="text-sm font-medium text-gray-700 truncate">
                   {field.label} {field.required && <span className="text-red-500">*</span>}
                 </Label>
               </div>
-              <div className="flex-1 max-w-[180px]">
+              <div className="flex-1 max-w-[160px]">
                 <Input
                   id={field.id}
                   type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : field.type === 'phone' ? 'tel' : field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'}
@@ -415,7 +416,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
   if (isSubmitted) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 max-w-md">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 max-w-sm">
         <div className="space-y-2">
           {fields.map(field => renderField(field))}
         </div>
@@ -424,7 +425,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 max-w-md">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 max-w-sm">
       {title && (
         <div className="mb-3">
           <h3 className="text-sm font-semibold text-gray-800 mb-1">{title}</h3>
@@ -432,20 +433,20 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
         </div>
       )}
       
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <div className="space-y-2">
           {fields.map(field => renderField(field))}
         </div>
 
-        <div className="pt-2 border-t border-gray-100">
+        <div className="pt-3 border-t border-gray-100">
           <Button 
             type="submit" 
             disabled={isSubmitting}
-            className="w-full h-9 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+            className="w-full h-8 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
           >
             {isSubmitting ? (
               <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 <span>Submitting...</span>
               </div>
             ) : (
@@ -462,5 +463,3 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 };
 
 export default DataCollectionMessage;
-
-</edits_to_apply>
