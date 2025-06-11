@@ -213,6 +213,24 @@ export const defaultConfig: ChatWidgetConfig = {
       sunday: { open: '', close: '' }
     }
   },
+  teamAvailability: {
+    dailySchedule: [
+      { day: 'Monday', startTime: '09:00', endTime: '17:00', isActive: true },
+      { day: 'Tuesday', startTime: '09:00', endTime: '17:00', isActive: true },
+      { day: 'Wednesday', startTime: '09:00', endTime: '17:00', isActive: true },
+      { day: 'Thursday', startTime: '09:00', endTime: '17:00', isActive: true },
+      { day: 'Friday', startTime: '09:00', endTime: '17:00', isActive: true },
+      { day: 'Saturday', startTime: '', endTime: '', isActive: false },
+      { day: 'Sunday', startTime: '', endTime: '', isActive: false }
+    ],
+    holidays: [
+      { date: '2024-12-25', name: 'Christmas Day', type: 'holiday' },
+      { date: '2024-12-31', name: 'New Year\'s Eve', type: 'holiday' },
+      { date: '2025-01-01', name: 'New Year\'s Day', type: 'holiday' }
+    ],
+    timezone: 'EST',
+    currentStatus: 'online'
+  },
   realtime: true, // Add realtime flag for existing code
   widgetfield: [
     {
