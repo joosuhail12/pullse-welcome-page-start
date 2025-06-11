@@ -1,3 +1,4 @@
+
 import React, { useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, MessageCircle, Clock } from 'lucide-react';
@@ -80,36 +81,14 @@ const HomeView = React.memo(({
         </p>
       </div>
 
-      {/* Team Availability Section */}
-      {config.teamAvailability && (
-        <div className="mb-3 sm:mb-6">
-          <TeamAvailability config={config} />
-        </div>
-      )}
-
-      {/* Legacy Office Hours Section - only show if team availability is not configured */}
-      {!config.teamAvailability && config.interfaceSettings?.showOfficeHours && (
-        <div className="mb-3 sm:mb-6 animate-subtle-fade-in space-y-2 sm:space-y-4">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-3xs sm:text-xs uppercase tracking-wide font-semibold text-gray-500">Team Availability</h3>
-            <div className="h-px flex-grow bg-gray-100"></div>
-          </div>
-
-          <div className="bg-white/70 backdrop-blur-sm p-2 sm:p-4 rounded-xl shadow-sm border border-white/50 hover:shadow-md transition-all duration-300 hover:bg-white/80">
-            <div className="flex items-center gap-2 mb-1 sm:mb-2">
-              <div className="bg-soft-purple-100 p-1 sm:p-2 rounded-full">
-                <Clock size={iconSize} className="text-vivid-purple-600" />
-              </div>
-              <span className="text-2xs sm:text-sm font-medium text-gray-700">Office Hours</span>
-            </div>
-            <p className="text-3xs sm:text-xs text-gray-600 pl-6 sm:pl-9">Mon-Fri: 9 AM - 5 PM EST</p>
-          </div>
-        </div>
-      )}
+      {/* Team Availability Section - Always show this component */}
+      <div className="mb-3 sm:mb-6">
+        <TeamAvailability config={config} />
+      </div>
 
       {/* Support status */}
-      {
-        config.interfaceSettings?.showAgentPresence && (<div className="mb-3 sm:mb-6 animate-subtle-fade-in">
+      {config.interfaceSettings?.showAgentPresence && (
+        <div className="mb-3 sm:mb-6 animate-subtle-fade-in">
           <div className="flex items-center gap-2 mb-1">
             <h3 className="text-3xs sm:text-xs uppercase tracking-wide font-semibold text-gray-500">Current Availability</h3>
             <div className="h-px flex-grow bg-gray-100"></div>
@@ -119,7 +98,7 @@ const HomeView = React.memo(({
             <AgentPresence />
           </div>
         </div>
-        )}
+      )}
 
       <div className="mt-auto animate-subtle-fade-in">
         <Button
