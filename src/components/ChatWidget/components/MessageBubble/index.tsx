@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Message, AgentStatus } from '../../types';
 import { MessageReadStatus } from '../MessageReadReceipt';
@@ -11,6 +10,7 @@ import CardMessage from '../MessageTypes/CardMessage';
 import QuickReplyMessage from '../MessageTypes/QuickReplyMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
 import DataCollectionMessage from '../MessageTypes/DataCollectionMessage';
+import CSATMessage from '../MessageTypes/CSATMessage';
 import { ChatWidgetConfig } from '../../config';
 import { cn } from '@/lib/utils';
 
@@ -92,6 +92,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             submittedData={message.metadata?.submittedData}
           />
         );
+      case 'csat':
+        return (
+          <CSATMessage
+            config={{
+              title: message.messageConfig?.title,
+              question: message.messageConfig?.question,
+              ratingScale: message.messageConfig?.ratingScale,
+              followUpQuestion: message.messageConfig?.followUpQuestion,
+              followUpOptional: message.messageConfig?.followUpOptional
+            }}
+            onSubmit={(rating, followUp) => {
+              if (onDataCollectionSubmit) {
+                onDataCollectionSubmit(message.id, { rating: String(rating), followUp: followUp || '' });
+              }
+            }}
+            isSubmitted={message.metadata?.isSubmitted}
+            submittedData={message.metadata?.submittedData}
+          />
+        );
       case 'file':
         return (
           <FileMessage 
@@ -126,8 +145,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   };
 
-  // For data collection messages, use a wider container
+  // For data collection and CSAT messages, use a wider container
   const isDataCollection = message.messageType === 'data_collection' || message.type === 'data_collection';
+  const isCSAT = message.messageType === 'csat';
 
   return (
     <div 
@@ -156,7 +176,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       {/* Message Content */}
       <div className={cn(
         "relative",
-        isDataCollection 
+        (isDataCollection || isCSAT) 
           ? "max-w-[98%] sm:max-w-[90%] lg:max-w-[85%]" 
           : "max-w-[90%] sm:max-w-[80%] lg:max-w-[75%]",
         isUser ? "order-first" : ""
@@ -165,9 +185,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         <div 
           className={cn(
             "relative transition-all duration-300",
-            isDataCollection ? "p-0" : "px-4 py-3 rounded-2xl border shadow-sm backdrop-blur-sm",
-            !isDataCollection && "focus-within:ring-2 focus-within:ring-offset-1",
-            !isDataCollection && (isUser ? [
+            (isDataCollection || isCSAT) ? "p-0" : "px-4 py-3 rounded-2xl border shadow-sm backdrop-blur-sm",
+            !(isDataCollection || isCSAT) && "focus-within:ring-2 focus-within:ring-offset-1",
+            !(isDataCollection || isCSAT) && (isUser ? [
               "ml-auto rounded-br-sm",
               "bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800",
               "text-white border-blue-500/30",
@@ -184,15 +204,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             ])
           )}
           style={{
-            ...(!isDataCollection && isUser && config.colors?.userMessageBackgroundColor && {
+            ...(!((isDataCollection || isCSAT)) && isUser && config.colors?.userMessageBackgroundColor && {
               background: `linear-gradient(135deg, ${config.colors.userMessageBackgroundColor}, ${config.colors.userMessageBackgroundColor}dd)`
             }),
-            ...(!isDataCollection && isAgent && config.colors?.agentMessageBackgroundColor && {
+            ...(!((isDataCollection || isCSAT)) && isAgent && config.colors?.agentMessageBackgroundColor && {
               backgroundColor: config.colors.agentMessageBackgroundColor
             })
           }}
-          onMouseEnter={() => !isDataCollection && setShowReactions(true)}
-          onMouseLeave={() => !isDataCollection && setShowReactions(false)}
+          onMouseEnter={() => !((isDataCollection || isCSAT)) && setShowReactions(true)}
+          onMouseLeave={() => !((isDataCollection || isCSAT)) && setShowReactions(false)}
           tabIndex={0}
           role="group"
           aria-label="Message content"
@@ -203,7 +223,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
 
           {/* Reaction Button */}
-          {onMessageReaction && showReactions && !isDataCollection && (
+          {onMessageReaction && showReactions && !((isDataCollection || isCSAT)) && (
             <div className="absolute -top-12 left-0 z-20">
               <MessageReactionButtons 
                 onReaction={handleReaction} 
@@ -214,7 +234,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         </div>
 
         {/* Message Status */}
-        {!isDataCollection && (
+        {!((isDataCollection || isCSAT)) && (
           <div className={cn(
             "mt-2 px-2",
             isUser ? "text-right" : "text-left"
@@ -229,7 +249,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
 
         {/* Message Reactions Display */}
-        {message.reactions && message.reactions.length > 0 && !isDataCollection && (
+        {message.reactions && message.reactions.length > 0 && !((isDataCollection || isCSAT)) && (
           <div className={cn(
             "flex flex-wrap gap-2 mt-3",
             isUser ? "justify-end" : "justify-start"

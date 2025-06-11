@@ -88,6 +88,44 @@ export function createDataCollectionMessage(
   };
 }
 
+/**
+ * Create a CSAT message
+ * @param title Title of the CSAT form
+ * @param question CSAT question
+ * @param ratingScale Rating scale type
+ * @param followUpQuestion Optional follow-up question
+ * @param metadata Optional metadata for the message
+ */
+export function createCSATMessage(
+  title: string,
+  question: string,
+  ratingScale: '1-5 Stars' | '1-10 Scale' | 'Emoji Scale',
+  followUpQuestion?: string,
+  followUpOptional: boolean = true,
+  metadata?: Record<string, any>
+): Message {
+  const now = new Date();
+  return {
+    id: `msg-${now.getTime()}-csat-${uuidv4().slice(0, 8)}`,
+    text: title,
+    sender: 'agent',
+    senderType: 'agent',
+    messageType: 'csat',
+    messageConfig: {
+      title,
+      question,
+      ratingScale,
+      followUpQuestion,
+      followUpOptional
+    },
+    createdAt: now,
+    timestamp: now,
+    type: 'data_collection',
+    status: 'sent',
+    ...(metadata && { metadata })
+  };
+}
+
 export function createMessage(
   id: string,
   text: string,
