@@ -161,14 +161,14 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
     if (isSubmitted) {
       return (
-        <div key={field.id} className="space-y-1">
+        <div key={field.id} className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {getFieldIcon(field.type)}
             <span>{field.label}</span>
           </div>
-          <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg text-sm">
+          <div className="flex items-center gap-2 p-2.5 bg-green-50 border border-green-200 rounded-lg text-sm">
             <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
-            <span className="text-green-700">
+            <span className="text-green-700 font-medium">
               {field.type === 'boolean' ? (value === 'true' ? 'Yes' : 'No') : (value || 'Not provided')}
             </span>
           </div>
@@ -178,14 +178,14 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
     const baseInputClasses = cn(
       "h-9 text-sm border border-border focus:border-primary focus:ring-1 focus:ring-primary",
-      "rounded-md bg-background transition-colors",
+      "rounded-md bg-background transition-all duration-200",
       hasError && "border-red-400 focus:border-red-500 focus:ring-red-500"
     );
 
     switch (field.type) {
       case 'select':
         return (
-          <div key={field.id} className="space-y-1">
+          <div key={field.id} className="space-y-1.5">
             <Label htmlFor={field.id} className="text-xs font-medium flex items-center gap-2">
               {getFieldIcon(field.type)}
               {field.label} {field.required && <span className="text-red-500">*</span>}
@@ -214,7 +214,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
       case 'multi_select':
         const selectedValues = value ? value.split(',') : [];
         return (
-          <div key={field.id} className="space-y-2">
+          <div key={field.id} className="space-y-1.5">
             <Label className="text-xs font-medium flex items-center gap-2">
               {getFieldIcon(field.type)}
               {field.label} {field.required && <span className="text-red-500">*</span>}
@@ -245,8 +245,8 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
       case 'boolean':
         return (
-          <div key={field.id} className="space-y-1">
-            <div className="flex items-center space-x-2 p-2 border border-border rounded-md bg-background/50">
+          <div key={field.id} className="space-y-1.5">
+            <div className="flex items-center space-x-2 p-2.5 border border-border rounded-md bg-background/50">
               <Checkbox
                 id={field.id}
                 checked={value === 'true'}
@@ -269,7 +269,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
       case 'rich_text':
       case 'textarea':
         return (
-          <div key={field.id} className="space-y-1">
+          <div key={field.id} className="space-y-1.5">
             <Label htmlFor={field.id} className="text-xs font-medium flex items-center gap-2">
               {getFieldIcon(field.type)}
               {field.label} {field.required && <span className="text-red-500">*</span>}
@@ -292,7 +292,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
       case 'file_attachment':
         return (
-          <div key={field.id} className="space-y-1">
+          <div key={field.id} className="space-y-1.5">
             <Label htmlFor={field.id} className="text-xs font-medium flex items-center gap-2">
               {getFieldIcon(field.type)}
               {field.label} {field.required && <span className="text-red-500">*</span>}
@@ -333,7 +333,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
       case 'currency':
         return (
-          <div key={field.id} className="space-y-1">
+          <div key={field.id} className="space-y-1.5">
             <Label htmlFor={field.id} className="text-xs font-medium flex items-center gap-2">
               {getFieldIcon(field.type)}
               {field.label} {field.required && <span className="text-red-500">*</span>}
@@ -363,7 +363,7 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
 
       default:
         return (
-          <div key={field.id} className="space-y-1">
+          <div key={field.id} className="space-y-1.5">
             <Label htmlFor={field.id} className="text-xs font-medium flex items-center gap-2">
               {getFieldIcon(field.type)}
               {field.label} {field.required && <span className="text-red-500">*</span>}
