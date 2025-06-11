@@ -12,6 +12,7 @@ import WidgetContainer from "../ChatWidget/components/WidgetContainer";
 const DemoChatWidget = () => {
     const [currentView, setCurrentView] = useState<'home' | 'messages' | 'chat'>('home');
     const [config, setConfig] = useState<ChatWidgetConfig | null>(null);
+    const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
 
     // Mock messages with all message types
     const mockMessages: Message[] = [
@@ -169,7 +170,7 @@ const DemoChatWidget = () => {
     ];
 
     const demoConversation: Conversation = {
-        id: "1",
+        id: "demo-conversation-1",
         title: "Demo Conversation - All Message Types",
         createdAt: new Date(),
         status: "active",
@@ -177,10 +178,10 @@ const DemoChatWidget = () => {
         messages: mockMessages,
         timestamp: new Date(),
         unread: false,
-        ticketId: "1",
-        sessionId: "1",
+        ticketId: "demo-ticket-1",
+        sessionId: "demo-session-1",
         agentInfo: {
-            id: "1",
+            id: "demo-agent-1",
             name: "Demo Agent",
             avatar: "https://via.placeholder.com/40x40/6366f1/ffffff?text=DA",
             email: "demo@example.com",
@@ -189,6 +190,19 @@ const DemoChatWidget = () => {
         rating: 5
     }
 
+    const handleSelectConversation = (conversation: Conversation) => {
+        setSelectedConversation(conversation);
+        setCurrentView('chat');
+    };
+
+    const handleUpdateConversation = (updatedConversation: Conversation) => {
+        setSelectedConversation(updatedConversation);
+    };
+
+    const handleStartChat = () => {
+        setSelectedConversation(demoConversation);
+        setCurrentView('chat');
+    };
 
     useEffect(() => {
         const handleConfigUpdate = async (event: CustomEvent) => {
@@ -242,15 +256,15 @@ const DemoChatWidget = () => {
                     isOpen={true}
                     viewState={currentView}
                     config={config}
-                    activeConversation={demoConversation}
+                    activeConversation={selectedConversation}
                     widgetStyle={{}}
                     containerStyles={{}}
-                    handleSelectConversation={() => setCurrentView('chat')}
-                    handleSelectTicket={() => setCurrentView('chat')}
-                    handleUpdateConversation={() => { }}
+                    handleSelectConversation={handleSelectConversation}
+                    handleSelectTicket={() => handleSelectConversation(demoConversation)}
+                    handleUpdateConversation={handleUpdateConversation}
                     handleChangeView={(view: 'home' | 'messages' | 'chat') => setCurrentView(view)}
                     handleBackToMessages={() => setCurrentView('messages')}
-                    handleStartChat={() => { }}
+                    handleStartChat={handleStartChat}
                     setUserFormData={() => { }}
                     playMessageSound={() => { }}
                     connectionStatus={null}
