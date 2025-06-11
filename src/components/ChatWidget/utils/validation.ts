@@ -1,3 +1,4 @@
+
 /**
  * Input Validation and Sanitization
  * 
@@ -8,6 +9,7 @@
  * of defense against many common security vulnerabilities.
  */
 
+// @ts-ignore - DOMPurify doesn't have proper TypeScript definitions
 import DOMPurify from 'dompurify';
 
 // Constants for validation
