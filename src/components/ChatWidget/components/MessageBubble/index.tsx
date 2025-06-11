@@ -54,7 +54,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   // Handle system/status messages separately
   if (isSystem || message.type === 'system' || message.messageType === 'note') {
     return (
-      <div className="flex justify-center my-2">
+      <div className="flex justify-center my-3">
         <StatusMessage 
           text={message.text} 
           type="info"
@@ -114,13 +114,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   return (
     <div className={cn(
-      "group relative flex gap-3 px-4 py-3 transition-all duration-200",
+      "group relative flex gap-3 px-4 py-4 transition-all duration-300",
       isUser ? "justify-end" : "justify-start",
-      "hover:bg-gray-50/30"
+      "hover:bg-gradient-to-r hover:from-transparent hover:via-gray-50/40 hover:to-transparent"
     )}>
       {/* Agent Avatar - Left side */}
       {isAgent && (
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 relative">
           <MessageAvatar
             src={agentAvatar}
             alt="Agent"
@@ -133,29 +133,30 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
       {/* Message Content */}
       <div className={cn(
-        "relative max-w-[75%] sm:max-w-[65%]",
+        "relative max-w-[80%] sm:max-w-[70%] lg:max-w-[65%]",
         isUser ? "order-first" : ""
       )}>
         {/* Message Bubble */}
         <div
           className={cn(
-            "relative px-4 py-3 rounded-2xl shadow-sm transition-all duration-200",
-            "group-hover:shadow-md",
+            "relative px-4 py-3 rounded-3xl transition-all duration-300 group-hover:shadow-lg",
+            "backdrop-blur-sm border",
             isUser ? [
-              "ml-auto rounded-br-md",
-              "bg-gradient-to-br from-blue-500 to-blue-600",
-              "text-white",
-              "shadow-blue-500/20"
+              "ml-auto rounded-br-lg",
+              "bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600",
+              "text-white border-blue-400/20",
+              "shadow-lg shadow-blue-500/25",
+              "hover:shadow-xl hover:shadow-blue-500/30"
             ] : [
-              "mr-auto rounded-bl-md",
-              "bg-white border border-gray-200/60",
-              "text-gray-800",
-              "shadow-gray-500/10"
+              "mr-auto rounded-bl-lg",
+              "bg-white/95 border-gray-200/80",
+              "text-gray-800 shadow-md shadow-gray-500/10",
+              "hover:bg-white hover:shadow-lg hover:shadow-gray-500/15"
             ]
           )}
           style={{
             ...(isUser && config.colors?.userMessageBackgroundColor && {
-              background: `linear-gradient(135deg, ${config.colors.userMessageBackgroundColor}, ${config.colors.userMessageBackgroundColor}dd)`
+              background: `linear-gradient(135deg, ${config.colors.userMessageBackgroundColor}, ${config.colors.userMessageBackgroundColor}dd, ${config.colors.userMessageBackgroundColor}aa)`
             }),
             ...(isAgent && config.colors?.agentMessageBackgroundColor && {
               backgroundColor: config.colors.agentMessageBackgroundColor
@@ -177,22 +178,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             />
           )}
 
-          {/* Message Tail */}
+          {/* Modern Message Tail */}
           <div className={cn(
-            "absolute w-3 h-3 rotate-45",
+            "absolute w-4 h-4",
             isUser ? [
-              "-right-1 bottom-2",
-              "bg-gradient-to-br from-blue-500 to-blue-600"
+              "-right-1.5 bottom-3",
+              "bg-gradient-to-br from-blue-500 to-indigo-600",
+              "clip-path-[polygon(0%_0%,_100%_100%,_0%_100%)]"
             ] : [
-              "-left-1 bottom-2",
-              "bg-white border-l border-b border-gray-200/60"
-            ]
+              "-left-1.5 bottom-3",
+              "bg-white/95 border-l border-b border-gray-200/80",
+              "clip-path-[polygon(0%_0%,_100%_0%,_100%_100%)]"
+            ],
+            "rotate-45 transform"
           )} />
         </div>
 
         {/* Message Status */}
         <div className={cn(
-          "mt-1 px-1",
+          "mt-2 px-2",
           isUser ? "text-right" : "text-left"
         )}>
           <MessageStatus
@@ -206,13 +210,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         {/* Message Reactions Display */}
         {message.reactions && message.reactions.length > 0 && (
           <div className={cn(
-            "flex flex-wrap gap-1 mt-2",
+            "flex flex-wrap gap-1.5 mt-3",
             isUser ? "justify-end" : "justify-start"
           )}>
             {message.reactions.map((reaction, index) => (
               <span
                 key={index}
-                className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-xs hover:bg-gray-200 transition-colors cursor-pointer"
+                className="inline-flex items-center px-2.5 py-1 rounded-full bg-gray-100/90 hover:bg-gray-200/90 text-xs font-medium transition-all duration-200 cursor-pointer transform hover:scale-105 border border-gray-200/50"
               >
                 {reaction}
               </span>
@@ -223,7 +227,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
       {/* User Avatar - Right side */}
       {isUser && (
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 relative">
           <MessageAvatar
             src={userAvatar}
             alt="You"
