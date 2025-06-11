@@ -43,6 +43,7 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "@tanstack/react-query": "^5.56.2",
     "@types/crypto-js": "^4.2.2",
+    "@types/dompurify": "^3.2.0",
     "@types/uuid": "^10.0.0",
     "ably": "^1.2.50",
     "class-variance-authority": "^0.7.1",
