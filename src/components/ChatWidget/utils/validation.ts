@@ -1,3 +1,4 @@
+
 /**
  * Input Validation and Sanitization
  * 
@@ -9,7 +10,6 @@
  */
 
 import DOMPurify from 'dompurify';
-import type { Config } from 'dompurify';
 
 // Constants for validation
 const MAX_MESSAGE_LENGTH = 2000;
@@ -25,7 +25,7 @@ const ALLOWED_FILE_TYPES = [
 ];
 
 // Configure DOMPurify for maximum security
-const DOM_PURIFY_CONFIG: Config = {
+const DOM_PURIFY_CONFIG = {
   ALLOWED_TAGS: [], // Don't allow any HTML tags for maximum XSS protection
   ALLOWED_ATTR: [], // Don't allow any HTML attributes
   FORBID_TAGS: ['style', 'script', 'iframe', 'form', 'object'],
@@ -251,7 +251,7 @@ export function validateField(name: string, value: string, isRequired: boolean):
  */
 export function sanitizeHtml(html: string): string {
   // Use a less restrictive DOMPurify config that allows some safe HTML
-  const htmlConfig: Config = {
+  const htmlConfig = {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li'],
     ALLOWED_ATTR: ['href', 'target', 'rel'],
     ADD_ATTR: ['target'], // Force target attribute on links
