@@ -1,4 +1,3 @@
-
 /**
  * Input Validation and Sanitization
  * 
@@ -10,6 +9,7 @@
  */
 
 import DOMPurify from 'dompurify';
+import type { Config } from 'dompurify';
 
 // Constants for validation
 const MAX_MESSAGE_LENGTH = 2000;
@@ -25,7 +25,7 @@ const ALLOWED_FILE_TYPES = [
 ];
 
 // Configure DOMPurify for maximum security
-const DOM_PURIFY_CONFIG = {
+const DOM_PURIFY_CONFIG: Config = {
   ALLOWED_TAGS: [], // Don't allow any HTML tags for maximum XSS protection
   ALLOWED_ATTR: [], // Don't allow any HTML attributes
   FORBID_TAGS: ['style', 'script', 'iframe', 'form', 'object'],
@@ -40,15 +40,9 @@ const DOM_PURIFY_CONFIG = {
  * Sanitizes user input to prevent XSS attacks using DOMPurify with strict settings
  * @param input The user input to sanitize
  * @returns Sanitized string
- * 
- * TODO: Consider adding domain-specific sanitization rules
- * TODO: Implement context-aware sanitization based on usage
  */
 export function sanitizeInput(input: string, trim: boolean = true): string {
   if (!input) return '';
-
-  // First trim the input
-  // const trimmed = trim ? input.trim() : input;
 
   // Use DOMPurify with strict configuration to sanitize HTML and prevent XSS
   return DOMPurify.sanitize(input, DOM_PURIFY_CONFIG);
@@ -59,9 +53,6 @@ export function sanitizeInput(input: string, trim: boolean = true): string {
  * @param input Input string to sanitize
  * @param context Context where string will be used
  * @returns String sanitized specifically for the context
- * 
- * TODO: Add HTML attribute context sanitization
- * TODO: Add JavaScript context sanitization for dynamic code
  */
 export function contextSpecificSanitize(input: string, context: 'html' | 'url' | 'attribute' = 'html'): string {
   // First apply the basic sanitization
@@ -90,9 +81,6 @@ export function contextSpecificSanitize(input: string, context: 'html' | 'url' |
  * Validates and sanitizes a text message
  * @param text The message text to validate
  * @returns Valid and sanitized text or empty string
- * 
- * TODO: Add content filtering for inappropriate content
- * TODO: Consider implementing language detection and filtering
  */
 export function validateMessage(text: string): string {
   if (!text || typeof text !== 'string') return '';
@@ -111,9 +99,6 @@ export function validateMessage(text: string): string {
  * Validates form data by sanitizing all values
  * @param formData Form data object
  * @returns Sanitized form data object
- * 
- * TODO: Add strong validation for critical form fields (payment info, etc.)
- * TODO: Implement business rule validation for domain-specific fields
  */
 export function validateFormData(formData: Record<string, string>): Record<string, string> {
   const sanitizedData: Record<string, string> = {};
@@ -151,8 +136,6 @@ export function validateFormData(formData: Record<string, string>): Record<strin
  * Checks if a file size is within allowed limits
  * @param fileSize The size of the file in bytes
  * @returns Boolean indicating if file size is valid
- * 
- * TODO: Implement tiered file size limits based on file type
  */
 export function isValidFileSize(fileSize: number): boolean {
   return fileSize <= MAX_FILE_SIZE_BYTES;
@@ -162,9 +145,6 @@ export function isValidFileSize(fileSize: number): boolean {
  * Checks if a file type is in the allowed types list
  * @param fileType The MIME type of the file
  * @returns Boolean indicating if file type is allowed
- * 
- * TODO: Implement more granular file type validation
- * TODO: Consider content-based validation for certain file types
  */
 export function isAllowedFileType(fileType: string): boolean {
   return ALLOWED_FILE_TYPES.includes(fileType);
@@ -174,9 +154,6 @@ export function isAllowedFileType(fileType: string): boolean {
  * Validates file before upload
  * @param file The file object to validate
  * @returns Boolean indicating if file is valid
- * 
- * TODO: Add file content scanning for malware detection
- * TODO: Implement hash-based duplicate detection
  */
 export function validateFile(file: File): boolean {
   // Check file size
@@ -192,9 +169,6 @@ export function validateFile(file: File): boolean {
  * Sanitizes file name to prevent path traversal and command injection
  * @param fileName The original file name
  * @returns Sanitized file name
- * 
- * TODO: Add content-type inference and validation
- * TODO: Implement more aggressive path traversal protection
  */
 export function sanitizeFileName(fileName: string): string {
   if (!fileName) return 'unnamed_file';
@@ -213,9 +187,6 @@ export function sanitizeFileName(fileName: string): string {
  * Validates email format using regex
  * @param email The email to validate
  * @returns Boolean indicating if email format is valid
- * 
- * TODO: Consider implementing disposable email detection
- * TODO: Add DNS validation for email domains where critical
  */
 export function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -226,8 +197,6 @@ export function isValidEmail(email: string): boolean {
  * Validates phone number format using regex
  * @param phone The phone number to validate
  * @returns Boolean indicating if phone format is valid
- * 
- * TODO: Add country-specific phone validation rules
  */
 export function isValidPhoneNumber(phone: string): boolean {
   const phoneRegex = /^\+?[0-9\s\-()]{6,20}$/;
@@ -240,9 +209,6 @@ export function isValidPhoneNumber(phone: string): boolean {
  * @param value Field value to validate
  * @param isRequired Whether the field is required
  * @returns Error message or null if valid
- * 
- * TODO: Implement field correlation validation (e.g., password confirmation)
- * TODO: Add validation for common fields like credit cards, addresses
  */
 export function validateField(name: string, value: string, isRequired: boolean): string | null {
   const sanitized = value.trim();
@@ -282,17 +248,16 @@ export function validateField(name: string, value: string, isRequired: boolean):
  * Sanitizes HTML content if it absolutely must be rendered
  * @param html HTML content to sanitize
  * @returns Sanitized HTML that's safe to render
- * 
- * TODO: Implement policy-based sanitization rules
- * TODO: Add CSP nonce generation for allowed scripts
  */
 export function sanitizeHtml(html: string): string {
   // Use a less restrictive DOMPurify config that allows some safe HTML
-  return DOMPurify.sanitize(html, {
+  const htmlConfig: Config = {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li'],
     ALLOWED_ATTR: ['href', 'target', 'rel'],
     ADD_ATTR: ['target'], // Force target attribute on links
     FORCE_BODY: true,
     USE_PROFILES: { html: true }
-  });
+  };
+  
+  return DOMPurify.sanitize(html, htmlConfig);
 }
