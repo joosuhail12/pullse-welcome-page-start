@@ -43,16 +43,16 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
     switch (config.ratingScale) {
       case '1-5 Stars':
         return (
-          <div className="flex gap-2 justify-center p-6 bg-gradient-to-br from-yellow-50 via-orange-50 to-amber-50 rounded-2xl border border-yellow-200/50">
+          <div className="flex gap-1 justify-center p-3 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl border border-yellow-200/40">
             {Array.from({ length: 5 }).map((_, index) => (
               <Star
                 key={index}
-                size={36}
+                size={28}
                 className={cn(
-                  "cursor-pointer transition-all duration-300 ease-out transform hover:scale-125 hover:rotate-12",
-                  "drop-shadow-lg hover:drop-shadow-2xl",
+                  "cursor-pointer transition-all duration-200 ease-out transform hover:scale-110",
+                  "drop-shadow-sm hover:drop-shadow-md",
                   index < (hoveredRating || Number(rating))
-                    ? "fill-gradient-to-br from-yellow-400 to-orange-500 text-yellow-400 animate-pulse"
+                    ? "fill-yellow-400 text-yellow-400"
                     : "fill-gray-200 text-gray-300 hover:fill-yellow-200 hover:text-yellow-300"
                 )}
                 onMouseEnter={() => setHoveredRating(index + 1)}
@@ -65,18 +65,18 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
 
       case '1-10 Scale':
         return (
-          <div className="p-6 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-2xl border border-purple-200/50">
-            <div className="grid grid-cols-5 gap-3">
+          <div className="p-3 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-200/40">
+            <div className="grid grid-cols-5 gap-2">
               {Array.from({ length: 10 }).map((_, index) => (
                 <button
                   key={index}
                   type="button"
                   className={cn(
-                    "h-12 w-full rounded-xl border-2 font-bold text-lg transition-all duration-300 transform hover:scale-110",
-                    "shadow-lg hover:shadow-xl backdrop-blur-sm",
+                    "h-8 w-full rounded-lg border font-semibold text-sm transition-all duration-200 transform hover:scale-105",
+                    "shadow-sm hover:shadow-md",
                     rating === index + 1
-                      ? "bg-gradient-to-br from-purple-500 to-indigo-600 text-white border-purple-400 shadow-purple-500/50 scale-105"
-                      : "bg-white/80 text-gray-700 border-gray-200 hover:border-purple-300 hover:bg-gradient-to-br hover:from-purple-50 hover:to-indigo-50 hover:text-purple-700"
+                      ? "bg-gradient-to-br from-purple-500 to-indigo-600 text-white border-purple-400 scale-105"
+                      : "bg-white/80 text-gray-700 border-gray-200 hover:border-purple-300 hover:bg-purple-50"
                   )}
                   onClick={() => setRating(index + 1)}
                 >
@@ -97,26 +97,23 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
         ];
 
         return (
-          <div className="p-6 bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-50 rounded-2xl border border-gray-200/50">
-            <div className="flex gap-3 justify-center">
+          <div className="p-3 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border border-gray-200/40">
+            <div className="flex gap-2 justify-center">
               {emojiOptions.map(({ icon: Icon, value, label, color, bg, border }) => (
                 <button
                   key={value}
                   type="button"
                   className={cn(
-                    "p-4 rounded-2xl border-2 transition-all duration-300 transform hover:scale-110 group",
-                    "shadow-lg hover:shadow-xl backdrop-blur-sm relative overflow-hidden",
+                    "p-2 rounded-xl border transition-all duration-200 transform hover:scale-105 group",
+                    "shadow-sm hover:shadow-md relative overflow-hidden",
                     rating === value
-                      ? `bg-gradient-to-br ${bg} ${border} scale-105 shadow-lg`
-                      : "bg-white/80 border-gray-200 hover:bg-gradient-to-br hover:from-gray-50 hover:to-slate-50 hover:border-gray-300"
+                      ? `bg-gradient-to-br ${bg} ${border} scale-105`
+                      : "bg-white/80 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                   )}
                   onClick={() => setRating(value)}
                   title={label}
                 >
-                  <Icon size={32} className={cn(color, "transition-all duration-300 group-hover:scale-110")} />
-                  {rating === value && (
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-2xl"></div>
-                  )}
+                  <Icon size={24} className={cn(color, "transition-all duration-200 group-hover:scale-110")} />
                 </button>
               ))}
             </div>
@@ -130,55 +127,54 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
 
   if (isSubmitted && submittedData) {
     return (
-      <div className="relative overflow-hidden bg-gradient-to-br from-white via-gray-50 to-slate-50 rounded-3xl border border-gray-200/60 shadow-2xl p-8 max-w-md backdrop-blur-sm">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-200/30 to-emerald-300/30 rounded-full -translate-y-16 translate-x-16"></div>
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-br from-blue-200/30 to-purple-300/30 rounded-full translate-y-12 -translate-x-12"></div>
+      <div className="relative overflow-hidden bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200/60 shadow-lg p-5 max-w-sm backdrop-blur-sm">
+        <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-200/20 to-emerald-300/20 rounded-full -translate-y-10 translate-x-10"></div>
         
-        <div className="relative z-10 text-center mb-6">
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-lg">
-              <Sparkles size={24} className="text-white" />
+        <div className="relative z-10 text-center mb-4">
+          <div className="flex items-center justify-center mb-3">
+            <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-md">
+              <Sparkles size={16} className="text-white" />
             </div>
           </div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-            Thank you for your feedback!
+          <h3 className="text-lg font-bold text-gray-900 mb-1">
+            Thank you!
           </h3>
-          <p className="text-sm text-gray-600 font-medium">{config.question}</p>
+          <p className="text-xs text-gray-600">{config.question}</p>
         </div>
 
-        <div className="relative z-10 mb-6">
-          <div className="text-center p-4 bg-white/70 rounded-2xl border border-gray-200/50 shadow-inner">
+        <div className="relative z-10 mb-4">
+          <div className="text-center p-3 bg-white/70 rounded-xl border border-gray-200/50 shadow-inner">
             {config.ratingScale === '1-5 Stars' && (
               <div className="flex gap-1 justify-center">
                 {Array.from({ length: 5 }).map((_, index) => (
                   <Star
                     key={index}
-                    size={28}
+                    size={20}
                     className={index < Number(submittedData.rating) ? "fill-yellow-400 text-yellow-400" : "fill-gray-200 text-gray-200"}
                   />
                 ))}
               </div>
             )}
             {config.ratingScale === '1-10 Scale' && (
-              <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+              <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
                 {submittedData.rating}/10
               </div>
             )}
             {config.ratingScale === 'Emoji Scale' && (
-              <div className="text-3xl flex justify-center">
-                {submittedData.rating === 'very-dissatisfied' && <Frown className="text-red-500" size={40} />}
-                {submittedData.rating === 'dissatisfied' && <ThumbsDown className="text-orange-500" size={40} />}
-                {submittedData.rating === 'neutral' && <Meh className="text-yellow-500" size={40} />}
-                {submittedData.rating === 'satisfied' && <Smile className="text-green-500" size={40} />}
-                {submittedData.rating === 'very-satisfied' && <ThumbsUp className="text-emerald-600" size={40} />}
+              <div className="flex justify-center">
+                {submittedData.rating === 'very-dissatisfied' && <Frown className="text-red-500" size={28} />}
+                {submittedData.rating === 'dissatisfied' && <ThumbsDown className="text-orange-500" size={28} />}
+                {submittedData.rating === 'neutral' && <Meh className="text-yellow-500" size={28} />}
+                {submittedData.rating === 'satisfied' && <Smile className="text-green-500" size={28} />}
+                {submittedData.rating === 'very-satisfied' && <ThumbsUp className="text-emerald-600" size={28} />}
               </div>
             )}
           </div>
         </div>
 
         {submittedData.followUp && (
-          <div className="relative z-10 p-4 bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl border border-gray-200/50 shadow-inner">
-            <p className="text-sm text-gray-700 italic leading-relaxed">{submittedData.followUp}</p>
+          <div className="relative z-10 p-3 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border border-gray-200/50 shadow-inner">
+            <p className="text-xs text-gray-700 italic leading-relaxed">{submittedData.followUp}</p>
           </div>
         )}
       </div>
@@ -186,42 +182,41 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
   }
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-white via-gray-50 to-slate-50 rounded-3xl border border-gray-200/60 shadow-2xl p-8 max-w-md backdrop-blur-sm">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-200/30 to-indigo-300/30 rounded-full -translate-y-16 translate-x-16"></div>
-      <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-br from-blue-200/30 to-cyan-300/30 rounded-full translate-y-12 -translate-x-12"></div>
+    <div className="relative overflow-hidden bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200/60 shadow-lg p-5 max-w-sm backdrop-blur-sm">
+      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-200/20 to-indigo-300/20 rounded-full -translate-y-10 translate-x-10"></div>
       
-      <div className="relative z-10 text-center mb-8">
-        <div className="flex items-center justify-center mb-4">
-          <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full shadow-lg">
-            <Star size={24} className="text-white" />
+      <div className="relative z-10 text-center mb-5">
+        <div className="flex items-center justify-center mb-3">
+          <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-full shadow-md">
+            <Star size={16} className="text-white" />
           </div>
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-3 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+        <h3 className="text-lg font-bold text-gray-900 mb-1">
           {config.title || 'Rate Your Experience'}
         </h3>
-        <p className="text-sm text-gray-600 font-medium leading-relaxed">{config.question}</p>
+        <p className="text-xs text-gray-600 leading-relaxed">{config.question}</p>
       </div>
 
-      <div className="relative z-10 mb-8">
-        <label className="block text-sm font-semibold text-gray-700 mb-4 text-center">
+      <div className="relative z-10 mb-5">
+        <label className="block text-xs font-semibold text-gray-700 mb-3 text-center">
           Rating Scale
         </label>
         {renderRatingScale()}
       </div>
 
       {config.followUpQuestion && (
-        <div className="relative z-10 mb-8">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <div className="relative z-10 mb-5">
+          <label className="block text-xs font-semibold text-gray-700 mb-2">
             {config.followUpQuestion}
             {config.followUpOptional && (
-              <span className="text-gray-400 ml-2 font-normal">(Optional)</span>
+              <span className="text-gray-400 ml-1 font-normal">(Optional)</span>
             )}
           </label>
           <Textarea
             value={followUp}
             onChange={(e) => setFollowUp(e.target.value)}
             placeholder="Please share your thoughts..."
-            className="min-h-24 resize-none border-2 border-gray-200/60 rounded-2xl bg-white/70 backdrop-blur-sm shadow-inner focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-300"
+            className="min-h-16 resize-none border border-gray-200/60 rounded-xl bg-white/70 backdrop-blur-sm shadow-inner focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-all duration-200 text-xs"
           />
         </div>
       )}
@@ -230,7 +225,7 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
         <Button
           onClick={handleSubmit}
           disabled={!rating}
-          className="w-full h-12 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          className="w-full h-9 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm"
         >
           Submit Feedback
         </Button>
