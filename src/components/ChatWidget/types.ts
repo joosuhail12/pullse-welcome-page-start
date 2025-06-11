@@ -21,6 +21,8 @@ export interface Message {
   unread?: boolean;    // New field to mark unread messages
   metadata?: Record<string, any>; // Add metadata field for flexibility
   timestamp?: Date;    // For backward compatibility
+  senderType?: 'user' | 'agent' | 'system'; // Add senderType for compatibility
+  reactions?: string[]; // Add reactions array
 }
 
 // Standardized agent status type
@@ -55,7 +57,7 @@ export interface Agent {
 }
 
 // Define standard message types
-export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status';
+export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status' | 'data_collection';
 
 // Define standard user types
 export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status' | 'customer';
@@ -177,4 +179,14 @@ export interface TeamAvailability {
   }>;
   timezone?: string;
   currentStatus?: 'online' | 'offline' | 'limited';
+}
+
+// Add interface for data collection form fields
+export interface DataCollectionField {
+  id: string;
+  type: 'text' | 'email' | 'number' | 'select' | 'textarea';
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  options?: string[];
 }

@@ -1,6 +1,5 @@
-
 import { v4 as uuidv4 } from 'uuid';
-import { Message, MessageReadReceipt, MessageReadStatus } from '../types';
+import { Message, MessageReadReceipt, MessageReadStatus, DataCollectionField } from '../types';
 import { publishToChannel } from './ably';
 import { dispatchChatEvent } from './events';
 import { ChatWidgetConfig } from '../config';
@@ -51,6 +50,39 @@ export function createSystemMessage(
     createdAt: now,
     timestamp: now,
     type,
+    status: 'sent',
+    ...(metadata && { metadata })
+  };
+}
+
+/**
+ * Create a data collection message
+ * @param title Title of the form
+ * @param description Optional description
+ * @param fields Array of form fields
+ * @param metadata Optional metadata for the message
+ */
+export function createDataCollectionMessage(
+  title: string,
+  description?: string,
+  fields: DataCollectionField[] = [],
+  metadata?: Record<string, any>
+): Message {
+  const now = new Date();
+  return {
+    id: `msg-${now.getTime()}-datacollection-${uuidv4().slice(0, 8)}`,
+    text: title,
+    sender: 'agent',
+    senderType: 'agent',
+    messageType: 'data_collection',
+    messageConfig: {
+      title,
+      description,
+      fields
+    },
+    createdAt: now,
+    timestamp: now,
+    type: 'data_collection',
     status: 'sent',
     ...(metadata && { metadata })
   };

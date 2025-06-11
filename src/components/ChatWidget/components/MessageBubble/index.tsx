@@ -10,6 +10,7 @@ import FileMessage from '../MessageTypes/FileMessage';
 import CardMessage from '../MessageTypes/CardMessage';
 import QuickReplyMessage from '../MessageTypes/QuickReplyMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
+import DataCollectionMessage from '../MessageTypes/DataCollectionMessage';
 import { ChatWidgetConfig } from '../../config';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,7 @@ interface MessageBubbleProps {
   onToggleHighlight?: (messageId: string) => void;
   typingDuration?: number;
   config: ChatWidgetConfig;
+  onDataCollectionSubmit?: (messageId: string, data: Record<string, string>) => void;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -47,7 +49,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   agentStatus,
   onToggleHighlight,
   typingDuration = 0,
-  config
+  config,
+  onDataCollectionSubmit
 }) => {
   const [showReactions, setShowReactions] = useState(false);
   const isUser = message.sender === 'user' || message.senderType === 'user';
@@ -70,8 +73,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     setShowReactions(false);
   };
 
+  const handleDataCollectionSubmit = (data: Record<string, string>) => {
+    if (onDataCollectionSubmit) {
+      onDataCollectionSubmit(message.id, data);
+    }
+  };
+
   const renderMessageContent = () => {
-    switch (message.type) {
+    switch (message.messageType || message.type) {
+      case 'data_collection':
+        return (
+          <DataCollectionMessage
+            title={message.messageConfig?.title}
+            description={message.messageConfig?.description}
+            fields={message.messageConfig?.fields || []}
+            onSubmit={handleDataCollectionSubmit}
+            isSubmitted={message.metadata?.isSubmitted}
+            submittedData={message.metadata?.submittedData}
+          />
+        );
       case 'file':
         return (
           <FileMessage 
@@ -106,6 +126,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   };
 
+  // For data collection messages, use a wider container
+  const isDataCollection = message.messageType === 'data_collection' || message.type === 'data_collection';
+
   return (
     <div 
       className={cn(
@@ -132,16 +155,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
       {/* Message Content */}
       <div className={cn(
-        "relative max-w-[85%] sm:max-w-[75%] lg:max-w-[70%]",
+        "relative",
+        isDataCollection 
+          ? "max-w-[95%] sm:max-w-[85%] lg:max-w-[80%]" 
+          : "max-w-[85%] sm:max-w-[75%] lg:max-w-[70%]",
         isUser ? "order-first" : ""
       )}>
         {/* Message Bubble */}
         <div 
           className={cn(
-            "relative px-4 py-3 rounded-2xl transition-all duration-300",
-            "border shadow-sm backdrop-blur-sm",
-            "focus-within:ring-2 focus-within:ring-offset-1",
-            isUser ? [
+            "relative transition-all duration-300",
+            isDataCollection ? "p-0" : "px-4 py-3 rounded-2xl border shadow-sm backdrop-blur-sm",
+            !isDataCollection && "focus-within:ring-2 focus-within:ring-offset-1",
+            !isDataCollection && (isUser ? [
               "ml-auto rounded-br-sm",
               "bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800",
               "text-white border-blue-500/30",
@@ -155,18 +181,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               "hover:bg-gray-50/90 hover:shadow-md hover:shadow-gray-500/15",
               "hover:border-gray-300/90",
               "focus-within:ring-gray-300"
-            ]
+            ])
           )}
           style={{
-            ...(isUser && config.colors?.userMessageBackgroundColor && {
+            ...(!isDataCollection && isUser && config.colors?.userMessageBackgroundColor && {
               background: `linear-gradient(135deg, ${config.colors.userMessageBackgroundColor}, ${config.colors.userMessageBackgroundColor}dd)`
             }),
-            ...(isAgent && config.colors?.agentMessageBackgroundColor && {
+            ...(!isDataCollection && isAgent && config.colors?.agentMessageBackgroundColor && {
               backgroundColor: config.colors.agentMessageBackgroundColor
             })
           }}
-          onMouseEnter={() => setShowReactions(true)}
-          onMouseLeave={() => setShowReactions(false)}
+          onMouseEnter={() => !isDataCollection && setShowReactions(true)}
+          onMouseLeave={() => !isDataCollection && setShowReactions(false)}
           tabIndex={0}
           role="group"
           aria-label="Message content"
@@ -177,7 +203,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
 
           {/* Reaction Button */}
-          {onMessageReaction && showReactions && (
+          {onMessageReaction && showReactions && !isDataCollection && (
             <div className="absolute -top-12 left-0 z-20">
               <MessageReactionButtons 
                 onReaction={handleReaction} 
@@ -188,20 +214,22 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         </div>
 
         {/* Message Status */}
-        <div className={cn(
-          "mt-2 px-2",
-          isUser ? "text-right" : "text-left"
-        )}>
-          <MessageStatus 
-            status={readReceipt?.status} 
-            timestamp={message.createdAt} 
-            isFileMessage={message.type === 'file'} 
-            fileUploading={message.metadata?.uploading} 
-          />
-        </div>
+        {!isDataCollection && (
+          <div className={cn(
+            "mt-2 px-2",
+            isUser ? "text-right" : "text-left"
+          )}>
+            <MessageStatus 
+              status={readReceipt?.status} 
+              timestamp={message.createdAt} 
+              isFileMessage={message.type === 'file'} 
+              fileUploading={message.metadata?.uploading} 
+            />
+          </div>
+        )}
 
         {/* Message Reactions Display */}
-        {message.reactions && message.reactions.length > 0 && (
+        {message.reactions && message.reactions.length > 0 && !isDataCollection && (
           <div className={cn(
             "flex flex-wrap gap-2 mt-3",
             isUser ? "justify-end" : "justify-start"
