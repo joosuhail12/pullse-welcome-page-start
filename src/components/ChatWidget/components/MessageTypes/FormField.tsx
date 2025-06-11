@@ -75,23 +75,17 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
     );
   };
 
+  const placeholderText = field.placeholder || field.label + (field.required ? ' *' : '');
+
   switch (field.type) {
     case 'select':
       return (
         <div className="space-y-1">
           <div className={fieldClasses}>
             <div className="p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-1 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100">
-                  <FieldIcon type={field.type} />
-                </div>
-                <Label htmlFor={field.id} className="text-2xs font-semibold text-gray-700">
-                  {field.label} {field.required && <span className="text-red-500">*</span>}
-                </Label>
-              </div>
               <Select value={value} onValueChange={(val) => onInputChange(field.id, val)}>
                 <SelectTrigger className="h-8 border-gray-200 bg-white/60 focus:bg-white/80 text-2xs">
-                  <SelectValue placeholder={field.placeholder || "Select..."} />
+                  <SelectValue placeholder={placeholderText} />
                 </SelectTrigger>
                 <SelectContent>
                   {field.options?.map((option, index) => (
@@ -112,13 +106,10 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
       return (
         <div className="space-y-2">
           <div className={cn(fieldClasses, "p-3")}>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="p-1 rounded-lg bg-gradient-to-br from-purple-100 to-indigo-100">
-                <FieldIcon type={field.type} />
-              </div>
-              <Label className="text-2xs font-semibold text-gray-700">
+            <div className="mb-2">
+              <span className="text-2xs font-semibold text-gray-700">
                 {field.label} {field.required && <span className="text-red-500">*</span>}
-              </Label>
+              </span>
             </div>
             <div className="grid grid-cols-2 gap-2">
               {field.options?.map((option, index) => (
@@ -165,19 +156,11 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
       return (
         <div className="space-y-2">
           <div className={cn(fieldClasses, "p-3")}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="p-1 rounded-lg bg-gradient-to-br from-amber-100 to-yellow-100">
-                <FieldIcon type={field.type} />
-              </div>
-              <Label htmlFor={field.id} className="text-2xs font-semibold text-gray-700">
-                {field.label} {field.required && <span className="text-red-500">*</span>}
-              </Label>
-            </div>
             <Textarea
               id={field.id}
               value={value}
               onChange={(e) => onInputChange(field.id, e.target.value)}
-              placeholder={field.placeholder}
+              placeholder={placeholderText}
               className={cn(
                 "min-h-[60px] resize-none text-2xs border-gray-200 bg-white/60 focus:bg-white/80 transition-colors",
                 error && "border-red-300 focus:border-red-400"
@@ -194,12 +177,9 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
           <div className={fieldClasses}>
             <div className="p-3">
               <div className="flex items-center gap-2 mb-2">
-                <div className="p-1 rounded-lg bg-gradient-to-br from-emerald-100 to-green-100">
-                  <FieldIcon type={field.type} />
-                </div>
-                <Label htmlFor={field.id} className="text-2xs font-semibold text-gray-700">
+                <span className="text-2xs font-semibold text-gray-700">
                   {field.label} {field.required && <span className="text-red-500">*</span>}
-                </Label>
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Input
@@ -237,14 +217,6 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
         <div className="space-y-1">
           <div className={fieldClasses}>
             <div className="p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-1 rounded-lg bg-gradient-to-br from-green-100 to-emerald-100">
-                  <FieldIcon type={field.type} />
-                </div>
-                <Label htmlFor={field.id} className="text-2xs font-semibold text-gray-700">
-                  {field.label} {field.required && <span className="text-red-500">*</span>}
-                </Label>
-              </div>
               <div className="flex items-center gap-1">
                 <span className="text-2xs text-gray-500 font-medium">{field.currency || '$'}</span>
                 <Input
@@ -253,7 +225,7 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
                   step="0.01"
                   value={value}
                   onChange={(e) => onInputChange(field.id, e.target.value)}
-                  placeholder={field.placeholder}
+                  placeholder={placeholderText}
                   className="flex-1 h-8 border-gray-200 bg-white/60 focus:bg-white/80 text-2xs"
                 />
               </div>
@@ -268,20 +240,12 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
         <div className="space-y-1">
           <div className={fieldClasses}>
             <div className="p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-1 rounded-lg bg-gradient-to-br from-gray-100 to-slate-100">
-                  <FieldIcon type={field.type} />
-                </div>
-                <Label htmlFor={field.id} className="text-2xs font-semibold text-gray-700">
-                  {field.label} {field.required && <span className="text-red-500">*</span>}
-                </Label>
-              </div>
               <Input
                 id={field.id}
                 type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : field.type === 'phone' ? 'tel' : field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'}
                 value={value}
                 onChange={(e) => onInputChange(field.id, e.target.value)}
-                placeholder={field.placeholder}
+                placeholder={placeholderText}
                 className="w-full h-8 border-gray-200 bg-white/60 focus:bg-white/80 text-2xs"
                 step={field.type === 'number' ? '0.01' : undefined}
               />
