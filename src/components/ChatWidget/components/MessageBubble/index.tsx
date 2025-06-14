@@ -7,8 +7,8 @@ import MessageReactionButtons from './MessageReactionButtons';
 import TextMessage from '../MessageTypes/TextMessage';
 import FileMessage from '../MessageTypes/FileMessage';
 import CardMessage from '../MessageTypes/CardMessage';
-import QuickReplyMessage from '../MessageTypes/QuickReplyMessage';
 import StatusMessage from '../MessageTypes/StatusMessage';
+import QuickReplyMessage from '../MessageTypes/QuickReplyMessage';
 import DataCollectionMessage from '../MessageTypes/DataCollectionMessage';
 import CSATMessage from '../MessageTypes/CSATMessage';
 import { ChatWidgetConfig } from '../../config';
@@ -58,7 +58,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isSystem = message.sender === 'system' || message.senderType === 'system';
 
   // Handle system/status messages separately
-  if (isSystem || message.type === 'system' || message.messageType === 'note') {
+  if (isSystem || message.messageType === 'note') {
     return (
       <div className="flex justify-center my-4">
         <StatusMessage text={message.text} type="info" timestamp={message.createdAt} />
@@ -113,33 +113,23 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         );
       case 'file':
         return (
-          <FileMessage 
-            text={message.text} 
-            fileName={message.fileName} 
-            fileUrl={message.metadata?.fileUrl} 
-            renderText={text => highlightMessage ? highlightMessage(text).join('') : text} 
-            uploading={message.metadata?.uploading} 
-            metadata={message.metadata} 
+          <FileMessage
+            text={message.text}
+            fileName={message.fileName}
+            fileUrl={message.metadata?.fileUrl}
+            renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
+            uploading={message.metadata?.uploading}
+            metadata={message.metadata}
           />
         );
       case 'card':
         return <CardMessage cardData={message.cardData} metadata={message.metadata} />;
-      case 'quick_reply':
-        return (
-          <QuickReplyMessage 
-            message={message} 
-            quickReplies={message.quickReplies} 
-            renderText={text => highlightMessage ? highlightMessage(text).join('') : text} 
-            setMessageText={setMessageText} 
-            metadata={message.metadata} 
-          />
-        );
       default:
         return (
-          <TextMessage 
-            text={message.text} 
-            renderText={text => highlightMessage ? highlightMessage(text).join('') : text} 
-            highlightText={searchTerm} 
+          <TextMessage
+            text={message.text}
+            renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
+            highlightText={searchTerm}
           />
         );
     }
@@ -150,7 +140,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isCSAT = message.messageType === 'csat';
 
   return (
-    <div 
+    <div
       className={cn(
         "group relative flex gap-2 px-1 py-3 transition-all duration-300",
         isUser ? "justify-end" : "justify-start",
@@ -163,12 +153,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       {/* Agent Avatar - Left side */}
       {isAgent && (
         <div className="flex-shrink-0 relative">
-          <MessageAvatar 
-            src={agentAvatar} 
-            alt="Agent" 
-            isAgent={true} 
-            agentStatus={agentStatus} 
-            size="sm" 
+          <MessageAvatar
+            src={agentAvatar}
+            alt="Agent"
+            isAgent={true}
+            agentStatus={agentStatus}
+            size="sm"
           />
         </div>
       )}
@@ -176,13 +166,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       {/* Message Content */}
       <div className={cn(
         "relative",
-        (isDataCollection || isCSAT) 
-          ? "max-w-[98%] sm:max-w-[90%] lg:max-w-[85%]" 
+        (isDataCollection || isCSAT)
+          ? "max-w-[98%] sm:max-w-[90%] lg:max-w-[85%]"
           : "max-w-[90%] sm:max-w-[80%] lg:max-w-[75%]",
         isUser ? "order-first" : ""
       )}>
         {/* Message Bubble */}
-        <div 
+        <div
           className={cn(
             "relative transition-all duration-300",
             (isDataCollection || isCSAT) ? "p-0" : "px-4 py-3 rounded-2xl border shadow-sm backdrop-blur-sm",
@@ -225,9 +215,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           {/* Reaction Button */}
           {onMessageReaction && showReactions && !((isDataCollection || isCSAT)) && (
             <div className="absolute -top-12 left-0 z-20">
-              <MessageReactionButtons 
-                onReaction={handleReaction} 
-                onClose={() => setShowReactions(false)} 
+              <MessageReactionButtons
+                onReaction={handleReaction}
+                onClose={() => setShowReactions(false)}
               />
             </div>
           )}
@@ -239,11 +229,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             "mt-2 px-2",
             isUser ? "text-right" : "text-left"
           )}>
-            <MessageStatus 
-              status={readReceipt?.status} 
-              timestamp={message.createdAt} 
-              isFileMessage={message.type === 'file'} 
-              fileUploading={message.metadata?.uploading} 
+            <MessageStatus
+              status={readReceipt?.status}
+              timestamp={message.createdAt}
+              isFileMessage={message.type === 'file'}
+              fileUploading={message.metadata?.uploading}
             />
           </div>
         )}
@@ -255,8 +245,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             isUser ? "justify-end" : "justify-start"
           )}>
             {message.reactions.map((reaction, index) => (
-              <span 
-                key={index} 
+              <span
+                key={index}
                 className="inline-flex items-center px-3 py-1.5 rounded-full 
                          bg-gray-100/95 hover:bg-gray-200/95 
                          text-xs font-medium transition-all duration-200 
@@ -277,11 +267,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       {/* User Avatar - Right side */}
       {isUser && (
         <div className="flex-shrink-0 relative">
-          <MessageAvatar 
-            src={userAvatar} 
-            alt="You" 
-            isAgent={false} 
-            size="sm" 
+          <MessageAvatar
+            avatar={userAvatar}
+            alt="You"
+            isAgent={false}
+            size="sm"
           />
         </div>
       )}

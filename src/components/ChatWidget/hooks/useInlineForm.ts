@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Conversation } from '../types';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from '../utils/events';
-import { isUserAuthenticated } from '../utils/storage';
+import { getChatSessionId, getAccessToken, isUserAuthenticated } from '../utils/storage';
 
 /**
  * Hook for managing pre-chat form state and interactions
@@ -17,18 +17,19 @@ export function useInlineForm(
 ) {
   // Check if conversation already has contact identified or user form data exists
   const [showInlineForm, setShowInlineForm] = useState(
-    !userFormData && !conversation.contactIdentified && !config.contact && !isUserAuthenticated()
+    // Check for accessToken and sessionId in local storage
+    !getAccessToken() || !getChatSessionId()
   );
 
   // Update form visibility when user data, contact status, or config contact changes
   useEffect(() => {
     // Make sure to show the form if no user data or contact is identified
-    if (!userFormData && !conversation.contactIdentified && !config.contact && !isUserAuthenticated()) {
+    if (!userFormData && !config.contact && !isUserAuthenticated()) {
       setShowInlineForm(true);
-    } else if (userFormData || conversation.contactIdentified || config.contact || isUserAuthenticated()) {
+    } else if (userFormData || config.contact || isUserAuthenticated()) {
       setShowInlineForm(false);
     }
-  }, [userFormData, conversation.contactIdentified, config.contact]);
+  }, [userFormData, config.contact]);
 
   const handleFormComplete = useCallback((formData: Record<string, string>) => {
     setShowInlineForm(false);
@@ -40,7 +41,6 @@ export function useInlineForm(
     if (onUpdateConversation) {
       onUpdateConversation({
         ...conversation,
-        contactIdentified: true
       });
     }
 
