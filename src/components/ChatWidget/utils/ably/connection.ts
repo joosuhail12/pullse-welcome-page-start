@@ -20,7 +20,6 @@ let lastAuthUrl: string | null = null;
  * @returns Promise resolving to true when connected
  */
 export const initializeAbly = async (authUrl: string): Promise<boolean> => {
-  const accessToken = getAccessToken();
   const { workspaceId, apiKey } = getWorkspaceIdAndApiKey();
 
   // Don't initialize multiple times with the same auth URL
@@ -61,7 +60,7 @@ export const initializeAbly = async (authUrl: string): Promise<boolean> => {
     const clientOptions: Ably.Types.ClientOptions = {
       authUrl,
       authHeaders: {
-        'Authorization': `Bearer ${accessToken}`,
+        'Authorization': `Bearer ${getAccessToken()}`,
         'x-workspace-id': workspaceId,
         'x-api-Key': apiKey
       },
@@ -260,7 +259,7 @@ export const cleanupAbly = (): void => {
   // Just detach channels without closing the connection to allow reuse
   try {
     const channels = client.channels;
-    
+
     // Use a different approach to iterate through channels
     Object.keys(channels).forEach((channelName) => {
       const channel = channels.get(channelName);

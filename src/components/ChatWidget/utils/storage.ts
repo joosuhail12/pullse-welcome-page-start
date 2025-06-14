@@ -81,10 +81,10 @@ export function setChatSessionId(sessionId: string): void {
 export function saveConversationToStorage(conversation: any): void {
   try {
     const conversations = JSON.parse(localStorage.getItem('pullse_conversations') || '[]');
-    
+
     // Check if conversation already exists
     const existingIndex = conversations.findIndex((c: any) => c.id === conversation.id);
-    
+
     if (existingIndex >= 0) {
       // Update existing conversation
       conversations[existingIndex] = conversation;
@@ -92,7 +92,7 @@ export function saveConversationToStorage(conversation: any): void {
       // Add new conversation
       conversations.push(conversation);
     }
-    
+
     localStorage.setItem('pullse_conversations', JSON.stringify(conversations));
   } catch (error) {
     console.error('Error saving conversation to localStorage:', error);
@@ -119,7 +119,7 @@ export function markConversationAsRead(conversationId: string): Promise<void> {
   try {
     // Get all conversations from storage
     const conversations = JSON.parse(localStorage.getItem('pullse_conversations') || '[]');
-    
+
     // Find the conversation with the matching ID and update it
     const updatedConversations = conversations.map((conv: any) => {
       if (conv.id === conversationId) {
@@ -127,10 +127,10 @@ export function markConversationAsRead(conversationId: string): Promise<void> {
       }
       return conv;
     });
-    
+
     // Save the updated conversations back to storage
     localStorage.setItem('pullse_conversations', JSON.stringify(updatedConversations));
-    
+
     // For future API integration
     return Promise.resolve();
   } catch (error) {
@@ -196,4 +196,20 @@ export function clearUserFormDataFromLocalStorage(): void {
  */
 export function isUserAuthenticated(): boolean {
   return getUserFormDataFromLocalStorage() !== undefined;
+}
+
+export function removeAccessToken(): void {
+  try {
+    localStorage.removeItem('pullse_access_token');
+  } catch (error) {
+    console.error('Error removing access token from localStorage:', error);
+  }
+}
+
+export function removeChatSessionId(): void {
+  try {
+    localStorage.removeItem('pullse_session_id');
+  } catch (error) {
+    console.error('Error removing chat session id from localStorage:', error);
+  }
 }

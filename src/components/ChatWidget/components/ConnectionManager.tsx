@@ -5,7 +5,7 @@ import { getAblyAuthUrl } from '../services/ablyAuth';
 import { ConnectionStatus, getReconnectionManager } from '../utils/reconnectionManager';
 import { toasts } from '@/lib/toast-utils';
 import { logger } from '@/lib/logger';
-import { getAccessToken } from '../utils/storage';
+import { getAccessToken, getChatSessionId } from '../utils/storage';
 import { getAblyClient } from '../utils/ably/config';
 
 interface ConnectionManagerProps {
@@ -15,12 +15,17 @@ interface ConnectionManagerProps {
 }
 
 const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionManagerProps) => {
+  // If no sessionId or accessToken is set, don't initialize Ably
+  if (!getAccessToken() || !getChatSessionId()) {
+    console.log('No access token or session id found, skipping Ably initialization');
+    return null;
+  }
   const reconnectionAttempts = useRef(0);
   const [accessToken, setAccessToken] = useState<string | null>(getAccessToken());
   const ablyInitialized = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
   const lastWorkspaceId = useRef<string | null>(null);
-  
+
   // Clean up function that's safe to call multiple times
   const performCleanup = () => {
     if (cleanupRef.current) {
@@ -45,7 +50,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
 
     // Check for token changes periodically
     const tokenCheckInterval = setInterval(checkToken, 2000);
-    
+
     return () => {
       clearInterval(tokenCheckInterval);
     };
@@ -59,7 +64,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
         onStatusChange(ConnectionStatus.DISCONNECTED);
         return;
       }
-      
+
       switch (client.connection.state) {
         case 'connected':
           onStatusChange(ConnectionStatus.CONNECTED);
@@ -78,7 +83,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
           onStatusChange(ConnectionStatus.DISCONNECTED);
       }
     };
-    
+
     // Check connection status periodically
     const statusInterval = setInterval(checkConnectionStatus, 1000);
     return () => clearInterval(statusInterval);
@@ -92,7 +97,7 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
       logger.info('Realtime disabled: missing required parameters', 'ConnectionManager');
       return;
     }
-    
+
     // Skip initialization if we're already connected to the same workspace
     if (ablyInitialized.current && lastWorkspaceId.current === workspaceId) {
       logger.info('Already connected to this workspace, skipping initialization', 'ConnectionManager');
@@ -115,14 +120,14 @@ const ConnectionManager = ({ workspaceId, enabled, onStatusChange }: ConnectionM
       if (ablyInitialized.current) {
         return;
       }
-      
+
       try {
         logger.info('Initializing real-time with token', 'ConnectionManager');
         await initializeAbly(authUrl);
         ablyInitialized.current = true;
         onStatusChange(ConnectionStatus.CONNECTED);
         logger.info('Real-time communication initialized', 'ConnectionManager');
-        
+
         // Store the cleanup function
         cleanupRef.current = () => {
           cleanupAbly();

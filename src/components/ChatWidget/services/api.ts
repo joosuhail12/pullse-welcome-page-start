@@ -19,7 +19,7 @@ import { errorHandler } from '@/lib/error-handler';
 import { sanitizeErrorMessage } from '@/lib/error-sanitizer';
 import { logger } from '@/lib/logger';
 import { requiresServerImplementation } from '../utils/serverSideAuth';
-import { getAccessToken, getWorkspaceIdAndApiKey, setAccessToken } from '../utils/storage';
+import { getAccessToken, getWorkspaceIdAndApiKey, removeAccessToken, removeChatSessionId, setAccessToken } from '../utils/storage';
 
 // Circuit names for different API endpoints
 const CONFIG_CIRCUIT = 'chat-widget-config';
@@ -241,6 +241,11 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
             console.error('Response signature verification failed');
             throw new Error('Response integrity check failed');
           }
+        }
+        // If the response does not contain a sessionId and AccessToken remove the keys from the local storage
+        if (!config.sessionId || !config.data.accessToken) {
+          removeAccessToken();
+          removeChatSessionId();
         }
 
         // Check if response contains a sessionId and store it

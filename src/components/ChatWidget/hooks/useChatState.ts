@@ -1,8 +1,7 @@
-
 import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import { Conversation, Ticket, TicketMessage } from '../types';
-import { saveConversationToStorage, loadConversationsFromStorage, getWorkspaceIdAndApiKey, getAccessToken, setUserFormDataInLocalStorage, getUserFormDataFromLocalStorage } from '../utils/storage';
+import { saveConversationToStorage, getWorkspaceIdAndApiKey, setUserFormDataInLocalStorage, getUserFormDataFromLocalStorage, setAccessToken, setChatSessionId } from '../utils/storage';
 import { logout, checkSessionValidity } from '../utils/security';
 import { fetchConversationByTicketId, fetchConversations } from '../services/api';
 import { createSystemMessage, createUserMessage } from '../utils/messageHandlers';
@@ -42,8 +41,6 @@ export function useChatState() {
         name: 'Support Agent',
         avatar: undefined // You could set a default avatar URL here
       },
-      // Flag to indicate whether contact has been identified yet
-      contactIdentified: !!formData
     };
 
     setActiveConversation(newConversation);
@@ -55,9 +52,8 @@ export function useChatState() {
     if (userFormData === undefined) {
       // Create new contact in database
       const { apiKey } = getWorkspaceIdAndApiKey();
-      const accessToken = getAccessToken();
-      if (!apiKey || !accessToken) {
-        console.error("No API key or access token found");
+      if (!apiKey) {
+        console.error("No API key found");
         return;
       };
       try {
@@ -65,7 +61,6 @@ export function useChatState() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': accessToken ? `Bearer ${accessToken}` : ''
           },
           body: JSON.stringify(formData)
         });
@@ -81,10 +76,17 @@ export function useChatState() {
             if (activeConversation) {
               setActiveConversation({
                 ...activeConversation,
-                contactIdentified: true
               });
             }
+
+            if (data.data?.accessToken) {
+              setAccessToken(data.data.accessToken);
+            }
+            if (data.data?.sessionId) {
+              setChatSessionId(data.data.sessionId);
+            }
           }
+          console.log('Contact created successfully');
         } else {
           toast.error(data.message || "Failed to create contact");
         }
