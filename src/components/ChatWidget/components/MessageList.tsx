@@ -11,6 +11,7 @@ import { AgentStatus } from '../types';
 import DateSeparator from './DateSeparator';
 import { isSameDay } from 'date-fns';
 import { ChatWidgetConfig } from '../config';
+import { UserActionData } from '../hooks/useMessageActions';
 
 interface MessageListProps {
   messages: any[];
@@ -33,6 +34,7 @@ interface MessageListProps {
   typingDuration?: number;
   config: ChatWidgetConfig;
   isDemo?: boolean;
+  handleUserAction?: (action: "csat" | "action_button" | "data_collection", data: Partial<UserActionData>, conversationId: string) => void;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -55,7 +57,8 @@ const MessageList: React.FC<MessageListProps> = ({
   onToggleHighlight,
   typingDuration = 0,
   config,
-  isDemo = false
+  isDemo = false,
+  handleUserAction
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -258,6 +261,7 @@ const MessageList: React.FC<MessageListProps> = ({
                 showAvatar={item.showAvatar}
                 isConsecutive={item.isConsecutive}
                 config={config}
+                handleUserAction={handleUserAction}
               />
             </div>
           );

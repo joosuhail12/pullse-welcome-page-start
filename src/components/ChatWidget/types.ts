@@ -23,6 +23,7 @@ export interface Message {
   timestamp?: Date;    // For backward compatibility
   senderType?: 'user' | 'agent' | 'system'; // Add senderType for compatibility
   reactions?: string[]; // Add reactions array
+  allowUserAction?: boolean;
 }
 
 // Standardized agent status type
@@ -91,6 +92,7 @@ export interface TicketMessage {
   messageType?: 'text' | 'data_collection' | 'action_buttons' | 'csat' | 'mention' | 'note';
   senderType?: 'user' | 'agent' | 'system';
   messageConfig?: Record<string, any>;
+  allowUserAction?: boolean;
 }
 
 // Define MessageReadStatus type 

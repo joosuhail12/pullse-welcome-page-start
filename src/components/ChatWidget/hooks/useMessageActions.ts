@@ -6,6 +6,30 @@ import { publishToChannel } from '../utils/ably';
 import { dispatchChatEvent, subscribeToChatEvent } from '../utils/events';
 import { ChatEventPayload, ChatWidgetConfig } from '../config';
 
+type DataCollectionField = {
+  field: string;
+  label: string;
+  table: string;
+  required: boolean;
+  customFieldId: string;
+  customObjectId: string;
+  customObjectFieldId: string;
+  value: string;
+}
+
+export type UserActionData = {
+  csat: {
+    value: number;
+    ratingScale: string;
+  };
+  action_button: {
+    label: string;
+  };
+  data_collection: {
+    fields: DataCollectionField[]
+  };
+}
+
 export function useMessageActions(
   messages: Message[],
   setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
@@ -65,6 +89,14 @@ export function useMessageActions(
       };
     }, []); // Only re-subscribe if these functions change
   }
+
+  const handleUserAction = useCallback((action: "csat" | "action_button" | "data_collection", data: Partial<UserActionData>, conversationId: string) => {
+    publishToChannel(chatChannelName, 'user_action', {
+      action,
+      data,
+      conversationId
+    });
+  }, []);
 
 
   // Handle sending messages
@@ -185,6 +217,7 @@ export function useMessageActions(
     handleSendMessage,
     handleUserTyping,
     handleFileUpload,
-    handleEndChat
+    handleEndChat,
+    handleUserAction
   };
 }

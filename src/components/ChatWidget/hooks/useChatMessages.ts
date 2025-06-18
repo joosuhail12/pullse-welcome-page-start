@@ -96,7 +96,8 @@ export function useChatMessages(
     handleSendMessage,
     handleUserTyping: baseHandleUserTyping,
     handleFileUpload,
-    handleEndChat
+    handleEndChat,
+    handleUserAction
   } = useMessageActions(
     messages,
     setMessages,
@@ -159,6 +160,7 @@ export function useChatMessages(
     handleFileUpload,
     handleEndChat,
     // readReceipts,
-    loadPreviousMessages
+    loadPreviousMessages,
+    handleUserAction
   };
 }
