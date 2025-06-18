@@ -13,6 +13,7 @@ import DataCollectionMessage from '../MessageTypes/DataCollectionMessage';
 import CSATMessage from '../MessageTypes/CSATMessage';
 import { ChatWidgetConfig } from '../../config';
 import { cn } from '@/lib/utils';
+import { UserActionData } from '../../hooks/useMessageActions';
 
 interface MessageBubbleProps {
   message: Message;
@@ -32,25 +33,20 @@ interface MessageBubbleProps {
   onToggleHighlight?: (messageId: string) => void;
   typingDuration?: number;
   config: ChatWidgetConfig;
-  onDataCollectionSubmit?: (messageId: string, data: Record<string, string>) => void;
+  handleUserAction?: (action: "csat" | "action_button" | "data_collection", data: Partial<UserActionData>, conversationId: string) => void;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
-  isTyping = false,
-  setMessageText,
   readReceipt,
   onMessageReaction,
   searchTerm,
   highlightMessage,
   agentAvatar,
   userAvatar,
-  conversationId,
   agentStatus,
-  onToggleHighlight,
-  typingDuration = 0,
   config,
-  onDataCollectionSubmit
+  handleUserAction
 }) => {
   const [showReactions, setShowReactions] = useState(false);
   const isUser = message.sender === 'user' || message.senderType === 'user';
@@ -58,7 +54,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isSystem = message.sender === 'system' || message.senderType === 'system';
 
   // Handle system/status messages separately
-  if (isSystem || message.messageType === 'note') {
+  if ((isSystem || message.messageType === 'note') && message.messageType !== 'data_collection' && message.messageType !== 'csat' && message.messageType !== 'action_buttons') {
     return (
       <div className="flex justify-center my-4">
         <StatusMessage text={message.text} type="info" timestamp={message.createdAt} />
@@ -73,42 +69,35 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     setShowReactions(false);
   };
 
-  const handleDataCollectionSubmit = (data: Record<string, string>) => {
-    if (onDataCollectionSubmit) {
-      onDataCollectionSubmit(message.id, data);
-    }
-  };
-
   const renderMessageContent = () => {
     switch (message.messageType || message.type) {
       case 'data_collection':
         return (
           <DataCollectionMessage
-            title={message.messageConfig?.title}
-            description={message.messageConfig?.description}
+            isRequired={message.messageConfig?.required}
             fields={message.messageConfig?.fields || []}
-            onSubmit={handleDataCollectionSubmit}
-            isSubmitted={message.metadata?.isSubmitted}
-            submittedData={message.metadata?.submittedData}
+            onSubmit={handleUserAction}
+            allowUserAction={message.allowUserAction}
+            messageId={message.id}
           />
         );
       case 'csat':
         return (
           <CSATMessage
-            config={{
-              title: message.messageConfig?.title,
-              question: message.messageConfig?.question,
-              ratingScale: message.messageConfig?.ratingScale,
-              followUpQuestion: message.messageConfig?.followUpQuestion,
-              followUpOptional: message.messageConfig?.followUpOptional
-            }}
-            onSubmit={(rating, followUp) => {
-              if (onDataCollectionSubmit) {
-                onDataCollectionSubmit(message.id, { rating: String(rating), followUp: followUp || '' });
-              }
-            }}
-            isSubmitted={message.metadata?.isSubmitted}
-            submittedData={message.metadata?.submittedData}
+            scale={message.messageConfig?.scale}
+            question={message.messageConfig?.question}
+            onSubmit={handleUserAction}
+            allowUserAction={message.allowUserAction}
+            messageId={message.id}
+          />
+        );
+      case 'action_buttons':
+        return (
+          <QuickReplyMessage
+            options={message.messageConfig?.buttonLabels}
+            onSubmit={handleUserAction}
+            allowUserAction={message.allowUserAction}
+            messageId={message.id}
           />
         );
       case 'file':

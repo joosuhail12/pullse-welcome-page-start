@@ -17,7 +17,20 @@ export interface FormField {
   placeholder?: string;
   required?: boolean;
   options?: string[];
-  currency?: string;
+}
+
+export interface DataCollectionFormField {
+  id: string;
+  type: 'text' | 'number' | 'date' | 'boolean' | 'select' | 'multi_select' | 'rich_text' | 'file_attachment' | 'currency' | 'url' | 'email' | 'phone' | 'textarea';
+  field: string;
+  label: string;
+  table: string;
+  options?: string[];
+  required: boolean;
+  customFieldId: string;
+  customObjectId: string;
+  customObjectFieldId: string;
+  value: string;
 }
 
 interface FormFieldProps {
@@ -39,7 +52,7 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
   fileUploads = {},
   onInputChange,
   onFileChange,
-  onMultiSelectChange
+  onMultiSelectChange,
 }) => {
   if (isSubmitted) {
     return (
@@ -75,7 +88,7 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
     );
   };
 
-  const placeholderText = field.placeholder || field.label + (field.required ? ' *' : '');
+  const placeholderText = field.placeholder || field.label;
 
   switch (field.type) {
     case 'select':
@@ -84,8 +97,9 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
           <div className={fieldClasses}>
             <div className="p-3">
               <Select value={value} onValueChange={(val) => onInputChange(field.id, val)}>
-                <SelectTrigger className="h-8 border-gray-200 bg-white/60 focus:bg-white/80 text-2xs">
+                <SelectTrigger className="h-8 border-gray-200 bg-white/60 focus:bg-white/80 text-2xs z-10">
                   <SelectValue placeholder={placeholderText} />
+                  {field.required && <span className="text-red-500">*</span>}
                 </SelectTrigger>
                 <SelectContent>
                   {field.options?.map((option, index) => (
@@ -121,7 +135,7 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
                     className="w-3.5 h-3.5"
                   />
                   <Label htmlFor={`${field.id}-${index}`} className="text-2xs text-gray-700 cursor-pointer">
-                    {option}
+                    {option} {field.required && <span className="text-red-500">*</span>}
                   </Label>
                 </div>
               ))}
@@ -218,7 +232,7 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
           <div className={fieldClasses}>
             <div className="p-3">
               <div className="flex items-center gap-1">
-                <span className="text-2xs text-gray-500 font-medium">{field.currency || '$'}</span>
+                {/* <span className="text-2xs text-gray-500 font-medium">{field.currency || '$'}</span> */}
                 <Input
                   id={field.id}
                   type="number"
@@ -245,7 +259,7 @@ export const FormFieldComponent: React.FC<FormFieldProps> = ({
                 type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : field.type === 'phone' ? 'tel' : field.type === 'date' ? 'date' : field.type === 'number' ? 'number' : 'text'}
                 value={value}
                 onChange={(e) => onInputChange(field.id, e.target.value)}
-                placeholder={placeholderText}
+                placeholder={placeholderText + (field.required ? ' *' : '')}
                 className="w-full h-8 border-gray-200 bg-white/60 focus:bg-white/80 text-2xs"
                 step={field.type === 'number' ? '0.01' : undefined}
               />

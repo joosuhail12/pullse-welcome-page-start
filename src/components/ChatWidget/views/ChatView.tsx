@@ -75,7 +75,8 @@ const ChatView = React.memo(({
     handleEndChat,
     // remoteIsTyping,
     // readReceipts,
-    loadPreviousMessages
+    loadPreviousMessages,
+    handleUserAction
   } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound, handleSelectTicket, isDemo);
 
   const {
@@ -158,7 +159,7 @@ const ChatView = React.memo(({
     const { apiKey } = getWorkspaceIdAndApiKey();
     const accessToken = getAccessToken();
     try {
-      const response = await fetch("https://dev-socket.pullseai.com/api/widgets/updateTicketRating/" + apiKey, {
+      const response = await fetch("http://localhost:4000/api/widgets/updateTicketRating/" + apiKey, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -252,6 +253,7 @@ const ChatView = React.memo(({
               agentStatus={conversation.agentInfo?.status}
               config={config}
               isDemo={isDemo}
+              handleUserAction={handleUserAction}
             />
 
             {/* Rating component - shown only when conditions are met */}

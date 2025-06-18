@@ -8,55 +8,32 @@ import { UserType } from '../../types';
 import { MessageType } from '../../types';
 import MessageStatus from '../MessageBubble/MessageStatus';
 import { cn } from '@/lib/utils';
+import { UserActionData } from '../../hooks/useMessageActions';
 
 interface QuickReplyMessageProps {
-  message: {
-    id: string;
-    text: string;
-    type?: MessageType;
-    sender: UserType;
-    senderType?: 'user' | 'agent' | 'system';
-    messageType?: 'text' | 'data_collection' | 'action_buttons' | 'csat' | 'mention' | 'note';
-    messageConfig?: string[];
-    createdAt: Date;
-    metadata?: Record<string, any>;
-    reactions?: string[];
-    fileName?: string;
-    cardData?: {
-      title: string;
-      description: string;
-      imageUrl?: string;
-      buttons?: Array<{ text: string; action: string }>;
-    };
-    quickReplies?: Array<{ text: string; action: string }>;
-    reaction?: 'thumbsUp' | 'thumbsDown' | null;
-  };
-  quickReplies?: string[];
-  renderText?: (text: string) => React.ReactNode;
-  setMessageText?: (text: string) => void;
-  metadata?: Record<string, any>;
-  onReply?: (text: string) => void; // Added onReply prop
+  options: string[];
+  onSubmit: (action: "csat" | "action_button" | "data_collection", data: Partial<UserActionData>, conversationId: string) => void;
+  allowUserAction?: boolean;
+  messageId: string;
 }
 
-const QuickReplyMessage = ({ message, quickReplies, renderText, setMessageText, metadata, onReply }: QuickReplyMessageProps) => {
+const QuickReplyMessage = ({ options, onSubmit, allowUserAction = true, messageId }: QuickReplyMessageProps) => {
   const { config } = useWidgetConfig();
-  const [areButtonsDisabled, setAreButtonsDisabled] = useState<boolean>(message.text.length > 0 ? true : false);
+  const [areButtonsDisabled, setAreButtonsDisabled] = useState<boolean>(false);
 
   // Disable buttons once pressed
 
   // Process either direct props or metadata
-  const repliesToUse = quickReplies || (metadata?.quickReplies as string[]) || [];
+  const repliesToUse = options || [];
 
   const handleReplyClick = (replyText: string) => {
+    if (!allowUserAction) return;
     setAreButtonsDisabled(true);
-    const sanitizedText = sanitizeInput(replyText);
-    // Call both handlers if provided
-    if (setMessageText) {
-      setMessageText(sanitizedText);
-    }
-    if (onReply) {
-      onReply(sanitizedText);
-    }
+    onSubmit("action_button", {
+      action_button: {
+        label: replyText
+      }
+    }, messageId);
   };
 
   return (
@@ -67,7 +44,7 @@ const QuickReplyMessage = ({ message, quickReplies, renderText, setMessageText, 
             <Button
               key={i}
               size="sm"
-              disabled={areButtonsDisabled}
+              disabled={areButtonsDisabled || !allowUserAction}
               variant="default"
               className="text-xs py-1.5 h-auto"
               style={{
