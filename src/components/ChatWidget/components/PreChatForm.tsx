@@ -42,6 +42,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
     customfield: {},
     customobjectfield: {}
   });
+  const [isSubmitDisabled, setIsSubmitDisabled] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formValid, setFormValid] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -105,6 +106,8 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
 
   const submitForm = () => {
     if (!formValid) return;
+
+    setIsSubmitDisabled(true);
 
     const structuredData: FormDataStructure = {
       contact: [],
@@ -256,7 +259,7 @@ const PreChatForm = ({ config, onFormComplete }: PreChatFormProps) => {
       <div className="mt-4 sm:mt-6">
         <Button
           onClick={submitForm}
-          disabled={!formValid}
+          disabled={!formValid || isSubmitDisabled}
           className="w-full h-9 sm:h-11 text-white transition-all text-xs sm:text-sm"
           style={{
             backgroundColor: primaryColor,

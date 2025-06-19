@@ -1,7 +1,7 @@
 import { toast } from 'sonner';
 import { useState, useEffect, useCallback } from 'react';
 import { Conversation, Ticket, TicketMessage } from '../types';
-import { saveConversationToStorage, getWorkspaceIdAndApiKey, setUserFormDataInLocalStorage, getUserFormDataFromLocalStorage, setAccessToken, setChatSessionId } from '../utils/storage';
+import { saveConversationToStorage, getWorkspaceIdAndApiKey, setUserFormDataInLocalStorage, getUserFormDataFromLocalStorage, setAccessToken, setChatSessionId, getChatSessionId } from '../utils/storage';
 import { logout, checkSessionValidity } from '../utils/security';
 import { fetchConversationByTicketId, fetchConversations } from '../services/api';
 import { createSystemMessage, createUserMessage } from '../utils/messageHandlers';
@@ -9,7 +9,7 @@ import { createSystemMessage, createUserMessage } from '../utils/messageHandlers
 type ViewState = 'home' | 'messages' | 'chat';
 
 export function useChatState() {
-  const [viewState, setViewState] = useState<ViewState>('messages'); // Default to messages view
+  const [viewState, setViewState] = useState<ViewState>('home'); // Default to messages view
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(getUserFormDataFromLocalStorage());
   const [isLoadingTicket, setIsLoadingTicket] = useState(false);
@@ -48,54 +48,53 @@ export function useChatState() {
   }, []);
 
   const handleSetFormData = useCallback(async (formData: Record<string, string>) => {
-    // Check if the form data is already set
-    if (userFormData === undefined) {
-      // Create new contact in database
-      const { apiKey } = getWorkspaceIdAndApiKey();
-      if (!apiKey) {
-        console.error("No API key found");
-        return;
-      };
-      try {
-        const response = await fetch("http://localhost:4000/api/widgets/createContactDevice/" + apiKey, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData)
-        });
+    // Create new contact in database
+    const { apiKey } = getWorkspaceIdAndApiKey();
+    if (!apiKey) {
+      console.error("No API key found");
+      return;
+    };
+    try {
+      const response = await fetch("http://localhost:4000/api/widgets/createContactDevice/" + apiKey, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
 
-        const data = await response.json();
-        if (data.status === "success") {
-          setUserFormData(formData);
-          setUserFormDataInLocalStorage(formData);
+      const data = await response.json();
+      if (data.status === "success") {
+        setUserFormData(formData);
+        setUserFormDataInLocalStorage(formData);
 
-          // If there's contact data in the response, update it
-          if (data.data) {
-            // Update any active conversation to mark it as identified
-            if (activeConversation) {
-              setActiveConversation({
-                ...activeConversation,
-              });
-            }
+        // If there's contact data in the response, update it
+        if (data.data) {
+          // Update any active conversation to mark it as identified
+          setActiveConversation({
+            ...activeConversation,
+          });
 
-            if (data.data?.accessToken) {
-              setAccessToken(data.data.accessToken);
-            }
-            if (data.data?.sessionId) {
-              setChatSessionId(data.data.sessionId);
-            }
+          if (data.data?.accessToken) {
+            setAccessToken(data.data.accessToken);
           }
-          console.log('Contact created successfully');
-        } else {
-          toast.error(data.message || "Failed to create contact");
+          if (data.data?.sessionId) {
+            setChatSessionId(data.data.sessionId);
+          }
         }
-      } catch (error) {
-        console.error("Error creating contact:", error);
-        toast.error("Failed to connect to the server");
+        console.log('Contact created successfully');
+        setViewState('home');
+        return true;
+      } else {
+        toast.error(data.message || "Failed to create contact");
+        return false;
       }
+    } catch (error) {
+      console.error("Error creating contact:", error);
+      toast.error("Failed to connect to the server");
+      return false;
     }
-  }, [userFormData, activeConversation]);
+  }, [activeConversation]);
 
   const handleBackToMessages = useCallback(() => {
     // Update the conversation in localStorage before going back
