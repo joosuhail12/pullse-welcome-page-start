@@ -164,7 +164,7 @@ const ChatView = React.memo(({
     const { apiKey } = getWorkspaceIdAndApiKey();
     const accessToken = getAccessToken();
     try {
-      const response = await fetch("http://localhost:4000/api/widgets/updateTicketRating/" + apiKey, {
+      const response = await fetch("https://dev-socket.pullseai.com/api/widgets/updateTicketRating/" + apiKey, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -55,7 +55,7 @@ export function useChatState() {
       return;
     };
     try {
-      const response = await fetch("http://localhost:4000/api/widgets/createContactDevice/" + apiKey, {
+      const response = await fetch("https://dev-socket.pullseai.com/api/widgets/createContactDevice/" + apiKey, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
