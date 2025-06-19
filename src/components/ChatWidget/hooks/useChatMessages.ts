@@ -109,6 +109,8 @@ export function useChatMessages(
     setIsTyping
   );
 
+
+
   // Update conversation in parent component when messages change
   useEffect(() => {
     if (messages.length > 0 && onUpdateConversation) {

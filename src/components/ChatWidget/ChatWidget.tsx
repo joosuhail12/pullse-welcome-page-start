@@ -30,7 +30,7 @@ const ChatWidget = () => {
     handleSelectTicket,
     handleUpdateConversation,
     userFormData,
-    setUserFormData
+    setUserFormData,
   } = useChatState();
 
   const { config, loading, error, contactData } = useWidgetConfig();

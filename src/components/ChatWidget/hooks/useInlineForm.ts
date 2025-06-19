@@ -16,27 +16,19 @@ export function useInlineForm(
   onUpdateConversation?: (updatedConversation: Conversation) => void
 ) {
   // Check if conversation already has contact identified or user form data exists
+  const accessToken = getAccessToken();
   const [showInlineForm, setShowInlineForm] = useState(
     // Check for accessToken and sessionId in local storage
-    !getAccessToken() || !getChatSessionId()
+    accessToken === null
   );
 
-  // Update form visibility when user data, contact status, or config contact changes
-  useEffect(() => {
-    // Make sure to show the form if no user data or contact is identified
-    if (!userFormData && !config.contact && !isUserAuthenticated()) {
-      setShowInlineForm(true);
-    } else if (userFormData || config.contact || isUserAuthenticated()) {
-      setShowInlineForm(false);
-    }
-  }, [userFormData, config.contact]);
-
-  const handleFormComplete = useCallback((formData: Record<string, string>) => {
-    setShowInlineForm(false);
+  const handleFormComplete = useCallback(async (formData: Record<string, string>) => {
 
     if (setUserFormData) {
-      setUserFormData(formData);
+      await setUserFormData(formData);
     }
+
+    setShowInlineForm(false);
 
     if (onUpdateConversation) {
       onUpdateConversation({

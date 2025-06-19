@@ -52,6 +52,11 @@ const ChatView = React.memo(({
     );
   }, [config?.interfaceSettings?.enableConversationRating, conversation.status, conversation.rating]);
 
+  const handleFormSubmission = async (data: Record<string, string>) => {
+    // Re render to connect to subscribe to ably events again
+    await handleFormComplete(data);
+  }
+
   const {
     showInlineForm,
     handleFormComplete
@@ -147,7 +152,7 @@ const ChatView = React.memo(({
 
   const inlineFormComponent = useMemo(() => {
     if (showInlineForm) {
-      return <PreChatForm config={config} onFormComplete={handleFormComplete} />;
+      return <PreChatForm config={config} onFormComplete={handleFormSubmission} />;
     }
     return null;
   }, [showInlineForm, config, handleFormComplete]);

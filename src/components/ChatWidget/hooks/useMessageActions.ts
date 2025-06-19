@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Message, Ticket } from '../types';
 import { createUserMessage, createSystemMessage, sendTypingIndicator, createMessage } from '../utils/messageHandlers';
-import { publishToChannel } from '../utils/ably';
+import { publishToChannel, subscribeToChannel } from '../utils/ably';
 import { dispatchChatEvent, subscribeToChatEvent } from '../utils/events';
 import { ChatEventPayload, ChatWidgetConfig } from '../config';
 
@@ -38,7 +38,7 @@ export function useMessageActions(
   sessionId: string,
   config?: ChatWidgetConfig,
   setHasUserSentMessage?: React.Dispatch<React.SetStateAction<boolean>>,
-  setIsTyping?: React.Dispatch<React.SetStateAction<boolean>>
+  setIsTyping?: React.Dispatch<React.SetStateAction<boolean>>,
 ) {
   const [messageText, setMessageText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -47,12 +47,7 @@ export function useMessageActions(
   if (chatChannelName.includes('contactevent')) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
-      console.log('Setting up chat:new_ticket event listener');
-
-      // Create subscription to chat:new_ticket event
       const unsubscribe = subscribeToChatEvent('chat:new_ticket', (event: ChatEventPayload) => {
-        console.log('New ticket event received with data:', event);
-
         const ticketId = event.data.message;
         handleSelectTicket({
           id: ticketId,
@@ -69,12 +64,10 @@ export function useMessageActions(
         console.log('Cleaning up chat:new_ticket event listener');
         unsubscribe();
       };
-    }, []); // Only re-subscribe if these functions change
+    }, [chatChannelName]); // Only re-subscribe if these functions change
   } else {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     useEffect(() => {
-      console.log('Setting up chat:ticket_message event listener');
-
       // Create subscription to chat:new_ticket event
       const unsubscribe = subscribeToChatEvent('chat:ticket_message', (event: ChatEventPayload) => {
         console.log('New ticket message received with data:', event);
@@ -102,6 +95,13 @@ export function useMessageActions(
   // Handle sending messages
   const handleSendMessage = useCallback(async (text?: string, messageId: string | null = null) => {
     console.log('handleSendMessage', text, messageId);
+    // Subscribe to ably events
+    if (chatChannelName.includes('contactevent')) {
+      subscribeToChannel(`widget:contactevent:${sessionId}`, 'message', (message) => {
+        console.log('Received message:', message);
+      });
+    }
+
     const messageContent = text || messageText;
     if (!messageContent?.trim()) return;
 
