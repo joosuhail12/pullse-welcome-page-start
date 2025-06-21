@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -64,24 +63,26 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
 
       case '1-10':
         return (
-          <div className="p-4 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-2xl border border-indigo-200/60 shadow-inner">
+          <div className="p-5 bg-gradient-to-br from-indigo-50/80 via-purple-50/60 to-pink-50/80 rounded-2xl border border-indigo-200/50 shadow-inner backdrop-blur-sm">
             <div className="grid grid-cols-5 gap-3">
               {Array.from({ length: 10 }).map((_, index) => (
                 <button
                   key={index}
                   type="button"
                   className={cn(
-                    "h-10 w-full rounded-xl border-2 font-bold text-sm transition-all duration-300 transform hover:scale-110 active:scale-95",
-                    "shadow-md hover:shadow-xl active:shadow-lg",
-                    "relative overflow-hidden group",
+                    "relative h-12 w-full rounded-2xl border-2 font-bold text-base transition-all duration-300 transform hover:scale-110 active:scale-95",
+                    "shadow-lg hover:shadow-xl active:shadow-md",
+                    "overflow-hidden group backdrop-blur-sm",
+                    "before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/40 before:via-transparent before:to-white/20 before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100",
+                    "after:absolute after:inset-0 after:rounded-2xl after:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.1)] after:pointer-events-none",
                     rating === index + 1
-                      ? "bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 text-white border-indigo-400 scale-110 shadow-xl animate-pulse"
-                      : "bg-white/90 text-gray-700 border-gray-200 hover:border-indigo-300 hover:bg-gradient-to-br hover:from-indigo-50 hover:to-purple-50"
+                      ? "bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 text-white border-indigo-400/60 scale-110 shadow-2xl ring-2 ring-indigo-300/50 ring-offset-2 ring-offset-indigo-50 animate-pulse"
+                      : "bg-gradient-to-br from-white/95 via-gray-50/90 to-white/80 text-gray-700 border-gray-300/60 hover:border-indigo-300/80 hover:bg-gradient-to-br hover:from-indigo-50/90 hover:to-purple-50/70 hover:text-indigo-700"
                   )}
                   onClick={() => setRating(index + 1)}
                 >
-                  <span className="relative z-10">{index + 1}</span>
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <span className="relative z-10 font-bold tracking-tight">{index + 1}</span>
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/10 to-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
                 </button>
               ))}
             </div>
@@ -178,64 +179,6 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
         return null;
     }
   };
-
-  // if (isSubmitted && submittedData) {
-  //   return (
-  //     <div className="relative overflow-hidden bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200/60 shadow-lg p-5 max-w-sm backdrop-blur-sm">
-  //       <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-200/20 to-emerald-300/20 rounded-full -translate-y-10 translate-x-10"></div>
-
-  //       <div className="relative z-10 text-center mb-4">
-  //         <div className="flex items-center justify-center mb-3">
-  //           <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full shadow-md">
-  //             <Sparkles size={16} className="text-white" />
-  //           </div>
-  //         </div>
-  //         <h3 className="text-lg font-bold text-gray-900 mb-1">Thank you!</h3>
-  //         <p className="text-xs text-gray-600">{config.question}</p>
-  //       </div>
-
-  //       <div className="relative z-10 mb-4">
-  //         <div className="text-center p-3 bg-white/70 rounded-xl border border-gray-200/50 shadow-inner">
-  //           {config.ratingScale === '1-5 Stars' && (
-  //             <div className="flex gap-1 justify-center">
-  //               {Array.from({ length: 5 }).map((_, index) => (
-  //                 <Star
-  //                   key={index}
-  //                   size={20}
-  //                   className={
-  //                     index < Number(submittedData.rating)
-  //                       ? "fill-yellow-400 text-yellow-400"
-  //                       : "fill-gray-200 text-gray-200"
-  //                   }
-  //                 />
-  //               ))}
-  //             </div>
-  //           )}
-  //           {config.ratingScale === '1-10 Scale' && (
-  //             <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-  //               {submittedData.rating}/10
-  //             </div>
-  //           )}
-  //           {config.ratingScale === 'Emoji Scale' && (
-  //             <div className="flex justify-center">
-  //               {submittedData.rating === 'very-dissatisfied' && <Frown className="text-red-500" size={28} />}
-  //               {submittedData.rating === 'dissatisfied' && <ThumbsDown className="text-orange-500" size={28} />}
-  //               {submittedData.rating === 'neutral' && <Meh className="text-yellow-500" size={28} />}
-  //               {submittedData.rating === 'satisfied' && <Smile className="text-green-500" size={28} />}
-  //               {submittedData.rating === 'very-satisfied' && <ThumbsUp className="text-emerald-600" size={28} />}
-  //             </div>
-  //           )}
-  //         </div>
-  //       </div>
-
-  //       {submittedData.followUp && (
-  //         <div className="relative z-10 p-3 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border border-gray-200/50 shadow-inner">
-  //           <p className="text-xs text-gray-700 italic leading-relaxed">{submittedData.followUp}</p>
-  //         </div>
-  //       )}
-  //     </div>
-  //   );
-  // }
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-white to-gray-50 rounded-2xl border border-gray-200/60 shadow-lg p-5 max-w-sm backdrop-blur-sm">
