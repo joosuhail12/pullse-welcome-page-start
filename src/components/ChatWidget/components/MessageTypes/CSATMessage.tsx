@@ -63,28 +63,32 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
 
       case '1-10':
         return (
-          <div className="p-5 bg-gradient-to-br from-indigo-50/80 via-purple-50/60 to-pink-50/80 rounded-2xl border border-indigo-200/50 shadow-inner backdrop-blur-sm">
-            <div className="grid grid-cols-5 gap-3">
+          <div className="p-6 bg-gradient-to-br from-slate-50/95 via-blue-50/60 to-indigo-50/80 rounded-3xl border border-slate-200/70 shadow-lg backdrop-blur-sm">
+            <div className="flex flex-wrap justify-center gap-2.5 max-w-xs mx-auto">
               {Array.from({ length: 10 }).map((_, index) => (
                 <button
                   key={index}
                   type="button"
                   className={cn(
-                    "relative h-12 w-full rounded-2xl border-2 font-bold text-base transition-all duration-300 transform hover:scale-110 active:scale-95",
-                    "shadow-lg hover:shadow-xl active:shadow-md",
-                    "overflow-hidden group backdrop-blur-sm",
-                    "before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/40 before:via-transparent before:to-white/20 before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100",
-                    "after:absolute after:inset-0 after:rounded-2xl after:shadow-[inset_0_1px_0_rgba(255,255,255,0.6),inset_0_-1px_0_rgba(0,0,0,0.1)] after:pointer-events-none",
+                    "relative h-11 w-11 rounded-2xl font-bold text-sm transition-all duration-300 transform hover:scale-110 active:scale-95",
+                    "shadow-md hover:shadow-xl active:shadow-sm border-2",
+                    "overflow-hidden group backdrop-blur-sm flex items-center justify-center",
+                    "before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/50 before:via-transparent before:to-white/20 before:opacity-0 before:transition-opacity before:duration-300 hover:before:opacity-100",
+                    "after:absolute after:inset-0 after:rounded-2xl after:shadow-[inset_0_1px_0_rgba(255,255,255,0.7),inset_0_-1px_0_rgba(0,0,0,0.05)] after:pointer-events-none",
                     rating === index + 1
-                      ? "bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 text-white border-indigo-400/60 scale-110 shadow-2xl ring-2 ring-indigo-300/50 ring-offset-2 ring-offset-indigo-50 animate-pulse"
-                      : "bg-gradient-to-br from-white/95 via-gray-50/90 to-white/80 text-gray-700 border-gray-300/60 hover:border-indigo-300/80 hover:bg-gradient-to-br hover:from-indigo-50/90 hover:to-purple-50/70 hover:text-indigo-700"
+                      ? "bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 text-white border-blue-400/60 scale-110 shadow-2xl ring-2 ring-blue-300/40 ring-offset-2 ring-offset-blue-50"
+                      : "bg-gradient-to-br from-white via-slate-50/80 to-gray-100/60 text-slate-700 border-slate-300/60 hover:border-blue-300/70 hover:bg-gradient-to-br hover:from-blue-50/80 hover:to-indigo-50/60 hover:text-blue-700"
                   )}
                   onClick={() => setRating(index + 1)}
                 >
                   <span className="relative z-10 font-bold tracking-tight">{index + 1}</span>
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/10 to-purple-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl" />
                 </button>
               ))}
+            </div>
+            <div className="mt-4 flex justify-between text-xs text-slate-500 px-2">
+              <span className="font-medium">Poor</span>
+              <span className="font-medium">Excellent</span>
             </div>
           </div>
         );
