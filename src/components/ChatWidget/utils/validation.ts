@@ -1,4 +1,3 @@
-
 import DOMPurify from 'dompurify';
 
 /**
@@ -9,10 +8,11 @@ export function sanitizeInput(input: string): string {
     return '';
   }
   
-  // Use DOMPurify to sanitize the input
+  // Use DOMPurify to sanitize the input while preserving spaces
   return DOMPurify.sanitize(input, {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'br'],
-    ALLOWED_ATTR: ['href', 'target']
+    ALLOWED_ATTR: ['href', 'target'],
+    KEEP_CONTENT: true
   });
 }
 
@@ -21,20 +21,20 @@ export function sanitizeInput(input: string): string {
  */
 export function validateMessage(message: string): string {
   if (!message || typeof message !== 'string') {
-    throw new Error('Invalid message: must be a non-empty string');
+    return '';
   }
   
   // Check message length
   if (message.length > 5000) {
-    throw new Error('Message too long: maximum 5000 characters allowed');
+    return message.substring(0, 5000);
   }
   
-  // Sanitize the message
-  const sanitized = sanitizeInput(message.trim());
-  
-  if (!sanitized) {
-    throw new Error('Invalid message: message cannot be empty after sanitization');
-  }
+  // Sanitize the message while preserving normal spaces and line breaks
+  const sanitized = DOMPurify.sanitize(message, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true
+  });
   
   return sanitized;
 }
