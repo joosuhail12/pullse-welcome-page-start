@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Message, AgentStatus } from '../../types';
 import { MessageReadStatus } from '../MessageReadReceipt';
@@ -124,9 +125,59 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   };
 
-  // For data collection and CSAT messages, use a wider container
-  const isDataCollection = message.messageType === 'data_collection' || message.type === 'data_collection';
-  const isCSAT = message.messageType === 'csat';
+  // For data collection, CSAT, and action buttons messages, render without bubble
+  const isSpecialMessage = message.messageType === 'data_collection' || 
+                          message.type === 'data_collection' ||
+                          message.messageType === 'csat' ||
+                          message.messageType === 'action_buttons';
+
+  if (isSpecialMessage) {
+    return (
+      <div
+        className={cn(
+          "group relative flex gap-2 px-1 py-3 transition-all duration-300",
+          isUser ? "justify-end" : "justify-start",
+          "hover:bg-gradient-to-r hover:from-transparent hover:via-gray-50/40 hover:to-transparent",
+          "animate-subtle-fade-in"
+        )}
+        role="article"
+        aria-label={`Message from ${isUser ? 'you' : 'agent'}`}
+      >
+        {/* Agent Avatar - Left side */}
+        {isAgent && (
+          <div className="flex-shrink-0 relative">
+            <MessageAvatar
+              src={agentAvatar}
+              alt="Agent"
+              isAgent={true}
+              agentStatus={agentStatus}
+              size="sm"
+            />
+          </div>
+        )}
+
+        {/* Message Content - No bubble wrapper */}
+        <div className={cn(
+          "relative max-w-[98%] sm:max-w-[90%] lg:max-w-[85%]",
+          isUser ? "order-first" : ""
+        )}>
+          {renderMessageContent()}
+        </div>
+
+        {/* User Avatar - Right side */}
+        {isUser && (
+          <div className="flex-shrink-0 relative">
+            <MessageAvatar
+              avatar={userAvatar}
+              alt="You"
+              isAgent={false}
+              size="sm"
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div
@@ -154,19 +205,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
       {/* Message Content */}
       <div className={cn(
-        "relative",
-        (isDataCollection || isCSAT)
-          ? "max-w-[98%] sm:max-w-[90%] lg:max-w-[85%]"
-          : "max-w-[90%] sm:max-w-[80%] lg:max-w-[75%]",
+        "relative max-w-[90%] sm:max-w-[80%] lg:max-w-[75%]",
         isUser ? "order-first" : ""
       )}>
         {/* Message Bubble */}
         <div
           className={cn(
-            "relative transition-all duration-300",
-            (isDataCollection || isCSAT) ? "p-0" : "px-4 py-3 rounded-2xl border shadow-sm backdrop-blur-sm",
-            !(isDataCollection || isCSAT) && "focus-within:ring-2 focus-within:ring-offset-1",
-            !(isDataCollection || isCSAT) && (isUser ? [
+            "relative transition-all duration-300 px-4 py-3 rounded-2xl border shadow-sm backdrop-blur-sm",
+            "focus-within:ring-2 focus-within:ring-offset-1",
+            isUser ? [
               "ml-auto rounded-br-sm",
               "bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800",
               "text-white border-blue-500/30",
@@ -180,18 +227,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               "hover:bg-gray-50/90 hover:shadow-md hover:shadow-gray-500/15",
               "hover:border-gray-300/90",
               "focus-within:ring-gray-300"
-            ])
+            ]
           )}
           style={{
-            ...(!((isDataCollection || isCSAT)) && isUser && config.colors?.userMessageBackgroundColor && {
+            ...(isUser && config.colors?.userMessageBackgroundColor && {
               background: `linear-gradient(135deg, ${config.colors.userMessageBackgroundColor}, ${config.colors.userMessageBackgroundColor}dd)`
             }),
-            ...(!((isDataCollection || isCSAT)) && isAgent && config.colors?.agentMessageBackgroundColor && {
+            ...(isAgent && config.colors?.agentMessageBackgroundColor && {
               backgroundColor: config.colors.agentMessageBackgroundColor
             })
           }}
-          onMouseEnter={() => !((isDataCollection || isCSAT)) && setShowReactions(true)}
-          onMouseLeave={() => !((isDataCollection || isCSAT)) && setShowReactions(false)}
+          onMouseEnter={() => setShowReactions(true)}
+          onMouseLeave={() => setShowReactions(false)}
           tabIndex={0}
           role="group"
           aria-label="Message content"
@@ -202,7 +249,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
 
           {/* Reaction Button */}
-          {onMessageReaction && showReactions && !((isDataCollection || isCSAT)) && (
+          {onMessageReaction && showReactions && (
             <div className="absolute -top-12 left-0 z-20">
               <MessageReactionButtons
                 onReaction={handleReaction}
@@ -213,22 +260,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         </div>
 
         {/* Message Status */}
-        {!((isDataCollection || isCSAT)) && (
-          <div className={cn(
-            "mt-2 px-2",
-            isUser ? "text-right" : "text-left"
-          )}>
-            <MessageStatus
-              status={readReceipt?.status}
-              timestamp={message.createdAt}
-              isFileMessage={message.type === 'file'}
-              fileUploading={message.metadata?.uploading}
-            />
-          </div>
-        )}
+        <div className={cn(
+          "mt-2 px-2",
+          isUser ? "text-right" : "text-left"
+        )}>
+          <MessageStatus
+            status={readReceipt?.status}
+            timestamp={message.createdAt}
+            isFileMessage={message.type === 'file'}
+            fileUploading={message.metadata?.uploading}
+          />
+        </div>
 
         {/* Message Reactions Display */}
-        {message.reactions && message.reactions.length > 0 && !((isDataCollection || isCSAT)) && (
+        {message.reactions && message.reactions.length > 0 && (
           <div className={cn(
             "flex flex-wrap gap-2 mt-3",
             isUser ? "justify-end" : "justify-start"
