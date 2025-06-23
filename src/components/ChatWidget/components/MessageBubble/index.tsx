@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Message, AgentStatus } from '../../types';
 import { MessageReadStatus } from '../MessageReadReceipt';
@@ -12,6 +11,9 @@ import StatusMessage from '../MessageTypes/StatusMessage';
 import QuickReplyMessage from '../MessageTypes/QuickReplyMessage';
 import DataCollectionMessage from '../MessageTypes/DataCollectionMessage';
 import CSATMessage from '../MessageTypes/CSATMessage';
+import AIMessage from '../MessageTypes/AIMessage';
+import WorkflowMessage from '../MessageTypes/WorkflowMessage';
+import SystemNotification from '../MessageTypes/SystemNotification';
 import { ChatWidgetConfig } from '../../config';
 import { cn } from '@/lib/utils';
 import { UserActionData } from '../../hooks/useMessageActions';
@@ -53,6 +55,49 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isUser = message.sender === 'user' || message.senderType === 'user';
   const isAgent = message.sender === 'agent' || message.senderType === 'agent';
   const isSystem = message.sender === 'system' || message.senderType === 'system';
+  const isAI = message.sender === 'ai' || message.senderType === 'ai' || message.messageType === 'ai';
+  const isWorkflow = message.sender === 'workflow' || message.senderType === 'workflow' || message.messageType === 'workflow';
+
+  // Handle new message types with centered display
+  if (isAI) {
+    return (
+      <div className="flex justify-center my-4">
+        <AIMessage 
+          text={message.text} 
+          renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
+          timestamp={message.createdAt} 
+        />
+      </div>
+    );
+  }
+
+  if (isWorkflow) {
+    return (
+      <div className="flex justify-center my-4">
+        <WorkflowMessage 
+          text={message.text} 
+          renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
+          timestamp={message.createdAt}
+          workflowName={message.metadata?.workflowName}
+          status={message.metadata?.status}
+        />
+      </div>
+    );
+  }
+
+  // Handle system/status messages with the new SystemNotification component
+  if ((isSystem || message.messageType === 'note' || message.messageType === 'system_status') && message.messageType !== 'data_collection' && message.messageType !== 'csat' && message.messageType !== 'action_buttons') {
+    return (
+      <div className="flex justify-center my-4">
+        <SystemNotification 
+          text={message.text} 
+          renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
+          type={message.metadata?.notificationType || 'info'} 
+          timestamp={message.createdAt} 
+        />
+      </div>
+    );
+  }
 
   // Handle system/status messages separately
   if ((isSystem || message.messageType === 'note') && message.messageType !== 'data_collection' && message.messageType !== 'csat' && message.messageType !== 'action_buttons') {
