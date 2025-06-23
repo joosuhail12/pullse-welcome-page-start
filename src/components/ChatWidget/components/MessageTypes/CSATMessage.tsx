@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -64,12 +63,12 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
 
       case '1-10':
         return (
-          <div className="p-6 bg-gradient-to-br from-indigo-50/90 via-blue-50/70 to-purple-50/60 rounded-3xl border border-indigo-200/60 shadow-lg backdrop-blur-sm">
+          <div className="p-3 bg-gradient-to-br from-indigo-50/90 via-blue-50/70 to-purple-50/60 rounded-xl border border-indigo-200/60 shadow-md backdrop-blur-sm">
             <div className="relative">
               {/* Slider Track */}
-              <div className="relative h-3 bg-gradient-to-r from-red-200 via-yellow-200 via-green-200 to-emerald-300 rounded-full shadow-inner">
+              <div className="relative h-2 bg-gradient-to-r from-red-200 via-yellow-200 via-green-200 to-emerald-300 rounded-full shadow-inner">
                 <div 
-                  className="absolute h-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-300 shadow-md"
+                  className="absolute h-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-300 shadow-sm"
                   style={{ width: `${(Number(rating) || 0) * 10}%` }}
                 />
               </div>
@@ -81,27 +80,27 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
                 max="10"
                 value={rating || 1}
                 onChange={(e) => setRating(Number(e.target.value))}
-                className="absolute inset-0 w-full h-3 opacity-0 cursor-pointer"
+                className="absolute inset-0 w-full h-2 opacity-0 cursor-pointer"
               />
               
               {/* Custom Handle */}
               <div 
-                className="absolute top-1/2 -translate-y-1/2 w-6 h-6 bg-white border-3 border-indigo-500 rounded-full shadow-lg transition-all duration-200 cursor-pointer hover:scale-110"
-                style={{ left: `calc(${((Number(rating) || 1) - 1) * 10}% + ${6 - ((Number(rating) || 1) - 1) * 1.2}px)` }}
+                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-indigo-500 rounded-full shadow-md transition-all duration-200 cursor-pointer hover:scale-110"
+                style={{ left: `calc(${((Number(rating) || 1) - 1) * 10}% + ${4 - ((Number(rating) || 1) - 1) * 0.8}px)` }}
               >
                 <div className="w-full h-full bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full scale-50" />
               </div>
             </div>
             
             {/* Scale Labels */}
-            <div className="flex justify-between mt-4 px-1">
+            <div className="flex justify-between mt-2 px-0.5">
               {Array.from({ length: 10 }).map((_, index) => (
                 <button
                   key={index}
                   type="button"
                   onClick={() => setRating(index + 1)}
                   className={cn(
-                    "text-xs font-medium transition-all duration-200 hover:scale-110 px-1 py-1 rounded cursor-pointer",
+                    "text-xs font-medium transition-all duration-200 hover:scale-110 px-0.5 py-0.5 rounded cursor-pointer",
                     rating === index + 1
                       ? "text-indigo-600 font-bold bg-indigo-100/60"
                       : "text-slate-500 hover:text-indigo-500"
@@ -113,13 +112,13 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
             </div>
             
             {/* Value Display */}
-            <div className="text-center mt-3">
-              <span className="text-lg font-bold text-indigo-600">{rating || '1'}</span>
-              <span className="text-sm text-slate-500 ml-1">/ 10</span>
+            <div className="text-center mt-1">
+              <span className="text-sm font-bold text-indigo-600">{rating || '1'}</span>
+              <span className="text-xs text-slate-500 ml-1">/ 10</span>
             </div>
             
             {/* Labels */}
-            <div className="flex justify-between text-xs text-slate-500 mt-2 px-1">
+            <div className="flex justify-between text-xs text-slate-500 mt-1 px-0.5">
               <span className="font-medium">Poor</span>
               <span className="font-medium">Excellent</span>
             </div>
@@ -239,7 +238,7 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
           className="w-full h-9 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm"
         >
           Submit Feedback
-        </Button>
+        </button>
       </div>
     </div>
   );
