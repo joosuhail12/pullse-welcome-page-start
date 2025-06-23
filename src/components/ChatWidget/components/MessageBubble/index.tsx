@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Message, AgentStatus } from '../../types';
 import { MessageReadStatus } from '../MessageReadReceipt';
@@ -58,35 +59,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isAI = message.sender === 'ai' || message.senderType === 'ai' || message.messageType === 'ai';
   const isWorkflow = message.sender === 'workflow' || message.senderType === 'workflow' || message.messageType === 'workflow';
 
-  // Handle new message types with centered display
-  if (isAI) {
-    return (
-      <div className="flex justify-center my-4">
-        <AIMessage 
-          text={message.text} 
-          renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
-          timestamp={message.createdAt} 
-        />
-      </div>
-    );
-  }
-
-  if (isWorkflow) {
-    return (
-      <div className="flex justify-center my-4">
-        <WorkflowMessage 
-          text={message.text} 
-          renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
-          timestamp={message.createdAt}
-          workflowName={message.metadata?.workflowName}
-          status={message.metadata?.status}
-        />
-      </div>
-    );
-  }
-
-  // Handle system/status messages with the new SystemNotification component
-  if ((isSystem || message.messageType === 'note' || message.messageType === 'system_status') && message.messageType !== 'data_collection' && message.messageType !== 'csat' && message.messageType !== 'action_buttons') {
+  // Handle system/status messages with the new SystemNotification component (centered)
+  if ((isSystem || message.messageType === 'note' || message.messageType === 'system_status') && message.messageType !== 'data_collection' && message.messageType !== 'csat' && message.messageType !== 'action_buttons' && !isAI && !isWorkflow) {
     return (
       <div className="flex justify-center my-4">
         <SystemNotification 
@@ -95,15 +69,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           type={message.metadata?.notificationType || 'info'} 
           timestamp={message.createdAt} 
         />
-      </div>
-    );
-  }
-
-  // Handle system/status messages separately
-  if ((isSystem || message.messageType === 'note') && message.messageType !== 'data_collection' && message.messageType !== 'csat' && message.messageType !== 'action_buttons') {
-    return (
-      <div className="flex justify-center my-4">
-        <StatusMessage text={message.text} type="info" timestamp={message.createdAt} />
       </div>
     );
   }
@@ -117,6 +82,25 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   const renderMessageContent = () => {
     switch (message.messageType || message.type) {
+      case 'ai':
+        return (
+          <AIMessage
+            text={message.text}
+            renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
+            timestamp={message.createdAt}
+            isTyping={message.metadata?.isTyping}
+          />
+        );
+      case 'workflow':
+        return (
+          <WorkflowMessage
+            text={message.text}
+            renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
+            timestamp={message.createdAt}
+            workflowName={message.metadata?.workflowName}
+            status={message.metadata?.status}
+          />
+        );
       case 'data_collection':
         return (
           <DataCollectionMessage
@@ -236,11 +220,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       aria-label={`Message from ${isUser ? 'you' : 'agent'}`}
     >
       {/* Agent Avatar - Left side */}
-      {isAgent && (
+      {(isAgent || isAI || isWorkflow) && (
         <div className="flex-shrink-0 relative">
           <MessageAvatar
             src={agentAvatar}
-            alt="Agent"
+            alt={isAI ? "AI" : isWorkflow ? "Workflow" : "Agent"}
             isAgent={true}
             agentStatus={agentStatus}
             size="sm"
@@ -278,7 +262,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             ...(isUser && config.colors?.userMessageBackgroundColor && {
               background: `linear-gradient(135deg, ${config.colors.userMessageBackgroundColor}, ${config.colors.userMessageBackgroundColor}dd)`
             }),
-            ...(isAgent && config.colors?.agentMessageBackgroundColor && {
+            ...((isAgent || isAI || isWorkflow) && config.colors?.agentMessageBackgroundColor && {
               backgroundColor: config.colors.agentMessageBackgroundColor
             })
           }}
