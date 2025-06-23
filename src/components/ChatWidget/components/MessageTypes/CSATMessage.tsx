@@ -238,7 +238,7 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
           className="w-full h-9 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm"
         >
           Submit Feedback
-        </button>
+        </Button>
       </div>
     </div>
   );
