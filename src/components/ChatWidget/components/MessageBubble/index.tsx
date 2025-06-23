@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Message, AgentStatus } from '../../types';
 import { MessageReadStatus } from '../MessageReadReceipt';
@@ -59,20 +58,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const isAI = message.sender === 'ai' || message.senderType === 'ai' || message.messageType === 'ai';
   const isWorkflow = message.sender === 'workflow' || message.senderType === 'workflow' || message.messageType === 'workflow';
 
-  // Handle system/status messages with the new SystemNotification component (centered)
-  if ((isSystem || message.messageType === 'note' || message.messageType === 'system_status') && message.messageType !== 'data_collection' && message.messageType !== 'csat' && message.messageType !== 'action_buttons' && !isAI && !isWorkflow) {
-    return (
-      <div className="flex justify-center my-4">
-        <SystemNotification 
-          text={message.text} 
-          renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
-          type={message.metadata?.notificationType || 'info'} 
-          timestamp={message.createdAt} 
-        />
-      </div>
-    );
-  }
-
   const handleReaction = (emoji: string) => {
     if (onMessageReaction) {
       onMessageReaction(message.id, emoji);
@@ -99,6 +84,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             timestamp={message.createdAt}
             workflowName={message.metadata?.workflowName}
             status={message.metadata?.status}
+          />
+        );
+      case 'system_status':
+      case 'note':
+        return (
+          <SystemNotification 
+            text={message.text} 
+            renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
+            type={message.metadata?.notificationType || 'info'} 
+            timestamp={message.createdAt} 
           />
         );
       case 'data_collection':
@@ -217,14 +212,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         "animate-subtle-fade-in"
       )}
       role="article"
-      aria-label={`Message from ${isUser ? 'you' : 'agent'}`}
+      aria-label={`Message from ${isUser ? 'you' : isSystem ? 'system' : isAI ? 'AI' : isWorkflow ? 'workflow' : 'agent'}`}
     >
-      {/* Agent Avatar - Left side */}
-      {(isAgent || isAI || isWorkflow) && (
+      {/* Agent/System/AI/Workflow Avatar - Left side */}
+      {(isAgent || isAI || isWorkflow || isSystem) && (
         <div className="flex-shrink-0 relative">
           <MessageAvatar
             src={agentAvatar}
-            alt={isAI ? "AI" : isWorkflow ? "Workflow" : "Agent"}
+            alt={isAI ? "AI" : isWorkflow ? "Workflow" : isSystem ? "System" : "Agent"}
             isAgent={true}
             agentStatus={agentStatus}
             size="sm"
@@ -262,7 +257,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             ...(isUser && config.colors?.userMessageBackgroundColor && {
               background: `linear-gradient(135deg, ${config.colors.userMessageBackgroundColor}, ${config.colors.userMessageBackgroundColor}dd)`
             }),
-            ...((isAgent || isAI || isWorkflow) && config.colors?.agentMessageBackgroundColor && {
+            ...((isAgent || isAI || isWorkflow || isSystem) && config.colors?.agentMessageBackgroundColor && {
               backgroundColor: config.colors.agentMessageBackgroundColor
             })
           }}
