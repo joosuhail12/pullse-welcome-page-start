@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { AgentStatus } from '../types';
-import { Clock, AlertCircle, CheckCircle2, Info, Sparkles } from 'lucide-react';
+import { Clock, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 
 interface StatusMessageProps {
   text: string;
@@ -24,63 +24,46 @@ const StatusMessage = ({
   const getStatusIcon = () => {
     switch (type) {
       case 'info':
-        return <Info size={16} className="mr-2 text-blue-500 animate-pulse" />;
+        return <Info size={14} className="mr-1.5 text-blue-500" />;
       case 'warning':
-        return <AlertCircle size={16} className="mr-2 text-amber-500" />;
+        return <AlertCircle size={14} className="mr-1.5 text-amber-500" />;
       case 'success':
-        return <CheckCircle2 size={16} className="mr-2 text-green-500" />;
+        return <CheckCircle2 size={14} className="mr-1.5 text-green-500" />;
       case 'error':
-        return <AlertCircle size={16} className="mr-2 text-red-500" />;
+        return <AlertCircle size={14} className="mr-1.5 text-red-500" />;
       case 'status-change':
-        return <Sparkles size={16} className="mr-2 text-purple-500 animate-pulse" />;
+        return <Clock size={14} className="mr-1.5 text-purple-500" />;
       default:
-        return <Clock size={16} className="mr-2 text-gray-400" />;
+        return null;
     }
   };
   
-  const getStatusStyles = () => {
+  const getStatusColor = () => {
     switch (type) {
       case 'info':
-        return 'bg-gradient-to-r from-blue-50 to-blue-100/50 border-blue-200/70 text-blue-800 shadow-blue-100/50';
+        return 'bg-blue-50 border-blue-100 text-blue-700';
       case 'warning':
-        return 'bg-gradient-to-r from-amber-50 to-yellow-100/50 border-amber-200/70 text-amber-800 shadow-amber-100/50';
+        return 'bg-amber-50 border-amber-100 text-amber-700';
       case 'success':
-        return 'bg-gradient-to-r from-green-50 to-emerald-100/50 border-green-200/70 text-green-800 shadow-green-100/50';
+        return 'bg-green-50 border-green-100 text-green-700';
       case 'error':
-        return 'bg-gradient-to-r from-red-50 to-rose-100/50 border-red-200/70 text-red-800 shadow-red-100/50';
+        return 'bg-red-50 border-red-100 text-red-700';
       case 'status-change':
-        return 'bg-gradient-to-r from-purple-50 to-indigo-100/50 border-purple-200/70 text-purple-800 shadow-purple-100/50';
+        return 'bg-purple-50 border-purple-100 text-purple-700';
       default:
-        return 'bg-gradient-to-r from-gray-50 to-slate-100/50 border-gray-200/70 text-gray-700 shadow-gray-100/50';
+        return 'bg-gray-100/80 border-gray-100 text-gray-500';
     }
   };
 
   return (
-    <div className="flex justify-center my-3 px-4">
-      <div 
-        className={`
-          inline-flex items-center px-4 py-2.5 rounded-full text-sm font-medium 
-          border backdrop-blur-sm shadow-lg transition-all duration-300 
-          hover:scale-105 hover:shadow-xl transform
-          ${getStatusStyles()} 
-          ${className}
-        `}
-      >
-        {getStatusIcon()}
-        
-        <span className="flex-1">
-          {renderText ? renderText(text) : text}
+    <div className={`py-1.5 px-5 rounded-full text-xs font-medium text-center shadow-sm border flex items-center justify-center max-w-[80%] mx-auto ${getStatusColor()} ${className}`}>
+      {getStatusIcon()}
+      <span>{renderText ? renderText(text) : text}</span>
+      {timestamp && (
+        <span className="ml-2 text-[10px] opacity-75">
+          {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
-        
-        {timestamp && (
-          <span className="ml-3 text-xs opacity-70 font-normal bg-white/20 px-2 py-0.5 rounded-full">
-            {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-        )}
-        
-        {/* Decorative gradient overlay */}
-        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-white/10 to-transparent pointer-events-none" />
-      </div>
+      )}
     </div>
   );
 };
