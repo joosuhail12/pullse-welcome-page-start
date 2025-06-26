@@ -9,50 +9,26 @@ import TabBar from './TabBar';
 import PoweredByBar from './PoweredByBar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ConnectionStatus } from '../utils/reconnectionManager';
+import { useChatContext } from '../context/chatContext';
+import { useWidgetPosition } from '../hooks/useWidgetPosition';
 
 interface WidgetContainerProps {
-  isOpen: boolean;
-  viewState: 'home' | 'messages' | 'chat';
-  activeConversation: Conversation | null;
-  config: ChatWidgetConfig;
-  widgetStyle: React.CSSProperties;
-  containerStyles: React.CSSProperties;
-  userFormData?: Record<string, string>;
-  handleSelectConversation: (conversation: Conversation) => void;
-  handleSelectTicket?: (ticket: Ticket) => void;
-  handleUpdateConversation: (updatedConversation: Conversation) => void;
-  handleChangeView: (view: 'home' | 'messages' | 'chat') => void;
-  handleBackToMessages: () => void;
-  handleStartChat: (formData?: Record<string, string>) => void;
-  setUserFormData: (data: Record<string, string>) => void;
-  playMessageSound: () => void;
-  connectionStatus?: ConnectionStatus;
   isDemo?: boolean;
 }
 
 const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
-  isOpen,
-  viewState,
-  activeConversation,
-  config,
-  widgetStyle,
-  containerStyles,
-  userFormData,
-  handleSelectConversation,
-  handleSelectTicket,
-  handleUpdateConversation,
-  handleChangeView,
-  handleBackToMessages,
-  handleStartChat,
-  setUserFormData,
-  playMessageSound,
-  connectionStatus,
   isDemo = false
 }) => {
 
-  if (!isOpen) return null;
-
   const isMobile = useIsMobile();
+  const { config, viewState, activeConversation, userFormData, isOpen, setIsOpen, setViewState, setActiveConversation, handleSetFormData, handleStartChat } = useChatContext();
+  const { getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
+
+  const widgetStyle = useMemo(() => ({
+    ...(config?.colors?.primaryColor && {
+      '--vivid-purple': config.colors.primaryColor,
+    } as React.CSSProperties)
+  }), [config?.colors?.primaryColor]);
 
   // Enhanced responsive width and height classes - memoized to prevent recalculation
   const widgetClasses = useMemo(() => {
@@ -69,6 +45,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
     return `${widgetWidth} ${widgetHeight} ${widgetMaxHeight}`;
   }, [isMobile]);
 
+
   // Memoize view components to prevent unnecessary re-renders
   const currentView = useMemo(() => {
     if (viewState === 'chat') {
@@ -76,15 +53,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
       return (
         <div className="flex flex-col h-full">
           <ChatView
-            conversation={activeConversation!}
-            onBack={handleBackToMessages}
-            onUpdateConversation={handleUpdateConversation}
-            config={config}
-            handleSelectTicket={handleSelectTicket}
-            playMessageSound={playMessageSound}
-            userFormData={userFormData}
-            setUserFormData={setUserFormData}
-            connectionStatus={connectionStatus}
             isDemo={isDemo}
           />
         </div>
@@ -95,23 +63,14 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
       <div className="flex flex-col h-full">
         <div className="flex-grow overflow-y-auto">
           {viewState === 'home' && (
-            <HomeView
-              onStartChat={handleStartChat}
-              config={config}
-            />
+            <HomeView />
           )}
           {viewState === 'messages' && (
-            <MessagesView
-              onSelectConversation={handleSelectConversation}
-              onSelectTicket={handleSelectTicket || (() => { })}
-              onStartChat={() => handleStartChat()}
-              config={config}
-              isDemo={isDemo}
-            />
+            <MessagesView />
           )}
         </div>
 
-        <TabBar viewState={viewState} onChangeView={handleChangeView} />
+        <TabBar viewState={viewState} onChangeView={setViewState} />
       </div>
     );
   }, [
@@ -123,10 +82,12 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
     return config.interfaceSettings?.showBrandingBar !== false ? <PoweredByBar /> : null;
   }, [config.interfaceSettings?.showBrandingBar]);
 
+  if (!isOpen) return null;
+
   return (
     <div
       className={`${widgetClasses} z-50 chat-widget-container animate-fade-in shadow-chat-widget flex flex-col rounded-xl sm:rounded-2xl overflow-hidden ${!isDemo ? 'fixed' : ''}`}
-      style={{ ...widgetStyle, ...containerStyles }}
+      style={{ ...widgetStyle, ...getWidgetContainerPositionStyles }}
     >
       <div className="relative w-full h-full flex flex-col flex-1 overflow-hidden">
         {currentView}

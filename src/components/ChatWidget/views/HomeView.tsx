@@ -2,22 +2,15 @@
 import React, { useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, MessageCircle, Clock } from 'lucide-react';
-import { defaultConfig, ChatWidgetConfig } from '../config';
 import AgentPresence from '../components/AgentPresence';
 import TeamAvailability from '../components/TeamAvailability';
 import { dispatchChatEvent } from '../utils/events';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useChatContext } from '../context/chatContext';
 
-interface HomeViewProps {
-  onStartChat: (formData?: Record<string, string>) => void;
-  config?: ChatWidgetConfig;
-}
-
-const HomeView = React.memo(({
-  onStartChat,
-  config = defaultConfig
-}: HomeViewProps) => {
+const HomeView = React.memo(() => {
+  const { handleStartChat, config } = useChatContext();
   const isMobile = useIsMobile();
 
   // Apply custom branding if available - use useMemo to prevent recalculation
@@ -33,8 +26,8 @@ const HomeView = React.memo(({
     dispatchChatEvent('contact:initiated', { showForm: true }, config);
 
     // Start the chat without form data, the form will be shown if needed
-    onStartChat();
-  }, [config, onStartChat]);
+    handleStartChat();
+  }, [config, handleStartChat]);
 
   // Responsive sizing
   const avatarSize = isMobile ? "h-14 w-14" : "h-16 w-16 sm:h-20 sm:w-20";
@@ -81,10 +74,12 @@ const HomeView = React.memo(({
         </p>
       </div>
 
-      {/* Team Availability Section - Always show this component */}
-      <div className="mb-3 sm:mb-6">
-        <TeamAvailability config={config} />
-      </div>
+      {/* Team Availability Section - Only show if showTeamAvailability is true */}
+      {config.interfaceSettings?.showTeamAvailability && (
+        <div className="mb-3 sm:mb-6">
+          <TeamAvailability config={config} />
+        </div>
+      )}
 
       {/* Support status */}
       {config.interfaceSettings?.showAgentPresence && (

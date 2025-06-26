@@ -26,6 +26,31 @@ export interface Message {
   allowUserAction?: boolean;
 }
 
+
+type DataCollectionField = {
+  field: string;
+  label: string;
+  table: string;
+  required: boolean;
+  customFieldId: string;
+  customObjectId: string;
+  customObjectFieldId: string;
+  value: string;
+}
+
+export type UserActionData = {
+  csat: {
+    value: number;
+    ratingScale: string;
+  };
+  action_button: {
+    label: string;
+  };
+  data_collection: {
+    fields: DataCollectionField[]
+  };
+}
+
 // Standardized agent status type
 export type AgentStatus = 'online' | 'offline' | 'away' | 'busy';
 
@@ -183,13 +208,13 @@ export interface TeamAvailability {
   currentStatus?: 'online' | 'offline' | 'limited';
 }
 
-// Add interface for data collection form fields
-export interface DataCollectionField {
-  id: string;
-  type: 'text' | 'number' | 'date' | 'boolean' | 'select' | 'multi_select' | 'rich_text' | 'file_attachment' | 'currency' | 'url' | 'email' | 'phone' | 'textarea';
-  label: string;
-  placeholder?: string;
-  required?: boolean;
-  options?: string[];
-  currency?: string;
-}
+// // Add interface for data collection form fields
+// export interface DataCollectionField {
+//   id: string;
+//   type: 'text' | 'number' | 'date' | 'boolean' | 'select' | 'multi_select' | 'rich_text' | 'file_attachment' | 'currency' | 'url' | 'email' | 'phone' | 'textarea';
+//   label: string;
+//   placeholder?: string;
+//   required?: boolean;
+//   options?: string[];
+//   currency?: string;
+// }

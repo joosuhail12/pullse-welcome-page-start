@@ -1,98 +1,167 @@
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { Conversation, Ticket } from '../types';
-import { ChatWidgetConfig, defaultConfig } from '../config';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
 import ChatViewHeader from '../components/ChatViewHeader';
 import PreChatForm from '../components/PreChatForm';
 import ConversationRating from '../components/ConversationRating';
-import { useChatMessages } from '../hooks/useChatMessages';
-import { useMessageReactions } from '../hooks/useMessageReactions';
 import { useMessageSearch } from '../hooks/useMessageSearch';
-import { useInlineForm } from '../hooks/useInlineForm';
-import { dispatchChatEvent } from '../utils/events';
-import { ConnectionStatus } from '../utils/reconnectionManager';
-import { getAccessToken, getWorkspaceIdAndApiKey } from '../utils/storage';
+import { getChatSessionId } from '../utils/storage';
+import { useChatContext } from '../context/chatContext';
+import { useAblyContext } from '../context/ablyContext';
+import EnhancedLoadingIndicator from '../components/EnhancedLoadingIndicator';
+import { toast } from 'sonner';
+import { fetchConversationByTicketId } from '../services/api';
+import { UserActionData } from '../types';
 
 interface ChatViewProps {
-  conversation: Conversation;
-  onBack: () => void;
-  onUpdateConversation: (updatedConversation: Conversation) => void;
-  config?: ChatWidgetConfig;
-  playMessageSound?: () => void;
-  handleSelectTicket?: (ticket: Ticket) => void;
-  userFormData?: Record<string, string>;
-  setUserFormData?: (data: Record<string, string>) => void;
-  connectionStatus?: ConnectionStatus;
   isDemo?: boolean;
 }
 
 const ChatView = React.memo(({
-  conversation,
-  onBack,
-  onUpdateConversation,
-  config = defaultConfig,
-  playMessageSound,
-  handleSelectTicket,
-  userFormData,
-  setUserFormData,
-  connectionStatus,
   isDemo = false
 }: ChatViewProps) => {
+  const { config, activeConversation, setViewState, setActiveConversation, handleSetFormData, isUserLoggedIn } = useChatContext();
+  const { isConnected, subscribeToChannel, unsubscribeFromChannel, publishToChannel } = useAblyContext();
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isFormSubmitting, setIsFormSubmitting] = useState(false);
+  const [messageText, setMessageText] = useState('');
 
   // Check if conversation rating should be shown
   const showRating = useMemo(() => {
     return (
       config?.interfaceSettings?.enableConversationRating === true &&
-      (conversation.status === 'ended' || conversation.status === 'closed') &&
-      !conversation.rating
+      (activeConversation.status === 'ended' || activeConversation.status === 'closed') &&
+      !activeConversation.rating
     );
-  }, [config?.interfaceSettings?.enableConversationRating, conversation.status, conversation.rating]);
+  }, [config?.interfaceSettings?.enableConversationRating, activeConversation.status, activeConversation.rating]);
 
   const handleFormSubmission = async (data: Record<string, string>) => {
-    // Re render to connect to subscribe to ably events again
-    await handleFormComplete(data);
+    setIsFormSubmitting(true);
+    await handleSetFormData(data);
   }
 
-  const {
-    showInlineForm,
-    handleFormComplete
-  } = useInlineForm(
-    conversation,
-    config,
-    userFormData,
-    setUserFormData,
-    onUpdateConversation
-  );
+  const handleSendMessage = async () => {
+    setActiveConversation((prev: any) => {
+      return {
+        ...prev,
+        messages: [...prev.messages, {
+          id: crypto.randomUUID(),
+          text: messageText,
+          sender: 'user',
+          timestamp: new Date(),
+          createdAt: new Date()
+        }]
+      }
+    });
+    setMessageText('');
+    const sessionId = getChatSessionId();
+    if (activeConversation.ticketId) {
+      console.log('Publishing message to message channel', `widget:conversation:ticket-${activeConversation.ticketId}`);
+      await publishToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message', {
+        text: messageText,
+        sender: 'user',
+        timestamp: new Date().toISOString(),
+        ticketId: activeConversation.ticketId
+      });
+    } else {
+      console.log('Publishing message to new_ticket channel');
+      await publishToChannel(`widget:contactevent:${sessionId}`, 'new_ticket', {
+        text: messageText,
+        sender: 'user',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
 
-  const {
-    messages,
-    messageText,
-    setMessageText,
-    isTyping,
-    hasUserSentMessage,
-    handleSendMessage,
-    handleUserTyping,
-    handleFileUpload,
-    handleEndChat,
-    // remoteIsTyping,
-    // readReceipts,
-    loadPreviousMessages,
-    handleUserAction
-  } = useChatMessages(conversation, config, onUpdateConversation, playMessageSound, handleSelectTicket, isDemo);
+  useEffect(() => {
+    if (isConnected && isFormSubmitting) {
+      setIsFormSubmitting(false);
+    }
+  }, [isConnected, isFormSubmitting]);
 
-  const {
-    handleMessageReaction
-  } = useMessageReactions(
-    messages,
-    message => setMessages(message),
-    `conversation:${conversation.id}`,
-    conversation.sessionId || '',
-    config
-  );
+  const handleExistingTicketReply = (message: any) => {
+    console.log("Message recieved on ticket");
+    console.log(message);
+
+    const { data } = message;
+    const ticketId = data?.ticketId;
+
+    if (!ticketId) {
+      toast.error('Ticket ID not found');
+      return;
+    }
+
+    setActiveConversation((prev: any) => {
+      return {
+        ...prev,
+        messages: [...prev.messages, {
+          id: data?.id || crypto.randomUUID(),
+          text: data?.message,
+          sender: data && data?.senderType ? data.senderType : data?.from,
+          timestamp: new Date(),
+          createdAt: new Date(),
+          messageType: data?.messageType,
+          messageConfig: data?.messageConfig
+        }]
+      };
+    });
+  }
+
+  const handleNewTicketReply = (message: any) => {
+    console.log('New ticket reply received');
+    console.log(message);
+    const sessionId = getChatSessionId();
+    unsubscribeFromChannel(`widget:contactevent:${sessionId}`, 'new_ticket_reply');
+    const { data } = message;
+    const ticketId = data?.ticketId;
+
+    if (!ticketId) {
+      toast.error('Ticket ID not found');
+      return;
+    }
+    setActiveConversation((prev: any) => {
+      return {
+        ...prev,
+        ticketId: ticketId
+      };
+    });
+
+    subscribeToChannel(`widget:conversation:ticket-${ticketId}`, 'message_reply', (message) => {
+      handleExistingTicketReply(message);
+    });
+
+    fetchConversationByTicketId(ticketId);
+  };
+
+  useEffect(() => {
+    if (isConnected) {
+      const sessionId = getChatSessionId();
+      if (activeConversation.ticketId) {
+        console.log('Subscribing to message channel');
+        subscribeToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message_reply', (message) => {
+          handleExistingTicketReply(message);
+        });
+      } else {
+        console.log('Subscribing to new_ticket_reply channel');
+        subscribeToChannel(`widget:contactevent:${sessionId}`, 'new_ticket_reply', (message) => {
+          handleNewTicketReply(message);
+        });
+      }
+    }
+
+    return () => {
+      const sessionId = getChatSessionId();
+      if (activeConversation.ticketId) {
+        console.log('Unsubscribing from message channel');
+        unsubscribeFromChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message_reply');
+      } else {
+        console.log('Unsubscribing from new_ticket_reply channel');
+        unsubscribeFromChannel(`widget:contactevent:${sessionId}`, 'new_ticket_reply');
+      }
+    }
+  }, [isConnected]);
 
   const {
     searchTerm,
@@ -102,22 +171,7 @@ const ChatView = React.memo(({
     highlightText: originalHighlightText,
     messageIds,
     isSearching
-  } = useMessageSearch(messages);
-
-  const setMessages = useCallback((updatedMessages: React.SetStateAction<typeof messages>) => {
-    if (typeof updatedMessages === 'function') {
-      const newMessages = updatedMessages(messages);
-      onUpdateConversation({
-        ...conversation,
-        messages: newMessages
-      });
-    } else {
-      onUpdateConversation({
-        ...conversation,
-        messages: updatedMessages
-      });
-    }
-  }, [messages, conversation, onUpdateConversation]);
+  } = useMessageSearch(activeConversation.messages);
 
   const toggleSearch = useCallback(() => {
     setShowSearch(prev => !prev);
@@ -127,15 +181,15 @@ const ChatView = React.memo(({
   }, [showSearch, clearSearch]);
 
   const handleLoadMoreMessages = useCallback(async () => {
-    if (!loadPreviousMessages) return;
+    // if (!loadPreviousMessages) return;
 
-    setIsLoadingMore(true);
-    try {
-      await loadPreviousMessages();
-    } finally {
-      setIsLoadingMore(false);
-    }
-  }, [loadPreviousMessages]);
+    // setIsLoadingMore(true);
+    // try {
+    //   await loadPreviousMessages();
+    // } finally {
+    //   setIsLoadingMore(false);
+    // }
+  }, []);
 
   const highlightText = useCallback((text: string): string[] => {
     if (!searchTerm) return [text];
@@ -144,68 +198,34 @@ const ChatView = React.memo(({
       .map(part => part.text);
   }, [searchTerm, originalHighlightText]);
 
-  const agentAvatar = useMemo(() => conversation.agentInfo?.avatar || config?.brandAssets?.avatarUrl,
-    [conversation.agentInfo?.avatar, config?.brandAssets?.avatarUrl]);
+  const agentAvatar = useMemo(() => activeConversation.agentInfo?.avatar || config?.brandAssets?.avatarUrl,
+    [activeConversation.agentInfo?.avatar, config?.brandAssets?.avatarUrl]);
 
   const userAvatar = undefined;
-  const hasMoreMessages = messages.length >= 20;
+  const hasMoreMessages = activeConversation?.messages?.length >= 20;
+
+  const handleUserAction = (action: "csat" | "action_button" | "data_collection", data: Partial<UserActionData>, conversationId: string) => {
+    if (activeConversation?.ticketId) {
+      console.log("Handling user action");
+      console.log(action, data);
+      publishToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'user_action', {
+        action,
+        data,
+        conversationId
+      });
+    }
+  };
 
   const inlineFormComponent = useMemo(() => {
-    if (showInlineForm) {
+    if (!isUserLoggedIn) {
       return <PreChatForm config={config} onFormComplete={handleFormSubmission} />;
     }
     return null;
-  }, [showInlineForm, config, handleFormComplete]);
+  }, [isUserLoggedIn, config, handleFormSubmission]);
 
-  const handleSubmitRating = async (rating: number) => {
-    console.log('User submitted rating:', rating);
-    // For now, just logging the rating as per requirements
-    // In the future, this would call an API to save the rating
-    const { apiKey } = getWorkspaceIdAndApiKey();
-    const accessToken = getAccessToken();
-    try {
-      const response = await fetch("https://dev-socket.pullseai.com/api/widgets/updateTicketRating/" + apiKey, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': accessToken ? `Bearer ${accessToken}` : ''
-        },
-        body: JSON.stringify({
-          rating: rating,
-          ticketId: conversation.ticketId
-        })
-      });
-
-      const data = await response.json();
-      if (data.status === "success") {
-        console.log('Rating updated successfully');
-      } else {
-        console.error('Failed to update rating');
-      }
-    } catch (error) {
-      console.error('Error updating rating:', error);
-    }
-
-    // Update the conversation to include the rating so it doesn't show again
-    onUpdateConversation({
-      ...conversation,
-      rating
-    });
-  };
-
-  const chatViewStyle = useMemo(() => {
-    return {
-      ...(config?.colors?.primaryColor && {
-        '--chat-header-bg': config.colors.primaryColor,
-        '--chat-header-text': '#ffffff',
-        '--user-bubble-bg': config.colors.userMessageBackgroundColor,
-        '--user-bubble-text': '#ffffff',
-        '--system-bubble-bg': config.colors.agentMessageBackgroundColor,
-        '--system-bubble-text': '#1f2937',
-        '--chat-bg': 'linear-gradient(to bottom, #F5F3FF, #E5DEFF)',
-      } as React.CSSProperties)
-    };
-  }, [config?.colors?.primaryColor, config?.colors?.userMessageBackgroundColor, config?.colors?.agentMessageBackgroundColor]);
+  if (isFormSubmitting) {
+    return <EnhancedLoadingIndicator config={config} />;
+  }
 
   return (
     <div
@@ -216,8 +236,8 @@ const ChatView = React.memo(({
               ${!config.colors?.backgroundColor && 'bg-gradient-to-br from-soft-purple-50 to-soft-purple-100'}`}
     >
       <ChatViewHeader
-        conversation={conversation}
-        onBack={onBack}
+        conversation={activeConversation}
+        onBack={() => setViewState('home')}
         config={config}
         showSearch={showSearch}
         toggleSearch={toggleSearch}
@@ -232,7 +252,7 @@ const ChatView = React.memo(({
         overflowY: 'scroll',
         overflowX: 'hidden'
       }} className="flex-grow flex flex-col">
-        {showInlineForm && !isDemo ? (
+        {!isUserLoggedIn && !isDemo ? (
           <div className="flex-grow flex flex-col justify-center items-center p-4 bg-gradient-to-br from-[#f8f7ff] to-[#f5f3ff]">
             <div className="w-full max-w-md">
               {inlineFormComponent}
@@ -241,21 +261,21 @@ const ChatView = React.memo(({
         ) : (
           <>
             <MessageList
-              messages={messages}
-              isTyping={isTyping}
-              setMessageText={setMessageText}
-              onMessageReaction={config?.features?.messageReactions ? handleMessageReaction : undefined}
+              messages={activeConversation.messages}
+              isTyping={false}
+              setMessageText={() => { }}
+              onMessageReaction={() => { }}
               searchResults={messageIds}
               highlightMessage={highlightText}
               searchTerm={searchTerm}
               agentAvatar={agentAvatar}
               userAvatar={userAvatar}
-              handleSendMessage={handleSendMessage}
+              handleSendMessage={() => { }}
               onScrollTop={handleLoadMoreMessages}
               hasMoreMessages={hasMoreMessages}
               isLoadingMore={isLoadingMore}
-              conversationId={conversation.id}
-              agentStatus={conversation.agentInfo?.status}
+              conversationId={activeConversation.id}
+              agentStatus={activeConversation.agentInfo?.status}
               config={config}
               isDemo={isDemo}
               handleUserAction={handleUserAction}
@@ -264,7 +284,7 @@ const ChatView = React.memo(({
             {/* Rating component - shown only when conditions are met */}
             {showRating && (
               <div className="mx-4 my-2">
-                <ConversationRating onSubmitRating={handleSubmitRating} config={config} />
+                <ConversationRating onSubmitRating={() => { }} config={config} />
               </div>
             )}
           </>
@@ -275,11 +295,11 @@ const ChatView = React.memo(({
         messageText={messageText}
         setMessageText={setMessageText}
         handleSendMessage={handleSendMessage}
-        handleFileUpload={handleFileUpload}
-        handleEndChat={handleEndChat}
-        hasUserSentMessage={hasUserSentMessage}
-        onTyping={handleUserTyping}
-        disabled={showInlineForm || conversation.status === 'ended' || conversation.status === 'closed'}
+        handleFileUpload={() => { }}
+        handleEndChat={() => { }}
+        hasUserSentMessage={false}
+        onTyping={() => { }}
+        disabled={false}
       />
     </div>
   );

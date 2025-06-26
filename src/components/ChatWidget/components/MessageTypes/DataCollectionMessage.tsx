@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Send, Sparkles } from 'lucide-react';
+import { Send } from 'lucide-react';
 import { FormFieldComponent, DataCollectionFormField } from './FormField';
-import { validateFormField } from './formValidation';
-import { UserActionData } from '../../hooks/useMessageActions';
+import { UserActionData } from '../../types';
 import { toast } from 'sonner';
 
 interface DataCollectionMessageProps {

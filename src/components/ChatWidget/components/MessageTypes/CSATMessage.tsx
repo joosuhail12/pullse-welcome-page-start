@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star, ThumbsUp, ThumbsDown, Meh, Smile, Frown, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { UserActionData } from '../../hooks/useMessageActions';
+import { UserActionData } from '../../types';
 
 interface CSATMessageProps {
   scale: '1-5' | '1-10' | 'emoji';
@@ -67,12 +67,12 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
             <div className="relative">
               {/* Slider Track */}
               <div className="relative h-2 bg-gradient-to-r from-red-200 via-yellow-200 via-green-200 to-emerald-300 rounded-full shadow-inner">
-                <div 
+                <div
                   className="absolute h-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-300 shadow-sm"
                   style={{ width: `${(Number(rating) || 0) * 10}%` }}
                 />
               </div>
-              
+
               {/* Slider Handle */}
               <input
                 type="range"
@@ -82,16 +82,16 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
                 onChange={(e) => setRating(Number(e.target.value))}
                 className="absolute inset-0 w-full h-2 opacity-0 cursor-pointer"
               />
-              
+
               {/* Custom Handle */}
-              <div 
+              <div
                 className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white border-2 border-indigo-500 rounded-full shadow-md transition-all duration-200 cursor-pointer hover:scale-110"
                 style={{ left: `calc(${((Number(rating) || 1) - 1) * 10}% + ${4 - ((Number(rating) || 1) - 1) * 0.8}px)` }}
               >
                 <div className="w-full h-full bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full scale-50" />
               </div>
             </div>
-            
+
             {/* Scale Labels */}
             <div className="flex justify-between mt-2 px-0.5">
               {Array.from({ length: 10 }).map((_, index) => (
@@ -110,13 +110,13 @@ const CSATMessage: React.FC<CSATMessageProps> = ({
                 </button>
               ))}
             </div>
-            
+
             {/* Value Display */}
             <div className="text-center mt-1">
               <span className="text-sm font-bold text-indigo-600">{rating || '1'}</span>
               <span className="text-xs text-slate-500 ml-1">/ 10</span>
             </div>
-            
+
             {/* Labels */}
             <div className="flex justify-between text-xs text-slate-500 mt-1 px-0.5">
               <span className="font-medium">Poor</span>

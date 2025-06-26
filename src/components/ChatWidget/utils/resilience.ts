@@ -59,7 +59,7 @@ export async function withRetry<T>(
   // Merge with default options
   const config: RetryOptions = { ...DEFAULT_RETRY_OPTIONS, ...options };
   let lastError: Error | null = null;
-  
+
   for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
     try {
       // Execute the operation
@@ -67,7 +67,7 @@ export async function withRetry<T>(
       return result;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Unknown error');
-      
+
       // Check if we've reached max retries
       if (attempt >= config.maxRetries) {
         throw lastError;
@@ -79,23 +79,23 @@ export async function withRetry<T>(
           throw lastError;  // Non-retryable status code
         }
       }
-      
+
       // Calculate delay with exponential backoff
       const delayMs = Math.min(
         config.initialDelayMs * Math.pow(config.backoffFactor, attempt),
         config.maxDelayMs
       );
-      
+
       // Add some jitter to prevent thundering herd
       const jitteredDelay = delayMs * (0.8 + Math.random() * 0.4);
-      
+
       console.log(`Retry attempt ${attempt + 1}/${config.maxRetries} after ${Math.round(jitteredDelay)}ms`);
-      
+
       // Wait before next attempt
       await new Promise(resolve => setTimeout(resolve, jitteredDelay));
     }
   }
-  
+
   // This should never happen due to the throw in the loop
   throw lastError || new Error('Retry operation failed');
 }
@@ -122,10 +122,10 @@ export async function withCircuitBreaker<T>(
       options: { ...DEFAULT_CIRCUIT_BREAKER_OPTIONS, ...options }
     };
   }
-  
+
   const circuit = circuitBreakers[circuitName];
   const now = Date.now();
-  
+
   // Check if circuit is OPEN and if reset timeout has passed
   if (circuit.state === 'OPEN') {
     if (now - circuit.lastFailureTime > circuit.options.resetTimeoutMs) {
@@ -138,15 +138,15 @@ export async function withCircuitBreaker<T>(
       throw new Error(`Circuit ${circuitName} is OPEN - failing fast`);
     }
   }
-  
+
   try {
     // Execute the operation
     const result = await operation();
-    
+
     // Handle success based on circuit state
     if (circuit.state === 'HALF_OPEN') {
       circuit.successesInHalfOpen++;
-      
+
       // Check if we've reached the threshold to close the circuit
       if (circuit.successesInHalfOpen >= (circuit.options.halfOpenSuccessThreshold || 1)) {
         circuit.state = 'CLOSED';
@@ -157,13 +157,13 @@ export async function withCircuitBreaker<T>(
       // Reset failure count on successful operation
       circuit.failures = 0;
     }
-    
+
     return result;
   } catch (error) {
     // Handle failure based on circuit state
     circuit.failures++;
     circuit.lastFailureTime = Date.now();
-    
+
     if (circuit.state === 'CLOSED' && circuit.failures >= circuit.options.failureThreshold) {
       // Too many failures, open the circuit
       circuit.state = 'OPEN';
@@ -173,7 +173,7 @@ export async function withCircuitBreaker<T>(
       circuit.state = 'OPEN';
       console.log(`Circuit ${circuitName} transitioned from HALF_OPEN back to OPEN due to failure`);
     }
-    
+
     // Rethrow the error to be handled by the caller
     throw error;
   }

@@ -3,9 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Agent, AgentStatus } from '../types';
-import { getAblyClient, subscribeToPresence } from '../utils/ably';
-import useWidgetConfig from '../hooks/useWidgetConfig';
-
+import { useChatContext } from '../context/chatContext';
 interface AgentPresenceProps {
   workspaceId?: string;
   agentName?: string;
@@ -14,7 +12,7 @@ interface AgentPresenceProps {
 
 const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
   const [agents, setAgents] = useState<Agent[]>([]);
-  const { config } = useWidgetConfig();
+  const { config } = useChatContext();
   const maxDisplayed = 5;
 
   useEffect(() => {
@@ -33,21 +31,21 @@ const AgentPresence: React.FC<AgentPresenceProps> = ({ workspaceId }) => {
     // Channel for workspace-level presence with proper scoping
     const channelName = `workspace:${workspaceId}:presence`;
 
-    // Subscribe to presence updates using the new subscription function
-    const unsubscribe = subscribeToPresence(channelName, (presenceData) => {
-      const agentData: Agent[] = presenceData.map(member => ({
-        id: member.clientId,
-        name: member.data?.name || 'Agent',
-        avatar: member.data?.avatar,
-        status: 'online'
-      }));
+    // // Subscribe to presence updates using the new subscription function
+    // const unsubscribe = subscribeToPresence(channelName, (presenceData) => {
+    //   const agentData: Agent[] = presenceData.map(member => ({
+    //     id: member.clientId,
+    //     name: member.data?.name || 'Agent',
+    //     avatar: member.data?.avatar,
+    //     status: 'online'
+    //   }));
 
-      setAgents(agentData);
-    });
+    //   setAgents(agentData);
+    // });
 
     // Return cleanup function
     return () => {
-      unsubscribe();
+      // unsubscribe();
     };
   }, [workspaceId, config.interfaceSettings?.showAgentPresence]);
 
