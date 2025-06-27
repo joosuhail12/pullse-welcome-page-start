@@ -4,24 +4,19 @@ import { MessageSquare, Plus, ArrowUp, ArrowDown, Info, Calendar } from 'lucide-
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { Conversation, Ticket } from '../types';
+import { Conversation, Ticket, TicketMessage } from '../types';
 import SearchBar from '../components/SearchBar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { loadConversationsFromStorage } from '../utils/storage';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { useUnreadMessages } from '../hooks/useUnreadMessages';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
-import { fetchConversations } from '../services/api';
-import { ChatWidgetConfig } from '../config';
+import { fetchConversationByTicketId, fetchConversations } from '../services/api';
+import { useChatContext } from '../context/chatContext';
 
 interface MessagesViewProps {
-  onSelectConversation: (conversation: Conversation) => void;
-  onSelectTicket: (ticket: Ticket) => void;
-  onStartChat: () => void;
-  config: ChatWidgetConfig;
   isDemo?: boolean;
 }
 
@@ -68,10 +63,10 @@ const MOCK_CONVERSATIONS: Conversation[] = [
 ];
 
 
-const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, config, isDemo = false }: MessagesViewProps) => {
+const MessagesView = ({ isDemo = false }: MessagesViewProps) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [useMockData, setUseMockData] = useState(false);
   const [sortOrder, setSortOrder] = useState<SortOrder>('newest');
@@ -81,30 +76,8 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
   const [searchResults, setSearchResults] = useState<(Conversation | Ticket)[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [animateOut, setAnimateOut] = useState<string | null>(null);
-  const { unreadCount, clearUnreadMessages } = useUnreadMessages();
 
-  useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'chat_widget_conversations') {
-        loadConversationsData();
-      }
-    };
-
-    const handleCustomStorageChange = (event: CustomEvent) => {
-      if (event.detail?.key === 'chat_widget_conversations') {
-        loadConversationsData();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('storage-updated', handleCustomStorageChange as EventListener);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('storage-updated', handleCustomStorageChange as EventListener);
-    };
-  }, []);
+  const { handleStartChat, config, isUserLoggedIn, setViewState, setActiveConversation } = useChatContext();
 
   const convertApiTicketsToTickets = useCallback((ticketsData: any[]): Ticket[] => {
     return ticketsData.map(ticket => ({
@@ -132,7 +105,6 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
     }
     setIsLoading(true);
     setLoadingError(null);
-
     try {
       let retries = 3;
       let conversationsData: Conversation[] = [];
@@ -152,10 +124,10 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
           retries--;
           if (retries === 0) {
             console.error('Error loading conversations after retries:', error);
-            setUseMockData(true);
-            conversationsData = [...MOCK_CONVERSATIONS];
-            setLoadingError('Using demo data. Some features may be limited.');
-            toast.warning('Using demo data. Real conversations could not be loaded.');
+            // setUseMockData(true);
+            // conversationsData = [...MOCK_CONVERSATIONS];
+            // setLoadingError('Using demo data. Some features may be limited.');
+            // toast.warning('Using demo data. Real conversations could not be loaded.');
           } else {
             await new Promise(resolve => setTimeout(resolve, 500));
           }
@@ -165,18 +137,20 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
       setConversations(conversationsData);
     } catch (error) {
       console.error('Error loading conversations:', error);
-      setUseMockData(true);
-      setConversations([...MOCK_CONVERSATIONS]);
-      setLoadingError('Using demo data. Some features may be limited.');
-      toast.warning('Using demo data. Real conversations could not be loaded.');
+      // setUseMockData(true);
+      // setConversations([...MOCK_CONVERSATIONS]);
+      // setLoadingError('Using demo data. Some features may be limited.');
+      // toast.warning('Using demo data. Real conversations could not be loaded.');
     } finally {
       setIsLoading(false);
     }
   }, [convertApiTicketsToTickets]);
 
   useEffect(() => {
-    loadConversationsData();
-  }, [loadConversationsData]);
+    if (isUserLoggedIn) {
+      loadConversationsData();
+    }
+  }, [loadConversationsData, isUserLoggedIn]);
 
   const formatDateDisplay = useCallback((date: Date | string): string => {
     return format(new Date(date), 'MMM d, yyyy');
@@ -198,9 +172,8 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
   }, []);
 
   const handleStartNewChat = useCallback(() => {
-    onStartChat();
-    clearUnreadMessages();
-  }, [onStartChat, clearUnreadMessages]);
+    handleStartChat();
+  }, [handleStartChat]);
 
   const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
@@ -373,14 +346,46 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
     loadConversationsData();
   }, [loadConversationsData]);
 
-  const handleItemSelect = useCallback((item: Conversation | Ticket) => {
-    clearUnreadMessages();
-    if ('ticketId' in item) {
-      onSelectConversation(item);
-    } else {
-      onSelectTicket(item as Ticket);
+  const handleItemSelect = useCallback(async (item: Conversation | Ticket) => {
+    setIsLoading(true);
+    const ticketId = item?.id;
+    const createdAt = item?.createdAt
+
+    const conversation = await fetchConversationByTicketId(ticketId);
+    if (conversation?.data && conversation?.data.length > 0) {
+      const messages = conversation?.data.map((msg: TicketMessage) => {
+        return {
+          id: msg.id,
+          text: msg.message,
+          sender: msg.userType === 'customer' ? 'user' : msg.userType === 'agent' ? 'agent' : 'system',
+          senderType: msg.senderType,
+          messageType: msg.messageType,
+          messageConfig: msg.messageConfig,
+          allowUserAction: msg.allowUserAction,
+          createdAt: new Date(msg.createdAt),
+          type: 'text',
+          status: 'sent'
+        };
+      });
+
+      setActiveConversation({
+        id: `conv-${Date.now()}`,
+        ticketId: ticketId,
+        title: 'Conversation',
+        lastMessage: '',
+        createdAt: new Date(createdAt),
+        messages: messages,
+        status: item?.status as 'active' | 'ended' | 'open',
+        agentInfo: {
+          name: 'Support Agent',
+          status: 'online'
+        },
+      })
+
+      setViewState("chat");
     }
-  }, [clearUnreadMessages, onSelectConversation, onSelectTicket]);
+    setIsLoading(false);
+  }, []);
 
   const toggleGrouping = useCallback(() => {
     setGroupBy(prev => prev === 'none' ? 'date' : 'none');
@@ -559,14 +564,9 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
               size="sm"
               className="text-vivid-purple hover:text-vivid-purple/90 relative"
               onClick={handleStartNewChat}
-              aria-label={`Start new conversation${unreadCount > 0 ? `. ${unreadCount} unread messages` : ''}`}
+              aria-label={`Start new conversation`}
             >
               <Plus size={18} />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white text-[10px] flex items-center justify-center" aria-hidden="true">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -647,11 +647,11 @@ const MessagesView = ({ onSelectConversation, onSelectTicket, onStartChat, confi
           <div className="p-4 space-y-4">
             {renderSkeletons()}
           </div>
-        ) : filteredAndSortedItems.length === 0 ? (
+        ) : filteredAndSortedItems.length === 0 && !isLoading ? (
           <EmptyState />
         ) : (
           <div className="space-y-4 px-1">
-            {Object.keys(paginationData.pagedGroupedItems).length === 0 ? (
+            {Object.keys(paginationData.pagedGroupedItems).length === 0 && !isLoading ? (
               <EmptyState />
             ) : (
               Object.entries(paginationData.pagedGroupedItems).map(([group, groupItems]) => (

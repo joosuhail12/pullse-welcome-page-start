@@ -7,27 +7,23 @@ import { ChatWidgetConfig } from '../config';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { AgentStatus } from '../types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useChatContext } from '../context/chatContext';
+import { useWidgetPosition } from '../hooks/useWidgetPosition';
 
 interface LauncherButtonProps {
-  isOpen: boolean;
   unreadCount: number;
-  onClick: () => void;
-  config: ChatWidgetConfig;
-  positionStyles: React.CSSProperties;
   agentStatus?: AgentStatus;
   isDemo?: boolean;
 }
 
 const LauncherButton: React.FC<LauncherButtonProps> = ({
-  isOpen,
   unreadCount,
-  onClick,
-  config,
-  positionStyles,
   agentStatus = 'online',
   isDemo = false
 }) => {
   const isMobile = useIsMobile();
+  const { config, isOpen, setIsOpen } = useChatContext();
+  const { getLauncherPositionStyles } = useWidgetPosition(config, isMobile);
   const [showTooltip, setShowTooltip] = useState(false);
   const showPresence = config?.interfaceSettings?.showAgentPresence;
   // Adjust button size based on screen size
@@ -64,7 +60,7 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
   };
 
   return (
-    <div className={`flex flex-col z-40 items-end ${!isDemo ? "fixed" : ""}`} style={positionStyles}>
+    <div className={`flex flex-col z-40 items-end ${!isDemo ? "fixed" : ""}`} style={getLauncherPositionStyles}>
       {/* Status indicator tooltip that shows on hover */}
       {!isOpen && showTooltip && showPresence && (
         <div className="mb-2 px-3 py-1.5 bg-white rounded-lg shadow-md text-xs flex items-center">
@@ -79,7 +75,7 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
             <Button
               className={`rounded-full ${buttonSizeClass} flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105 shadow-md`}
               style={config.colors?.primaryColor ? { backgroundColor: config.colors.primaryColor, borderColor: config.colors.primaryColor } : {}}
-              onClick={onClick}
+              onClick={() => setIsOpen(!isOpen)}
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
               aria-label={isOpen ? "Close chat" : "Open chat"}

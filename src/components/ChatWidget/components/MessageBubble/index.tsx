@@ -16,7 +16,7 @@ import WorkflowMessage from '../MessageTypes/WorkflowMessage';
 import SystemNotification from '../MessageTypes/SystemNotification';
 import { ChatWidgetConfig } from '../../config';
 import { cn } from '@/lib/utils';
-import { UserActionData } from '../../hooks/useMessageActions';
+import { UserActionData } from '../../types';
 
 interface MessageBubbleProps {
   message: Message;
@@ -89,11 +89,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       case 'system_status':
       case 'note':
         return (
-          <SystemNotification 
-            text={message.text} 
+          <SystemNotification
+            text={message.text}
             renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
-            type={message.metadata?.notificationType || 'info'} 
-            timestamp={message.createdAt} 
+            type={message.metadata?.notificationType || 'info'}
+            timestamp={message.createdAt}
           />
         );
       case 'data_collection':
@@ -150,10 +150,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
 
   // For data collection, CSAT, and action buttons messages, render without bubble
-  const isSpecialMessage = message.messageType === 'data_collection' || 
-                          message.type === 'data_collection' ||
-                          message.messageType === 'csat' ||
-                          message.messageType === 'action_buttons';
+  const isSpecialMessage = message.messageType === 'data_collection' ||
+    message.type === 'data_collection' ||
+    message.messageType === 'csat' ||
+    message.messageType === 'action_buttons';
 
   if (isSpecialMessage) {
     return (
@@ -282,9 +282,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             </div>
           )}
         </div>
-
-        {/* Message Status */}
-        <div className={cn(
+        {/* <div className={cn(
           "mt-2 px-2",
           isUser ? "text-right" : "text-left"
         )}>
@@ -294,7 +292,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             isFileMessage={message.type === 'file'}
             fileUploading={message.metadata?.uploading}
           />
-        </div>
+        </div> */}
+
+        {/* Message Status */}
 
         {/* Message Reactions Display */}
         {message.reactions && message.reactions.length > 0 && (

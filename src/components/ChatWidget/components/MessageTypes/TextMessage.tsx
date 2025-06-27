@@ -10,34 +10,34 @@ interface TextMessageProps {
 
 const TextMessage = ({ text, renderText, highlightText }: TextMessageProps) => {
   const isMobile = useIsMobile();
-  const textSizeClass = isMobile 
-    ? "text-xs sm:text-sm leading-tight" 
+  const textSizeClass = isMobile
+    ? "text-xs sm:text-sm leading-tight"
     : "text-sm sm:text-base leading-relaxed";
-  
+
   const highlightMatches = (text: string, term?: string) => {
     if (!term || term.trim() === '') return text;
-    
+
     // Case-insensitive search
     const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
     const parts = text.split(regex);
-    
+
     return (
       <>
-        {parts.map((part, i) => 
-          regex.test(part) 
-            ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark> 
+        {parts.map((part, i) =>
+          regex.test(part)
+            ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark>
             : part
         )}
       </>
     );
   };
-  
-  const content = highlightText 
+
+  const content = highlightText
     ? highlightMatches(text, highlightText)
     : (renderText ? renderText(text) : text);
-  
+
   return (
-    <p className={`${textSizeClass} tracking-wide break-words`}>{content}</p>
+    <p className={`${textSizeClass} tracking-wide break-words text-left`}>{content}</p>
   );
 };
 

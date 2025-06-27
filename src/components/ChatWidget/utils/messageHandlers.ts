@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Message, MessageReadReceipt, MessageReadStatus, DataCollectionField } from '../types';
-import { publishToChannel } from './ably';
 import { dispatchChatEvent } from './events';
 import { ChatWidgetConfig } from '../config';
 import { toast } from '@/components/ui/use-toast';

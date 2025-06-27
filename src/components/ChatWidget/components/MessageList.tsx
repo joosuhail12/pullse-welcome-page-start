@@ -11,7 +11,7 @@ import { AgentStatus } from '../types';
 import DateSeparator from './DateSeparator';
 import { isSameDay } from 'date-fns';
 import { ChatWidgetConfig } from '../config';
-import { UserActionData } from '../hooks/useMessageActions';
+import { UserActionData } from '../types';
 
 interface MessageListProps {
   messages: any[];

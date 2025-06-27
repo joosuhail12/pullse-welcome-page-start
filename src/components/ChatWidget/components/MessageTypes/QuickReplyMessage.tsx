@@ -2,14 +2,10 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { sanitizeInput } from '../../utils/validation';
-import { ChatWidgetConfig } from '../../config';
-import { useWidgetConfig } from '../../hooks/useWidgetConfig';
-import { UserType } from '../../types';
-import { MessageType } from '../../types';
-import MessageStatus from '../MessageBubble/MessageStatus';
 import { cn } from '@/lib/utils';
-import { UserActionData } from '../../hooks/useMessageActions';
+import { UserActionData } from '../../types';
 import { Check } from 'lucide-react';
+import { useChatContext } from '../../context/chatContext';
 
 interface QuickReplyMessageProps {
   options: string[];
@@ -19,7 +15,7 @@ interface QuickReplyMessageProps {
 }
 
 const QuickReplyMessage = ({ options, onSubmit, allowUserAction = true, messageId }: QuickReplyMessageProps) => {
-  const { config } = useWidgetConfig();
+  const { config } = useChatContext();
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [areButtonsDisabled, setAreButtonsDisabled] = useState<boolean>(false);
 
@@ -41,7 +37,7 @@ const QuickReplyMessage = ({ options, onSubmit, allowUserAction = true, messageI
     <div className="flex flex-col gap-2.5 w-full max-w-md">
       {repliesToUse.map((reply, i) => {
         const isSelected = selectedOption === reply;
-        
+
         return (
           <Button
             key={i}
@@ -84,7 +80,7 @@ const QuickReplyMessage = ({ options, onSubmit, allowUserAction = true, messageI
             <span className="flex-1 truncate pr-2 font-medium">
               {sanitizeInput(reply)}
             </span>
-            
+
             {isSelected && (
               <div className="flex-shrink-0 ml-2">
                 <div className="w-3 h-3 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center animate-[scale-in_0.3s_ease-out] shadow-sm">

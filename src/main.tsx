@@ -2,7 +2,6 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import PullseChatWidgetLoader from './components/ChatWidget/embed';
 import { initializeEmbedSecurity } from './components/ChatWidget/utils/embedSecurity';
 import { errorHandler } from '@/lib/error-handler';
 import ChatWidget from './components/ChatWidget/ChatWidget.tsx';
@@ -12,6 +11,20 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import ErrorBoundary from './components/ui/error-boundary.tsx';
 import DemoChatWidget from './components/DemoChatWidget/index.tsx';
+import * as Sentry from "@sentry/react";
+
+Sentry.init({
+    dsn: "https://1fac0ec0c460939c558b41d60b6e4d2c@o4509564007743488.ingest.us.sentry.io/4509565622616064",
+    // Setting this option to true will send default PII data to Sentry.
+    // For example, automatic IP address collection on events
+    sendDefaultPii: true,
+    integrations: [
+        Sentry.replayIntegration()
+    ],
+    // Session Replay
+    replaysSessionSampleRate: 0.1, // This sets the sample rate at 10%. You may want to change it to 100% while in development and then sample at a lower rate in production.
+    replaysOnErrorSampleRate: 1.0 // If you're not already sampling the entire session, change the sample rate to 100% when sampling sessions where errors occur.
+});
 
 let demoWidgetRoot: ReturnType<typeof createRoot> | null = null;
 let widgetRoot: ReturnType<typeof createRoot> | null = null;
@@ -178,9 +191,6 @@ if (import.meta.env.MODE === 'development') {
         errorHandler.handle(error instanceof Error ? error : new Error('Failed to initialize application'));
     }
 }
-
-// Export the widget loader for direct imports
-export { PullseChatWidgetLoader as default };
 
 // Add the PullseNamespace to window for global access, but avoid polluting global scope
 (window as any).PullseSDK = PullseNamespace;

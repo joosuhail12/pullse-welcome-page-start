@@ -50,6 +50,7 @@ export interface InterfaceSettings {
   allowVisitorsToEndChat: boolean;
   enableConversationRating: boolean;
   enableDeliveryReadReceipts: boolean;
+  showTeamAvailability: boolean;
 }
 
 export interface Features {
