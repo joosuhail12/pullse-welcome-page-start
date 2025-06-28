@@ -49,7 +49,7 @@ const ChatView = React.memo(({
         messages: [...prev.messages, {
           id: crypto.randomUUID(),
           text: messageText,
-          sender: 'user',
+          sender: 'customer',
           timestamp: new Date(),
           createdAt: new Date()
         }]
@@ -61,7 +61,7 @@ const ChatView = React.memo(({
       console.log('Publishing message to message channel', `widget:conversation:ticket-${activeConversation.ticketId}`);
       await publishToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message', {
         text: messageText,
-        sender: 'user',
+        sender: 'customer',
         timestamp: new Date().toISOString(),
         ticketId: activeConversation.ticketId
       });

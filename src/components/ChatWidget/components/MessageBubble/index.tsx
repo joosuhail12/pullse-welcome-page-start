@@ -17,6 +17,7 @@ import SystemNotification from '../MessageTypes/SystemNotification';
 import { ChatWidgetConfig } from '../../config';
 import { cn } from '@/lib/utils';
 import { UserActionData } from '../../types';
+import { Separator } from '@/components/ui/separator';
 
 interface MessageBubbleProps {
   message: Message;
@@ -52,11 +53,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   handleUserAction
 }) => {
   const [showReactions, setShowReactions] = useState(false);
-  const isUser = message.sender === 'user' || message.senderType === 'user';
+  const isUser = message.sender === 'customer' || message.senderType === 'customer';
   const isAgent = message.sender === 'agent' || message.senderType === 'agent';
   const isSystem = message.sender === 'system' || message.senderType === 'system';
   const isAI = message.sender === 'ai' || message.senderType === 'ai' || message.messageType === 'ai';
   const isWorkflow = message.sender === 'workflow' || message.senderType === 'workflow' || message.messageType === 'workflow';
+  const isSystemNotice = message.sender === 'system-notice' || message.senderType === 'system-notice';
 
   const handleReaction = (emoji: string) => {
     if (onMessageReaction) {
@@ -148,6 +150,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         );
     }
   };
+
+  if (isSystemNotice) {
+    console.log(message);
+    return (
+      <div className={`flex items-center justify-center my-6`}>
+        <Separator className="flex-grow-0 flex-shrink bg-gray-200 w-16" />
+        <div className="mx-4 px-6 py-2 bg-gray-50 rounded-full flex items-center text-xs text-gray-600 shadow-sm border border-gray-100 min-w-0 flex-shrink-0">
+          {message.text}
+        </div>
+        <Separator className="flex-grow-0 flex-shrink bg-gray-200 w-16" />
+      </div>
+    );
+  }
 
   // For data collection, CSAT, and action buttons messages, render without bubble
   const isSpecialMessage = message.messageType === 'data_collection' ||

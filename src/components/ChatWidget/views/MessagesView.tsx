@@ -357,7 +357,7 @@ const MessagesView = ({ isDemo = false }: MessagesViewProps) => {
         return {
           id: msg.id,
           text: msg.message,
-          sender: msg.userType === 'customer' ? 'user' : msg.userType === 'agent' ? 'agent' : 'system',
+          sender: msg.userType,
           senderType: msg.senderType,
           messageType: msg.messageType,
           messageConfig: msg.messageConfig,

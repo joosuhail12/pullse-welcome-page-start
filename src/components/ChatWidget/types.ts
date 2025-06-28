@@ -21,7 +21,7 @@ export interface Message {
   unread?: boolean;    // New field to mark unread messages
   metadata?: Record<string, any>; // Add metadata field for flexibility
   timestamp?: Date;    // For backward compatibility
-  senderType?: 'user' | 'agent' | 'system' | 'ai' | 'workflow'; // Add new sender types
+  senderType?: 'customer' | 'agent' | 'system' | 'ai' | 'workflow' | 'system-notice'; // Add new sender types
   reactions?: string[]; // Add reactions array
   allowUserAction?: boolean;
 }
@@ -86,7 +86,7 @@ export interface Agent {
 export type MessageType = 'text' | 'file' | 'card' | 'quick_reply' | 'status' | 'data_collection' | 'ai' | 'workflow' | 'system_status';
 
 // Define standard user types
-export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status' | 'customer' | 'ai' | 'workflow';
+export type UserType = 'user' | 'system' | 'bot' | 'agent' | 'status' | 'customer' | 'ai' | 'workflow' | 'system-notice';
 
 // Ticket Interface to match API response
 export interface Ticket {
