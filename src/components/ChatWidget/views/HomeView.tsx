@@ -15,10 +15,10 @@ const HomeView = React.memo(() => {
 
   // Apply custom branding if available - use useMemo to prevent recalculation
   const buttonStyle = useMemo(() => {
-    return config.colors?.primaryColor
+    return config.colors?.primaryColor && config.colors.textColor
       ? { backgroundColor: config.colors.primaryColor, borderColor: config.colors.primaryColor, color: config.colors.textColor }
       : {};
-  }, [config.colors?.primaryColor]);
+  }, [config]);
 
   // Handle direct chat start
   const handleStartChatClick = useCallback(() => {

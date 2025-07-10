@@ -15,13 +15,11 @@ import { fetchConversationByTicketId } from '../services/api';
 import { UserActionData } from '../types';
 
 interface ChatViewProps {
-  isDemo?: boolean;
 }
 
 const ChatView = React.memo(({
-  isDemo = false
 }: ChatViewProps) => {
-  const { config, activeConversation, setViewState, setActiveConversation, handleSetFormData, isUserLoggedIn } = useChatContext();
+  const { config, activeConversation, setViewState, setActiveConversation, handleSetFormData, isUserLoggedIn, isDemo } = useChatContext();
   const { isConnected, subscribeToChannel, unsubscribeFromChannel, publishToChannel } = useAblyContext();
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -35,7 +33,7 @@ const ChatView = React.memo(({
       (activeConversation.status === 'ended' || activeConversation.status === 'closed') &&
       !activeConversation.rating
     );
-  }, [config?.interfaceSettings?.enableConversationRating, activeConversation.status, activeConversation.rating]);
+  }, [config?.interfaceSettings?.enableConversationRating, activeConversation?.status, activeConversation?.rating]);
 
   const handleFormSubmission = async (data: Record<string, string>) => {
     setIsFormSubmitting(true);
@@ -171,7 +169,7 @@ const ChatView = React.memo(({
     highlightText: originalHighlightText,
     messageIds,
     isSearching
-  } = useMessageSearch(activeConversation.messages);
+  } = useMessageSearch(activeConversation?.messages || []);
 
   const toggleSearch = useCallback(() => {
     setShowSearch(prev => !prev);
@@ -198,8 +196,8 @@ const ChatView = React.memo(({
       .map(part => part.text);
   }, [searchTerm, originalHighlightText]);
 
-  const agentAvatar = useMemo(() => activeConversation.agentInfo?.avatar || config?.brandAssets?.avatarUrl,
-    [activeConversation.agentInfo?.avatar, config?.brandAssets?.avatarUrl]);
+  const agentAvatar = useMemo(() => activeConversation?.agentInfo?.avatar || config?.brandAssets?.avatarUrl,
+    [activeConversation?.agentInfo?.avatar, config?.brandAssets?.avatarUrl]);
 
   const userAvatar = undefined;
   const hasMoreMessages = activeConversation?.messages?.length >= 20;
@@ -261,7 +259,7 @@ const ChatView = React.memo(({
         ) : (
           <>
             <MessageList
-              messages={activeConversation.messages}
+              messages={activeConversation?.messages || []}
               isTyping={false}
               setMessageText={() => { }}
               onMessageReaction={() => { }}
@@ -274,8 +272,8 @@ const ChatView = React.memo(({
               onScrollTop={handleLoadMoreMessages}
               hasMoreMessages={hasMoreMessages}
               isLoadingMore={isLoadingMore}
-              conversationId={activeConversation.id}
-              agentStatus={activeConversation.agentInfo?.status}
+              conversationId={activeConversation?.id}
+              agentStatus={activeConversation?.agentInfo?.status}
               config={config}
               isDemo={isDemo}
               handleUserAction={handleUserAction}
@@ -299,7 +297,7 @@ const ChatView = React.memo(({
         handleEndChat={() => { }}
         hasUserSentMessage={false}
         onTyping={() => { }}
-        disabled={false}
+        disabled={isDemo ? true : false}
       />
     </div>
   );

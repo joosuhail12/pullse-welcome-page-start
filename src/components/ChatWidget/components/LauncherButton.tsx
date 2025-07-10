@@ -13,16 +13,14 @@ import { useWidgetPosition } from '../hooks/useWidgetPosition';
 interface LauncherButtonProps {
   unreadCount: number;
   agentStatus?: AgentStatus;
-  isDemo?: boolean;
 }
 
 const LauncherButton: React.FC<LauncherButtonProps> = ({
   unreadCount,
   agentStatus = 'online',
-  isDemo = false
 }) => {
   const isMobile = useIsMobile();
-  const { config, isOpen, setIsOpen } = useChatContext();
+  const { config, isOpen, setIsOpen, isDemo } = useChatContext();
   const { getLauncherPositionStyles } = useWidgetPosition(config, isMobile);
   const [showTooltip, setShowTooltip] = useState(false);
   const showPresence = config?.interfaceSettings?.showAgentPresence;

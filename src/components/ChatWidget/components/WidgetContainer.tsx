@@ -12,16 +12,10 @@ import { ConnectionStatus } from '../utils/reconnectionManager';
 import { useChatContext } from '../context/chatContext';
 import { useWidgetPosition } from '../hooks/useWidgetPosition';
 
-interface WidgetContainerProps {
-  isDemo?: boolean;
-}
-
-const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
-  isDemo = false
-}) => {
+const WidgetContainer: React.FC = React.memo(() => {
 
   const isMobile = useIsMobile();
-  const { config, viewState, activeConversation, userFormData, isOpen, setIsOpen, setViewState, setActiveConversation, handleSetFormData, handleStartChat } = useChatContext();
+  const { config, viewState, isOpen, isDemo } = useChatContext();
   const { getWidgetContainerPositionStyles } = useWidgetPosition(config, isMobile);
 
   const widgetStyle = useMemo(() => ({
@@ -53,7 +47,6 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
       return (
         <div className="flex flex-col h-full">
           <ChatView
-            isDemo={isDemo}
           />
         </div>
       );
@@ -70,7 +63,7 @@ const WidgetContainer: React.FC<WidgetContainerProps> = React.memo(({
           )}
         </div>
 
-        <TabBar viewState={viewState} onChangeView={setViewState} />
+        <TabBar />
       </div>
     );
   }, [

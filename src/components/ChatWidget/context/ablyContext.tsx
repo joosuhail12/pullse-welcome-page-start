@@ -17,13 +17,16 @@ interface AblyProviderProps {
 }
 
 export const AblyProvider = ({ children }: AblyProviderProps): JSX.Element => {
-    const [isConnected, setIsConnected] = useState<boolean>(false);
     const { apiKey, workspaceId } = getWorkspaceIdAndApiKey();
     const [realtime, setRealtime] = useState<Ably.Realtime | null>(null);
-    const { isUserLoggedIn } = useChatContext();
+    const { isUserLoggedIn, isDemo } = useChatContext();
+    const [isConnected, setIsConnected] = useState<boolean>(isDemo ? true : false);
     const activeChannelSubscriptions = new Map<string, Map<string, boolean>>();
 
     const connectToAbly = async (): Promise<Ably.Realtime> => {
+        if (isDemo) {
+            return;
+        }
         const ablyClientOptions: Ably.Types.ClientOptions = {
             authUrl: "https://dev-socket.pullseai.com/api/ably/widgetToken",
             authHeaders: {
@@ -55,11 +58,17 @@ export const AblyProvider = ({ children }: AblyProviderProps): JSX.Element => {
     }, [realtime]);
 
     const disconnectFromAbly = async (): Promise<void> => {
+        if (isDemo) {
+            return;
+        }
         realtime?.close();
         setIsConnected(false);
     };
 
     const subscribeToChannel = async (channelName: string, eventName: string, callback: (message: any) => void): Promise<void> => {
+        if (isDemo) {
+            return;
+        }
         if (!activeChannelSubscriptions.has(channelName)) {
             activeChannelSubscriptions.set(channelName, new Map());
         } else {
@@ -77,6 +86,9 @@ export const AblyProvider = ({ children }: AblyProviderProps): JSX.Element => {
     };
 
     const unsubscribeFromChannel = async (channelName: string, eventName: string): Promise<void> => {
+        if (isDemo) {
+            return;
+        }
         const eventMap = activeChannelSubscriptions.get(channelName);
         if (eventMap?.has(eventName)) {
             eventMap.delete(eventName);
@@ -91,6 +103,9 @@ export const AblyProvider = ({ children }: AblyProviderProps): JSX.Element => {
     };
 
     const publishToChannel = async (channelName: string, eventName: string, data: Object): Promise<void> => {
+        if (isDemo) {
+            return;
+        }
         const channel = realtime?.channels.get(channelName);
         if (channel) {
             channel.publish(eventName, data);

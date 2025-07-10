@@ -19,19 +19,70 @@ interface ChatContextType {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
     handleStartChat: () => void;
+    isDemo?: boolean;
 }
 
 const ChatContext = createContext<ChatContextType | null>(null);
 
-export const ChatProvider = ({ children }: { children: React.ReactNode }): JSX.Element => {
+//  Pass config as a prop to the ChatProvider
+interface ChatProviderProps {
+    children: React.ReactNode;
+    demoConfig?: ChatWidgetConfig;
+    currentView?: ViewState;
+    isDemo?: boolean;
+}
+
+const demoConversation: Conversation = {
+    id: "1",
+    title: "Demo Conversation",
+    createdAt: new Date(),
+    status: "active",
+    lastMessage: "Hello, how are you?",
+    messages: [
+        {
+            id: "1",
+            text: "I'm here to help you!",
+            createdAt: new Date(),
+            sender: "agent",
+            type: "text",
+            senderType: "agent",
+            messageType: "text"
+        },
+        {
+            id: "2",
+            text: "Hello, can you help me with my order?",
+            createdAt: new Date(),
+            sender: "user",
+            type: "text",
+            senderType: "customer",
+            messageType: "text"
+        }
+    ],
+    timestamp: new Date(),
+    unread: false,
+    ticketId: "1",
+    sessionId: "1",
+    agentInfo: {
+        id: "1",
+        name: "Demo Agent",
+        avatar: "https://via.placeholder.com/150",
+        email: "demo@example.com"
+    },
+    rating: 5
+}
+
+export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false }: ChatProviderProps): JSX.Element => {
     const [viewState, setViewState] = useState<ViewState>('home');
     const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(false);
     const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
     const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(getUserFormDataFromLocalStorage());
-    const [isOpen, setIsOpen] = useState<boolean>(false);
+    const [isOpen, setIsOpen] = useState<boolean>(isDemo ? true : false);
     const [config, setConfig] = useState<ChatWidgetConfig | null>(null);
 
     const handleStartChat = useCallback(() => {
+        if (isDemo) {
+            return;
+        }
         const newConversation: Conversation = {
             id: `conv-${Date.now()}`,
             title: 'New Conversation',
@@ -99,9 +150,21 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }): JSX.E
         }
     }, []);
 
+    const handleSetOpen = useCallback((isOpen: boolean) => {
+        if (!isDemo) {
+            setIsOpen(isOpen);
+        }
+    }, []);
+
+    const handleSetViewState = useCallback((viewState: ViewState) => {
+        if (!isDemo) {
+            setViewState(viewState);
+        }
+    }, []);
+
     const contextValue: ChatContextType = {
         viewState,
-        setViewState,
+        setViewState: handleSetViewState,
         activeConversation,
         setActiveConversation,
         userFormData,
@@ -109,8 +172,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }): JSX.E
         config,
         isUserLoggedIn,
         isOpen,
-        setIsOpen,
-        handleStartChat
+        setIsOpen: handleSetOpen,
+        handleStartChat,
+        isDemo
     };
 
     const fetchWidgetConfig = useCallback(async () => {
@@ -171,8 +235,25 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }): JSX.E
     }, []);
 
     useEffect(() => {
-        void fetchWidgetConfig();
+        if (isDemo) {
+            setConfig(demoConfig);
+            setActiveConversation(demoConversation);
+        } else {
+            void fetchWidgetConfig();
+        }
     }, []);
+
+    if (isDemo) {
+        useEffect(() => {
+            console.log("currentView", currentView);
+            if (currentView) {
+                setViewState(currentView);
+            }
+            if (demoConfig) {
+                setConfig(demoConfig);
+            }
+        }, [currentView, demoConfig]);
+    }
 
     if (!config) {
         return <ChatContext.Provider value={contextValue}> <></> </ChatContext.Provider>;

@@ -16,10 +16,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { fetchConversationByTicketId, fetchConversations } from '../services/api';
 import { useChatContext } from '../context/chatContext';
 
-interface MessagesViewProps {
-  isDemo?: boolean;
-}
-
 type SortOrder = 'newest' | 'oldest';
 type StatusFilter = 'all' | 'active' | 'ended' | 'open';
 type GroupBy = 'none' | 'date';
@@ -63,7 +59,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [
 ];
 
 
-const MessagesView = ({ isDemo = false }: MessagesViewProps) => {
+const MessagesView = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,7 +73,7 @@ const MessagesView = ({ isDemo = false }: MessagesViewProps) => {
   const [isSearching, setIsSearching] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const { handleStartChat, config, isUserLoggedIn, setViewState, setActiveConversation } = useChatContext();
+  const { handleStartChat, config, isUserLoggedIn, setViewState, setActiveConversation, isDemo } = useChatContext();
 
   const convertApiTicketsToTickets = useCallback((ticketsData: any[]): Ticket[] => {
     return ticketsData.map(ticket => ({
@@ -151,6 +147,13 @@ const MessagesView = ({ isDemo = false }: MessagesViewProps) => {
       loadConversationsData();
     }
   }, [loadConversationsData, isUserLoggedIn]);
+
+  useEffect(() => {
+    if (isDemo) {
+      setConversations([...MOCK_CONVERSATIONS]);
+      setIsLoading(false);
+    }
+  }, [isDemo]);
 
   const formatDateDisplay = useCallback((date: Date | string): string => {
     return format(new Date(date), 'MMM d, yyyy');
@@ -347,6 +350,9 @@ const MessagesView = ({ isDemo = false }: MessagesViewProps) => {
   }, [loadConversationsData]);
 
   const handleItemSelect = useCallback(async (item: Conversation | Ticket) => {
+    if (isDemo) {
+      return;
+    }
     setIsLoading(true);
     const ticketId = item?.id;
     const createdAt = item?.createdAt

@@ -7,30 +7,12 @@ import ChatView from "../ChatWidget/views/ChatView";
 import { Conversation } from "../ChatWidget/types";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import WidgetContainer from "../ChatWidget/components/WidgetContainer";
+import { ChatProvider } from "../ChatWidget/context/chatContext";
+import { AblyProvider } from "../ChatWidget/context/ablyContext";
 
 const DemoChatWidget = () => {
     const [currentView, setCurrentView] = useState<'home' | 'messages' | 'chat'>('home');
     const [config, setConfig] = useState<ChatWidgetConfig | null>(null);
-
-    const demoConversation: Conversation = {
-        id: "1",
-        title: "Demo Conversation",
-        createdAt: new Date(),
-        status: "active",
-        lastMessage: "Hello, how are you?",
-        messages: [],
-        timestamp: new Date(),
-        unread: false,
-        ticketId: "1",
-        sessionId: "1",
-        agentInfo: {
-            id: "1",
-            name: "Demo Agent",
-            avatar: "https://via.placeholder.com/150",
-            email: "demo@example.com"
-        },
-        rating: 5
-    }
 
 
     useEffect(() => {
@@ -81,73 +63,16 @@ const DemoChatWidget = () => {
 
     return (
         <>
-            <TooltipProvider delayDuration={0}>
-                <WidgetContainer
-                    isOpen={true}
-                    viewState={currentView}
-                    config={config}
-                    activeConversation={demoConversation}
-                    widgetStyle={{}}
-                    containerStyles={{}}
-                    handleSelectConversation={() => setCurrentView('chat')}
-                    handleSelectTicket={() => setCurrentView('chat')}
-                    handleUpdateConversation={() => { }}
-                    handleChangeView={(view: 'home' | 'messages' | 'chat') => setCurrentView(view)}
-                    handleBackToMessages={() => setCurrentView('messages')}
-                    handleStartChat={() => { }}
-                    setUserFormData={() => { }}
-                    playMessageSound={() => { }}
-                    connectionStatus={null}
-                    isDemo={true}
-                />
-            </TooltipProvider>
-            {/* {
-                currentView === 'home' && (
-                    <HomeView
-                        onStartChat={() => { }}
-                        config={config}
+            <ChatProvider isDemo={true} demoConfig={config} currentView={currentView}>
+                <AblyProvider>
+                    <TooltipProvider delayDuration={0}>
+                        <WidgetContainer />
+                    </TooltipProvider>
+                    <LauncherButton
+                        unreadCount={0}
                     />
-                )
-            }
-            {
-                currentView === 'messages' && (
-                    <TooltipProvider delayDuration={0}>
-                        <MessagesView
-                            onSelectConversation={() => { }} // TODO: add onSelectConversation
-                            onSelectTicket={() => { }}
-                            onStartChat={() => { }}
-                            config={config}
-                            isDemo={true}
-                        />
-                    </TooltipProvider>
-                )
-            }
-            {
-                currentView === 'chat' && (
-                    <TooltipProvider delayDuration={0}>
-                        <ChatView
-                            conversation={demoConversation}
-                            onBack={() => { }}
-                            onUpdateConversation={() => { }}
-                            config={config}
-                            handleSelectTicket={() => { }}
-                            playMessageSound={() => { }}
-                            userFormData={null}
-                            setUserFormData={() => { }}
-                            connectionStatus={null}
-                            isDemo={true}
-                        />
-                    </TooltipProvider>
-                )
-            } */}
-            <LauncherButton
-                isOpen={true}
-                unreadCount={0}
-                onClick={() => { }}
-                config={config}
-                positionStyles={{}}
-                isDemo={true}
-            />
+                </AblyProvider>
+            </ChatProvider>
         </>
     )
 
