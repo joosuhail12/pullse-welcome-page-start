@@ -38,26 +38,7 @@ const demoConversation: Conversation = {
     createdAt: new Date(),
     status: "active",
     lastMessage: "Hello, how are you?",
-    messages: [
-        {
-            id: "1",
-            text: "I'm here to help you!",
-            createdAt: new Date(),
-            sender: "agent",
-            type: "text",
-            senderType: "agent",
-            messageType: "text"
-        },
-        {
-            id: "2",
-            text: "Hello, can you help me with my order?",
-            createdAt: new Date(),
-            sender: "user",
-            type: "text",
-            senderType: "customer",
-            messageType: "text"
-        }
-    ],
+    messages: [],
     timestamp: new Date(),
     unread: false,
     ticketId: "1",
@@ -250,7 +231,32 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
                 setViewState(currentView);
             }
             if (demoConfig) {
+                console.log("demoConfig", demoConfig);
+                console.log("activeConversation", activeConversation);
                 setConfig(demoConfig);
+                setActiveConversation((demoConversation) => {
+                    return {
+                        ...demoConversation,
+                        messages: [{
+                            id: `msg-${Date.now()}`,
+                            text: demoConfig?.labels?.welcomeMessage || 'Hello, how can I help you today???',
+                            createdAt: new Date(),
+                            sender: 'agent',
+                            type: 'text',
+                            senderType: 'agent',
+                            messageType: 'text',
+                        },
+                        {
+                            id: `msg-${Date.now() + 1}`,
+                            text: 'Can you help me with my order?',
+                            createdAt: new Date(),
+                            sender: 'user',
+                            type: 'text',
+                            senderType: 'customer',
+                            messageType: 'text',
+                        }]
+                    }
+                });
             }
         }, [currentView, demoConfig]);
     }
