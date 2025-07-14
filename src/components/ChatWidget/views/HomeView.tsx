@@ -101,7 +101,6 @@ const HomeView = React.memo(() => {
           className="chat-widget-button flex items-center justify-center gap-2 w-full py-3 sm:py-5 shadow-md transition-all duration-300 hover:shadow-lg hover:scale-[1.02] rounded-lg text-xs sm:text-base"
           style={buttonStyle}
         >
-          <MessageSquare size={iconSize} className="shrink-0" />
           <span className="font-medium">{config?.labels?.askQuestionButtonText}</span>
         </Button>
       </div>
