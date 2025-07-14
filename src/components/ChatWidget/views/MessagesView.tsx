@@ -369,6 +369,8 @@ const MessagesView = () => {
           messageConfig: msg.messageConfig,
           allowUserAction: msg.allowUserAction,
           createdAt: new Date(msg.createdAt),
+          attachmentType: msg.attachmentType,
+          attachmentUrl: msg.attachmentUrl,
           type: 'text',
           status: 'sent'
         };

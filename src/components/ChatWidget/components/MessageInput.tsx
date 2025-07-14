@@ -7,11 +7,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import { validateMessage, validateFile, sanitizeFileName } from '../utils/validation';
+import { getAccessToken, getWorkspaceIdAndApiKey } from '../utils/storage';
+import { toast } from 'sonner';
 
 interface MessageInputProps {
   messageText: string;
   setMessageText: (text: string) => void;
-  handleSendMessage: () => void;
+  handleSendMessage: (messageText: string, attachmentType: 'image' | 'pdf', attachmentUrl: string) => void;
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleEndChat: () => void;
   hasUserSentMessage: boolean;
@@ -33,6 +35,10 @@ const MessageInput = ({
   const [fileError, setFileError] = useState<string | null>(null);
   const [filePreview, setFilePreview] = useState<{ url: string, type: string, name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadStatus, setUploadStatus] = useState<'uploading' | 'success' | 'error' | null>(null);
+  const [isUploadDisabled, setIsUploadDisabled] = useState(disabled);
+  const [attachmentType, setAttachmentType] = useState<'image' | 'pdf'>('image');
+  const [attachmentUrl, setAttachmentUrl] = useState<string>('');
 
   const MAX_CHARS = 2000;
   const charCount = messageText.length;
@@ -42,9 +48,18 @@ const MessageInput = ({
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage();
+      sendMessageHandler();
     }
   };
+
+  const sendMessageHandler = () => {
+    // clear the file preview
+    clearFilePreview();
+    setAttachmentType('image');
+    setAttachmentUrl('');
+    setUploadStatus(null);
+    handleSendMessage(messageText, attachmentType, attachmentUrl);
+  }
 
   const handleEmojiSelect = (emoji: any) => {
     const sanitized = validateMessage(messageText + emoji.native);
@@ -63,7 +78,62 @@ const MessageInput = ({
     }
   };
 
-  const handleFileValidation = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadWidgetAsset = async (file: File): Promise<{ fileUrl: string }> => {
+    try {
+      if (isUploadDisabled) {
+        toast.error('Upload is disabled');
+        return;
+      }
+
+      const { apiKey, workspaceId } = getWorkspaceIdAndApiKey();
+
+      if (!workspaceId) {
+        throw new Error('Workspace ID not found');
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`https://dev-socket.pullseai.com/api/widgets/uploadWidgetFileAttachment/${apiKey}?workspace_id=${workspaceId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${getAccessToken()}`,
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        if (data.message) {
+          toast.error(data.message);
+        } else {
+          toast.error('Failed to upload file');
+        }
+        throw new Error('Failed to upload file');
+      }
+
+      const data = await response.json();
+      console.log('Widget file upload response:', data);
+      return data.data;
+    } catch (error) {
+      console.error('Error uploading widget asset:', error);
+      console.log('Error uploading widget asset:', error);
+      setUploadStatus('error');
+      throw error;
+    }
+  };
+
+  const handleFileValidation = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isUploadDisabled) {
+      toast.error('Upload is disabled');
+      return;
+    }
+
+    if (filePreview) {
+      toast.error('File already uploaded, please remove it first');
+      return;
+    }
+
     setFileError(null);
     setFilePreview(null);
     const files = e.target.files;
@@ -77,6 +147,8 @@ const MessageInput = ({
       e.target.value = '';
       return;
     }
+
+    setAttachmentType(file.type.startsWith('image/') ? 'image' : 'pdf');
 
     // Sanitize filename
     const sanitizedName = sanitizeFileName(file.name);
@@ -103,6 +175,18 @@ const MessageInput = ({
         name: sanitizedName
       });
     }
+
+
+    // Upload the file here to the server
+    setUploadStatus('uploading');
+    await uploadWidgetAsset(file).then((response) => {
+      setUploadStatus('success');
+      setAttachmentUrl(response.fileUrl);
+    }).catch((error) => {
+      setUploadStatus('error');
+    }).finally(() => {
+      setIsUploadDisabled(false);
+    });
   };
 
   const clearFilePreview = () => {
@@ -110,6 +194,7 @@ const MessageInput = ({
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    setUploadStatus(null);
   };
 
   const submitFile = () => {
@@ -143,11 +228,17 @@ const MessageInput = ({
                 <Image size={20} className="text-gray-500" />
               </div>
             )}
-            <div className="flex-grow overflow-hidden">
+            <div className="flex-grow overflow-hidden flex justify-between items-center">
               <p className="text-sm font-medium truncate">{filePreview.name}</p>
-              <p className="text-xs text-gray-500">Ready to upload</p>
-            </div>
-            <div className="flex gap-2">
+              {uploadStatus === 'uploading' && (
+                <p className="text-xs text-gray-500">Uploading...</p>
+              )}
+              {uploadStatus === 'success' && (
+                <p className="text-xs text-green-500">Uploaded</p>
+              )}
+              {uploadStatus === 'error' && (
+                <p className="text-xs text-red-500">Error</p>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -156,13 +247,6 @@ const MessageInput = ({
                 title="Cancel"
               >
                 <X size={16} />
-              </Button>
-              <Button
-                size="sm"
-                className="h-8 chat-widget-button"
-                onClick={submitFile}
-              >
-                Send
               </Button>
             </div>
           </div>
@@ -178,7 +262,7 @@ const MessageInput = ({
               className="hidden"
               onChange={handleFileValidation}
               accept="image/jpeg,image/png,image/gif,application/pdf,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              disabled={disabled}
+              disabled={disabled || isUploadDisabled}
             />
           </label>
 
@@ -228,7 +312,7 @@ const MessageInput = ({
           </div>
 
           <Button
-            onClick={() => handleSendMessage(messageText)}
+            onClick={sendMessageHandler}
             disabled={!messageText.trim() || disabled}
             className="h-auto rounded-r-md chat-widget-button p-2 aspect-square"
             variant={messageText.trim() ? "default" : "ghost"}

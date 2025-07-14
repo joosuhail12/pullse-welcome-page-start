@@ -40,13 +40,17 @@ const ChatView = React.memo(({
     await handleSetFormData(data);
   }
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = async (messageText: string, attachmentType: 'image' | 'pdf', attachmentUrl: string) => {
     setActiveConversation((prev: any) => {
       return {
         ...prev,
         messages: [...prev.messages, {
           id: crypto.randomUUID(),
           text: messageText,
+          messageType: 'text',
+          type: 'text',
+          attachmentType: attachmentType,
+          attachmentUrl: attachmentUrl,
           sender: 'customer',
           timestamp: new Date(),
           createdAt: new Date()
@@ -56,19 +60,23 @@ const ChatView = React.memo(({
     setMessageText('');
     const sessionId = getChatSessionId();
     if (activeConversation.ticketId) {
-      console.log('Publishing message to message channel', `widget:conversation:ticket-${activeConversation.ticketId}`);
+      console.log('Publishing message to message channel', `widget:conversation:ticket-${activeConversation.ticketId} ${attachmentType} ${attachmentUrl}`);
       await publishToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message', {
         text: messageText,
         sender: 'customer',
         timestamp: new Date().toISOString(),
-        ticketId: activeConversation.ticketId
+        ticketId: activeConversation.ticketId,
+        attachmentType: attachmentType,
+        attachmentUrl: attachmentUrl
       });
     } else {
       console.log('Publishing message to new_ticket channel');
       await publishToChannel(`widget:contactevent:${sessionId}`, 'new_ticket', {
         text: messageText,
         sender: 'user',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        attachmentType: attachmentType,
+        attachmentUrl: attachmentUrl
       });
     }
   }

@@ -1,43 +1,56 @@
 
 import React from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Image } from 'lucide-react';
 
 interface TextMessageProps {
   text: string;
-  renderText?: (text: string) => React.ReactNode;
+  renderText?: (text: string) => string;
   highlightText?: string;
+  attachmentType?: 'image' | 'pdf';
+  attachmentUrl?: string;
 }
 
-const TextMessage = ({ text, renderText, highlightText }: TextMessageProps) => {
-  const isMobile = useIsMobile();
-  const textSizeClass = isMobile
-    ? "text-xs sm:text-sm leading-tight"
-    : "text-sm sm:text-base leading-relaxed";
-
-  const highlightMatches = (text: string, term?: string) => {
-    if (!term || term.trim() === '') return text;
-
-    // Case-insensitive search
-    const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    const parts = text.split(regex);
-
-    return (
-      <>
-        {parts.map((part, i) =>
-          regex.test(part)
-            ? <mark key={i} className="bg-yellow-200 px-0.5 rounded">{part}</mark>
-            : part
-        )}
-      </>
-    );
-  };
-
-  const content = highlightText
-    ? highlightMatches(text, highlightText)
-    : (renderText ? renderText(text) : text);
+const TextMessage: React.FC<TextMessageProps> = ({
+  text,
+  renderText,
+  highlightText,
+  attachmentType,
+  attachmentUrl
+}) => {
+  const processedText = renderText ? renderText(text) : text;
 
   return (
-    <p className={`${textSizeClass} tracking-wide break-words text-left`}>{content}</p>
+    <div className="space-y-2">
+      {/* Text content */}
+      <div className="whitespace-pre-wrap break-words text-left">
+        {processedText}
+      </div>
+
+      {/* Attachment preview */}
+      {attachmentUrl && (
+        <div className="mt-2 rounded-lg overflow-hidden border border-gray-200/50">
+          {attachmentType === 'image' ? (
+            <img
+              src={attachmentUrl}
+              alt="Attachment"
+              className="max-h-[200px] w-auto object-contain"
+            />
+          ) : attachmentType === 'pdf' && (
+            <div className="flex items-center gap-2 p-2 bg-gray-50">
+              <Image size={20} className="text-gray-500" />
+              <a
+                href={attachmentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                View PDF
+              </a>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 

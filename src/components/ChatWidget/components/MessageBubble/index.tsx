@@ -146,6 +146,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             text={message.text}
             renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
             highlightText={searchTerm}
+            attachmentType={message?.attachmentType}
+            attachmentUrl={message?.attachmentUrl}
           />
         );
     }

@@ -24,6 +24,8 @@ export interface Message {
   senderType?: 'customer' | 'agent' | 'system' | 'ai' | 'workflow' | 'system-notice'; // Add new sender types
   reactions?: string[]; // Add reactions array
   allowUserAction?: boolean;
+  attachmentType?: 'image' | 'pdf';
+  attachmentUrl?: string;
 }
 
 
@@ -117,6 +119,8 @@ export interface TicketMessage {
   messageType?: 'text' | 'data_collection' | 'action_buttons' | 'csat' | 'mention' | 'note';
   senderType?: 'user' | 'agent' | 'system';
   messageConfig?: Record<string, any>;
+  attachmentType?: 'image' | 'pdf';
+  attachmentUrl?: string;
   allowUserAction?: boolean;
 }
 
