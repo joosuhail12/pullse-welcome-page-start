@@ -52,7 +52,7 @@ const PullseNamespace = {
                     // Inject stylesheet
                     const style = document.createElement('link');
                     style.rel = 'stylesheet';
-                    style.href = 'https://chat-widget.pullseai.com/assets/index-CdAlWmDx.css';
+                    style.href = 'https://chat-widget.pullseai.com/assets/index-QykeMXI1.css';
                     shadowRoot.appendChild(style);
 
                     // Create a root in the shadow DOM for isolation
@@ -135,7 +135,7 @@ const PullseNamespace = {
             // Inject stylesheet
             const style = document.createElement('link');
             style.rel = 'stylesheet';
-            style.href = 'https://chat-widget.pullseai.com/assets/index-CdAlWmDx.css';
+            style.href = 'https://chat-widget.pullseai.com/assets/index-QykeMXI1.css';
             shadowRoot.appendChild(style);
 
             // Create a root in the shadow DOM for isolation
