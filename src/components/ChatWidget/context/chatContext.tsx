@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, useRef } from 'react';
 import { getAccessToken, getUserFormDataFromLocalStorage, getWorkspaceIdAndApiKey, setAccessToken, setChatSessionId, setUserFormDataInLocalStorage } from '../utils/storage';
 import { Conversation } from '../types';
 import { toast } from 'sonner';
@@ -59,11 +59,22 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
     const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(getUserFormDataFromLocalStorage());
     const [isOpen, setIsOpen] = useState<boolean>(isDemo ? true : false);
     const [config, setConfig] = useState<ChatWidgetConfig | null>(null);
+    const configRef = useRef<ChatWidgetConfig | null>(null);
+
+    useEffect(() => {
+        configRef.current = config;
+    }, [config]);
 
     const handleStartChat = useCallback(() => {
         if (isDemo) {
             return;
         }
+        const currentConfig = configRef.current;
+        if (!currentConfig) {
+            console.warn('Config not yet loaded');
+            return;
+        }
+
         const newConversation: Conversation = {
             id: `conv-${Date.now()}`,
             title: 'New Conversation',
@@ -71,7 +82,7 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
             createdAt: new Date(),
             messages: [{
                 id: `msg-${Date.now()}`,
-                text: config?.labels?.welcomeMessage || 'Hello, how can I help you today?',
+                text: currentConfig.labels?.welcomeMessage || 'Hello, how can I help you today?',
                 createdAt: new Date(),
                 sender: 'agent',
                 type: 'text',
@@ -80,12 +91,12 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
             }],
             agentInfo: {
                 name: 'Support Agent',
-                avatar: undefined // You could set a default avatar URL here
+                avatar: undefined
             },
         };
         setViewState('chat');
         setActiveConversation(newConversation);
-    }, []);
+    }, [isDemo]);
 
 
     const handleSetFormData = useCallback(async (formData: Record<string, string>) => {
