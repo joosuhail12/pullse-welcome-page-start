@@ -29,7 +29,7 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
     ? "w-10 h-10"
     : "w-12 h-12 sm:w-14 sm:h-14";
 
-  const iconSize = isMobile ? 18 : 24;
+  const iconSize = isMobile ? 32 : 48;
 
   // Get appropriate status indicator color
   const getStatusColor = () => {
@@ -71,8 +71,8 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
         <Tooltip open={showTooltip && !isOpen && showPresence}>
           <TooltipTrigger asChild>
             <Button
-              className={`rounded-full ${buttonSizeClass} flex items-center justify-center chat-widget-button relative transition-transform hover:scale-105 shadow-md`}
-              style={config.colors?.primaryColor ? { backgroundColor: config.colors.primaryColor, borderColor: config.colors.primaryColor } : {}}
+              className={`relative transition-transform hover:scale-105`}
+              // style={config.colors?.primaryColor ? { backgroundColor: config.colors.primaryColor, borderColor: config.colors.primaryColor } : {}}
               onClick={() => setIsOpen(!isOpen)}
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
