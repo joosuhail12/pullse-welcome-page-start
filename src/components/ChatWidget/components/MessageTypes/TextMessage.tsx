@@ -8,6 +8,7 @@ interface TextMessageProps {
   highlightText?: string;
   attachmentType?: 'image' | 'pdf';
   attachmentUrl?: string;
+  textColor?: string;
 }
 
 const TextMessage: React.FC<TextMessageProps> = ({
@@ -15,14 +16,15 @@ const TextMessage: React.FC<TextMessageProps> = ({
   renderText,
   highlightText,
   attachmentType,
-  attachmentUrl
+  attachmentUrl,
+  textColor
 }) => {
   const processedText = renderText ? renderText(text) : text;
 
   return (
     <div className="space-y-2">
       {/* Text content */}
-      <div className="whitespace-pre-wrap break-words text-left">
+      <div className="whitespace-pre-wrap break-words text-left" style={{ color: textColor }}>
         {processedText}
       </div>
 

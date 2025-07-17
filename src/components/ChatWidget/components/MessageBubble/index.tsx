@@ -148,6 +148,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             highlightText={searchTerm}
             attachmentType={message?.attachmentType}
             attachmentUrl={message?.attachmentUrl}
+            textColor={config.colors?.textColor}
           />
         );
     }
