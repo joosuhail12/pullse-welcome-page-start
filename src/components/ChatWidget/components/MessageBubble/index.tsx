@@ -18,6 +18,7 @@ import { ChatWidgetConfig } from '../../config';
 import { cn } from '@/lib/utils';
 import { UserActionData } from '../../types';
 import { Separator } from '@/components/ui/separator';
+import UserAvatar from './UserAvatar';
 
 interface MessageBubbleProps {
   message: Message;
@@ -343,12 +344,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       {/* User Avatar - Right side */}
       {isUser && (
         <div className="flex-shrink-0 relative">
-          <MessageAvatar
-            avatar={userAvatar}
-            alt="You"
-            isAgent={false}
-            size="sm"
-          />
+          <UserAvatar />
         </div>
       )}
     </div>
