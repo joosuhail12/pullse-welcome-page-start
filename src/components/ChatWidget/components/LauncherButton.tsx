@@ -72,6 +72,10 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
           <TooltipTrigger asChild>
             <Button
               className={`relative transition-transform hover:scale-105`}
+              style={{
+                backgroundColor: "transparent",
+                borderColor: "transparent",
+              }}
               // style={config.colors?.primaryColor ? { backgroundColor: config.colors.primaryColor, borderColor: config.colors.primaryColor } : {}}
               onClick={() => setIsOpen(!isOpen)}
               onMouseEnter={() => setShowTooltip(true)}
