@@ -24,10 +24,6 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
   const { getLauncherPositionStyles } = useWidgetPosition(config, isMobile);
   const [showTooltip, setShowTooltip] = useState(false);
   const showPresence = config?.interfaceSettings?.showAgentPresence;
-  // Adjust button size based on screen size
-  const buttonSizeClass = isMobile
-    ? "w-10 h-10"
-    : "w-12 h-12 sm:w-14 sm:h-14";
 
   const iconSize = isMobile ? 32 : 48;
 
@@ -71,7 +67,7 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
         <Tooltip open={showTooltip && !isOpen && showPresence}>
           <TooltipTrigger asChild>
             <Button
-              className={`relative transition-transform hover:scale-105`}
+              className={`relative transition-transform scale-105 hover:scale-110`}
               style={{
                 backgroundColor: "transparent",
                 borderColor: "transparent",

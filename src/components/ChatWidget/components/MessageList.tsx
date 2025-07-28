@@ -266,18 +266,6 @@ const MessageList: React.FC<MessageListProps> = ({
             </div>
           );
         })}
-        {/* TODO: Fix the typing indicator */}
-        {/* {isTyping && (
-          <div className="flex items-end mb-4">
-            <MessageAvatar
-              isUserMessage={false}
-              userAvatar={userAvatar}
-              agentAvatar={agentAvatar}
-              agentStatus={agentStatus}
-            />
-            <TypingIndicator typingDuration={typingDuration} />
-          </div>
-        )} */}
       </ScrollArea>
 
       {showScrollButton && (

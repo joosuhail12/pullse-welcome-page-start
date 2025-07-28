@@ -17,7 +17,7 @@ const EnhancedLoadingIndicator: React.FC<EnhancedLoadingIndicatorProps> = ({
 
   return (
     <div
-      className="fixed bottom-16 sm:bottom-24 right-4 w-[90vw] sm:w-80 md:w-96 h-[500px] sm:h-[600px] max-h-[80vh] rounded-lg shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 p-4 font-sans"
+      className="fixed w-[90vw] sm:w-80 md:w-96 h-[500px] sm:h-[600px] max-h-[80vh] rounded-lg shadow-lg bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 p-4 font-sans"
       style={{
         ...positionStyles,
         transition: 'all 0.2s ease-in-out'
