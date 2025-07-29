@@ -24,8 +24,8 @@ const TextMessage: React.FC<TextMessageProps> = ({
   return (
     <div className="space-y-2">
       {/* Text content */}
-      <div className="whitespace-pre-wrap break-words text-left" style={{ color: textColor }}>
-        {processedText}
+      <div className="whitespace-pre-wrap break-words text-left" dangerouslySetInnerHTML={{ __html: processedText }} style={{ color: textColor }}>
+        {/* {processedText} */}
       </div>
 
       {/* Attachment preview */}
