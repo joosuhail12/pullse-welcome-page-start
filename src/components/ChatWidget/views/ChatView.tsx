@@ -13,6 +13,7 @@ import EnhancedLoadingIndicator from '../components/EnhancedLoadingIndicator';
 import { toast } from 'sonner';
 import { fetchConversationByTicketId } from '../services/api';
 import { UserActionData } from '../types';
+import * as Sentry from '@sentry/react';
 
 interface ChatViewProps {
 }
@@ -96,6 +97,12 @@ const ChatView = React.memo(({
 
     if (!ticketId) {
       toast.error('Ticket ID not found');
+      return;
+    }
+
+    if (!data?.message) {
+      // Report to sentry
+      Sentry.captureException(new Error(`Message is empty: ${JSON.stringify(data)}`));
       return;
     }
 
