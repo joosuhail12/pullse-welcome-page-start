@@ -57,7 +57,7 @@ const Index = () => {
   }, [apiKey, workspaceId]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-soft-purple-50 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-[#85c2ff] text-center">
       <div className="max-w-2xl px-6">
         <h1 className="text-5xl font-bold mb-4 text-vivid-purple">
           Pullse Chat Widget Development Preview

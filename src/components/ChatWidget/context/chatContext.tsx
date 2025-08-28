@@ -84,9 +84,9 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
                 id: `msg-${Date.now()}`,
                 text: currentConfig.labels?.welcomeMessage || 'Hello, how can I help you today?',
                 createdAt: new Date(),
-                sender: 'agent',
+                sender: 'system',
                 type: 'text',
-                senderType: 'agent',
+                senderType: 'system',
                 messageType: 'text',
             }],
             agentInfo: {

@@ -194,6 +194,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               isAgent={true}
               agentStatus={agentStatus}
               size="sm"
+              senderType={"agent"}
+              name={`${message.senderName ?? "Agent"}`}
             />
           </div>
         )}
@@ -214,6 +216,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               alt="You"
               isAgent={false}
               size="sm"
+              senderType={"customer"}
+              name={`${message.senderName ?? "New Customer"}`}
             />
           </div>
         )}
@@ -241,6 +245,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             isAgent={true}
             agentStatus={agentStatus}
             size="sm"
+            senderType={message.senderType}
           />
         </div>
       )}
@@ -348,6 +353,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             alt="You"
             isAgent={false}
             size="sm"
+            senderType={"customer"}
+            name={`${message.senderName ?? "New Customer"}`}
           />
         </div>
       )}

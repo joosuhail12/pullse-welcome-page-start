@@ -463,7 +463,6 @@ export const fetchConversationByTicketId = async (ticketId: string) => {
     if (!accessToken) {
       throw new Error('No access token found');
     }
-
     const response = await fetch(`https://dev-socket.pullseai.com/api/widgets/getConversationWithTicketId/${ticketId}`, {
       method: 'GET',
       headers: {

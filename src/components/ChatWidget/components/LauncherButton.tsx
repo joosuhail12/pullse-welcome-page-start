@@ -54,7 +54,7 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
   };
 
   return (
-    <div className={`flex flex-col z-40 items-end ${!isDemo ? "fixed" : ""}`} style={getLauncherPositionStyles}>
+    <div className={`flex flex-col z-40 items-end w-[4rem] h-[4rem] justify-center items-center ${!isDemo ? "fixed" : ""}`} style={getLauncherPositionStyles}>
       {/* Status indicator tooltip that shows on hover */}
       {!isOpen && showTooltip && showPresence && (
         <div className="mb-2 px-3 py-1.5 bg-white rounded-lg shadow-md text-xs flex items-center">
@@ -67,12 +67,7 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
         <Tooltip open={showTooltip && !isOpen && showPresence}>
           <TooltipTrigger asChild>
             <Button
-              className={`relative transition-transform scale-105 hover:scale-110`}
-              style={{
-                backgroundColor: "transparent",
-                borderColor: "transparent",
-              }}
-              // style={config.colors?.primaryColor ? { backgroundColor: config.colors.primaryColor, borderColor: config.colors.primaryColor } : {}}
+              className={`relative transition-transform scale-105 hover:scale-110 hover:bg-white p-0 w-full h-full bg-white rounded-full`}
               onClick={() => setIsOpen(!isOpen)}
               onMouseEnter={() => setShowTooltip(true)}
               onMouseLeave={() => setShowTooltip(false)}
@@ -80,7 +75,7 @@ const LauncherButton: React.FC<LauncherButtonProps> = ({
             >
               {
                 config.brandAssets.launcherIcon && (
-                  <img src={config.brandAssets.launcherIcon} alt="Launcher icon" width={iconSize} height={iconSize} />
+                  <img src={config.brandAssets.launcherIcon} className="w-full h-full object-contain rounded-full" alt="Launcher icon" width={iconSize} height={iconSize} />
                 )
               }
               {

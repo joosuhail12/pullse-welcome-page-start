@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Bot } from 'lucide-react';
 import { AgentStatus } from '../../types';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useChatContext } from '../../context/chatContext';
 
 export interface MessageAvatarProps {
   isUserMessage: boolean;
@@ -12,18 +13,20 @@ export interface MessageAvatarProps {
   agentStatus?: AgentStatus;
   userName?: string;
   agentName?: string;
+  senderType?: string;
 }
 
-const MessageAvatar = ({ 
-  isUserMessage, 
-  userAvatar, 
+const MessageAvatar = ({
+  isUserMessage,
+  userAvatar,
   agentAvatar,
   agentStatus,
-  userName = '', 
-  agentName = ''
+  userName = '',
+  agentName = '',
+  senderType
 }: MessageAvatarProps) => {
   const [imageError, setImageError] = useState(false);
-  
+
   // Determine status indicator color
   const getStatusColor = () => {
     switch (agentStatus) {
@@ -50,7 +53,7 @@ const MessageAvatar = ({
   const getInitials = () => {
     const name = isUserMessage ? userName : agentName;
     if (!name || name.trim() === '') return '';
-    
+
     return name
       .split(' ')
       .map(part => part[0])
@@ -63,7 +66,7 @@ const MessageAvatar = ({
   const getFallbackColor = () => {
     const name = isUserMessage ? userName : agentName;
     const colorOptions = [
-      'bg-blue-100 text-blue-600', 
+      'bg-blue-100 text-blue-600',
       'bg-green-100 text-green-600',
       'bg-purple-100 text-purple-600',
       'bg-amber-100 text-amber-600',
@@ -71,30 +74,50 @@ const MessageAvatar = ({
       'bg-indigo-100 text-indigo-600',
       'bg-rose-100 text-rose-600'
     ];
-    
+
     if (!name || name.trim() === '') {
-      return isUserMessage ? 
-        'bg-gray-100 text-gray-500' : 
+      return isUserMessage ?
+        'bg-gray-100 text-gray-500' :
         'bg-violet-100 text-violet-600';
     }
-    
+
     // Deterministic color selection based on name
     const charSum = name
       .split('')
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    
+
     return colorOptions[charSum % colorOptions.length];
   };
 
   // Check if we should show initials fallback
   const showInitials = getInitials().length > 0 && (imageError || (!userAvatar && !agentAvatar));
-  
+
+  if (senderType === 'system') {
+    const { config } = useChatContext();
+    const systemAvatar = config?.brandAssets?.launcherIcon;
+
+    return (
+      <div className={`relative flex-shrink-0 ${isUserMessage ? 'ml-2' : 'mr-2'}`}>
+        <Avatar className="h-8 w-8 border border-gray-200">
+          <AvatarImage
+            src={systemAvatar}
+            alt="System"
+            onError={(e) => {
+              setImageError(true);
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        </Avatar>
+      </div>
+    );
+  }
+
   return (
     <div className={`relative flex-shrink-0 ${isUserMessage ? 'ml-2' : 'mr-2'}`}>
       <Avatar className="h-8 w-8 border border-gray-200">
         {(!imageError && (isUserMessage ? userAvatar : agentAvatar)) && (
-          <AvatarImage 
-            src={isUserMessage ? userAvatar : agentAvatar} 
+          <AvatarImage
+            src={isUserMessage ? userAvatar : agentAvatar}
             alt={isUserMessage ? userName || "User" : agentName || "Agent"}
             onError={(e) => {
               setImageError(true);
@@ -106,19 +129,19 @@ const MessageAvatar = ({
           {showInitials ? (
             <span className="text-xs font-medium">{getInitials()}</span>
           ) : (
-            isUserMessage ? 
-              <User size={15} className="text-gray-500" /> : 
+            isUserMessage ?
+              <User size={15} className="text-gray-500" /> :
               <Bot size={15} className="text-gray-500" />
           )}
         </AvatarFallback>
       </Avatar>
-      
+
       {/* Status indicator with tooltip for agent avatar */}
       {!isUserMessage && agentStatus && (
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <span 
+              <span
                 className={`absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white ${getStatusColor()} animate-pulse`}
                 aria-label={`Agent is ${agentStatus}`}
               />

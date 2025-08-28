@@ -22,6 +22,7 @@ export interface Message {
   metadata?: Record<string, any>; // Add metadata field for flexibility
   timestamp?: Date;    // For backward compatibility
   senderType?: 'customer' | 'agent' | 'system' | 'ai' | 'workflow' | 'system-notice'; // Add new sender types
+  senderName?: string;
   reactions?: string[]; // Add reactions array
   allowUserAction?: boolean;
   attachmentType?: 'image' | 'pdf';

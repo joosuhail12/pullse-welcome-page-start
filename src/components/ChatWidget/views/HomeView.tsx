@@ -77,7 +77,7 @@ const HomeView = React.memo(() => {
       {/* Team Availability Section - Only show if showTeamAvailability is true */}
       {config.interfaceSettings?.showTeamAvailability && (
         <div className="mb-3 sm:mb-6">
-          <TeamAvailability config={config} />
+          {/* <TeamAvailability config={config} /> */}
         </div>
       )}
 

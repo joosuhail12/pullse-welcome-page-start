@@ -519,7 +519,7 @@ const MessagesView = () => {
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
                       }`}
                   >
-                    {status === 'active' ? 'Active' : status === 'open' ? 'Open' : 'Ended'}
+                    {status === 'active' ? 'Active' : status === 'open' || status === 'Open' ? 'Open' : 'Ended'}
                   </Badge>
                 )}
                 {isUnread && (

@@ -6,7 +6,7 @@ import { useChatContext } from '../context/chatContext';
 const TabBar = () => {
   const { viewState, setViewState } = useChatContext();
   return (
-    <div className="border-t border-white/20 flex justify-around bg-white/60 backdrop-blur-sm">
+    <div className="border-t border-white/20 flex justify-around bg-[#fbf4f4] backdrop-blur-sm">
       <button
         onClick={() => setViewState('home')}
         className={`flex flex-col items-center py-3 px-4 flex-1 ${viewState === 'home'
