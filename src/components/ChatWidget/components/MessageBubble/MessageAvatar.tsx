@@ -14,6 +14,7 @@ export interface MessageAvatarProps {
   userName?: string;
   agentName?: string;
   senderType?: string;
+  name?: string | null;
 }
 
 const MessageAvatar = ({
@@ -23,9 +24,9 @@ const MessageAvatar = ({
   agentStatus,
   userName = '',
   agentName = '',
-  senderType
+  senderType,
+  name
 }: MessageAvatarProps) => {
-  const [imageError, setImageError] = useState(false);
 
   // Determine status indicator color
   const getStatusColor = () => {
@@ -51,10 +52,10 @@ const MessageAvatar = ({
 
   // Get initials for avatar fallback
   const getInitials = () => {
-    const name = isUserMessage ? userName : agentName;
-    if (!name || name.trim() === '') return '';
+    const displayName = name || userName || agentName;
+    if (!displayName || displayName.trim() === '') return '';
 
-    return name
+    return displayName
       .split(' ')
       .map(part => part[0])
       .join('')
@@ -90,7 +91,7 @@ const MessageAvatar = ({
   };
 
   // Check if we should show initials fallback
-  const showInitials = getInitials().length > 0 && (imageError || (!userAvatar && !agentAvatar));
+  const showInitials = getInitials().length > 0;
 
   if (senderType === 'system') {
     const { config } = useChatContext();
@@ -103,7 +104,6 @@ const MessageAvatar = ({
             src={systemAvatar}
             alt="System"
             onError={(e) => {
-              setImageError(true);
               e.currentTarget.style.display = 'none';
             }}
           />
@@ -115,12 +115,11 @@ const MessageAvatar = ({
   return (
     <div className={`relative flex-shrink-0 ${isUserMessage ? 'ml-2' : 'mr-2'}`}>
       <Avatar className="h-8 w-8 border border-gray-200">
-        {(!imageError && (isUserMessage ? userAvatar : agentAvatar)) && (
+        {(isUserMessage ? userAvatar : agentAvatar) && (
           <AvatarImage
             src={isUserMessage ? userAvatar : agentAvatar}
             alt={isUserMessage ? userName || "User" : agentName || "Agent"}
             onError={(e) => {
-              setImageError(true);
               e.currentTarget.style.display = 'none';
             }}
           />
@@ -129,7 +128,7 @@ const MessageAvatar = ({
           {showInitials ? (
             <span className="text-xs font-medium">{getInitials()}</span>
           ) : (
-            isUserMessage ?
+            senderType === 'customer' ?
               <User size={15} className="text-gray-500" /> :
               <Bot size={15} className="text-gray-500" />
           )}

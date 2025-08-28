@@ -365,6 +365,7 @@ const MessagesView = () => {
           text: msg.message,
           sender: msg.userType,
           senderType: msg.senderType,
+          senderName: msg.senderName,
           messageType: msg.messageType,
           messageConfig: msg.messageConfig,
           allowUserAction: msg.allowUserAction,

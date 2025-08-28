@@ -119,6 +119,7 @@ export interface TicketMessage {
   userType: 'customer' | 'agent';
   messageType?: 'text' | 'data_collection' | 'action_buttons' | 'csat' | 'mention' | 'note';
   senderType?: 'user' | 'agent' | 'system';
+  senderName?: string;
   messageConfig?: Record<string, any>;
   attachmentType?: 'image' | 'pdf';
   attachmentUrl?: string;
