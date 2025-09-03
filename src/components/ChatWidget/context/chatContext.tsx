@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, useRef } from 'react';
-import { getAccessToken, getUserFormDataFromLocalStorage, getWorkspaceIdAndApiKey, setAccessToken, setChatSessionId, setUserFormDataInLocalStorage } from '../utils/storage';
+import { getAccessToken, getUserFormDataFromLocalStorage, getWorkspaceIdAndApiKey, setAccessToken, setChatSessionId, setUserContactId, setUserFormDataInLocalStorage } from '../utils/storage';
 import { Conversation } from '../types';
 import { toast } from 'sonner';
 import { ChatWidgetConfig } from '../config';
 import { dispatchChatEvent } from '../utils/events';
+import { useChatWidgetStore } from '@/store/store';
 
 type ViewState = 'home' | 'messages' | 'chat';
 
@@ -55,11 +56,12 @@ const demoConversation: Conversation = {
 export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false }: ChatProviderProps): JSX.Element => {
     const [viewState, setViewState] = useState<ViewState>('home');
     const [isUserLoggedIn, setIsUserLoggedIn] = useState<boolean>(false);
-    const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
     const [userFormData, setUserFormData] = useState<Record<string, string> | undefined>(getUserFormDataFromLocalStorage());
     const [isOpen, setIsOpen] = useState<boolean>(isDemo ? true : false);
     const [config, setConfig] = useState<ChatWidgetConfig | null>(null);
     const configRef = useRef<ChatWidgetConfig | null>(null);
+
+    const { activeConversation, setActiveConversation } = useChatWidgetStore();
 
     useEffect(() => {
         configRef.current = config;
@@ -107,7 +109,7 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
             return;
         };
         try {
-            const response = await fetch("https://dev-socket.pullseai.com/api/widgets/createContactDevice/" + apiKey, {
+            const response = await fetch("http://localhost:4000/api/widgets/createContactDevice/" + apiKey, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -126,6 +128,9 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
                     }
                     if (data.data?.sessionId) {
                         setChatSessionId(data.data.sessionId);
+                    }
+                    if (data.data?.contactId) {
+                        setUserContactId(data.data.contactId);
                     }
                 }
                 console.log('Contact created successfully');
@@ -173,7 +178,7 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
         try {
             const accessToken = getAccessToken();
             const { apiKey, workspaceId } = getWorkspaceIdAndApiKey();
-            const url = `https://dev-socket.pullseai.com/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(workspaceId)}`;
+            const url = `http://localhost:4000/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(workspaceId)}`;
 
             const headers: HeadersInit = {
                 'Content-Type': 'application/json',

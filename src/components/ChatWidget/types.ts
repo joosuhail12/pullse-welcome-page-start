@@ -27,6 +27,7 @@ export interface Message {
   allowUserAction?: boolean;
   attachmentType?: 'image' | 'pdf';
   attachmentUrl?: string;
+  widgetGeneratedId?: string;
 }
 
 
@@ -124,6 +125,7 @@ export interface TicketMessage {
   attachmentType?: 'image' | 'pdf';
   attachmentUrl?: string;
   allowUserAction?: boolean;
+  status?: 'sending' | 'sent' | 'delivered' | 'read';
 }
 
 // Define MessageReadStatus type 

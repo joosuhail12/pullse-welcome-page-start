@@ -54,6 +54,7 @@ const PullseNamespace = {
                     style.rel = 'stylesheet';
                     style.href = 'https://chat-widget.pullseai.com/assets/index-C8N6BBqV.css';
                     shadowRoot.appendChild(style);
+                    // TODO: Dont load the widget until the css file is loaded
 
                     // Create a root in the shadow DOM for isolation
                     demoWidgetRoot = createRoot(innerContainer as HTMLElement);
@@ -137,6 +138,9 @@ const PullseNamespace = {
             style.rel = 'stylesheet';
             style.href = 'https://chat-widget.pullseai.com/assets/index-C8N6BBqV.css';
             shadowRoot.appendChild(style);
+
+            // TODO: Dont load the widget until the css file is loaded
+
 
             // Create a root in the shadow DOM for isolation
             widgetRoot = createRoot(innerContainer as HTMLElement);

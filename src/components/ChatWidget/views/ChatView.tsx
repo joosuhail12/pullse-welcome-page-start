@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
@@ -12,22 +11,23 @@ import { useAblyContext } from '../context/ablyContext';
 import EnhancedLoadingIndicator from '../components/EnhancedLoadingIndicator';
 import { toast } from 'sonner';
 import { fetchConversationByTicketId } from '../services/api';
-import { UserActionData } from '../types';
+import { Conversation, UserActionData } from '../types';
 import * as Sentry from '@sentry/react';
+import { useChatWidgetStore } from '@/store/store';
 
 interface ChatViewProps {
 }
 
 const ChatView = React.memo(({
 }: ChatViewProps) => {
-  const { config, activeConversation, setViewState, setActiveConversation, handleSetFormData, isUserLoggedIn, isDemo } = useChatContext();
+  const { activeConversation, addMessageToConversation, updateMessageStatus, setActiveConversation } = useChatWidgetStore();
+  const { config, setViewState, handleSetFormData, isUserLoggedIn, isDemo } = useChatContext();
   const { isConnected, subscribeToChannel, unsubscribeFromChannel, publishToChannel } = useAblyContext();
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [messageText, setMessageText] = useState('');
 
-  // Check if conversation rating should be shown
   const showRating = useMemo(() => {
     return (
       config?.interfaceSettings?.enableConversationRating === true &&
@@ -42,22 +42,32 @@ const ChatView = React.memo(({
   }
 
   const handleSendMessage = async (messageText: string, attachmentType: 'image' | 'pdf', attachmentUrl: string) => {
-    setActiveConversation((prev: any) => {
-      return {
-        ...prev,
-        messages: [...prev.messages, {
-          id: crypto.randomUUID(),
-          text: messageText,
-          messageType: 'text',
-          type: 'text',
-          attachmentType: attachmentType,
-          attachmentUrl: attachmentUrl,
-          sender: 'customer',
-          timestamp: new Date(),
-          createdAt: new Date()
-        }]
-      }
+    if (messageText.length === 0 && attachmentUrl === '') {
+      toast.error('Please enter a message or upload a file');
+      return;
+    }
+    if (activeConversation?.messages?.length > 1 && !activeConversation?.ticketId) {
+      toast.error('Please wait');
+
+      return;
+    }
+    const widgetGeneratedId = crypto.randomUUID();
+
+    // Use the store action to add the message
+    addMessageToConversation({
+      id: crypto.randomUUID(),
+      text: messageText,
+      messageType: 'text',
+      type: 'text',
+      attachmentType: attachmentType,
+      attachmentUrl: attachmentUrl,
+      sender: 'customer',
+      status: 'sent', // Initial status
+      widgetGeneratedId: widgetGeneratedId,
+      timestamp: new Date(),
+      createdAt: new Date(),
     });
+
     setMessageText('');
     const sessionId = getChatSessionId();
     if (activeConversation.ticketId) {
@@ -68,16 +78,18 @@ const ChatView = React.memo(({
         timestamp: new Date().toISOString(),
         ticketId: activeConversation.ticketId,
         attachmentType: attachmentType,
-        attachmentUrl: attachmentUrl
+        attachmentUrl: attachmentUrl,
+        widgetGeneratedId: widgetGeneratedId
       });
     } else {
       console.log('Publishing message to new_ticket channel');
       await publishToChannel(`widget:contactevent:${sessionId}`, 'new_ticket', {
         text: messageText,
-        sender: 'user',
+        sender: 'customer',
         timestamp: new Date().toISOString(),
         attachmentType: attachmentType,
-        attachmentUrl: attachmentUrl
+        attachmentUrl: attachmentUrl,
+        widgetGeneratedId: widgetGeneratedId
       });
     }
   }
@@ -101,24 +113,20 @@ const ChatView = React.memo(({
     }
 
     if (!data?.message) {
-      // Report to sentry
       Sentry.captureException(new Error(`Message is empty: ${JSON.stringify(data)}`));
       return;
     }
 
-    setActiveConversation((prev: any) => {
-      return {
-        ...prev,
-        messages: [...prev.messages, {
-          id: data?.id || crypto.randomUUID(),
-          text: data?.message,
-          sender: data && data?.senderType ? data.senderType : data?.from,
-          timestamp: new Date(),
-          createdAt: new Date(),
-          messageType: data?.messageType,
-          messageConfig: data?.messageConfig
-        }]
-      };
+    // Use the store action to add the incoming message
+    addMessageToConversation({
+      id: data?.id || crypto.randomUUID(),
+      text: data?.message,
+      sender: data && data?.senderType ? data.senderType : data?.from,
+      timestamp: new Date(),
+      createdAt: new Date(),
+      messageType: data?.messageType,
+      messageConfig: data?.messageConfig,
+      senderName: data?.senderName
     });
   }
 
@@ -134,12 +142,13 @@ const ChatView = React.memo(({
       toast.error('Ticket ID not found');
       return;
     }
-    setActiveConversation((prev: any) => {
-      return {
-        ...prev,
-        ticketId: ticketId
-      };
-    });
+
+    // Corrected Logic: Use the 'prev' state to ensure you have the latest messages
+    setActiveConversation((prev: Conversation) => ({
+      // This safely handles the 'null' case for prev
+      ...(prev || {}),
+      ticketId: ticketId
+    }));
 
     subscribeToChannel(`widget:conversation:ticket-${ticketId}`, 'message_reply', (message) => {
       handleExistingTicketReply(message);
@@ -151,7 +160,7 @@ const ChatView = React.memo(({
   useEffect(() => {
     if (isConnected) {
       const sessionId = getChatSessionId();
-      if (activeConversation.ticketId) {
+      if (activeConversation?.ticketId) {
         console.log('Subscribing to message channel');
         subscribeToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message_reply', (message) => {
           handleExistingTicketReply(message);
@@ -166,7 +175,7 @@ const ChatView = React.memo(({
 
     return () => {
       const sessionId = getChatSessionId();
-      if (activeConversation.ticketId) {
+      if (activeConversation?.ticketId) {
         console.log('Unsubscribing from message channel');
         unsubscribeFromChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message_reply');
       } else {
@@ -174,7 +183,7 @@ const ChatView = React.memo(({
         unsubscribeFromChannel(`widget:contactevent:${sessionId}`, 'new_ticket_reply');
       }
     }
-  }, [isConnected]);
+  }, [isConnected, activeConversation?.ticketId]);
 
   const {
     searchTerm,
@@ -294,7 +303,6 @@ const ChatView = React.memo(({
               handleUserAction={handleUserAction}
             />
 
-            {/* Rating component - shown only when conditions are met */}
             {showRating && (
               <div className="mx-4 my-2">
                 <ConversationRating onSubmitRating={() => { }} config={config} />
