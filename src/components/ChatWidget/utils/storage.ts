@@ -75,6 +75,26 @@ export function setChatSessionId(sessionId: string): void {
   }
 }
 
+
+/* Store user contactId in localStorage */
+export function setUserContactId(contactId: string): void {
+  try {
+    localStorage.setItem('pullse_user_contact_id', contactId);
+  } catch (error) {
+    console.error('Error setting user contact id in localStorage:', error);
+  }
+}
+
+/* Get user contactId from localStorage */
+export function getUserContactId(): string | null {
+  try {
+    return localStorage.getItem('pullse_user_contact_id');
+  } catch (error) {
+    console.error('Error getting user contact id from localStorage:', error);
+    return null;
+  }
+}
+
 /**
  * Save conversation to localStorage
  */

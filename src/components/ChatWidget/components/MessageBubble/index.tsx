@@ -42,7 +42,6 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
-  readReceipt,
   onMessageReaction,
   searchTerm,
   highlightMessage,
@@ -306,19 +305,22 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             </div>
           )}
         </div>
-        {/* <div className={cn(
-          "mt-2 px-2",
-          isUser ? "text-right" : "text-left"
-        )}>
-          <MessageStatus
-            status={readReceipt?.status}
-            timestamp={message.createdAt}
-            isFileMessage={message.type === 'file'}
-            fileUploading={message.metadata?.uploading}
-          />
-        </div> */}
-
-        {/* Message Status */}
+        {/* Message Status - Only show for user messages */}
+        {isUser && (
+          <div className={cn(
+            "mt-2 px-2",
+            isUser ? "text-right" : "text-left"
+          )}>
+            <MessageStatus
+              status={
+                message.status
+              }
+              timestamp={message.createdAt}
+              isFileMessage={message.type === 'file'}
+              fileUploading={message.metadata?.uploading}
+            />
+          </div>
+        )}
 
         {/* Message Reactions Display */}
         {message.reactions && message.reactions.length > 0 && (

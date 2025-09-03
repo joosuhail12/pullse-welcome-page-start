@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import Ably from 'ably';
-import { getAccessToken, getWorkspaceIdAndApiKey } from '../utils/storage';
+import { getAccessToken, getChatSessionId, getUserContactId, getWorkspaceIdAndApiKey } from '../utils/storage';
 import { useChatContext } from './chatContext';
+import { Conversation, useChatWidgetStore } from '@/store/store';
 
 interface AblyContextType {
     isConnected: boolean;
@@ -20,6 +21,7 @@ export const AblyProvider = ({ children }: AblyProviderProps): JSX.Element => {
     const { apiKey, workspaceId } = getWorkspaceIdAndApiKey();
     const [realtime, setRealtime] = useState<Ably.Realtime | null>(null);
     const { isUserLoggedIn, isDemo } = useChatContext();
+    const { activeConversation, setActiveConversation } = useChatWidgetStore();
     const [isConnected, setIsConnected] = useState<boolean>(isDemo ? true : false);
     const activeChannelSubscriptions = new Map<string, Map<string, boolean>>();
 
@@ -28,7 +30,7 @@ export const AblyProvider = ({ children }: AblyProviderProps): JSX.Element => {
             return;
         }
         const ablyClientOptions: Ably.Types.ClientOptions = {
-            authUrl: "https://dev-socket.pullseai.com/api/ably/widgetToken",
+            authUrl: "http://localhost:4000/api/ably/widgetToken",
             authHeaders: {
                 'Authorization': `Bearer ${getAccessToken()}`,
                 'x-workspace-id': workspaceId,
@@ -112,8 +114,47 @@ export const AblyProvider = ({ children }: AblyProviderProps): JSX.Element => {
         }
     };
 
-    // Handle disconnetions and reconnections
+    const handleMessageReciept = async ({
+        widgetGeneratedId,
+        id,
+        status
+    }: {
+        widgetGeneratedId: string;
+        id: string;
+        status: string;
+    }): Promise<void> => {
+        console.log('handleMessageReciept', widgetGeneratedId, id, status);
+        if (isDemo || (!widgetGeneratedId && !id) || !status) {
+            return;
+        }
+        if (widgetGeneratedId !== null) {
+            setActiveConversation((prev: Conversation) => {
+                return { ...prev, messages: prev.messages.map((message) => message.widgetGeneratedId === widgetGeneratedId ? { ...message, status: status, id: id } : message) };
+            });
+        } else if (id) {
+            // Update all statuses
+            setActiveConversation((prev: Conversation) => {
+                return { ...prev, messages: prev.messages.map((message) => message.status !== 'read' ? { ...message, status: status } : message) };
+            });
+            console.log('Active conversation', activeConversation);
+        }
+    };
 
+    // Subscribe to the messages channel indefinitely
+    useEffect(() => {
+        if (isUserLoggedIn && realtime?.connection.state === 'connected') {
+            const contactId = getUserContactId();
+            subscribeToChannel(`messages-channel:${contactId}`, 'delivery_status', (message) => {
+                handleMessageReciept(message?.data);
+            });
+        }
+        return () => {
+            const contactId = getUserContactId();
+            unsubscribeFromChannel(`messages-channel:${contactId}`, 'delivery_status');
+        };
+    }, [isUserLoggedIn, realtime?.connection.state]);
+
+    // Handle disconnetions and reconnections
     const contextValue: AblyContextType = {
         isConnected,
         subscribeToChannel,

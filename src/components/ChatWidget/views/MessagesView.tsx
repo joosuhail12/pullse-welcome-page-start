@@ -373,7 +373,7 @@ const MessagesView = () => {
           attachmentType: msg.attachmentType,
           attachmentUrl: msg.attachmentUrl,
           type: 'text',
-          status: 'sent'
+          status: msg.status
         };
       });
 
