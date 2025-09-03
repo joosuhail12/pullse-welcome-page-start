@@ -30,7 +30,7 @@ const Index = () => {
 
   useEffect(() => {
     if (apiKey && workspaceId) {
-      const url = `http://localhost:4000/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${workspaceId}`;
+      const url = `https://dev-socket.pullseai.com/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${workspaceId}`;
       const body = {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       }

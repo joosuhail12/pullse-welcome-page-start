@@ -30,7 +30,7 @@ export const AblyProvider = ({ children }: AblyProviderProps): JSX.Element => {
             return;
         }
         const ablyClientOptions: Ably.Types.ClientOptions = {
-            authUrl: "http://localhost:4000/api/ably/widgetToken",
+            authUrl: "https://dev-socket.pullseai.com/api/ably/widgetToken",
             authHeaders: {
                 'Authorization': `Bearer ${getAccessToken()}`,
                 'x-workspace-id': workspaceId,

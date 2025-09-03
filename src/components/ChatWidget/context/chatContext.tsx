@@ -109,7 +109,7 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
             return;
         };
         try {
-            const response = await fetch("http://localhost:4000/api/widgets/createContactDevice/" + apiKey, {
+            const response = await fetch("https://dev-socket.pullseai.com/api/widgets/createContactDevice/" + apiKey, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
         try {
             const accessToken = getAccessToken();
             const { apiKey, workspaceId } = getWorkspaceIdAndApiKey();
-            const url = `http://localhost:4000/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(workspaceId)}`;
+            const url = `https://dev-socket.pullseai.com/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(workspaceId)}`;
 
             const headers: HeadersInit = {
                 'Content-Type': 'application/json',

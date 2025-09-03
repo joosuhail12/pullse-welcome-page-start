@@ -177,7 +177,7 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
       async () => {
         // Check if we have a session ID
         const accessToken = getAccessToken();
-        const url = `http://localhost:4000/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(sanitizedWorkspaceId)}`;
+        const url = `https://dev-socket.pullseai.com/api/widgets/getWidgetConfig/${apiKey}?workspace_id=${encodeURIComponent(sanitizedWorkspaceId)}`;
 
         // Generate timestamp for request signing
         const timestamp = Date.now();
@@ -447,7 +447,7 @@ export const fetchConversations = async () => {
   if (!accessToken) {
     return [];
   }
-  const response = await fetch(`http://localhost:4000/api/widgets/getContactDeviceTickets`, {
+  const response = await fetch(`https://dev-socket.pullseai.com/api/widgets/getContactDeviceTickets`, {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + accessToken
@@ -463,7 +463,7 @@ export const fetchConversationByTicketId = async (ticketId: string) => {
     if (!accessToken) {
       throw new Error('No access token found');
     }
-    const response = await fetch(`http://localhost:4000/api/widgets/getConversationWithTicketId/${ticketId}`, {
+    const response = await fetch(`https://dev-socket.pullseai.com/api/widgets/getConversationWithTicketId/${ticketId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
