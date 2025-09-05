@@ -128,6 +128,18 @@ const ChatView = React.memo(({
       messageConfig: data?.messageConfig,
       senderName: data?.senderName
     });
+
+    publishToChannel("widget:conversation:receipts", "conversation_delivery_receipt", {
+      conversationId: data?.conversationId,
+      ticketId: data?.ticketId,
+    });
+
+    if (activeConversation?.ticketId === data?.ticketId) {
+      publishToChannel("widget:conversation:receipts", "conversation_read_receipt", {
+        conversationId: data?.conversationId,
+        ticketId: data?.ticketId,
+      });
+    }
   }
 
   const handleNewTicketReply = (message: any) => {
