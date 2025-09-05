@@ -94,7 +94,7 @@ const MessageInput = ({
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`https://dev-socket.pullseai.com/api/widgets/uploadWidgetFileAttachment/${apiKey}?workspace_id=${workspaceId}`, {
+      const response = await fetch(`https://dev-socket.pullseai.comapi/widgets/uploadWidgetFileAttachment/${apiKey}?workspace_id=${workspaceId}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${getAccessToken()}`,
