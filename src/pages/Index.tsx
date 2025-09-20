@@ -30,7 +30,7 @@ const Index = () => {
 
   useEffect(() => {
     if (apiKey && workspaceId) {
-      const url = `https://dev-socket.pullseai.comapi/widgets/getWidgetConfig/${apiKey}?workspace_id=${workspaceId}`;
+      const url = `${import.meta.env.VITE_SERVER_URL}/widgets/getWidgetConfig/${apiKey}?workspace_id=${workspaceId}`;
       const body = {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
       }
@@ -62,7 +62,6 @@ const Index = () => {
         <h1 className="text-5xl font-bold mb-4 text-vivid-purple">
           Pullse Chat Widget Development Preview
         </h1>
-
         {
           (!apiKey || !workspaceId) && (
             <div>
