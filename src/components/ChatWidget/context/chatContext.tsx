@@ -109,7 +109,7 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
             return;
         };
         try {
-            const response = await fetch(import.meta.env.SERVER_URL + "/widgets/createContactDevice/" + apiKey, {
+            const response = await fetch(import.meta.env.VITE_SERVER_URL + "/widgets/createContactDevice/" + apiKey, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ export const ChatProvider = ({ children, demoConfig, currentView, isDemo = false
         try {
             const accessToken = getAccessToken();
             const { apiKey, workspaceId } = getWorkspaceIdAndApiKey();
-            const url = import.meta.env.SERVER_URL + "/widgets/getWidgetConfig/" + apiKey + "?workspace_id=" + encodeURIComponent(workspaceId);
+            const url = import.meta.env.VITE_SERVER_URL + "/widgets/getWidgetConfig/" + apiKey + "?workspace_id=" + encodeURIComponent(workspaceId);
 
             const headers: HeadersInit = {
                 'Content-Type': 'application/json',
