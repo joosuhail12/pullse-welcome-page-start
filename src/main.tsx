@@ -52,7 +52,7 @@ const PullseNamespace = {
                     // Inject stylesheet
                     const style = document.createElement('link');
                     style.rel = 'stylesheet';
-                    style.href = 'https://chat-widget.pullseai.com/assets/index-BSRNTQb6.css';
+                    style.href = `https://widget.pullseai.com/widget.css`;
                     shadowRoot.appendChild(style);
                     // TODO: Dont load the widget until the css file is loaded
 
@@ -136,7 +136,7 @@ const PullseNamespace = {
             // Inject stylesheet
             const style = document.createElement('link');
             style.rel = 'stylesheet';
-            style.href = 'https://chat-widget.pullseai.com/assets/index-BSRNTQb6.css';
+            style.href = `https://widget.pullseai.com/widget.css`;
             shadowRoot.appendChild(style);
 
             // TODO: Dont load the widget until the css file is loaded
