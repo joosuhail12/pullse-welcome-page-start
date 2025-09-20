@@ -177,7 +177,7 @@ export const fetchChatWidgetConfig = async (workspaceId: string, apiKey: string)
       async () => {
         // Check if we have a session ID
         const accessToken = getAccessToken();
-        const url = import.meta.env.SERVER_URL + "/widgets/getWidgetConfig/" + apiKey + "?workspace_id=" + encodeURIComponent(sanitizedWorkspaceId);
+        const url = import.meta.env.VITE_SERVER_URL + "/widgets/getWidgetConfig/" + apiKey + "?workspace_id=" + encodeURIComponent(sanitizedWorkspaceId);
 
         // Generate timestamp for request signing
         const timestamp = Date.now();
@@ -447,7 +447,7 @@ export const fetchConversations = async () => {
   if (!accessToken) {
     return [];
   }
-  const response = await fetch(import.meta.env.SERVER_URL + "/widgets/getContactDeviceTickets", {
+  const response = await fetch(import.meta.env.VITE_SERVER_URL + "/widgets/getContactDeviceTickets", {
     headers: {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer ' + accessToken
@@ -463,7 +463,7 @@ export const fetchConversationByTicketId = async (ticketId: string) => {
     if (!accessToken) {
       throw new Error('No access token found');
     }
-    const response = await fetch(import.meta.env.SERVER_URL + "/widgets/getConversationWithTicketId/" + ticketId, {
+    const response = await fetch(import.meta.env.VITE_SERVER_URL + "/widgets/getConversationWithTicketId/" + ticketId, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
