@@ -94,7 +94,7 @@ const MessageInput = ({
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`import.meta.env.SERVER_URL/widgets/uploadWidgetFileAttachment/${apiKey}?workspace_id=${workspaceId}`, {
+      const response = await fetch(import.meta.env.SERVER_URL + "/widgets/uploadWidgetFileAttachment/" + apiKey + "?workspace_id=" + workspaceId, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${getAccessToken()}`,
