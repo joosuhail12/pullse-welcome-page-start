@@ -244,7 +244,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             isAgent={true}
             agentStatus={agentStatus}
             size="sm"
-            senderType={message.senderType}
+            senderType={message.senderType || message.sender}
             name={`${message.senderName ?? "Agent"}`}
           />
         </div>

@@ -112,7 +112,7 @@ const ChatView = React.memo(({
       return;
     }
 
-    if (!data?.message) {
+    if (!data?.messageType && data?.messageType === 'text') {
       Sentry.captureException(new Error(`Message is empty: ${JSON.stringify(data)}`));
       return;
     }
