@@ -162,10 +162,6 @@ const ChatView = React.memo(({
       ticketId: ticketId
     }));
 
-    subscribeToChannel(`widget:conversation:ticket-${ticketId}`, 'message_reply', (message) => {
-      handleExistingTicketReply(message);
-    });
-
     fetchConversationByTicketId(ticketId);
   };
 
