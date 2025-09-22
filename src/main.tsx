@@ -54,23 +54,25 @@ const PullseNamespace = {
                     style.rel = 'stylesheet';
                     style.href = `https://widget.pullseai.com/widget.css`;
                     shadowRoot.appendChild(style);
-                    // TODO: Dont load the widget until the css file is loaded
 
-                    // Create a root in the shadow DOM for isolation
-                    demoWidgetRoot = createRoot(innerContainer as HTMLElement);
+                    // Wait for the css file to load
+                    style.onload = () => {
+                        // Create a root in the shadow DOM for isolation
+                        demoWidgetRoot = createRoot(innerContainer as HTMLElement);
 
-                    // Use Suspense to handle the loading state
-                    demoWidgetRoot.render(
-                        <React.Suspense fallback={
-                            <div className="loading-widget">
-                                <div className="w-10 h-10 border-4 border-vivid-purple border-t-transparent rounded-full animate-spin m-auto"></div>
-                            </div>
-                        }>
-                            <DemoChatWidget />
-                        </React.Suspense>
-                    );
-                    console.log("Demo widget initialized");
-                    resolve(true);
+                        // Use Suspense to handle the loading state
+                        demoWidgetRoot.render(
+                            <React.Suspense fallback={
+                                <div className="loading-widget">
+                                    <div className="w-10 h-10 border-4 border-vivid-purple border-t-transparent rounded-full animate-spin m-auto"></div>
+                                </div>
+                            }>
+                                <DemoChatWidget />
+                            </React.Suspense>
+                        );
+                        console.log("Demo widget initialized");
+                        resolve(true);
+                    }
                 }
             } catch (error) {
                 console.error("Error initializing demo widget", error);
