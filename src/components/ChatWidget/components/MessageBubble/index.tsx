@@ -184,6 +184,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         role="article"
         aria-label={`Message from ${isUser ? 'you' : 'agent'}`}
       >
+        {isSystem && (
+          <div className="flex-shrink-0 relative">
+            <MessageAvatar
+              isUserMessage={false}
+              agentStatus={agentStatus}
+              size="sm"
+              senderType={"system"}
+              name={`${message.senderName ?? "System"}`}
+            />
+          </div>
+        )}
+
         {/* Agent Avatar - Left side */}
         {isAgent && (
           <div className="flex-shrink-0 relative">

@@ -42,6 +42,10 @@ const ChatView = React.memo(({
   }
 
   const handleSendMessage = async (messageText: string, attachmentType: 'image' | 'pdf', attachmentUrl: string) => {
+    if (activeConversation?.messages[activeConversation?.messages?.length - 1]?.messageType === 'data_collection' && activeConversation?.messages[activeConversation?.messages?.length - 1]?.messageConfig?.required === true) {
+      toast.error('Please submit the data collection form first');
+      return;
+    }
     if (messageText.length === 0 && attachmentUrl === '') {
       toast.error('Please enter a message or upload a file');
       return;
