@@ -152,13 +152,13 @@ const DataCollectionMessage: React.FC<DataCollectionMessageProps> = ({
       }
 
       <div className="pt-2">
-        <Button type="submit" disabled={isSubmitting || !allowUserAction} className="w-full h-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-2xs">
+        <Button disabled={isSubmitting || !allowUserAction || isFormSubmitted} type="submit" className="w-full h-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-2xs">
           {isSubmitting ? <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             <span>Submitting...</span>
-          </div> : <div className="flex items-center gap-1.5">
-            <Send className="w-3 h-3" />
-            <span>Submit</span>
+          </div> : <div className={`flex items-center gap-1.5 ${!isFormSubmitted ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+            <Send className="w-3 h-3 ${isFormSubmitted ? 'text-green-500' : 'text-white'}" />
+            <span>{isFormSubmitted ? 'Submitted' : 'Submit'}</span>
           </div>}
         </Button>
       </div>
