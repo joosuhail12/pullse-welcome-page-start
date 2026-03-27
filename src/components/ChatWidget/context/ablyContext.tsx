@@ -73,17 +73,16 @@ export const AblyProvider = ({ children }: AblyProviderProps): JSX.Element => {
         }
         if (!activeChannelSubscriptions.has(channelName)) {
             activeChannelSubscriptions.set(channelName, new Map());
-        } else {
+        }
+        const eventMap = activeChannelSubscriptions.get(channelName);
+        if (eventMap?.has(eventName)) {
             console.log(`Channel ${channelName} already subscribed to event ${eventName}`);
             return;
         }
         const channel = realtime?.channels.get(channelName);
         if (channel) {
-            const eventMap = activeChannelSubscriptions.get(channelName);
-            if (!eventMap?.has(eventName)) {
-                eventMap?.set(eventName, true);
-                channel.subscribe(eventName, callback);
-            }
+            eventMap?.set(eventName, true);
+            channel.subscribe(eventName, callback);
         }
     };
 
