@@ -1,5 +1,6 @@
 
 import React from 'react';
+import DOMPurify from 'dompurify';
 import { Image } from 'lucide-react';
 
 interface TextMessageProps {
@@ -20,11 +21,15 @@ const TextMessage: React.FC<TextMessageProps> = ({
   textColor
 }) => {
   const processedText = renderText ? renderText(text) : text;
+  const cleanHTML = DOMPurify.sanitize(processedText, {
+    ALLOWED_TAGS: ['b', 'br', 'i', 'a', 'span'],
+    ALLOWED_ATTR: ['href', 'target', 'class'],
+  });
 
   return (
     <div className="space-y-2">
       {/* Text content */}
-      <div className="whitespace-pre-wrap break-words text-left" dangerouslySetInnerHTML={{ __html: processedText }} style={{ color: textColor }}>
+      <div className="whitespace-pre-wrap break-words text-left" dangerouslySetInnerHTML={{ __html: cleanHTML }} style={{ color: textColor }}>
         {/* {processedText} */}
       </div>
 

@@ -22,15 +22,39 @@ export interface Conversation {
     rating?: number;
 }
 
+interface BotStreamingState {
+    ticketId: string | null;
+    status: string | null;
+    text: string;
+}
+
 interface ChatWidgetStore {
     activeConversation: Conversation | null;
     setActiveConversation: (update: Conversation | null | ((prev: Conversation | null) => Conversation | null)) => void;
     addMessageToConversation: (message: Message) => void;
     updateMessageStatus: (messageId: string, status: 'sent' | 'delivered' | 'read') => void;
+    botStreaming: BotStreamingState;
+    setBotStreamingStatus: (ticketId: string, status: string | null) => void;
+    appendBotStreamingToken: (ticketId: string, token: string) => void;
+    clearBotStreaming: () => void;
 }
 
 export const useChatWidgetStore = create<ChatWidgetStore>((set, get) => ({
     activeConversation: null,
+    botStreaming: { ticketId: null, status: null, text: '' },
+
+    setBotStreamingStatus: (ticketId, status) => set(state => ({
+        botStreaming: { ...state.botStreaming, ticketId, status }
+    })),
+
+    appendBotStreamingToken: (ticketId, token) => set(state => {
+        if (state.botStreaming.ticketId !== ticketId) {
+            return { botStreaming: { ticketId, status: null, text: token } };
+        }
+        return { botStreaming: { ...state.botStreaming, text: state.botStreaming.text + token } };
+    }),
+
+    clearBotStreaming: () => set({ botStreaming: { ticketId: null, status: null, text: '' } }),
 
     // Updated action to set the entire conversation object
     setActiveConversation: (update) => set(state => {

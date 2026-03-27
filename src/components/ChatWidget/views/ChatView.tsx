@@ -20,7 +20,7 @@ interface ChatViewProps {
 
 const ChatView = React.memo(({
 }: ChatViewProps) => {
-  const { activeConversation, addMessageToConversation, updateMessageStatus, setActiveConversation } = useChatWidgetStore();
+  const { activeConversation, addMessageToConversation, updateMessageStatus, setActiveConversation, setBotStreamingStatus, appendBotStreamingToken, clearBotStreaming } = useChatWidgetStore();
   const { config, setViewState, handleSetFormData, isUserLoggedIn, isDemo } = useChatContext();
   const { isConnected, subscribeToChannel, unsubscribeFromChannel, publishToChannel } = useAblyContext();
   const [showSearch, setShowSearch] = useState(false);
@@ -146,6 +146,42 @@ const ChatView = React.memo(({
     }
   }
 
+  const handleBotStream = (message: any) => {
+    const { data } = message;
+    const ticketId = data?.ticketId;
+    if (!ticketId) return;
+
+    switch (data?.event) {
+      case 'typing':
+        setBotStreamingStatus(ticketId, 'typing');
+        break;
+      case 'route': {
+        const labels: Record<string, string> = {
+          knowledge_query: 'Looking into this...',
+          action: 'On it...',
+          escalate: 'Connecting you with the team...',
+        };
+        const label = labels[data?.data?.decision];
+        if (label) setBotStreamingStatus(ticketId, label);
+        break;
+      }
+      case 'plan':
+        setBotStreamingStatus(ticketId, 'Working on it...');
+        break;
+      case 'tool_result':
+        setBotStreamingStatus(ticketId, 'Almost there...');
+        break;
+      case 'token':
+        if (data?.data?.token != null) {
+          appendBotStreamingToken(ticketId, data.data.token);
+        }
+        break;
+      case 'complete':
+        clearBotStreaming();
+        break;
+    }
+  };
+
   const handleNewTicketReply = (message: any) => {
     console.log('New ticket reply received');
     console.log(message);
@@ -175,7 +211,11 @@ const ChatView = React.memo(({
       if (activeConversation?.ticketId) {
         console.log('Subscribing to message channel');
         subscribeToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message_reply', (message) => {
+          clearBotStreaming();
           handleExistingTicketReply(message);
+        });
+        subscribeToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'bot_stream', (message) => {
+          handleBotStream(message);
         });
       } else {
         console.log('Subscribing to new_ticket_reply channel');
@@ -190,6 +230,7 @@ const ChatView = React.memo(({
       if (activeConversation?.ticketId) {
         console.log('Unsubscribing from message channel');
         unsubscribeFromChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message_reply');
+        unsubscribeFromChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'bot_stream');
       } else {
         console.log('Unsubscribing from new_ticket_reply channel');
         unsubscribeFromChannel(`widget:contactevent:${sessionId}`, 'new_ticket_reply');
@@ -231,6 +272,8 @@ const ChatView = React.memo(({
     return originalHighlightText(text, searchTerm)
       .map(part => part.text);
   }, [searchTerm, originalHighlightText]);
+
+  const botStreaming = useChatWidgetStore(state => state.botStreaming);
 
   const agentAvatar = useMemo(() => activeConversation?.agentInfo?.avatar || config?.brandAssets?.avatarUrl,
     [activeConversation?.agentInfo?.avatar, config?.brandAssets?.avatarUrl]);
@@ -313,6 +356,8 @@ const ChatView = React.memo(({
               config={config}
               isDemo={isDemo}
               handleUserAction={handleUserAction}
+              botStreamingText={botStreaming.ticketId === activeConversation?.ticketId ? botStreaming.text : ''}
+              botStreamingStatus={botStreaming.ticketId === activeConversation?.ticketId ? botStreaming.status : null}
             />
 
             {showRating && (

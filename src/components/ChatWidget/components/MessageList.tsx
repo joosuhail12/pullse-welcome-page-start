@@ -35,6 +35,8 @@ interface MessageListProps {
   config: ChatWidgetConfig;
   isDemo?: boolean;
   handleUserAction?: (action: "csat" | "action_button" | "data_collection", data: Partial<UserActionData>, conversationId: string) => void;
+  botStreamingText?: string;
+  botStreamingStatus?: string | null;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -58,7 +60,9 @@ const MessageList: React.FC<MessageListProps> = ({
   typingDuration = 0,
   config,
   isDemo = false,
-  handleUserAction
+  handleUserAction,
+  botStreamingText = '',
+  botStreamingStatus = null
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -73,7 +77,7 @@ const MessageList: React.FC<MessageListProps> = ({
     if (messages.length && !searchResults.length && isAtBottom && !isAutoScrollingRef.current) {
       scrollToBottom();
     }
-  }, [messages, isTyping, searchResults.length]);
+  }, [messages, isTyping, searchResults.length, botStreamingText, botStreamingStatus]);
 
   useEffect(() => {
     if (searchResults.length && !isScrolledToSearchResult) {
@@ -266,6 +270,31 @@ const MessageList: React.FC<MessageListProps> = ({
             </div>
           );
         })}
+
+        {/* Bot streaming: typing indicator or streaming message bubble */}
+        {(botStreamingStatus || botStreamingText) && (
+          <div className="mt-4" ref={lastMessageRef}>
+            <MessageBubble
+              message={{
+                id: '__bot-streaming__',
+                text: botStreamingText || '',
+                sender: 'ai',
+                senderType: 'ai',
+                messageType: botStreamingText ? 'text' : 'ai',
+                createdAt: new Date(),
+                metadata: {
+                  isTyping: !botStreamingText,
+                  streamingStatus: !botStreamingText && botStreamingStatus !== 'typing' ? botStreamingStatus : null,
+                },
+              }}
+              agentAvatar={agentAvatar}
+              userAvatar={userAvatar}
+              agentStatus={agentStatus}
+              conversationId={conversationId}
+              config={config}
+            />
+          </div>
+        )}
       </ScrollArea>
 
       {showScrollButton && (

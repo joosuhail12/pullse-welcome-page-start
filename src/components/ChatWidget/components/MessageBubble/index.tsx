@@ -75,6 +75,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             renderText={text => highlightMessage ? highlightMessage(text).join('') : text}
             timestamp={message.createdAt}
             isTyping={message.metadata?.isTyping}
+            streamingStatus={message.metadata?.streamingStatus}
           />
         );
       case 'workflow':
