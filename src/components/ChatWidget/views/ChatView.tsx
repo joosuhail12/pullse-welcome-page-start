@@ -151,6 +151,8 @@ const ChatView = React.memo(({
     const ticketId = data?.ticketId;
     if (!ticketId) return;
 
+    console.log('[bot_stream]', data?.event, data?.data?.token || '', data?.serviceName || '');
+
     switch (data?.event) {
       case 'typing':
         setBotStreamingStatus(ticketId, 'typing');
