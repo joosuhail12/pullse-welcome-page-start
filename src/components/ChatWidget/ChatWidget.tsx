@@ -4,7 +4,7 @@ import LauncherButton from './components/LauncherButton';
 import WidgetContainer from './components/WidgetContainer';
 import ChatWidgetErrorBoundary from './components/ChatWidgetErrorBoundary';
 import { getWorkspaceIdAndApiKey } from './utils/storage';
-import { AblyProvider } from './context/ablyContext';
+import { CentrifugoProvider } from './context/centrifugoContext';
 import { ChatProvider } from './context/chatContext';
 
 const ChatWidget = () => {
@@ -37,12 +37,12 @@ const ChatWidget = () => {
   return (
     <ChatWidgetErrorBoundary workspaceId={workspaceId}>
       <ChatProvider>
-        <AblyProvider>
+        <CentrifugoProvider>
           <WidgetContainer />
           <LauncherButton
             unreadCount={0}
           />
-        </AblyProvider>
+        </CentrifugoProvider>
       </ChatProvider>
     </ChatWidgetErrorBoundary>
   );

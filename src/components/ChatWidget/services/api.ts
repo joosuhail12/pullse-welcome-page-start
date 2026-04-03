@@ -442,6 +442,133 @@ export const sendChatMessage = async (message: string, workspaceId: string): Pro
   }
 };
 
+/**
+ * Get a Centrifugo realtime token for WebSocket authentication
+ */
+export const getRealtimeToken = async (): Promise<string> => {
+  const accessToken = getAccessToken();
+  const sessionId = getChatSessionId();
+  const response = await fetch(import.meta.env.VITE_SERVER_URL + '/realtime/widget-token', {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'session-id': sessionId || '',
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to get realtime token: ${response.status}`);
+  }
+  const data = await response.json();
+  return data.data.token;
+};
+
+/**
+ * Mark messages in a ticket as read by the customer.
+ */
+export const sendReadReceipt = async (ticketId: string): Promise<void> => {
+  const accessToken = getAccessToken();
+  const sessionId = getChatSessionId();
+  const response = await fetch(import.meta.env.VITE_SERVER_URL + `/widget/tickets/${ticketId}/read`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+      'session-id': sessionId || '',
+    },
+    body: JSON.stringify({}),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to send read receipt: ${response.status}`);
+  }
+};
+
+/**
+ * Send a widget message via HTTP POST (replaces realtime channel publish)
+ */
+export const sendWidgetMessage = async (params: {
+  ticketId: string;
+  message: string;
+  type: string;
+  clientGeneratedId: string;
+  attachmentType?: string;
+  attachmentUrl?: string;
+}): Promise<any> => {
+  const accessToken = getAccessToken();
+  const sessionId = getChatSessionId();
+  const response = await fetch(import.meta.env.VITE_SERVER_URL + '/widget/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+      'session-id': sessionId || '',
+    },
+    body: JSON.stringify(params),
+  });
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Unknown error');
+    throw new Error(`Failed to send message: ${response.status} - ${errorText}`);
+  }
+  return response.json();
+};
+
+/**
+ * Send a user action via HTTP POST (replaces realtime channel publish for user_action)
+ */
+export const sendUserAction = async (params: {
+  ticketId: string;
+  action: string;
+  data: any;
+  conversationId: string;
+}): Promise<any> => {
+  const accessToken = getAccessToken();
+  const sessionId = getChatSessionId();
+  const response = await fetch(import.meta.env.VITE_SERVER_URL + '/widget/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+      'session-id': sessionId || '',
+    },
+    body: JSON.stringify({
+      ticketId: params.ticketId,
+      message: JSON.stringify({ action: params.action, data: params.data, conversationId: params.conversationId }),
+      type: 'user_action',
+      clientGeneratedId: crypto.randomUUID(),
+    }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Unknown error');
+    throw new Error(`Failed to send user action: ${response.status} - ${errorText}`);
+  }
+  return response.json();
+};
+
+/**
+ * Create a new ticket with the first message (replaces realtime new_ticket publish)
+ */
+export const createNewTicket = async (params: {
+  message: string;
+  message_type: string;
+  attachmentType?: string;
+  attachmentUrl?: string;
+}): Promise<any> => {
+  const accessToken = getAccessToken();
+  const sessionId = getChatSessionId();
+  const response = await fetch(import.meta.env.VITE_SERVER_URL + '/widget/new-ticket', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`,
+      'session-id': sessionId || '',
+    },
+    body: JSON.stringify(params),
+  });
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => 'Unknown error');
+    throw new Error(`Failed to create new ticket: ${response.status} - ${errorText}`);
+  }
+  return response.json();
+};
+
 export const fetchConversations = async () => {
   const accessToken = getAccessToken();
   if (!accessToken) {

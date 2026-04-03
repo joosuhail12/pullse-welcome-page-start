@@ -1,4 +1,4 @@
-import { AgentStatus, Message } from "@/components/ChatWidget/types";
+import { AgentStatus, Message, Ticket } from "@/components/ChatWidget/types";
 import { create } from "zustand";
 
 export interface Conversation {
@@ -20,6 +20,7 @@ export interface Conversation {
         email?: string;
     };
     rating?: number;
+    agentReadAt?: string | null;
 }
 
 interface BotStreamingState {
@@ -33,6 +34,9 @@ interface ChatWidgetStore {
     setActiveConversation: (update: Conversation | null | ((prev: Conversation | null) => Conversation | null)) => void;
     addMessageToConversation: (message: Message) => void;
     updateMessageStatus: (messageId: string, status: 'sent' | 'delivered' | 'read') => void;
+    tickets: Ticket[];
+    setTickets: (tickets: Ticket[]) => void;
+    updateTicket: (ticketId: string, updates: Partial<Ticket>) => void;
     botStreaming: BotStreamingState;
     setBotStreamingStatus: (ticketId: string, status: string | null) => void;
     appendBotStreamingToken: (ticketId: string, token: string) => void;
@@ -41,7 +45,16 @@ interface ChatWidgetStore {
 
 export const useChatWidgetStore = create<ChatWidgetStore>((set, get) => ({
     activeConversation: null,
+    tickets: [],
     botStreaming: { ticketId: null, status: null, text: '' },
+
+    setTickets: (tickets) => set({ tickets }),
+
+    updateTicket: (ticketId, updates) => set((state) => ({
+        tickets: state.tickets.map((t) =>
+            t.id === ticketId ? { ...t, ...updates } : t
+        ),
+    })),
 
     setBotStreamingStatus: (ticketId, status) => set(state => ({
         botStreaming: { ...state.botStreaming, ticketId, status }

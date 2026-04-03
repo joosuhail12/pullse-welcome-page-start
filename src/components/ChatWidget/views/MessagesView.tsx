@@ -15,6 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Skeleton } from '@/components/ui/skeleton';
 import { fetchConversationByTicketId, fetchConversations } from '../services/api';
 import { useChatContext } from '../context/chatContext';
+import { useChatWidgetStore } from '@/store/store';
 
 type SortOrder = 'newest' | 'oldest';
 type StatusFilter = 'all' | 'active' | 'ended' | 'open';
@@ -61,7 +62,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [
 
 const MessagesView = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const { tickets, setTickets } = useChatWidgetStore();
   const [isLoading, setIsLoading] = useState(false);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [useMockData, setUseMockData] = useState(false);
@@ -272,8 +273,12 @@ const MessagesView = () => {
     }
 
     return filtered.sort((a, b) => {
-      const aDate = 'createdAt' in a ? dateToTimestamp((a as Conversation).createdAt) : dateToTimestamp((a as Ticket).createdAt);
-      const bDate = 'createdAt' in b ? dateToTimestamp((b as Conversation).createdAt) : dateToTimestamp((b as Ticket).createdAt);
+      const aDate = 'lastMessageAt' in a && (a as Ticket).lastMessageAt
+        ? dateToTimestamp((a as Ticket).lastMessageAt!)
+        : dateToTimestamp(a.createdAt);
+      const bDate = 'lastMessageAt' in b && (b as Ticket).lastMessageAt
+        ? dateToTimestamp((b as Ticket).lastMessageAt!)
+        : dateToTimestamp(b.createdAt);
 
       return sortOrder === 'newest' ? bDate - aDate : aDate - bDate;
     });
@@ -362,20 +367,22 @@ const MessagesView = () => {
       const messages = conversation?.data.map((msg: TicketMessage) => {
         return {
           id: msg.id,
-          text: msg.message,
-          sender: msg.userType,
-          senderType: msg.senderType,
-          senderName: msg.senderName,
+          text: msg.content,
+          sender: msg.sender.type,
+          senderName: msg.sender.name,
           messageType: msg.messageType,
           messageConfig: msg.messageConfig,
           allowUserAction: msg.allowUserAction,
-          createdAt: new Date(msg.createdAt),
+          createdAt: new Date(msg.timestamp),
           attachmentType: msg.attachmentType,
           attachmentUrl: msg.attachmentUrl,
-          type: 'text',
-          status: msg.status
+          type: msg.type || 'text',
+          status: 'sent' as const,
+          widgetGeneratedId: msg.widgetGeneratedId,
         };
       });
+
+      const agentReadAt = conversation?.readState?.agentReadAt || null;
 
       setActiveConversation({
         id: `conv-${Date.now()}`,
@@ -389,6 +396,7 @@ const MessagesView = () => {
           name: 'Support Agent',
           status: 'online'
         },
+        agentReadAt,
       })
 
       setViewState("chat");
@@ -471,9 +479,11 @@ const MessagesView = () => {
     const createdDate = isTicket
       ? new Date((item as Ticket).createdAt)
       : (item as Conversation).createdAt;
-    const lastMessage = isTicket
+    const rawLastMessage = isTicket
       ? (item as Ticket).lastMessage || 'No description available'
       : (item as Conversation).lastMessage || 'No messages yet';
+    const lastMessage = rawLastMessage.replace(/<[^>]*>/g, '');
+    const unreadCount = isTicket ? ((item as Ticket).unread || 0) : 0;
     const isUnread = isTicket
       ? Boolean((item as Ticket).unread)
       : (item as Conversation).unread;
@@ -523,7 +533,12 @@ const MessagesView = () => {
                     {status === 'active' ? 'Active' : status === 'open' || status === 'Open' ? 'Open' : 'Ended'}
                   </Badge>
                 )}
-                {isUnread && (
+                {isUnread && unreadCount > 0 && (
+                  <span className="min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-vivid-purple text-white text-[10px] font-bold rounded-full" aria-label={`${unreadCount} unread messages`}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+                {isUnread && unreadCount === 0 && (
                   <span className="w-2 h-2 bg-vivid-purple rounded-full" aria-label="Unread conversation"></span>
                 )}
               </div>

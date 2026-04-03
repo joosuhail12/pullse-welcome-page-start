@@ -163,20 +163,18 @@ export function createAgentMessage(
 }
 
 /**
- * Send typing indicator to a channel
- * @param channelName Channel name
- * @param userId User ID
- * @param status 'start' or 'stop'
+ * Send typing indicator via Centrifugo client-side publish
+ * Caller must provide the subscription's publish function.
  */
 export function sendTypingIndicator(
-  channelName: string,
+  publish: (data: any) => void,
   userId: string,
   status: 'start' | 'stop'
 ): void {
-  publishToChannel(channelName, 'typing', {
+  publish({
     userId,
-    status,
-    timestamp: new Date()
+    isTyping: status === 'start',
+    timestamp: new Date(),
   });
 }
 
@@ -205,16 +203,8 @@ export function processSystemMessage(
   // Dispatch event for the message
   dispatchChatEvent('chat:messageReceived', { message }, config);
 
-  // Publish to real-time channel if provided
-  if (channelName && sessionId && config?.realtime) {
-    publishToChannel(channelName, 'message', {
-      id: message.id,
-      text: message.text,
-      sender: message.sender,
-      timestamp: message.createdAt,
-      type: message.type
-    });
-  }
+  // Real-time publishing is now handled by the backend via Centrifugo.
+  // No client-side publish needed for messages.
 }
 
 /**

@@ -8,7 +8,7 @@ import { Conversation } from "../ChatWidget/types";
 import { TooltipProvider } from "@radix-ui/react-tooltip";
 import WidgetContainer from "../ChatWidget/components/WidgetContainer";
 import { ChatProvider } from "../ChatWidget/context/chatContext";
-import { AblyProvider } from "../ChatWidget/context/ablyContext";
+import { CentrifugoProvider } from "../ChatWidget/context/centrifugoContext";
 
 const DemoChatWidget = () => {
     const [currentView, setCurrentView] = useState<'home' | 'messages' | 'chat'>('home');
@@ -64,14 +64,14 @@ const DemoChatWidget = () => {
     return (
         <>
             <ChatProvider isDemo={true} demoConfig={config} currentView={currentView}>
-                <AblyProvider>
+                <CentrifugoProvider>
                     <TooltipProvider delayDuration={0}>
                         <WidgetContainer />
                     </TooltipProvider>
                     <LauncherButton
                         unreadCount={0}
                     />
-                </AblyProvider>
+                </CentrifugoProvider>
             </ChatProvider>
         </>
     )

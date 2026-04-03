@@ -37,6 +37,7 @@ interface MessageListProps {
   handleUserAction?: (action: "csat" | "action_button" | "data_collection", data: Partial<UserActionData>, conversationId: string) => void;
   botStreamingText?: string;
   botStreamingStatus?: string | null;
+  agentReadAt?: string | null;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -62,7 +63,8 @@ const MessageList: React.FC<MessageListProps> = ({
   isDemo = false,
   handleUserAction,
   botStreamingText = '',
-  botStreamingStatus = null
+  botStreamingStatus = null,
+  agentReadAt
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -266,6 +268,7 @@ const MessageList: React.FC<MessageListProps> = ({
                 isConsecutive={item.isConsecutive}
                 config={config}
                 handleUserAction={handleUserAction}
+                agentReadAt={agentReadAt}
               />
             </div>
           );

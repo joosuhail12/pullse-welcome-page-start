@@ -1,16 +1,15 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import MessageList from '../components/MessageList';
 import MessageInput from '../components/MessageInput';
 import ChatViewHeader from '../components/ChatViewHeader';
 import PreChatForm from '../components/PreChatForm';
 import ConversationRating from '../components/ConversationRating';
 import { useMessageSearch } from '../hooks/useMessageSearch';
-import { getChatSessionId } from '../utils/storage';
 import { useChatContext } from '../context/chatContext';
-import { useAblyContext } from '../context/ablyContext';
+import { useCentrifugo } from '../context/centrifugoContext';
 import EnhancedLoadingIndicator from '../components/EnhancedLoadingIndicator';
 import { toast } from 'sonner';
-import { fetchConversationByTicketId } from '../services/api';
+import { fetchConversationByTicketId, sendWidgetMessage, sendUserAction, createNewTicket, sendReadReceipt } from '../services/api';
 import { Conversation, UserActionData } from '../types';
 import * as Sentry from '@sentry/react';
 import { useChatWidgetStore } from '@/store/store';
@@ -22,11 +21,41 @@ const ChatView = React.memo(({
 }: ChatViewProps) => {
   const { activeConversation, addMessageToConversation, updateMessageStatus, setActiveConversation, setBotStreamingStatus, appendBotStreamingToken, clearBotStreaming } = useChatWidgetStore();
   const { config, setViewState, handleSetFormData, isUserLoggedIn, isDemo } = useChatContext();
-  const { isConnected, subscribeToChannel, unsubscribeFromChannel, publishToChannel } = useAblyContext();
+  const { isConnected, subscribe, unsubscribe } = useCentrifugo();
   const [showSearch, setShowSearch] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isFormSubmitting, setIsFormSubmitting] = useState(false);
   const [messageText, setMessageText] = useState('');
+
+  // -- Read receipts: debounced, visibility-aware --
+  const lastReadReceiptRef = useRef<number>(0);
+  const READ_RECEIPT_DEBOUNCE_MS = 5000;
+
+  const trySendReadReceipt = useCallback((ticketId: string | undefined) => {
+    if (!ticketId || isDemo || document.hidden) return;
+    const now = Date.now();
+    if (now - lastReadReceiptRef.current < READ_RECEIPT_DEBOUNCE_MS) return;
+    lastReadReceiptRef.current = now;
+    sendReadReceipt(ticketId).catch(() => { /* fire-and-forget */ });
+  }, [isDemo]);
+
+  // Send on mount (conversation opened)
+  useEffect(() => {
+    if (isUserLoggedIn && activeConversation?.ticketId) {
+      trySendReadReceipt(activeConversation.ticketId);
+    }
+  }, [activeConversation?.ticketId, isUserLoggedIn]);
+
+  // Send when browser tab regains visibility
+  useEffect(() => {
+    const handler = () => {
+      if (!document.hidden && activeConversation?.ticketId) {
+        trySendReadReceipt(activeConversation.ticketId);
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, [activeConversation?.ticketId, trySendReadReceipt]);
 
   const showRating = useMemo(() => {
     return (
@@ -52,49 +81,70 @@ const ChatView = React.memo(({
     }
     if (activeConversation?.messages?.length > 1 && !activeConversation?.ticketId) {
       toast.error('Please wait');
-
       return;
     }
-    const widgetGeneratedId = crypto.randomUUID();
 
-    // Use the store action to add the message
+    const clientGeneratedId = crypto.randomUUID();
+
+    // Optimistic UI — show immediately with 'sending' status
     addMessageToConversation({
-      id: crypto.randomUUID(),
+      id: clientGeneratedId,
       text: messageText,
       messageType: 'text',
       type: 'text',
       attachmentType: attachmentType,
       attachmentUrl: attachmentUrl,
       sender: 'customer',
-      status: 'sent', // Initial status
-      widgetGeneratedId: widgetGeneratedId,
+      status: 'sending',
+      widgetGeneratedId: clientGeneratedId,
       timestamp: new Date(),
       createdAt: new Date(),
     });
 
     setMessageText('');
-    const sessionId = getChatSessionId();
+
     if (activeConversation.ticketId) {
-      console.log('Publishing message to message channel', `widget:conversation:ticket-${activeConversation.ticketId} ${attachmentType} ${attachmentUrl}`);
-      await publishToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message', {
-        text: messageText,
-        sender: 'customer',
-        timestamp: new Date().toISOString(),
-        ticketId: activeConversation.ticketId,
-        attachmentType: attachmentType,
-        attachmentUrl: attachmentUrl,
-        widgetGeneratedId: widgetGeneratedId
-      });
+      // Existing ticket — POST to backend
+      console.log('Sending message via HTTP POST', `ticketId: ${activeConversation.ticketId}`);
+      try {
+        await sendWidgetMessage({
+          ticketId: activeConversation.ticketId,
+          message: messageText,
+          type: 'chat',
+          clientGeneratedId,
+          attachmentType: attachmentType || undefined,
+          attachmentUrl: attachmentUrl || undefined,
+        });
+        updateMessageStatus(clientGeneratedId, 'sent');
+      } catch (err) {
+        console.error('Failed to send message:', err);
+        updateMessageStatus(clientGeneratedId, 'failed' as any);
+      }
     } else {
-      console.log('Publishing message to new_ticket channel');
-      await publishToChannel(`widget:contactevent:${sessionId}`, 'new_ticket', {
-        text: messageText,
-        sender: 'customer',
-        timestamp: new Date().toISOString(),
-        attachmentType: attachmentType,
-        attachmentUrl: attachmentUrl,
-        widgetGeneratedId: widgetGeneratedId
-      });
+      // New ticket — POST to create new ticket
+      console.log('Creating new ticket via HTTP POST');
+      try {
+        const response = await createNewTicket({
+          message: messageText,
+          message_type: 'chat',
+          attachmentType: attachmentType || undefined,
+          attachmentUrl: attachmentUrl || undefined,
+        });
+
+        const ticketId = response.data?.ticketId || response.ticketId;
+
+        if (ticketId) {
+          // Update store with ticket info
+          setActiveConversation((prev: Conversation) => ({
+            ...(prev || {}),
+            ticketId,
+          }));
+          updateMessageStatus(clientGeneratedId, 'sent');
+        }
+      } catch (err) {
+        console.error('Failed to create new ticket:', err);
+        updateMessageStatus(clientGeneratedId, 'failed' as any);
+      }
     }
   }
 
@@ -104,54 +154,61 @@ const ChatView = React.memo(({
     }
   }, [isConnected, isFormSubmitting]);
 
-  const handleExistingTicketReply = (message: any) => {
-    console.log("Message recieved on ticket");
-    console.log(message);
-
-    const { data } = message;
+  const handleIncomingMessage = (data: any) => {
+    console.log('[Centrifugo] handleIncomingMessage:', data);
     const ticketId = data?.ticketId;
 
     if (!ticketId) {
+      console.warn('[Centrifugo] Message missing ticketId, ignoring:', data);
       toast.error('Ticket ID not found');
       return;
     }
 
-    if (!data?.messageType && data?.messageType === 'text') {
+    const senderType = data.sender.type;
+    const senderName = data.sender.name;
+
+    // Skip our own messages (already shown via optimistic UI)
+    if (data.isCustomer || senderType === 'customer') {
+      console.log('[Centrifugo] Skipping own message (optimistic):', data.id, data.clientGeneratedId);
+      return;
+    }
+
+    if (!data?.content && !data?.attachmentUrl) {
+      console.warn('[Centrifugo] Message has no content or attachment:', data);
       Sentry.captureException(new Error(`Message is empty: ${JSON.stringify(data)}`));
       return;
     }
 
-    // Use the store action to add the incoming message
+    const msgTimestamp = data?.timestamp ? new Date(data.timestamp) : new Date();
+    console.log('[Centrifugo] Adding incoming message:', { id: data?.id, sender: senderType, content: data?.content?.substring(0, 50) });
+
     addMessageToConversation({
       id: data?.id || crypto.randomUUID(),
-      text: data?.message,
-      sender: data && data?.senderType ? data.senderType : data?.from,
-      timestamp: new Date(),
-      createdAt: new Date(),
-      messageType: data?.messageType,
+      text: data?.content,
+      sender: senderType || 'agent',
+      timestamp: msgTimestamp,
+      createdAt: msgTimestamp,
+      messageType: data?.messageType || data?.type,
       messageConfig: data?.messageConfig,
-      senderName: data?.senderName
+      senderName: senderName,
+      status: data?.status || 'sent',
+      attachmentType: data?.attachmentType,
+      attachmentUrl: data?.attachmentUrl,
     });
 
-    publishToChannel("widget:conversation:receipts", "conversation_delivery_receipt", {
-      conversationId: data?.conversationId,
-      ticketId: data?.ticketId,
-    });
+    // Agent message arrived while customer is viewing — mark as read
+    trySendReadReceipt(ticketId);
+  };
 
-    if (activeConversation?.ticketId === data?.ticketId) {
-      publishToChannel("widget:conversation:receipts", "conversation_read_receipt", {
-        conversationId: data?.conversationId,
-        ticketId: data?.ticketId,
-      });
-    }
-  }
-
-  const handleBotStream = (message: any) => {
-    const { data } = message;
+  const handleBotStream = (data: any) => {
     const ticketId = data?.ticketId;
-    if (!ticketId) return;
+    if (!ticketId) {
+      console.warn('[Centrifugo] bot_stream missing ticketId, ignoring:', data);
+      return;
+    }
 
-    console.log('[bot_stream]', data?.event, data?.data?.token || '', data?.serviceName || '');
+    const streamData = data?.data || data;
+    console.log('[bot_stream]', data?.event, streamData?.token || '', data?.serviceName || '');
 
     switch (data?.event) {
       case 'typing':
@@ -184,60 +241,46 @@ const ChatView = React.memo(({
     }
   };
 
-  const handleNewTicketReply = (message: any) => {
-    console.log('New ticket reply received');
-    console.log(message);
-    const sessionId = getChatSessionId();
-    unsubscribeFromChannel(`widget:contactevent:${sessionId}`, 'new_ticket_reply');
-    const { data } = message;
-    const ticketId = data?.ticketId;
-
-    if (!ticketId) {
-      toast.error('Ticket ID not found');
-      return;
-    }
-
-    // Corrected Logic: Use the 'prev' state to ensure you have the latest messages
-    setActiveConversation((prev: Conversation) => ({
-      // This safely handles the 'null' case for prev
-      ...(prev || {}),
-      ticketId: ticketId
-    }));
-
-    fetchConversationByTicketId(ticketId);
-  };
-
+  // Subscribe to ticket channel for incoming messages + bot streams
   useEffect(() => {
-    if (isConnected) {
-      const sessionId = getChatSessionId();
-      if (activeConversation?.ticketId) {
-        console.log('Subscribing to message channel');
-        subscribeToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message_reply', (message) => {
+    if (!isConnected || !activeConversation?.ticketId) return;
+
+    const ticketId = activeConversation.ticketId;
+    const channel = `ticket:${ticketId}`;
+
+    console.log('[Centrifugo] Subscribing to ticket channel:', channel);
+    subscribe(channel, (ctx) => {
+      const data = ctx.data;
+      console.log(`[Centrifugo] Event received on ${channel}:`, data.event, data);
+
+      switch (data.event) {
+        case 'message':
           clearBotStreaming();
-          handleExistingTicketReply(message);
-        });
-        subscribeToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'bot_stream', (message) => {
-          handleBotStream(message);
-        });
-      } else {
-        console.log('Subscribing to new_ticket_reply channel');
-        subscribeToChannel(`widget:contactevent:${sessionId}`, 'new_ticket_reply', (message) => {
-          handleNewTicketReply(message);
-        });
+          handleIncomingMessage(data);
+          break;
+        case 'bot_stream':
+          handleBotStream(data);
+          break;
+        case 'delivery_status': {
+          console.log('[Centrifugo] delivery_status on ticket channel:', data);
+          if (data.status === 'read' && data.readAt) {
+            // Ticket-level read — update agentReadAt, ticks are derived from this
+            setActiveConversation((prev: Conversation) => ({
+              ...prev,
+              agentReadAt: data.readAt,
+            }));
+          }
+          break;
+        }
+        default:
+          console.log(`[Centrifugo] Unhandled event on ${channel}:`, data.event, data);
       }
-    }
+    });
 
     return () => {
-      const sessionId = getChatSessionId();
-      if (activeConversation?.ticketId) {
-        console.log('Unsubscribing from message channel');
-        unsubscribeFromChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'message_reply');
-        unsubscribeFromChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'bot_stream');
-      } else {
-        console.log('Unsubscribing from new_ticket_reply channel');
-        unsubscribeFromChannel(`widget:contactevent:${sessionId}`, 'new_ticket_reply');
-      }
-    }
+      console.log('[Centrifugo] Unsubscribing from ticket channel:', channel);
+      unsubscribe(channel);
+    };
   }, [isConnected, activeConversation?.ticketId]);
 
   const {
@@ -258,14 +301,6 @@ const ChatView = React.memo(({
   }, [showSearch, clearSearch]);
 
   const handleLoadMoreMessages = useCallback(async () => {
-    // if (!loadPreviousMessages) return;
-
-    // setIsLoadingMore(true);
-    // try {
-    //   await loadPreviousMessages();
-    // } finally {
-    //   setIsLoadingMore(false);
-    // }
   }, []);
 
   const highlightText = useCallback((text: string): string[] => {
@@ -283,15 +318,20 @@ const ChatView = React.memo(({
   const userAvatar = undefined;
   const hasMoreMessages = activeConversation?.messages?.length >= 20;
 
-  const handleUserAction = (action: "csat" | "action_button" | "data_collection", data: Partial<UserActionData>, conversationId: string) => {
+  const handleUserAction = async (action: "csat" | "action_button" | "data_collection", data: Partial<UserActionData>, conversationId: string) => {
     if (activeConversation?.ticketId) {
       console.log("Handling user action");
       console.log(action, data);
-      publishToChannel(`widget:conversation:ticket-${activeConversation.ticketId}`, 'user_action', {
-        action,
-        data,
-        conversationId
-      });
+      try {
+        await sendUserAction({
+          ticketId: activeConversation.ticketId,
+          action,
+          data,
+          conversationId,
+        });
+      } catch (err) {
+        console.error('Failed to send user action:', err);
+      }
     }
   };
 
@@ -360,6 +400,7 @@ const ChatView = React.memo(({
               handleUserAction={handleUserAction}
               botStreamingText={botStreaming.ticketId === activeConversation?.ticketId ? botStreaming.text : ''}
               botStreamingStatus={botStreaming.ticketId === activeConversation?.ticketId ? botStreaming.status : null}
+              agentReadAt={activeConversation?.agentReadAt}
             />
 
             {showRating && (

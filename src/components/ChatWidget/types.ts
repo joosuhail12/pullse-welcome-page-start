@@ -76,7 +76,8 @@ export interface Conversation {
     status?: AgentStatus;
     email?: string;
   };
-  rating?: number;  // Add rating field to the Conversation interface
+  rating?: number;
+  agentReadAt?: string | null;
 }
 
 export interface Agent {
@@ -112,20 +113,18 @@ export interface Ticket {
 // Ticket Message Interface to match API response
 export interface TicketMessage {
   id: string;
-  message: string;
+  content: string;
   type: string;
-  createdAt: string;
-  updatedAt: string;
-  ticketId: string;
-  userType: 'customer' | 'agent';
+  timestamp: string;
+  sender: { name: string; type: 'customer' | 'agent' | 'system' | 'system-notice' };
+  isCustomer: boolean;
   messageType?: 'text' | 'data_collection' | 'action_buttons' | 'csat' | 'mention' | 'note';
-  senderType?: 'user' | 'agent' | 'system';
-  senderName?: string;
   messageConfig?: Record<string, any>;
   attachmentType?: 'image' | 'pdf';
   attachmentUrl?: string;
   allowUserAction?: boolean;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
+  widgetGeneratedId?: string;
 }
 
 // Define MessageReadStatus type 
@@ -196,7 +195,7 @@ export interface MessageSearchResult {
 // Form data structure for consistency
 export type FormDataStructure = Record<string, string>;
 
-// Connection event for Ably
+// Connection event for realtime
 export type ConnectionEvent = 'initialized' | 'connecting' | 'connected' | 'disconnected' | 'suspended' | 'closed' | 'failed' | 'update';
 
 // Add TeamAvailability interface

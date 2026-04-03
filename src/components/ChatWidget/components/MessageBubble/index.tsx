@@ -38,6 +38,7 @@ interface MessageBubbleProps {
   typingDuration?: number;
   config: ChatWidgetConfig;
   handleUserAction?: (action: "csat" | "action_button" | "data_collection", data: Partial<UserActionData>, conversationId: string) => void;
+  agentReadAt?: string | null;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -49,7 +50,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   userAvatar,
   agentStatus,
   config,
-  handleUserAction
+  handleUserAction,
+  agentReadAt
 }) => {
   const [showReactions, setShowReactions] = useState(false);
   const isUser = message.sender === 'customer' || message.senderType === 'customer';
@@ -325,10 +327,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             isUser ? "text-right" : "text-left"
           )}>
             <MessageStatus
-              status={
-                message.status
-              }
+              status={message.status}
               timestamp={message.createdAt}
+              agentReadAt={agentReadAt}
               isFileMessage={message.type === 'file'}
               fileUploading={message.metadata?.uploading}
             />
